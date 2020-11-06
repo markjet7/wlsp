@@ -1,0 +1,189 @@
+{
+    "name": "wlsp",
+    "displayName": "wlsp",
+    "description": "wolfram-language-server",
+    "publisher": "mark",
+    "version": "0.0.1",
+    "enableProposedApi": true,
+    "engines": {
+        "vscode": "1.51.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "main": "./out/extension.js",
+    "activationEvents": [
+        "onLanguage:wolfram"
+    ],
+    "contributes": {
+        "notebookProvider": [
+            {
+                "viewType": "wolfram",
+                "displayName": "Wolfram Notebook",
+                "priority": "option",
+                "selector": [
+                    {
+                        "filenamePattern": "*.{wl,wls}"
+                    }
+                ]
+            }
+        ],
+        "languages": [
+            {
+                "id": "wolfram",
+                "aliases": [
+                    "Wolfram",
+                    "wolfram"
+                ],
+                "extensions": [
+                    ".wl",
+                    ".wls"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "wolfram",
+                "scopeName": "source.wolfram",
+                "path": "./syntaxes/wolfram.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "wolfram",
+                "path": "./syntaxes/snippets.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "wolfram.new",
+                "title": "Wolfram: Create notebook"
+            },
+            {
+                "command": "wolfram.runCell",
+                "title": "Wolfram: Run cell"
+            },
+            {
+                "command": "wolfram.runInWolfram",
+                "title": "Wolfram: Run"
+            },
+            {
+                "command": "wolfram.printInWolfram",
+                "title": "Wolfram: Print"
+            },
+            {
+                "command": "wolfram.abort",
+                "title": "Wolfram: Abort"
+            },
+            {
+                "command": "wolfram.help",
+                "title": "Wolfram: Help"
+            },
+            {
+                "command": "wolfram.restart",
+                "title": "Wolfram: Restart"
+            },
+            {
+                "command": "wolfram.showOutput",
+                "title": "Wolfram: Show Output Panel"
+            },
+            {
+                "command": "wolfram.wolframTerminal",
+                "title": "Wolfram: Open in Terminal"
+            },
+            {
+                "command": "wolfram.clearDecorations",
+                "title": "Wolfram: Clear Decorations"
+            },
+            {
+                "command": "wolfram.runToLine",
+                "title": "Wolfram: Run to Line"
+            },
+            {
+                "command": "wolfram.launchKernel",
+                "title": "Wolfram: Launch Kernel"
+            },
+            {
+                "command": "wolfram.new",
+                "title": "Create new Wolfram Document"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "wolfram.runToLine",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "wolfram.runInWolfram",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "wolfram.printInWolfram",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "wolfram.help",
+                    "group": "z_commands",
+                    "when": "editorHasSelection"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "wolfram.runInWolfram",
+                "key": "F5",
+                "when": "resourceLangId == wolfram"
+            },
+            {
+                "command": "wolfram.runInWolfram",
+                "key": "ctrl+enter",
+                "when": "resourceLangId == wolfram"
+            },
+            {
+                "command": "wolfram.printInWolfram",
+                "key": "Ctrl+shift+Enter",
+                "when": "resourceLangId == wolfram"
+            }
+        ]
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.1",
+        "@types/mocha": "^7.0.2",
+        "@types/node": "^13.11.0",
+        "@types/vscode": "^1.49.0",
+        "@typescript-eslint/eslint-plugin": "^2.30.0",
+        "@typescript-eslint/parser": "^2.30.0",
+        "eslint": "^6.8.0",
+        "glob": "^7.1.6",
+        "mocha": "^7.1.2",
+        "typescript": "^3.9.7",
+        "tmp": "0.2.1",
+        "vscode-test": "^1.3.0"
+    },
+    "dependencies": {
+        "@shelacek/ubjson": "1.0.1",
+        "@types/socket.io": "^2.1.11",
+        "find-free-port": "^2.0.0",
+        "open": "7.1.0",
+        "ps-tree": "^1.2.0",
+        "supports-color": "^7.1.0",
+        "tmp": "0.2.1",
+        "tsun": "^0.5.0",
+        "vsce": "^1.80.0",
+        "vscode-jsonrpc": "^5.0.1",
+        "vscode-languageclient": "^6.1.3",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "1.0.1",
+        "vscode-textmate": "^5.2.0"
+    },
+    "scripts": {
+        "vscode:prepublish_old": "tsc -p ./",
+        "watch": "tsc -p ./",
+        "compile": "tsc -p ./",
+        "lint": "node ./node_modules/tslint/bin/tslint ./src/*.ts",
+        "pretest": "npm run compile",
+        "test": "node ./out/test/runTest.js"
+    }
+}
