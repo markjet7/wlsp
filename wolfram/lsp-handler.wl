@@ -2,6 +2,7 @@
 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
+
 COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
 DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[path] <> "details.json","RawJSON"]];
  
@@ -23,10 +24,12 @@ contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~con
 
 ServerCapabilities=<|
 	"textDocumentSync"->1,
-	"hoverProvider"->True,
+	"hoverProvider"-><|"contentFormat"->"markdown"|>,
+	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"documentFormattingProvider" -> False,
 	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}|> ,
 	"documentSymbolProvider"->True,
+	"codeActionProvider"->False,
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
 		
 handle["initialize",json_]:=Module[{response, response2},
@@ -118,13 +121,21 @@ handle["textDocument/didOpen",json_]:=Module[{file},
 	(* Import[URLDecode@StringReplace[file, "file://"->""],"Text"] *)
 ];
 
+handle["textDocument/codeAction", json_]:=Module[{},
+	src = documents[json["params","textDocument","uri"]];
+	range = json["params","range"];
+
+];
+
 handle["completionItem/resolve", json_] := Module[{item, documentation, result, response}, 
 	item = json["params"];
-	If[
+	(* If[
 		MemberQ[COMPLETIONS[[All, "label"]], item["label"]],
 		documentation = DETAILS[item["label"]]["documentation"] (*ToString[DETAILS[[SelectFirst[COMPLETIONS, #["label"] == item["label"] &]["data"]+1]]["documentation"]] *),
 		documentation = ""
-	];
+	]; *)
+
+	documentation = extractUsage[item["label"]];
 
 	result = <|
 		"label" -> item["label"],
@@ -146,7 +157,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 						"label" -> n,
 						"kind" -> If[ValueQ@n, 12, 13],
 						"commitCharacters" -> {"[", "\t"},
-						"detail" -> DETAILS[n]["documentation"]
+						"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
 					|>, 
 					{n,names}];
 			
@@ -229,12 +240,25 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 			)];
 ];
 
+signatureQueue = {};
+handle["textDocument/signatureHelp", json_]:=Module[{},
+	AppendTo[signatureQueue, json];
+];
+
 hoverQueue = {};
 handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
 	AppendTo[hoverQueue, json];
 ];
 
-startHover[]:=Module[{result, value, json, position, uri, src, symbol, response, code},
+boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
+ErrorBox[f_]:>{f}};
+
+convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
+convertBoxExpressionToHTML[Information[BarChart]];
+
+extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
+
+startHover[]:=Module[{result, value, json, position, uri, src, symbol, response, code, params, opts, activeParameter, activeSignature},
 	hoverTask = SessionSubmit[
 		ScheduledTask[
 			If[Length@hoverQueue > 0, 
@@ -247,26 +271,78 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 				value = Which[
 					MemberQ[Keys@symbolDefinitions, symbol],
 						symbolDefinitions[symbol]["definition"],
+					True,
+						extractUsage[symbol]
+						
+						(*,
 					MemberQ[COMPLETIONS[[All, "label"]], symbol],
 						SelectFirst[DETAILS, #["detail"] == symbol <> " details" &]["documentation"],
 					True,
-						symbol
+						symbol *)
 				];
 
 				result = <|"contents"-><|
-						"language" -> "wolfram",
-						"value" -> value
+						"kind" -> "markdown",
+						"value" -> "```wolfram\n" <> value <> "\n```"
 					|>
 				|>;
 
+				(* result = <|"contents"-><|
+						"language" -> "wolfram",
+						"value" -> <| "kind" -> "markdown", "value" -> value |>
+					|>
+				|>; *)
+
+				response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
+				sendResponse[response];
+			];
+			
+			If[Length@signatureQueue > 0, 
+				{json, signatureQueue} = {First@signatureQueue, Rest@signatureQueue};
+			
+				position = json["params"]["position"];
+				uri = json["params"]["textDocument"]["uri"];
+				src = documents[json["params","textDocument","uri"]];
+				symbol = getFunctionAtPosition[src, position];
+
+				activeParameter = 0;
+				activeSignature = 0;
+				If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
+					activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"];
+				];
+
+				If[json["params"]["context"]["triggerCharacter"] === ",", 
+					If[MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
+						activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
+					activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
+					];
+				];
+
+				value = extractUsage[symbol];
+				params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
+				opts = Information[symbol, "Options"] /. {
+					Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
+					RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]};
+			
+				result = <|
+					"signatures" -> Table[
+						<|
+							"label" -> StringRiffle[v, ", "], 
+							"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"],
+							"parameters" -> (<|"label" -> #|> & /@ v)
+						|>, {v, params}],
+					"activeSignature" -> activeSignature,
+					"activeParameter" -> activeParameter
+				|>;
+				
 				response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 				sendResponse[response];
 			],
 			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (Print["Message"] &) (* Message[#MessageOutput] & *),
-			"PrintOutputGenerated" -> (Print["M232" <> ToString@#PrintOutput] &)
+			"MessageGenerated" -> (Print[Message[#MessageOutput]] &) (* Message[#MessageOutput] & *),
+			"PrintOutputGenerated" -> (Print[ToString@#PrintOutput] &)
 			|>, 
 		HandlerFunctionsKeys -> {"EvaluationExpression", "MessageOutput", "PrintOutput"}
 	];
@@ -675,6 +751,24 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 		True,
 		False
 	]
+];
+
+getFunctionAtPosition[src_, position_]:=Module[{symbol, p, r},
+	p = position;
+	symbol = "";
+	NestWhile[
+		(
+			p["character"] = p["character"] - #;
+			#+1) &,
+		0,
+		And[
+			(
+				symbol = getWordAtPosition[src, p];
+				!NameQ[symbol]
+			),
+			# < 50] &
+	];
+	symbol
 ];
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},

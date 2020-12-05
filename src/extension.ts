@@ -554,7 +554,29 @@ function help() {
         txt = txt + d.getText(new vscode.Range(sel[x].start, sel[x].end));
     }
 
-    opn("https://reference.wolfram.com/language/ref/" + txt + ".html");
+    let url = "https://reference.wolfram.com/language/ref/" + txt + ".html";
+    // opn(url);
+
+    let helpPanel = vscode.window.createWebviewPanel(
+        "wolframHelp",
+        "Wolfram Help",
+        2,
+        {
+            enableScripts: true
+        }
+    );
+    helpPanel.webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://reference.wolfram.com 'unsafe-inline'">
+    
+    </head>
+    <body>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+    </body>
+    </html>
+    `
 }
 
 

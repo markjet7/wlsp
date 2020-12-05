@@ -13,7 +13,6 @@ exports.activate = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
-const opn = require("open");
 const fp = require('find-free-port');
 const psTree = require('ps-tree');
 const cp = require("child_process");
@@ -483,7 +482,23 @@ function help() {
     for (var x = 0; x < sel.length; x++) {
         txt = txt + d.getText(new vscode.Range(sel[x].start, sel[x].end));
     }
-    opn("https://reference.wolfram.com/language/ref/" + txt + ".html");
+    let url = "https://reference.wolfram.com/language/ref/" + txt + ".html";
+    // opn(url);
+    let helpPanel = vscode.window.createWebviewPanel("wolframHelp", "Wolfram Help", 2, {
+        enableScripts: true
+    });
+    helpPanel.webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://reference.wolfram.com 'unsafe-inline'">
+    
+    </head>
+    <body>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+    </body>
+    </html>
+    `;
 }
 let outputPanel;
 function showOutput() {
