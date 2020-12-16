@@ -17,7 +17,7 @@ let client:LanguageClient;
 let wolframClient:LanguageClient;
 let wolframStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 wolframStatusBar.command = "wolfram.restart";
-wolframStatusBar.text = "Wolfram";
+wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
 wolframStatusBar.show();
 let kernelStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 kernelStatusBar.command = "wolfram.launchKernel";
@@ -266,8 +266,15 @@ function runInWolfram(print=false){
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel:vscode.Selection = e!.selection;
     let outputPosition:vscode.Position = new vscode.Position(sel.active.line+1, 0);
-    
-    if (e?.document.uri.scheme === 'file'){
+
+    if(e?.document.uri.scheme==='vscode-notebook-cell') {
+        // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
+        // if (n){
+        //     wolframNotebookProvider.executeCell(n, n.cells[0])
+        // }
+        
+    }
+    else if (e?.document.uri.scheme === 'file' || e?.document.uri.scheme ==='untitled') {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
@@ -279,17 +286,17 @@ function runInWolfram(print=false){
             //     e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             // }
 
-            printResults.push(result["output"]);
+            // printResults.push(result["output"]);
             if (printResults.length > 1) {
                 printResults.shift();
             }
             
             if(typeof(e) !== "undefined") {
                 e.edit(editBuilder => {
-                    // if (result["output"].indexOf("<img") >= 0 ){
-                    //     printResults.push(result["output"]);
-                    //     showOutput(printResults);
-                    // } 
+
+                    printResults.push(result["output"]);
+                    showOutput();
+
                     if(print){
                         editBuilder.insert(outputPosition, "\t" + result["result"] + "\n");
                     }
@@ -298,14 +305,6 @@ function runInWolfram(print=false){
             updateOutputPanel();
             wolframStatusBar.text = wolframVersionText;
         });
-    }
-
-    if(e?.document.uri.scheme==='vscode-notebook-cell') {
-        // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
-        // if (n){
-        //     wolframNotebookProvider.executeCell(n, n.cells[0])
-        // }
-        
     }
 }
 
@@ -586,13 +585,21 @@ function showOutput() {
     //let out = "<table id='outputs'>";
 
     if(outputPanel) {
-        outputPanel.reveal(outputColumn, true);
+        if (outputPanel.visible){
+
+        } else {
+            if(outputColumn){
+                outputPanel.reveal(outputColumn+1, true);
+        } else{
+            outputPanel.reveal(1, true);
+        }
+    }
     } else {
         if (outputColumn){
         outputPanel = vscode.window.createWebviewPanel(
             'WolframOutput',
             "Wolfram Output",
-            {viewColumn:outputColumn, preserveFocus:true},
+            {viewColumn:outputColumn+1, preserveFocus:true},
             {
                 localResourceRoots: [vscode.Uri.file(path.join(theContext.extensionPath, 'media'))],
                 enableScripts: true

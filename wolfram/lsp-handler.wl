@@ -312,7 +312,9 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 				];
 
 				If[json["params"]["context"]["triggerCharacter"] === ",", 
-					If[MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
+					If[
+						MemberQ[Keys[json["params"]["context"]], "activeSignatureHelp"] &&
+						MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
 						activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
 					activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
 					];
@@ -341,7 +343,7 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (Print[Message[#MessageOutput]] &) (* Message[#MessageOutput] & *),
+			"MessageGenerated" -> (Print[#MessageOutput] &) (* Message[#MessageOutput] & *),
 			"PrintOutputGenerated" -> (Print[ToString@#PrintOutput] &)
 			|>, 
 		HandlerFunctionsKeys -> {"EvaluationExpression", "MessageOutput", "PrintOutput"}
@@ -384,6 +386,9 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		end = range["end"];
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 
+		Print[range["start"]];
+		Print[range["end"]];
+
 		code = Which[
 			range["start"] === range["end"], (* run line or group of lines *)
 				getCodeAtPosition[src, range["start"]],
@@ -402,6 +407,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 				|>
 			|>
 		];
+		Print[code];
 
 
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
@@ -665,7 +671,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 		launchKernel[1];
 		If[SameQ[Head@evaluationKernel,KernelObject],
 
-			sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[evaluationKernel] |> |>];
+			(* sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[evaluationKernel] |> |>]; *)
 			evaluateString[string],
 
 			sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Kernel failed to launch." |> |>];
@@ -729,7 +735,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
+			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 1}} ], "range"->call[[-1]][Source]|>
 			
 		];
 		result1

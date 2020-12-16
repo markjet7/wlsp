@@ -2,7 +2,7 @@
     "name": "wlsp",
     "displayName": "wlsp",
     "description": "wolfram-language-server",
-    "publisher": "mark",
+    "publisher": "markmba",
     "version": "0.0.1",
     "enableProposedApi": true,
     "engines": {
@@ -32,8 +32,7 @@
             {
                 "id": "wolfram",
                 "aliases": [
-                    "Wolfram",
-                    "wolfram"
+                    "Wolfram"
                 ],
                 "extensions": [
                     ".wl",
@@ -134,17 +133,17 @@
             {
                 "command": "wolfram.runInWolfram",
                 "key": "F5",
-                "when": "resourceLangId == wolfram"
+                "when": "editorLangId == wolfram"
             },
             {
                 "command": "wolfram.runInWolfram",
                 "key": "ctrl+enter",
-                "when": "resourceLangId == wolfram"
+                "when": "editorLangId == wolfram"
             },
             {
                 "command": "wolfram.printInWolfram",
                 "key": "Ctrl+shift+Enter",
-                "when": "resourceLangId == wolfram"
+                "when": "editorLangId == wolfram"
             }
         ]
     },

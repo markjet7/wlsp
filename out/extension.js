@@ -22,7 +22,7 @@ let client;
 let wolframClient;
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 wolframStatusBar.command = "wolfram.restart";
-wolframStatusBar.text = "Wolfram";
+wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
 wolframStatusBar.show();
 let kernelStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 kernelStatusBar.command = "wolfram.launchKernel";
@@ -239,7 +239,13 @@ function runInWolfram(print = false) {
     let e = vscode.window.activeTextEditor;
     let sel = e.selection;
     let outputPosition = new vscode.Position(sel.active.line + 1, 0);
-    if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file') {
+    if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'vscode-notebook-cell') {
+        // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
+        // if (n){
+        //     wolframNotebookProvider.executeCell(n, n.cells[0])
+        // }
+    }
+    else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         wolframClient.sendRequest("runInWolfram", { range: sel, textDocument: e.document, print: print }).then((result) => {
@@ -249,16 +255,14 @@ function runInWolfram(print = false) {
             //     e.selection = new vscode.Selection(outputPosition, outputPosition);
             //     e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             // }
-            printResults.push(result["output"]);
+            // printResults.push(result["output"]);
             if (printResults.length > 1) {
                 printResults.shift();
             }
             if (typeof (e) !== "undefined") {
                 e.edit(editBuilder => {
-                    // if (result["output"].indexOf("<img") >= 0 ){
-                    //     printResults.push(result["output"]);
-                    //     showOutput(printResults);
-                    // } 
+                    printResults.push(result["output"]);
+                    showOutput();
                     if (print) {
                         editBuilder.insert(outputPosition, "\t" + result["result"] + "\n");
                     }
@@ -268,12 +272,6 @@ function runInWolfram(print = false) {
             updateOutputPanel();
             wolframStatusBar.text = wolframVersionText;
         });
-    }
-    if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'vscode-notebook-cell') {
-        // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
-        // if (n){
-        //     wolframNotebookProvider.executeCell(n, n.cells[0])
-        // }
     }
 }
 function runCell() {
@@ -506,11 +504,20 @@ function showOutput() {
     let outputColumn = (_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.viewColumn;
     //let out = "<table id='outputs'>";
     if (outputPanel) {
-        outputPanel.reveal(outputColumn, true);
+        if (outputPanel.visible) {
+        }
+        else {
+            if (outputColumn) {
+                outputPanel.reveal(outputColumn + 1, true);
+            }
+            else {
+                outputPanel.reveal(1, true);
+            }
+        }
     }
     else {
         if (outputColumn) {
-            outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Output", { viewColumn: outputColumn, preserveFocus: true }, {
+            outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Output", { viewColumn: outputColumn + 1, preserveFocus: true }, {
                 localResourceRoots: [vscode.Uri.file(path.join(theContext.extensionPath, 'media'))],
                 enableScripts: true
             });
