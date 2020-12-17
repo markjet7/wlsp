@@ -23,6 +23,9 @@ wolframscript should be available in the global path. A configuration option for
 ### Find Help
 ![](wlsp-help-others.gif)
 
+### Jupyter Notebook (Insiders)
+wlsp works with the Jupyter notebook interface but you will need to install the Insiders version of vscode.
+
 
 ## License 
 This project is made available under the MIT License
