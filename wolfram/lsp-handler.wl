@@ -407,7 +407,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 				|>
 			|>
 		];
-		Print[code];
 
 
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
