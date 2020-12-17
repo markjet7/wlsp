@@ -11,7 +11,7 @@ wolframscript should be available in the global path. A configuration option for
 ### Run Expressions
 ![](wlsp-results-decoration.gif)
 
-### Print Results to Documented
+### Print Results to Document
 ![](wlsp-print-output.gif)
 
 ### Show Image Output
@@ -29,5 +29,7 @@ This project is made available under the MIT License
 
 ## Acknowledgments 
 [kenkangxgwe] (https://github.com/kenkangxgwe/lsp-wl)
+
 [codeparser] (https://github.com/WolframResearch/codeparser)
+
 Wolfram is a registered trademark of Wolfram Research, Inc. All other product names mentioned are trademarks of their producers.
