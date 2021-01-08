@@ -3,10 +3,13 @@
     "displayName": "wlsp",
     "description": "wolfram-language-server",
     "publisher": "markmba",
+    "repository": {
+        "url": "https://github.com/markjet7/wlsp"
+    },
     "version": "0.0.1",
     "enableProposedApi": true,
     "engines": {
-        "vscode": "1.52.0"
+        "vscode": "1.53.0"
     },
     "categories": [
         "Programming Languages"
