@@ -386,9 +386,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		end = range["end"];
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 
-		Print[range["start"]];
-		Print[range["end"]];
-
 		code = Which[
 			range["start"] === range["end"], (* run line or group of lines *)
 				getCodeAtPosition[src, range["start"]],
@@ -468,7 +465,7 @@ transforms[output_Image]:=Module[{},
 ];
 transforms[output_Legended]:=Module[{}, 
 	(*imageToPNG[output];*)
-	ExportString[Graphics@output, "HTMLFragment"]
+	ExportString[Rasterize@output, "HTMLFragment"]
 ];
 transforms[output_Grid]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
@@ -493,6 +490,10 @@ transforms[output_GraphicsColumn]:=Module[{},
 transforms[output_GeoGraphics]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
 	ExportString[output, "HTMLFragment"]
+];
+transforms[output_Overlay]:=Module[{}, 
+	(*imageToPNG[Rasterize@output];*)
+	ExportString[Rasterize@output, "HTMLFragment"]
 ];
 transforms[output_]:=Module[{}, 
 	output
@@ -731,10 +732,10 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 		call = First[Cases[tree, 
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
-
+		
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 1}} ], "range"->call[[-1]][Source]|>
+			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
 			
 		];
 		result1
@@ -793,11 +794,11 @@ getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 	word
 ];
 
-getStringAtRange[string_,range_]:=Module[{sLines, sRanges},
+getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	sLines = StringSplit[string, EndOfLine, All];
 	sRanges=getSourceRanges[range];
 
-	StringJoin@Table[StringTake[StringReplace[sLines[[l[[1]]]],"\n"->"\n"], l[[2]]],{l,sRanges}]
+	StringJoin@Table[StringTake[StringReplace[sLines[[l[[1]]]],"\n"->"\n"], l[[2]]],{l, sRanges}]
 ];
 
 getSourceRanges[{start_, end_}]:=Table[

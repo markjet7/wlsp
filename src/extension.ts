@@ -660,6 +660,12 @@ function getOutputContent(webview:any) {
                 height:100%;
             }
 
+            img{
+                max-width:100%;
+                max-height:90vh;
+                margin:auto;
+            }
+
             body.vscode-light {
                 background: var(--vscode-editor-background);
                 color: var(--vscode-editor-foreground);
@@ -703,11 +709,8 @@ function getOutputContent(webview:any) {
             }
 
             #outputs {
-                width:100%;
-                height:85vh;
-                overflow:scroll;
-                top:15vh;
-                position:fixed;
+                display:grid;
+                height:100%;
             }
 
             #result {
