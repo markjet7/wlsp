@@ -495,8 +495,15 @@ transforms[output_Overlay]:=Module[{},
 	(*imageToPNG[Rasterize@output];*)
 	ExportString[Rasterize@output, "HTMLFragment"]
 ];
+transforms[output_Null]:=Module[{}, ""];
+
+transforms[output_InformationData]:=Module[{}, 
+	(*imageToPNG[Rasterize@output];*)
+	ExportString[output, "HTMLFragment"]
+];
+
 transforms[output_]:=Module[{}, 
-	output
+	ExportString[Rasterize@output, "HTMLFragment"]
 ];
 
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result},

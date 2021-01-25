@@ -11,7 +11,7 @@ import {
     NotificationType,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
-import {WolframNotebook, WolframProvider} from './notebook';
+// import {WolframNotebook, WolframProvider} from './notebook';
 
 let client:LanguageClient;
 let wolframClient:LanguageClient;
@@ -25,7 +25,7 @@ kernelStatusBar.text = "$(lightbulb)";
 kernelStatusBar.color = "foreground";
 kernelStatusBar.show();
 
-let wolframNotebookProvider:WolframProvider;
+// let wolframNotebookProvider:WolframProvider;
 let PORT:any;
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let lspPath = '';
@@ -52,10 +52,10 @@ let theDisposible:vscode.Disposable;
 export function activate(context: vscode.ExtensionContext){
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
-    wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
+    // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
     
     try{
-        context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+        // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
     } catch {}
 
     
@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext){
             await new Promise(resolve => setTimeout(resolve, 5000));
             theDisposible = loadWolframServer(outputChannel, context)
             context.subscriptions.push(theDisposible);
-            wolframNotebookProvider.setWolframClient(wolframClient);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
     
@@ -294,7 +294,7 @@ function runInWolfram(print=false){
             if(typeof(e) !== "undefined") {
                 e.edit(editBuilder => {
 
-                    printResults.push(result["output"]);
+                    printResults.unshift(result["output"]);
                     showOutput();
 
                     if(print){
@@ -394,10 +394,10 @@ function restartWolfram() {
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
-            wolframNotebookProvider.setWolframClient(wolframClient);
-            try{
-                theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-            } catch {}
+            // wolframNotebookProvider.setWolframClient(wolframClient);
+            // try{
+            //     theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+            // } catch {}
             theContext.subscriptions.push(theDisposible);
             wolframStatusBar.text = wolframVersionText;
     
