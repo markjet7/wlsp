@@ -267,6 +267,13 @@ function runInWolfram(print=false){
     let sel:vscode.Selection = e!.selection;
     let outputPosition:vscode.Position = new vscode.Position(sel.active.line+1, 0);
 
+    
+    if (e?.document.lineCount == outputPosition.line) {
+        e?.edit(editBuilder => {
+            editBuilder.insert(outputPosition!, "\n")
+        })
+    }
+
     if(e?.document.uri.scheme==='vscode-notebook-cell') {
         // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
         // if (n){
@@ -287,25 +294,34 @@ function runInWolfram(print=false){
             // }
 
             // printResults.push(result["output"]);
-            if (printResults.length > 1) {
-                printResults.shift();
-            }
-            
-            if(typeof(e) !== "undefined") {
-                e.edit(editBuilder => {
-
-                    printResults.unshift(result["output"]);
-                    showOutput();
-
-                    if(print){
-                        editBuilder.insert(outputPosition, "\t" + result["result"] + "\n");
-                    }
-                });
-            };
-            updateOutputPanel();
-            wolframStatusBar.text = wolframVersionText;
+            updateResults(e, result, print);
         });
     }
+}
+
+let maxPrintResults = 20;
+function updateResults(e:vscode.TextEditor | undefined, result:any, print:boolean) {
+    if (printResults.length > maxPrintResults) {
+        printResults.pop();
+    }
+    
+    if(typeof(e) !== "undefined") {
+        e.edit(editBuilder => {
+
+            printResults.push(result["output"].toString());
+            showOutput();
+
+            if(print){
+                let sel:vscode.Selection = e!.selection;
+                let outputPosition:vscode.Position = new vscode.Position(sel.active.line+1, 0);
+                editBuilder.insert(outputPosition, "\t" + result["result"] + "\n");
+            }
+        });
+    };
+
+    updateOutputPanel();
+    wolframStatusBar.text = wolframVersionText;
+
 }
 
 function runCell() {
@@ -449,6 +465,8 @@ function runToLine() {
             e.selection = new vscode.Selection(outputPosition, outputPosition);
             e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         }
+
+        updateResults(e, result, false);
     });
 }
 
@@ -628,13 +646,12 @@ function showOutput() {
 
 function updateOutputPanel(){
     let out = "";
-    let i = 0;
 
     for (let i = 0; i < printResults.length; i++) {
-        let img2 = printResults[i].replace(/^\"/, '');
-        let img3 = img2.replace(/\"$/, '');
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
-        out += "<div id='result'>" + img3 + "</div>";
+        out += "<div id='result'>" + 
+            printResults[i] + // .replace(/^\"/, '').replace(/\"$/, '')
+            "</div>";
     }
     //out += "</table>";
 
@@ -661,9 +678,9 @@ function getOutputContent(webview:any) {
             }
 
             img{
-                max-width:100%;
-                max-height:90vh;
-                margin:auto;
+                max-width: 100%;
+                max-height: 90%;
+                margin: 0;
             }
 
             body.vscode-light {
@@ -700,24 +717,34 @@ function getOutputContent(webview:any) {
             }
             #scratch {
                 position:fixed;
-                width:85vw;
-                margin-top:5px;
+                width:95vw;
+                bottom:0px;
             }
 
             #scratch textarea {
-                border-radius:5px;
+                border-radius:2px;
+                color: var(--vscode-editor-foreground);
+                font: var(--vscode-editor-font-family);
             }
 
             #outputs {
-                display:grid;
-                height:100%;
+                display: grid;
+                height: 90vh;
+                position: fixed;
+                width: 95vw;
+                top: 5px;
+                overflow-y: scroll;
             }
 
             #result {
                 border-bottom: var(--vscode-editor-foreground) 2px solid;
                 margin-top: 5px;
                 width: 85vw;
-                padding: 10px;
+                padding: 20px;
+                overflow-y: scroll;
+                display: block;
+                height: 300px;
+                margin: auto;
             }
         </style>
         <meta charset="UTF-8">
@@ -774,12 +801,12 @@ function getOutputContent(webview:any) {
     </head>
     <body onload="scrollToBottom()">
     <div class="outer">
-        <!--<div id="scratch">
-            <textarea id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></textarea>
-        </div> -->
         <div class="inner" id='outputs'>
             
         </div>
+        <div id="scratch">
+            <textarea id="expression" onkeydown="run(this)" rows="2" placeholder="Shift+Enter to run"></textarea>
+        </div> 
     </div>
     </body>
     </html>`;

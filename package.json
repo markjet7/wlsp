@@ -143,6 +143,11 @@
                 "when": "editorLangId == wolfram"
             },
             {
+                "command": "wolfram.runInWolfram",
+                "key": "shift+enter",
+                "when": "editorLangId == wolfram"
+            },
+            {
                 "command": "wolfram.printInWolfram",
                 "key": "Ctrl+shift+Enter",
                 "when": "editorLangId == wolfram"

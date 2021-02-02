@@ -27,7 +27,7 @@ ServerCapabilities=<|
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"documentFormattingProvider" -> False,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}|> ,
+	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
@@ -218,7 +218,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 						<|
 							"name" -> s["name"] /. ""->"-",
 							"kind" -> kind[s["kind"]],
-							"detail"-> (StringReplace[s["definition"] , "$"->""]) ,
+							"detail"-> (StringReplace[If[StringQ[s["definition"]], s["definition"], ""] , "$"->""]) ,
 							"location"-><|
 								"uri"-> uri,
 								"range"->toRange[s["loc"]]
@@ -343,7 +343,7 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (Print[#MessageOutput] &) (* Message[#MessageOutput] & *),
+			"MessageGenerated" -> (Check[Print[Message[#MessageOutput]], "Code Error"] &) (* Message[#MessageOutput] & *),
 			"PrintOutputGenerated" -> (Print[ToString@#PrintOutput] &)
 			|>, 
 		HandlerFunctionsKeys -> {"EvaluationExpression", "MessageOutput", "PrintOutput"}
@@ -501,9 +501,8 @@ transforms[output_InformationData]:=Module[{},
 	(*imageToPNG[Rasterize@output];*)
 	ExportString[output, "HTMLFragment"]
 ];
-
 transforms[output_]:=Module[{}, 
-	ExportString[Rasterize@output, "HTMLFragment"]
+	ExportString[output, "HTMLFragment"]
 ];
 
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result},
@@ -669,8 +668,11 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 			),
 
 			(
-				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[Last[res["MessagesText"]], TotalWidth -> 1000, CharacterEncoding->"ASCII"] |> |>];
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString["Error: " <> StringRiffle[res["MessagesText"][[-3;;-1]], "\n"], TotalWidth->1000, CharacterEncoding->"ASCII"] |> |>];
+				
+				Table[
+					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 2, "message" -> ToString[r, InputForm, TotalWidth -> 500, CharacterEncoding->"ASCII"] |> |>];,
+				{r, res["MessagesText"]}];
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[Last@res["MessagesText"], InputForm, TotalWidth->1000, CharacterEncoding->"ASCII"] |> |>];
 				{res["Result"], False}
 			)
 		],  
@@ -849,7 +851,7 @@ startEvaluators[]:=Module[{format, count},
 			Quantity[0.00001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> ("Error" &),
+			"MessageGenerated" -> (sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Kernel: " <> ToString[Message[#MessageOutput], InputForm,TotalWidth->1000, CharacterEncoding-> "ASCII"] |> |>] &),
 			"PrintOutputGenerated" -> (# &) (*(sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Kernel: " <> ToString[#PrintOutput, InputForm,TotalWidth->1000, CharacterEncoding-> "ASCII"] |> |>] &) *)
 			|>, 
 		HandlerFunctionsKeys -> { "MessageOutput", "PrintOutput"}
