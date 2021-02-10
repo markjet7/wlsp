@@ -1,7 +1,7 @@
 BeginPackage["wolframLSP`"];
 
 (* ::Package:: *)
-$MessagePrePrint = ("Pre: " <> ToString[#] &);
+$MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];

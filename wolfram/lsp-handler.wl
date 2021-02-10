@@ -343,8 +343,8 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (Check[Print[Message[#MessageOutput]], "Code Error"] &) (* Message[#MessageOutput] & *),
-			"PrintOutputGenerated" -> (Print[ToString@#PrintOutput] &)
+			"MessageGenerated" -> (Print["Hover error"] &) (* Message[#MessageOutput] & *),
+			"PrintOutputGenerated" -> (Print[ToString[#PrintOutput, TotalWidth-> 1000, CharacterEncoding-> "ASCII"]] &)
 			|>, 
 		HandlerFunctionsKeys -> {"EvaluationExpression", "MessageOutput", "PrintOutput"}
 	];
@@ -525,14 +525,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		decorationLine = code2["range"][[2, 1]];
 		decorationChar = code2["range"][[2, 2]];
 
-		(* response2 = <|(*"id"->responseID[], *)"method" -> "wolframResult", 
-			"params"-><|"output"->ToString[output /. Null -> "NA", InputForm], "position"->newPosition, "print"->json["params", "print"]|>|>;
-		
-		sendResponse[response2]; *)
-
-		(*response3 = <| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> output (*ToString[(output /. Null -> "NA"), InputForm]*) |> |>;
-		sendResponse[response3];*)
-
 		If[!json["params", "print"],
 			decoration = List[
 				<|
@@ -669,10 +661,11 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 
 			(
 				
+				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[StringRiffle[res["Messages"], "\n"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>];
 				Table[
-					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 2, "message" -> ToString[r, InputForm, TotalWidth -> 500, CharacterEncoding->"ASCII"] |> |>];,
-				{r, res["MessagesText"]}];
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[Last@res["MessagesText"], InputForm, TotalWidth->1000, CharacterEncoding->"ASCII"] |> |>];
+					sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[r, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
+					{r, res["Messages"]}];
+				 
 				{res["Result"], False}
 			)
 		],  
@@ -848,13 +841,13 @@ startEvaluators[]:=Module[{format, count},
 				{f0, evals} = {First@evals, Rest@evals};
 				evaluateFromQueue[f0[[1]], f0[[2]], f0[[3]]]
 			],
-			Quantity[0.00001, "Seconds"]
+			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Kernel: " <> ToString[Message[#MessageOutput], InputForm,TotalWidth->1000, CharacterEncoding-> "ASCII"] |> |>] &),
-			"PrintOutputGenerated" -> (# &) (*(sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Kernel: " <> ToString[#PrintOutput, InputForm,TotalWidth->1000, CharacterEncoding-> "ASCII"] |> |>] &) *)
-			|>, 
-		HandlerFunctionsKeys -> { "MessageOutput", "PrintOutput"}
+			"MessageGenerated" -> (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[#MessageOutput[[1]]["MessageTemplate"], InputForm, TotalWidth->1000, CharacterEncoding -> "ASCII"] |> |>] &),
+			"PrintOutputGenerated" -> (Print[ToString[#PrintOutput, TotalWidth->1000, CharacterEncoding->"ASCII"]] &)
+		|>, 
+		HandlerFunctionsKeys -> {"MessageOutput", "PrintOutput"}
 	];
 
 ];
