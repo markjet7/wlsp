@@ -20,7 +20,8 @@ sendResponse[res_Association]:=Module[{byteResponse},
 
 If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
-Get[DirectoryName[path] <> "lsp-handler.wl"];
+(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
+Get[DirectoryName[path] <> "lsp-kernels.wl"];
 Get[DirectoryName[path] <> "CodeFormatter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
@@ -59,13 +60,13 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-Get[DirectoryName[path] <> "lsp-handler.wl"];
+Get[DirectoryName[path] <> "lsp-kernels.wl"];
 handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client,
-		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+		Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 		Replace[
 			handleMessageList[ReadMessages[client], state],
 			{
@@ -125,14 +126,14 @@ listener = SocketListen[
 		With[{
 			data = assoc["Data"]
 		},
-			Get[DirectoryName[path] <> "lsp-handler.wl"];
+			Get[DirectoryName[path] <> "lsp-kernels.wl"];
 			SERVER = assoc["SourceSocket"];
 			readMessage[data];
 		]
 	],
 	CharacterEncoding -> "UTF8"
 ];
-*)
+
 (* SetOptions[listener,HandlerFunctionsKeys->{"DataBytes"}]; *)
 
 (* task = ZeroMQLink`Private`$AsyncState["Task"];
