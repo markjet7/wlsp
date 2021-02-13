@@ -43,12 +43,6 @@ handle["initialize",json_]:=Module[{response, response2},
 	symbolDefinitions = <||>;
 	nearestLabel = Nearest[labels];
     
-    kernels = {};
-    While[Length@kernels < 2, 
-        AppendTo[kernels, LaunchKernels[1]]
-    ];
-    {evaluationKernel, preemptiveKernel} = kernels;
-    Print[kernels];
 	documents = <||>;
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 
@@ -58,6 +52,7 @@ handle["initialize",json_]:=Module[{response, response2},
 
 handle["shutdown", json_]:=Module[{},
 	state = "Stop";
+	CloseKernels[];
 	Close[SERVER];
 	Quit[1];
 	Abort[];
@@ -143,8 +138,6 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 ];
 
 handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
-    SessionSubmit[
-        Check[
 		src = documents[json["params","textDocument","uri"]];
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
@@ -163,89 +156,76 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				"items" -> items,
 				"isIncomplete" -> True
 				|>;,
-
 			result = <| "isIncomplete" -> True, "items" -> {}|>;
 		];
-		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-		sendResponse[response];,
-        sendResponse@<|"id"->json["id"],"result"->"NA"|>;
-        ], preemptiveKernel
-    ];
+		sendResponse@<|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
 handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind, f, ast},
-			SessionSubmit[
-				(
-                    Check[
-                        kind[s_]:= Switch[
-                                    s, 
-                                    "Symbol", 13, 
-                                    "Integer", 16, 
-                                    "Real", 16,
-                                    "Complex", 16,
-                                    "Rational", 16,
-                                    "List", 18,
-                                    "Association", 23,
-                                    "Function", 12, 
-                                    "String", 15, 
-                                    "Module", 12,
-                                    _, 19];
+	kind[s_]:= Switch[
+				s, 
+				"Symbol", 13, 
+				"Integer", 16, 
+				"Real", 16,
+				"Complex", 16,
+				"Rational", 16,
+				"List", 18,
+				"Association", 23,
+				"Function", 12, 
+				"String", 15, 
+				"Module", 12,
+				_, 19];
 
-                        uri = json["params"]["textDocument"]["uri"];
-                        src = documents[json["params", "textDocument", "uri"]];
-                        (*ast = AST`ParseFile@Export[FileNameJoin[{$TemporaryDirectory, "wolf-lsp"<> ToString@RandomReal[] <> ".txt"}], src];*)
-                        ast = CodeParse[src];
+	uri = json["params"]["textDocument"]["uri"];
+	src = documents[json["params", "textDocument", "uri"]];
+	(*ast = AST`ParseFile@Export[FileNameJoin[{$TemporaryDirectory, "wolf-lsp"<> ToString@RandomReal[] <> ".txt"}], src];*)
+	ast = CodeParse[src];
 
 
-                        f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
-                            astStr=ToFullFormString[node[[2,1]]];
-                            name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
-                            loc=node[[-1]][Source];
-                            rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-                            If[Head@rhs ==CallNode,
-                            kind = rhs[[1,2]],
-                            kind = rhs[[2]]
-                            ];
-                            definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-                            <|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
+	f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
+		astStr=ToFullFormString[node[[2,1]]];
+		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
+		loc=node[[-1]][Source];
+		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
+		If[Head@rhs ==CallNode,
+		kind = rhs[[1,2]],
+		kind = rhs[[2]]
+		];
+		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
+		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
 
-                        symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
 
-                        result = Table[
-                            symbolDefinitions[s["name"]] = s;
-                            TimeConstrained[
-                            <|
-                                "name" -> s["name"] /. ""->"-",
-                                "kind" -> kind[s["kind"]],
-                                "detail"-> (StringReplace[If[StringQ[s["definition"]], s["definition"], ""] , "$"->""]) ,
-                                "location"-><|
-                                    "uri"-> uri,
-                                    "range"->toRange[s["loc"]]
-                                    |>
-                            |>, 0.05, 
-                            <|
-                                "name" -> s["name"] ,
-                                "kind" -> 19,
-                                "detail"-> "",
-                                "location"-><|
-                                    "uri"->uri,
-                                    "range"->toRange[s["loc"]]
-                                    |>
-                            |>], {s, symbols[[1;;]]}];
+	result = Table[
+		symbolDefinitions[s["name"]] = s;
+		TimeConstrained[
+		<|
+			"name" -> s["name"] /. ""->"-",
+			"kind" -> kind[s["kind"]],
+			"detail"-> (StringReplace[If[StringQ[s["definition"]], s["definition"], ""] , "$"->""]) ,
+			"location"-><|
+				"uri"-> uri,
+				"range"->toRange[s["loc"]]
+				|>
+		|>, 0.05, 
+		<|
+			"name" -> s["name"] ,
+			"kind" -> 19,
+			"detail"-> "",
+			"location"-><|
+				"uri"->uri,
+				"range"->toRange[s["loc"]]
+				|>
+		|>], {s, symbols[[1;;]]}];
 
 
-                    response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-                    sendResponse[response]; ,
-                    sendResponse[<|"id" -> json["id"], "result" -> "NA"|>]
-                ]
-			), preemptiveKernel];
+	response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
+	sendResponse[response];
 ];
 
 signatureQueue = {};
 handle["textDocument/signatureHelp", json_]:=Module[{},
-	SessionSubmit[
-        Check[
             position = json["params"]["position"];
 				uri = json["params"]["textDocument"]["uri"];
 				src = documents[json["params","textDocument","uri"]];
@@ -283,10 +263,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{},
 					"activeParameter" -> activeParameter
 				|>;
 				
-				sendResponse<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;,
-                sendResponse@<|"id"->json["id"], "result"->"NA"|>;
-        ]
-    , preemptiveKernel]
+				sendResponse<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 ];
 
 hoverQueue = {};
@@ -301,8 +278,6 @@ extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression
 
 
 handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
-	SessionSubmit[
-        Check[
             position = json["params", "position"];
 				uri = json["params"]["textDocument"]["uri"];
 				src = documents[json["params","textDocument","uri"]];
@@ -321,10 +296,7 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 					|>
 				|>;
 
-				sendResponse@<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;,
-                sendResponse@<|"id"->json["id"], "result"->"NA"|>;
-        ]
-    , preemptiveKernel]
+				sendResponse@<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 ];
 
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
@@ -355,9 +327,39 @@ handle["runCell", json_]:=Module[{},
 	|> |>, json, newPosition}];
 ];
 
+handle["moveCursor", json_]:=Module[{range, uri, src, end, workingfolder, code, newPosition, response},
+	range = json["params", "range"];
+	uri = json["params", "textDocument"]["uri", "external"];
+	src = documents[json["params","textDocument","uri", "external"]];
+	end = range["end"];
+	workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
+
+	code = Which[
+		range["start"] === range["end"], (* run line or group of lines *)
+			getCodeAtPosition[src, range["start"]],
+		!(range["start"] === range["end"]),
+			<|
+				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
+					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+				|>
+			|>,
+		True,
+		<|
+			"code" -> "", "range" -> <|
+				"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+				"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+			|>
+		|>
+	];
+
+	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
+
+	response = <|"method"->"moveCursor","params"-><|"position"->newPosition|>|>;
+	sendResponse[response];
+];
+
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
-	SessionSubmit[
-            Check[
                 range = json["params", "range"];
                 uri = json["params", "textDocument"]["uri", "external"];
                 src = documents[json["params","textDocument","uri", "external"]];
@@ -383,12 +385,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
                     |>
                 ];
 
-
-                newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-
-                response = <|"method"->"moveCursor","params"-><|"position"->newPosition|>|>;
-                sendResponse[response];
-
                 decoration = {
                     <|"range" -> <|
                         "start" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>,
@@ -407,18 +403,11 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
                     |>
                 };
 
-
-
                 response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
                 sendResponse[response4];	
 
                 (* Add the evaluation to the evaluation queue *)
-                evaluateFromQueue[code, json, newPosition],
-
-                sendResponse[<|"id"->json["id"],"result"-><|"output"->"", "result"->"", "position"-><|"line"->1, "character"->1|>|>|>];
-		        sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>];
-        ]
-    , evaluationKernel]
+                evaluateFromQueue[code, json, newPosition]
 ];
 
 
@@ -485,15 +474,7 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 		|>
 	|>;
 	(* Add the evaluation to the evaluation queue *)
-    SessionSubmit[
-        Check[
-	        sendResponse@<|"id"->json["id"],"result"-><|"output"->"...", "position"->position|>|>;
-            evaluateFromQueue[code, json, position];,
-
-            sendResponse@<|"id"->json["id"],"result"-><|"output"->"NA", "result"->"NA", "position"-><|"line"->1, "character"->1|>|>|>;
-		
-        ]
-    , evaluationKernel]
+	evaluateFromQueue[code, json, position];
 	
 ];
 
@@ -589,7 +570,6 @@ handle["abort", json_]:=Module[{},
 ];
 
 validate[]:=Module[{lints, severities, msgs, response},
-		SessionSubmit[
 			KeyValueMap[
 				Function[{uri, src},
 					lints = CodeInspect[src];
@@ -607,8 +587,7 @@ validate[]:=Module[{lints, severities, msgs, response},
 					sendResponse[response];
 				],
 				documents
-			], preemptiveKernel, Method -> "Idle"
-		];
+			]
 ];
 
 evaluateString[string_, width_:10000]:= Module[{res, r}, 

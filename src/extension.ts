@@ -285,6 +285,13 @@ function runInWolfram(print=false){
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
+        // wolframClient.sendRequest("moveCursor", {range:sel, textDocument:e.document}).then((result:any) => {
+        //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
+        //     e!.selection = new vscode.Selection(outputPosition, outputPosition);
+        //     e!.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+        // });
+
+        wolframClient.sendRequest("moveCursor", {range:sel, textDocument:e.document});
         wolframClient.sendRequest("runInWolfram", {range:sel, textDocument:e.document, print:print}).then((result:any) => {
             // cursor has not moved yet
             // if (e?.selection.active.line === outputPosition.line && e.selection.active.character === outputPosition.character){
@@ -348,7 +355,8 @@ function runExpression(expression:string) {
     let print:boolean = false;
 
     wolframClient.sendRequest("runExpression", {print:print, expression:expression}).then((result:any) => {
-        
+        updateOutputPanel();
+        wolframStatusBar.text = wolframVersionText;
     });
 }
 

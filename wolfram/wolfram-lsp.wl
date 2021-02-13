@@ -37,11 +37,26 @@ handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, 
 
 lastChange = Now;
 handleMessage[msg_Association, state_]:=Module[{},
-
 	If[KeyMemberQ[msg, "method"],
-		handle[msg["method"],msg];
+		Print[msg["method"]];
+		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
+			Print["runWolfram"];
+			SessionSubmit[
+				ScheduledTask[
+					Check[handle[msg["method"],msg],
+						sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
+					], {Quantity[0.05, "Seconds"], 1}], Method -> "Idle"
+			],
+			SessionSubmit[
+				ScheduledTask[
+					Check[handle[msg["method"],msg],
+						sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
+					], {Quantity[0.01, "Seconds"], 1}], Method -> Automatic
+			]
+		]		
 	];
-	If[state === "Continue", {"Continue",state}, {"Stop", state}]];
+	If[state === "Continue", {"Continue",state}, {"Stop", state}]
+];
 
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
@@ -101,25 +116,6 @@ Print[client];
 
 Block[{$IterationLimit = Infinity}, socketHandler[state]];
 
-
-
-
-
-
-
-
-
-
-
-
-(* MSGBUFFER = "";
-COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"];
-DETAILS = Import[DirectoryName[path] <> "details.json", "RawJSON"];
-SERVER = SocketOpen[port, "TCP"];
-client = SocketConnect[SERVER];
-  Reap[While[SocketReadyQ[client], Sow[readMesssage[ByteArrayToString@SocketReadMessage[client]]]; 
-    Pause[0.01]]];
-*)
 listener = SocketListen[
 	port,
 	Function[{assoc},
@@ -134,38 +130,4 @@ listener = SocketListen[
 	CharacterEncoding -> "UTF8"
 ];
 
-(* SetOptions[listener,HandlerFunctionsKeys->{"DataBytes"}]; *)
-
-(* task = ZeroMQLink`Private`$AsyncState["Task"];
-WaitAsynchronousTask[task];
-Print["Exiting..."]; *)
-
-(*
-startServer[port_]:=Module[{},
-	If[Head@SERVER==SocketObject, Close@SERVER];
-	<<lsp-handler.wl;
-	MSGBUFFER = "";
-	SERVER=SocketOpen[port];
-	CONTINUE = True;
-	NestWhile[
-		(If[Length@SERVER["ConnectedClients"]>0, <<lsp-handler.wl; Pause[0.1]; readMessage[SocketReadMessage[First[SERVER["ConnectedClients"]]]]]; CONTINUE ) &, 
-		CONTINUE, 
-		TrueQ];
-];
-
-startListener[port_]:=Module[{},
-	If[Head@SERVER==SocketObject, Close@SERVER];
-	MSGBUFFER = "";
-	listener = SocketListen[port,readMessage[ByteArray@#DataBytes]&];
-	SERVER=listener["Socket"];
-	SetOptions[listener,HandlerFunctionsKeys->{"DataBytes"}];
-];
-*)
-(* If[Length[$ScriptCommandLine] > 0,
-	startServer[ToExpression[$ScriptCommandLine[[2]]]]; Print["Starting Server"],
-	startServer[6579]
-];  *)
-(* startServer[6579]; *)
-
-(*startListener[6589];*)
 EndPackage[];

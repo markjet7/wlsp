@@ -253,6 +253,12 @@ function runInWolfram(print = false) {
     else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+        // wolframClient.sendRequest("moveCursor", {range:sel, textDocument:e.document}).then((result:any) => {
+        //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
+        //     e!.selection = new vscode.Selection(outputPosition, outputPosition);
+        //     e!.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+        // });
+        wolframClient.sendRequest("moveCursor", { range: sel, textDocument: e.document });
         wolframClient.sendRequest("runInWolfram", { range: sel, textDocument: e.document, print: print }).then((result) => {
             // cursor has not moved yet
             // if (e?.selection.active.line === outputPosition.line && e.selection.active.character === outputPosition.character){
@@ -302,6 +308,8 @@ function runCell() {
 function runExpression(expression) {
     let print = false;
     wolframClient.sendRequest("runExpression", { print: print, expression: expression }).then((result) => {
+        updateOutputPanel();
+        wolframStatusBar.text = wolframVersionText;
     });
 }
 function printInWolfram() {
