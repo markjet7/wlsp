@@ -360,54 +360,58 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, workingfolder, code, 
 ];
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
-                range = json["params", "range"];
-                uri = json["params", "textDocument"]["uri", "external"];
-                src = documents[json["params","textDocument","uri", "external"]];
-                end = range["end"];
-                workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
+	range = json["params", "range"];
+	uri = json["params", "textDocument"]["uri", "external"];
+	src = documents[json["params","textDocument","uri", "external"]];
+	end = range["end"];
+	workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 
-                code = Which[
-                    range["start"] === range["end"], (* run line or group of lines *)
-                        getCodeAtPosition[src, range["start"]],
-                    !(range["start"] === range["end"]),
-                        <|
-                            "code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
-                                "start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-                                "end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-                            |>
-                        |>,
-                    True,
-                    <|
-                        "code" -> "", "range" -> <|
-                            "start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-                            "end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-                        |>
-                    |>
-                ];
+	Print["test0"];
+	code = Which[
+		range["start"] === range["end"], (* run line or group of lines *)
+			getCodeAtPosition[src, range["start"]],
+		!(range["start"] === range["end"]),
+			<|
+				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
+					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+				|>
+			|>,
+		True,
+		<|
+			"code" -> "", "range" -> <|
+				"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+				"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+			|>
+		|>
+	];
+	Print["test1"];
+	Print[code];
 
-                decoration = {
-                    <|"range" -> <|
-                        "start" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>,
-                        "end" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>
-                        |>,
-                        "renderOptions" -> <|
-                            "after" -> <|
-                                "contentText" -> "...",
-                                (* "backgroundColor" -> "background", *)
-                                "color" -> "foreground",
-                                "margin" -> "20px",
-                                "borderSpacing" -> "20px",
-                                "borderRadius" -> "5px"
-                            |>
-                        |>
-                    |>
-                };
+	decoration = {
+		<|"range" -> <|
+			"start" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>,
+			"end" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>
+			|>,
+			"renderOptions" -> <|
+				"after" -> <|
+					"contentText" -> "...",
+					(* "backgroundColor" -> "background", *)
+					"color" -> "foreground",
+					"margin" -> "20px",
+					"borderSpacing" -> "20px",
+					"borderRadius" -> "5px"
+				|>
+			|>
+		|>
+	};
 
-                response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
-                sendResponse[response4];	
+	response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
+	sendResponse[response4];	
 
-                (* Add the evaluation to the evaluation queue *)
-                evaluateFromQueue[code, json, newPosition]
+	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
+	(* Add the evaluation to the evaluation queue *)
+	evaluateFromQueue[code, json, newPosition]
 ];
 
 
@@ -417,7 +421,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringReplace[StringTrim[code2["code"]], ";" ~~ EndOfString -> ""];
 
+		Print["String: "];
+		Print[string];
 		{result, successQ} = evaluateString[string];
+
+		Print[result];
+		Print[successQ];
 
 		If[
 			successQ,  
@@ -425,7 +434,15 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 			output = result;
 		];
 		
-		response = <|"id"->json["id"],"result"-><|"output"->ToString[output, TotalWidth->5000000], "result"->ToString[result, InputForm, TotalWidth -> 5000000], "position"-><|"line"->1, "character"->1|>|>|>;
+		response = <|"method"->"onRunInWolfram", 
+			"params"-><|"output"->ToString[output, TotalWidth->5000000], 
+				"result"->ToString[result, InputForm, TotalWidth -> 5000000], 
+				"position"-> newPosition,
+				"print" -> json["params", "print"],
+				"document" ->  json["params", "textDocument"]["uri"]|>
+			|>;
+		
+		Print[response];
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];
@@ -590,6 +607,8 @@ validate[]:=Module[{lints, severities, msgs, response},
 			]
 ];
 
+evaluateString["", width_:10000]:={"", False};
+
 evaluateString[string_, width_:10000]:= Module[{res, r}, 
 			
 		res = EvaluationData[ToExpression[string]];
@@ -665,7 +684,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
 		
-		result1 = If[call === {},
+		result1 = If[call == {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
 			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
 			
@@ -743,44 +762,6 @@ lineRange[line_,start_,end_]:= {line, Which[
 	line != start[[1]] && line!=end[[1]], All,
 	line != start[[1]] && line==end[[1]], {1, end[[2]]}
 ]};
-
-startEvaluators[]:=Module[{format, count},
-	evals = {};
-	$busy = False;
-	(*
-	CloseKernels[];
-	evaluationKernel = First[LaunchKernels[1], None];
-	hoverKernel = First[LaunchKernels[1], None];
-
-	
-	If[!SameQ[Head@evaluationKernel , KernelObject], 
-		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> "Failed to launch kernel. Please try again."|> |>]
-	];
-	*)
-
-	format[msg_] := Module[{tmp, params}, (
-		tmp = msg[["MessageOutput", 1]][[ "MessageTemplate"]];
-		params = msg[["MessageOutput", 1]][["MessageParameters"]];
-		Message @@ Append[tmp, params]
-		)];
-
-	evaluationTask = SessionSubmit[
-		ScheduledTask[
-			If[
-				Length@evals > 0 && $busy == False,
-				{f0, evals} = {First@evals, Rest@evals};
-				evaluateFromQueue[f0[[1]], f0[[2]], f0[[3]]]
-			],
-			Quantity[0.001, "Seconds"]
-		],
-		HandlerFunctions -> <|
-			"MessageGenerated" -> (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[#MessageOutput[[1]]["MessageTemplate"], InputForm, TotalWidth->1000, CharacterEncoding -> "ASCII"] |> |>] &),
-			"PrintOutputGenerated" -> (Print[ToString[#PrintOutput, TotalWidth->1000, CharacterEncoding->"ASCII"]] &)
-		|>, 
-		HandlerFunctionsKeys -> {"MessageOutput", "PrintOutput"}
-	];
-
-];
 
 constructRPCBytes[_Missing]:= Module[{}, ""];
 constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},

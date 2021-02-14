@@ -36,22 +36,23 @@ FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,
 handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
 
 lastChange = Now;
+
 handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		Print[msg["method"]];
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			Print["runWolfram"];
+			
+			handle[msg["method"],msg],
 			SessionSubmit[
 				ScheduledTask[
 					Check[handle[msg["method"],msg],
 						sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
-					], {Quantity[0.05, "Seconds"], 1}], Method -> "Idle"
-			],
-			SessionSubmit[
-				ScheduledTask[
-					Check[handle[msg["method"],msg],
-						sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
-					], {Quantity[0.01, "Seconds"], 1}], Method -> Automatic
+					], {Quantity[0.01, "Seconds"], 1}], Method -> Automatic,
+					HandlerFunctionsKeys -> {"MessageOutput"},
+					HandlerFunctions -> <|
+						(* "PrintOutputGenerated" -> Print, *)
+						"MessageGenerated" -> (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[Message@#MessageOutput, InputForm, TotalWidth->1000, CharacterEncoding -> "ASCII"] |> |>] &)
+					|>
 			]
 		]		
 	];
@@ -76,7 +77,7 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-kernels.wl"];
-handlerWait = 0.01;
+handlerWait = 0.001;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
@@ -129,5 +130,6 @@ listener = SocketListen[
 	],
 	CharacterEncoding -> "UTF8"
 ];
+CloseKernels[];
 
 EndPackage[];

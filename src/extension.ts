@@ -165,6 +165,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
         wolframClient.onNotification("wolframVersion", wolframVersion);
         wolframClient.onNotification("updateDecorations", updateDecorations);
         wolframClient.onNotification("moveCursor", moveCursor);
+        wolframClient.onNotification("onRunInWolfram", onRunInWolfram);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
     let disposible = wolframClient.start();
@@ -291,18 +292,28 @@ function runInWolfram(print=false){
         //     e!.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         // });
 
-        wolframClient.sendRequest("moveCursor", {range:sel, textDocument:e.document});
-        wolframClient.sendRequest("runInWolfram", {range:sel, textDocument:e.document, print:print}).then((result:any) => {
-            // cursor has not moved yet
-            // if (e?.selection.active.line === outputPosition.line && e.selection.active.character === outputPosition.character){
-            //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
-            //     e.selection = new vscode.Selection(outputPosition, outputPosition);
-            //     e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            // }
+        wolframClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
+        wolframClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
+        
+        // .then((result:any) => {
+        //     // cursor has not moved yet
+        //     // if (e?.selection.active.line === outputPosition.line && e.selection.active.character === outputPosition.character){
+        //     //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
+        //     //     e.selection = new vscode.Selection(outputPosition, outputPosition);
+        //     //     e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+        //     // }
 
-            // printResults.push(result["output"]);
-            updateResults(e, result, print);
-        });
+        //     // printResults.push(result["output"]);
+        //     updateResults(e, result, print);
+        // });
+    }
+}
+
+function onRunInWolfram(result:any){
+    let editors:vscode.TextEditor[] = vscode.window.visibleTextEditors;
+    let e = editors.filter((e) => {e.document.uri.path === result["result"]["document"]["path"]})[0];
+    if(e){
+        updateResults(e, result["result"], result["result"]["print"]);
     }
 }
 
@@ -751,7 +762,8 @@ function getOutputContent(webview:any) {
                 padding: 20px;
                 overflow-y: scroll;
                 display: block;
-                height: 300px;
+                min-height: 50px;
+                max-height: 300px;
                 margin: auto;
             }
         </style>
