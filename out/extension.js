@@ -275,9 +275,9 @@ function runInWolfram(print = false) {
 }
 function onRunInWolfram(result) {
     let editors = vscode.window.visibleTextEditors;
-    let e = editors.filter((e) => { e.document.uri === result["result"]["document"]["uri"]; })[0];
+    let e = editors.filter((e) => { return e.document.uri.path === result["document"]["path"]; })[0];
     if (e) {
-        updateResults(e, result["result"], result["result"]["print"]);
+        updateResults(e, result, result["print"]);
     }
 }
 let maxPrintResults = 20;
@@ -590,12 +590,6 @@ function getOutputContent(webview) {
                 height:100%;
             }
 
-            img{
-                max-width: 100%;
-                max-height: 90%;
-                margin: 0;
-            }
-
             body.vscode-light {
                 background: var(--vscode-editor-background);
                 color: var(--vscode-editor-foreground);
@@ -621,12 +615,10 @@ function getOutputContent(webview) {
                 width: 100%;
             }
 
-            .inner {
-                position:absolute;
-            }
-
             .outer {
-                overflow:none;
+                height:100%;
+                display:block;
+                position:relative;
             }
             #scratch {
                 position:fixed;
@@ -641,25 +633,29 @@ function getOutputContent(webview) {
             }
 
             #outputs {
-                display: grid;
-                height: 90vh;
+                display: block;
+                height: 94vh;
                 position: fixed;
-                width: 95vw;
-                top: 5px;
+                top: 0;
                 overflow-y: scroll;
             }
 
             #result {
                 border-bottom: var(--vscode-editor-foreground) 2px solid;
                 margin-top: 5px;
-                width: 85vw;
-                padding: 20px;
-                overflow-y: scroll;
+                padding: 5px;
                 display: block;
-                min-height: 50px;
-                max-height: 300px;
-                margin: auto;
+                margin:0px;
             }
+
+            #result img{
+                max-width: 100%;
+                max-height: 90%;
+                margin: 0;
+                min-height:200px;
+            }
+
+
         </style>
         <meta charset="UTF-8">
 
@@ -714,14 +710,14 @@ function getOutputContent(webview) {
         </script>
     </head>
     <body onload="scrollToBottom()">
-    <div class="outer">
-        <div class="inner" id='outputs'>
-            
+        <div class="outer">
+            <div class="inner" id='outputs'>
+                
+            </div>
+            <div id="scratch">
+                <textarea id="expression" onkeydown="run(this)" rows="2" placeholder="Shift+Enter to run"></textarea>
+            </div> 
         </div>
-        <div id="scratch">
-            <textarea id="expression" onkeydown="run(this)" rows="2" placeholder="Shift+Enter to run"></textarea>
-        </div> 
-    </div>
     </body>
     </html>`;
     return result;

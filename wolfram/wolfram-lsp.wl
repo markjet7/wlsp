@@ -21,7 +21,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "lsp-kernels.wl"];
+Get[DirectoryName[path] <> "lsp-handler.wl"];
 Get[DirectoryName[path] <> "CodeFormatter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
@@ -39,7 +39,6 @@ lastChange = Now;
 
 handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
-		Print[msg["method"]];
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			
 			handle[msg["method"],msg],
@@ -76,13 +75,13 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-Get[DirectoryName[path] <> "lsp-kernels.wl"];
+Get[DirectoryName[path] <> "lsp-handler.wl"];
 handlerWait = 0.001;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client,
-		Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 		Replace[
 			handleMessageList[ReadMessages[client], state],
 			{
@@ -123,7 +122,7 @@ listener = SocketListen[
 		With[{
 			data = assoc["Data"]
 		},
-			Get[DirectoryName[path] <> "lsp-kernels.wl"];
+			Get[DirectoryName[path] <> "lsp-handler.wl"];
 			SERVER = assoc["SourceSocket"];
 			readMessage[data];
 		]

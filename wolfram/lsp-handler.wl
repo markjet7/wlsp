@@ -266,19 +266,16 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 				position = json["params", "position"];
 				uri = json["params"]["textDocument"]["uri"];
 				src = documents[json["params","textDocument","uri"]];
+				Print[position];
 				symbol = getWordAtPosition[src, position];
+
+				Print[symbol];
 
 				value = Which[
 					MemberQ[Keys@symbolDefinitions, symbol],
 						symbolDefinitions[symbol]["definition"],
 					True,
 						extractUsage[symbol]
-						
-						(*,
-					MemberQ[COMPLETIONS[[All, "label"]], symbol],
-						SelectFirst[DETAILS, #["detail"] == symbol <> " details" &]["documentation"],
-					True,
-						symbol *)
 				];
 
 				result = <|"contents"-><|
@@ -287,13 +284,7 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 					|>
 				|>;
 
-				(* result = <|"contents"-><|
-						"language" -> "wolfram",
-						"value" -> <| "kind" -> "markdown", "value" -> value |>
-					|>
-				|>; *)
-
-				response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
+				response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
 				sendResponse[response];
 			];
 			
@@ -343,7 +334,7 @@ startHover[]:=Module[{result, value, json, position, uri, src, symbol, response,
 			Quantity[0.001, "Seconds"]
 		],
 		HandlerFunctions -> <|
-			"MessageGenerated" -> (Print["Hover error"] &) (* Message[#MessageOutput] & *),
+			"MessageGenerated" -> (Print[ToString[#PrintOutput, TotalWidth-> 1000, CharacterEncoding-> "ASCII"]] &) (* Message[#MessageOutput] & *),
 			"PrintOutputGenerated" -> (Print[ToString[#PrintOutput, TotalWidth-> 1000, CharacterEncoding-> "ASCII"]] &)
 			|>, 
 		HandlerFunctionsKeys -> {"EvaluationExpression", "MessageOutput", "PrintOutput"}
@@ -519,7 +510,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 			output = result;
 		];
 		
-		response = <|"id"->json["id"],"result"-><|"output"->ToString[output, TotalWidth->5000000], "result"->ToString[result, InputForm, TotalWidth -> 5000000], "position"-><|"line"->1, "character"->1|>|>|>;
+		response = <|"method"->"onRunInWolfram","params"-><|
+			"output"->ToString[output, TotalWidth->5000000], 
+			"result"->ToString[result, InputForm, TotalWidth -> 5000000], 
+			"position"-><|"line"->1, "character"->1|>,
+			"print" -> json["params", "print"],
+			"document" -> json["params", "textDocument"]["uri"]
+			|>|>;
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];

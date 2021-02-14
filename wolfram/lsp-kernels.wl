@@ -366,7 +366,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	end = range["end"];
 	workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 
-	Print["test0"];
 	code = Which[
 		range["start"] === range["end"], (* run line or group of lines *)
 			getCodeAtPosition[src, range["start"]],
@@ -387,6 +386,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	];
 	Print["test1"];
 	Print[code];
+	Save["/Users/mark/Downloads/range.m",range];
 
 	decoration = {
 		<|"range" -> <|
@@ -420,13 +420,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringReplace[StringTrim[code2["code"]], ";" ~~ EndOfString -> ""];
-
-		Print["String: "];
-		Print[string];
 		{result, successQ} = evaluateString[string];
-
-		Print[result];
-		Print[successQ];
 
 		If[
 			successQ,  
@@ -442,7 +436,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 				"document" ->  json["params", "textDocument"]["uri"]|>
 			|>;
 		
-		Print[response];
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];
