@@ -11,6 +11,7 @@ import {
     NotificationType,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
+import { EEXIST } from 'constants';
 // import {WolframNotebook, WolframProvider} from './notebook';
 
 let client:LanguageClient;
@@ -247,6 +248,26 @@ function moveCursor(params:any) {
     if(e){
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+
+        let decorationLine = e.document.lineAt(outputPosition.line-1)
+        let d:vscode.DecorationOptions = {
+            "range": {
+                "start": {
+                    "line": decorationLine.lineNumber, "character":  decorationLine.range.end.character
+                },
+                "end": {
+                    "line": decorationLine.lineNumber, "character": decorationLine.range.end.character+3
+                }
+            },
+            "renderOptions": {
+                "after": {
+                    "contentText": "...",
+                    "color":"foreground",
+                    "margin":"20px"
+                }
+            }
+        }
+        updateDecorations([d]);
     }
 }
 
@@ -286,26 +307,8 @@ function runInWolfram(print=false){
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
-        // wolframClient.sendRequest("moveCursor", {range:sel, textDocument:e.document}).then((result:any) => {
-        //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
-        //     e!.selection = new vscode.Selection(outputPosition, outputPosition);
-        //     e!.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-        // });
-
         wolframClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         wolframClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
-        
-        // .then((result:any) => {
-        //     // cursor has not moved yet
-        //     // if (e?.selection.active.line === outputPosition.line && e.selection.active.character === outputPosition.character){
-        //     //     outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
-        //     //     e.selection = new vscode.Selection(outputPosition, outputPosition);
-        //     //     e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-        //     // }
-
-        //     // printResults.push(result["output"]);
-        //     updateResults(e, result, print);
-        // });
     }
 }
 
@@ -363,12 +366,9 @@ function runCell() {
 
 
 function runExpression(expression:string) {
-    let print:boolean = false;
-
-    wolframClient.sendRequest("runExpression", {print:print, expression:expression}).then((result:any) => {
-        updateOutputPanel();
-        wolframStatusBar.text = wolframVersionText;
-    });
+    let e: vscode.TextEditor | undefined = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
+    
+    wolframClient.sendNotification("runExpression", {print:false, expression:expression, textDocument:e?.document});
 }
 
 
@@ -730,6 +730,7 @@ function getOutputContent(webview:any) {
                 position:fixed;
                 width:95vw;
                 bottom:0px;
+                height: 8vh;
             }
 
             #scratch textarea {
@@ -801,6 +802,7 @@ function getOutputContent(webview:any) {
                     vscode.postMessage({
                         text: input.value
                     });
+                    input.value = ""
                 }
             }
         }
@@ -821,7 +823,7 @@ function getOutputContent(webview:any) {
                 
             </div>
             <div id="scratch">
-                <textarea id="expression" onkeydown="run(this)" rows="2" placeholder="Shift+Enter to run"></textarea>
+                <textarea id="expression" onkeydown="run(this)" rows="1" placeholder="Shift+Enter to run"></textarea>
             </div> 
         </div>
     </body>

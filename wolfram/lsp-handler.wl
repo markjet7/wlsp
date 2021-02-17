@@ -261,74 +261,79 @@ extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression
 startHover[]:=Module[{result, value, json, position, uri, src, symbol, response, code, params, opts, activeParameter, activeSignature},
 	hoverTask = SessionSubmit[
 		ScheduledTask[
-			If[Length@hoverQueue > 0, 
-				{json, hoverQueue} = {First@hoverQueue, Rest@hoverQueue};
-				position = json["params", "position"];
-				uri = json["params"]["textDocument"]["uri"];
-				src = documents[json["params","textDocument","uri"]];
-				Print[position];
-				symbol = getWordAtPosition[src, position];
+			Check[
+				If[Length@hoverQueue > 0, 
+					{json, hoverQueue} = {First@hoverQueue, Rest@hoverQueue};
+					position = json["params", "position"];
+					uri = json["params"]["textDocument"]["uri"];
+					src = documents[json["params","textDocument","uri"]];
+					symbol = getWordAtPosition[src, position];
 
-				Print[symbol];
+					value = Which[
+						MemberQ[Keys@symbolDefinitions, symbol],
+							symbolDefinitions[symbol]["definition"],
+						True,
+							extractUsage[symbol]
+					];
 
-				value = Which[
-					MemberQ[Keys@symbolDefinitions, symbol],
-						symbolDefinitions[symbol]["definition"],
-					True,
-						extractUsage[symbol]
-				];
+					result = <|"contents"-><|
+							"kind" -> "markdown",
+							"value" -> "```wolfram\n" <> value <> "\n```"
+						|>
+					|>;
 
-				result = <|"contents"-><|
-						"kind" -> "markdown",
-						"value" -> "```wolfram\n" <> value <> "\n```"
-					|>
-				|>;
-
-				response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
-				sendResponse[response];
+					response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
+					sendResponse[response];
+				], 
+					response = <|"id"->json["id"], "result"->""|>;
+					sendResponse[response];
 			];
 			
-			If[Length@signatureQueue > 0, 
-				{json, signatureQueue} = {First@signatureQueue, Rest@signatureQueue};
-			
-				position = json["params"]["position"];
-				uri = json["params"]["textDocument"]["uri"];
-				src = documents[json["params","textDocument","uri"]];
-				symbol = getFunctionAtPosition[src, position];
-
-				activeParameter = 0;
-				activeSignature = 0;
-				If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
-					activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"];
-				];
-
-				If[json["params"]["context"]["triggerCharacter"] === ",", 
-					If[
-						MemberQ[Keys[json["params"]["context"]], "activeSignatureHelp"] &&
-						MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
-						activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
-					activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
-					];
-				];
-
-				value = extractUsage[symbol];
-				params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
-				opts = Information[symbol, "Options"] /. {
-					Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
-					RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]};
-			
-				result = <|
-					"signatures" -> Table[
-						<|
-							"label" -> StringRiffle[v, ", "], 
-							"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"],
-							"parameters" -> (<|"label" -> #|> & /@ v)
-						|>, {v, params}],
-					"activeSignature" -> activeSignature,
-					"activeParameter" -> activeParameter
-				|>;
+			Check[
+				If[Length@signatureQueue > 0, 
+					{json, signatureQueue} = {First@signatureQueue, Rest@signatureQueue};
 				
-				response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
+					position = json["params"]["position"];
+					uri = json["params"]["textDocument"]["uri"];
+					src = documents[json["params","textDocument","uri"]];
+					symbol = getFunctionAtPosition[src, position];
+
+					activeParameter = 0;
+					activeSignature = 0;
+					If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
+						activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"];
+					];
+
+					If[json["params"]["context"]["triggerCharacter"] === ",", 
+						If[
+							MemberQ[Keys[json["params"]["context"]], "activeSignatureHelp"] &&
+							MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
+							activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
+						activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
+						];
+					];
+
+					value = extractUsage[symbol];
+					params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
+					opts = Information[symbol, "Options"] /. {
+						Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
+						RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]};
+				
+					result = <|
+						"signatures" -> Table[
+							<|
+								"label" -> StringRiffle[v, ", "], 
+								"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"],
+								"parameters" -> (<|"label" -> #|> & /@ v)
+							|>, {v, params}],
+						"activeSignature" -> activeSignature,
+						"activeParameter" -> activeParameter
+					|>;
+					
+					response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
+					sendResponse[response];
+				],
+				response = <|"id"->json["id"], "result"->""|>;
 				sendResponse[response];
 			],
 			Quantity[0.001, "Seconds"]
@@ -402,6 +407,8 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		response = <|"method"->"moveCursor","params"-><|"position"->newPosition|>|>;
 		sendResponse[response];
 
+		(*
+
 		decoration = {
 			<|"range" -> <|
 				"start" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>,
@@ -423,6 +430,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
 		
 		sendResponse[response4];	
+		*)
 
 		(* Add the evaluation to the evaluation queue *)
 		AppendTo[evals, {code, json, newPosition}];
@@ -441,9 +449,6 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	|>;
 	(* Add the evaluation to the evaluation queue *)
 	AppendTo[evals, {code, json, position}];
-	
-	response = <|"id"->json["id"],"result"-><|"output"->"...", "position"->position|>|>;
-	sendResponse[response];
 ];
 
 transforms[output_Graphics]:=Module[{}, 
@@ -506,16 +511,16 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 
 		If[
 			successQ,  
-			output = transforms[result] /. Null ->"",
-			output = result;
+			formattedoutput = transforms[result] /. Null ->"",
+			formattedoutput = result;
 		];
 		
 		response = <|"method"->"onRunInWolfram","params"-><|
-			"output"->ToString[output, TotalWidth->5000000], 
+			"output"->formattedoutput, 
 			"result"->ToString[result, InputForm, TotalWidth -> 5000000], 
-			"position"-><|"line"->1, "character"->1|>,
+			"range"->code2["range"],
 			"print" -> json["params", "print"],
-			"document" -> json["params", "textDocument"]["uri"]
+			"document" -> Check[json["params", "textDocument"]["uri"], ""]
 			|>|>;
 		sendResponse[response];
 
