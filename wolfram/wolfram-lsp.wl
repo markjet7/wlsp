@@ -37,31 +37,19 @@ handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, 
 
 lastChange = Now;
 
+SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
+SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
+
 handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			SessionSubmit[
-				ScheduledTask[
-					Check[handle[msg["method"],msg],
-						sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>
-					],
-					{Quantity[0.01, "Seconds"], 1}], Method -> Automatic,
-					HandlerFunctionsKeys -> {"MessageOutput"},
-					HandlerFunctions -> <|
-						(* "PrintOutputGenerated" -> Print, *)
-						"MessageGenerated" -> (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[Message@#MessageOutput, InputForm, TotalWidth->1000, CharacterEncoding -> "ASCII"] |> |>] &)
-					|>
+			SessionSubmit@Check[
+				handle[msg["method"],msg], 
+				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
-			SessionSubmit[
-				ScheduledTask[
-					Check[handle[msg["method"],msg],
-						sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
-					], {Quantity[0.01, "Seconds"], 1}], Method -> Automatic,
-					HandlerFunctionsKeys -> {"MessageOutput"},
-					HandlerFunctions -> <|
-						(* "PrintOutputGenerated" -> Print, *)
-						"MessageGenerated" -> (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[Message@#MessageOutput, InputForm, TotalWidth->1000, CharacterEncoding -> "ASCII"] |> |>] &)
-					|>
+
+			Check[handle[msg["method"],msg],
+				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
 			]
 		]		
 	];
