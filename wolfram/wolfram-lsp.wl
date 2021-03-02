@@ -30,8 +30,10 @@ Close[log];*)
 
 RPCPatterns=<|"HeaderByteArray"->PatternSequence[__,13,10,13,10],"SequenceSplitPattern"->{13,10,13,10},"ContentLengthRule"->"Content-Length: "~~length:NumberString:>length,"ContentTypeRule"->"Content-Type: "~~type_:>type|>;
 
+Unprotect[FoldWhile];
 FoldWhile[f_,x_,list_List,test_]:=FoldWhile[f,Prepend[list,x],test];
 FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,list,Length[#]>1&&test[First[#]]&]];
+Protect[FoldWhile];
 
 handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
 
@@ -43,7 +45,7 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
 handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			SessionSubmit@Check[
+			Check[
 				handle[msg["method"],msg], 
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
@@ -112,7 +114,9 @@ Block[ {$IterationLimit=Infinity},
 Print["Client connected: "];
 Print[client];
 
-Block[{$IterationLimit = Infinity}, socketHandler[state]];
+Block[{$IterationLimit = Infinity}, 
+
+	socketHandler[state]];
 
 listener = SocketListen[
 	port,
@@ -122,7 +126,9 @@ listener = SocketListen[
 		},
 			Get[DirectoryName[path] <> "lsp-handler.wl"];
 			SERVER = assoc["SourceSocket"];
-			readMessage[data];
+			Check[readMessage[data], 
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
+			];
 		]
 	],
 	CharacterEncoding -> "UTF8"

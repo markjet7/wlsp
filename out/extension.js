@@ -653,8 +653,13 @@ function getOutputContent(webview) {
             #result img{
                 max-width: 100%;
                 max-height: 90%;
-                margin: 0;
-                min-height:200px;
+                /* margin: 0; */
+                /* min-height: 200px; */
+                width: auto;
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+                height: auto;
             }
 
 

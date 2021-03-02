@@ -22,8 +22,6 @@ contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~con
 	json=ImportString[ToString[content, OutputForm, CharacterEncoding -> "UTF8"],"RawJSON"];
 	handle[json["method"],json];]; *)
 
-evaluationKernel = None;
-
 ServerCapabilities=<|
 	"textDocumentSync"->1,
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
@@ -392,54 +390,59 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	evaluate[code, json, position];
 ];
 
+SafeExportString[expr_, format_]:=Check[
+	ExportString[expr, format],
+	Print["Export String Failed"]
+];
+
 transforms[output_Graphics]:=Module[{}, 
 	(*imageToPNG[output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_Image]:=Module[{}, 
 	(*imageToPNG[output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_Legended]:=Module[{}, 
 	(*imageToPNG[output];*)
-	ExportString[Rasterize@output, "HTMLFragment"]
+	SafeExportString[Rasterize@output, "HTMLFragment"]
 ];
 transforms[output_Grid]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_Column]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_Row]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_GraphicsRow]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_GraphicsColumn]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_GeoGraphics]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_Overlay]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[Rasterize@output, "HTMLFragment"]
+	SafeExportString[Rasterize@output, "HTMLFragment"]
 ];
 transforms[output_Null]:=Module[{}, ""];
 
 transforms[output_InformationData]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	SafeExportString[output, "HTMLFragment"]
 ];
 transforms[output_]:=Module[{}, 
-	ExportString[Rasterize@ToString[output, InputForm, TotalWidth -> 1000], "HTMLFragment"]
+	SafeExportString[Rasterize@ToString[output, InputForm, TotalWidth -> 1000], "HTMLFragment"]
 ];
 
 evaluate[code_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result},
@@ -562,9 +565,18 @@ validate[]:=Module[{lints, severities, msgs, response},
 ];
 
 
-evaluateString[string_, width_:10000]:= Module[{res, r}, 
-			
-	res = EvaluationData[ToExpression[string]];
+evaluateString[string_, width_:10000]:= Module[{res, r, start}, 
+	start = Now;
+	While[!(Head@evaluationKernel === KernelObject),
+		CloseKernels[];
+		(evaluationKernel = First@LaunchKernels[1]); 
+		Pause[1];
+		If[QuantityMagnitude[DateDifference[start,Now],"Minutes"] > 2, 
+			sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to launch evaluation kernel" |> |>];
+			Break[]
+		];
+	];
+	res = ParallelEvaluate[EvaluationData[ToExpression[string]], evaluationKernel];
 	If[
 		res["Success"], 
 		(
@@ -717,7 +729,7 @@ lineRange[line_,start_,end_]:= {line, Which[
 
 constructRPCBytes[_Missing]:= Module[{}, ""];
 constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
-	jsonBytes=ExportByteArray[msg,"RawJSON"];
+	jsonBytes=Check[ExportByteArray[msg,"RawJSON"], Print["Export Byte Array failed"]; Print[msg]; ExportByteArray[<||>,"RawJSON"]];
 	headerBytes=StringToByteArray["Content-Length: " <> ToString[Length[jsonBytes], CharacterEncoding->"ASCII"]<>"\r\n\r\n"];
 	{headerBytes,jsonBytes}
 
