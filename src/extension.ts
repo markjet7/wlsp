@@ -16,6 +16,7 @@ import { EEXIST } from 'constants';
 
 let client:LanguageClient;
 let wolframClient:LanguageClient;
+let wolframKernelClient:LanguageClient;
 let wolframStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 wolframStatusBar.command = "wolfram.restart";
 wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
@@ -28,8 +29,10 @@ kernelStatusBar.show();
 
 // let wolframNotebookProvider:WolframProvider;
 let PORT:any;
+let kernelPORT:any;
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let lspPath = '';
+let kernelPath = '';
 let theContext:vscode.ExtensionContext;
 
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
@@ -50,9 +53,11 @@ vscode.commands.registerCommand('wolfram.launchKernel', launchKernel);
 vscode.commands.registerCommand('wolfram.abort', abort); 
 
 let theDisposible:vscode.Disposable;
+let theKernelDisposible:vscode.Disposable;
 export function activate(context: vscode.ExtensionContext){
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
+    kernelPath = context.asAbsolutePath(path.join('wolfram', 'lsp-kernels.wl'));
     // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
     
     try{
@@ -70,9 +75,62 @@ export function activate(context: vscode.ExtensionContext){
             // wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
+    }); 
+
+    fp(3010).then((freep:any) => { 
+        kernelPORT = freep[0];
+        console.log("Port: " + kernelPORT.toString());
+        loadwolframKernel().then(async (success:any) => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            theKernelDisposible = loadWolframKernelClient(outputChannel, context)
+            context.subscriptions.push(theKernelDisposible);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
     
+        });
     }); 
     
+}
+
+let wolframKernel:cp.ChildProcess;
+let loadwolframKernel = function() {
+    return new Promise((resolve, reject) =>  {
+        if (process.env.VSCODE_DEBUG_MODE === "true") {
+            PORT = 6589;
+        } else {
+        try {
+            if (process.platform === "win32") {
+                wolframKernel = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', kernelPath, kernelPORT.toString(), kernelPath], {detached:false});
+            } else {
+                wolframKernel = cp.spawn('wolframscript', ['-file', kernelPath, kernelPORT.toString(), kernelPath], {detached:true});
+            }
+            console.log("Launching wolframscript: " + wolframKernel.pid.toString());
+
+            wolframKernel.stdout?.once('data', (data) => {
+                resolve(true);
+            });
+
+            wolframKernel.stdout?.on('data', (data) => {
+                console.log("STDOUT: " + data.toString());
+            });
+
+            wolframKernel.on('SIGPIPE', (data) => {
+                console.log("SIGPIPE");
+            });
+
+
+            wolframKernel.stdout?.on('error', (data) => {
+                console.log("STDOUT Error" + data.toString());
+            });
+
+            } catch (error) {
+                console.log(error.message)
+                vscode.window.showErrorMessage("Wolframscript failed to load kernel.")
+                return reject(false);
+            }  
+        
+        }
+    });
+
 }
 
 let wolfram:cp.ChildProcess;
@@ -115,6 +173,37 @@ let loadwolfram = function() {
         }
     });
 };
+
+function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionContext) {
+    let serverOptions:ServerOptions = function () {
+        return new Promise((resolve, reject) => {
+            let client = new net.Socket();
+            client.connect(kernelPORT, "127.0.0.1", () => {
+                client.setKeepAlive(true, 3000); 
+                resolve({
+                    reader: client,
+                    writer: client
+                })
+            })
+        })
+    };
+
+    let clientOptions: LanguageClientOptions = {
+        documentSelector: [
+            "wolfram"
+        ],
+        diagnosticCollectionName: 'wolfram-lsp',
+        outputChannel: outputChannel
+    };
+
+    wolframKernelClient = new LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions)
+    wolframKernelClient.onReady().then(() => {
+        wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+    });
+
+    let disposible = wolframKernelClient.start();
+    return disposible;
+}
 
 
 function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
@@ -166,7 +255,6 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
         wolframClient.onNotification("wolframVersion", wolframVersion);
         wolframClient.onNotification("updateDecorations", updateDecorations);
         wolframClient.onNotification("moveCursor", moveCursor);
-        wolframClient.onNotification("onRunInWolfram", onRunInWolfram);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
     let disposible = wolframClient.start();
@@ -308,7 +396,7 @@ function runInWolfram(print=false){
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
         wolframClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-        wolframClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
+        wolframKernelClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
     }
 }
 

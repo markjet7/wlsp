@@ -1,11 +1,8 @@
 (* ::Package:: *)
-
+ 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
 
-COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
-DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[path] <> "details.json","RawJSON"]];
- 
 (* scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; *)
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
 
@@ -23,30 +20,18 @@ contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~con
 	handle[json["method"],json];]; *)
 
 ServerCapabilities=<|
-	"textDocumentSync"->1,
-	"hoverProvider"-><|"contentFormat"->"markdown"|>,
-	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
-	"documentFormattingProvider" -> False,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}, "allCommitCharacters" -> {"["}|> ,
-	"documentSymbolProvider"->True,
-	"codeActionProvider"->False,
-	"renameProvider" -> <| "prepareProvider" -> True|>|>;
+	"textDocumentSync"->1
+	|>;
 
 
 handle["initialize",json_]:=Module[{response, response2},
-	Print["Initializing"];
+	Print["Initializing Kernel"];
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
     CONTINUE = True;
-
-	labels = COMPLETIONS[[All, "label"]];
-	symbolDefinitions = <||>;
-	nearestLabel = Nearest[labels];
     
 	documents = <||>;
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
-
-	sendResponse@<|"method" -> "wolframVersion", "params"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
 ];
 
 
@@ -59,215 +44,6 @@ handle["shutdown", json_]:=Module[{},
 	Exit[];
 ];
 
-handle["textDocument/prepareRename", json_]:=Module[{pos, src, str, renames, result, response},
-	pos = rangeFromVSCode@json["params", "textDocument", "position"];
-	src = documents[json["params","textDocument","uri"]];
-	str = getWordAtPosition[src, pos];
-
-	renames = getWordsPosition[str, src];
-	result = <|"range"-> renames[[1,2]]|>;
-	response = <|"id"->json["id"],"result"->result |>;
-	sendResponse[response]; 
-]; 
-
-handle["textDocument/rename", json_]:=Module[{},
-	pos = json["params", "position"];
-	src = documents[json["params","textDocument","uri"]];
-	newName = json["params", "newName"];
-
-	str = getWordAtPosition[src, pos];
-	renames = getWordsPosition[str, src];
-
-	(* Only change in the current document for now *)
-	edits = Table[<|"range" -> r[[2]], "newText" -> newName|>, {r, renames}];
-	result = <|"changes" -> <|json["params","textDocument","uri"] -> edits |>|>;
-	response = <|"id"->json["id"],"result"->result |>;
-	sendResponse[response];
-
-	response3 = <| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[result, InputForm, TotalWidth->100] |> |>;
-	sendResponse[response3];
-];
-
-handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, response}, 
-	src = documents[json["params","textDocument","uri"]];
-    prn = Cell[BoxData[#], "Input"] &;
-    out = UsingFrontEnd[First[FrontEndExecute[FrontEnd`ExportPacket[prn@CodeFormatter`FullCodeFormat@src, "InputText"]]]];
-
-	lines = Length@StringSplit[src, EndOfLine, All];
-	result = {<|
-		"range" -> <|
-			"start" -> <|"line" -> 0, "character" -> 0 |>,
-			"end" -> <|"line" -> lines, "character" -> 0 |>
-		|>,
-		"newText" -> out
-	|>};
-
-	response = <|"id"->json["id"],"result"->(result /. Null -> "NA") |>;
-	sendResponse[response];
-
-];
-
-handle["textDocument/didOpen",json_]:=Module[{file},
-	file = json["params"]["textDocument"]["uri"];
-	(* Import[URLDecode@StringReplace[file, "file://"->""],"Text"] *)
-];
-
-handle["textDocument/codeAction", json_]:=Module[{},
-	src = documents[json["params","textDocument","uri"]];
-	range = json["params","range"];
-
-];
-
-handle["completionItem/resolve", json_] := Module[{item, documentation, result, response}, 
-	item = json["params"];
-	(* If[
-		MemberQ[COMPLETIONS[[All, "label"]], item["label"]],
-		documentation = DETAILS[item["label"]]["documentation"] (*ToString[DETAILS[[SelectFirst[COMPLETIONS, #["label"] == item["label"] &]["data"]+1]]["documentation"]] *),
-		documentation = ""
-	]; *)
-
-	documentation = extractUsage[item["label"]];
-
-	result = <|
-		"label" -> item["label"],
-		"kind" -> item["kind"],
-		"documentation" -> documentation
-	|>;
-	response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-	sendResponse[response];
-];
-
-handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
-		src = documents[json["params","textDocument","uri"]];
-		pos = json["params","position"];
-		symbol = getWordAtPosition[src, pos] /. Null -> "";
-		If[StringLength@symbol >= 2, 
-			names = Select[labels, SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
-			items = Table[
-					<|
-						"label" -> n,
-						"kind" -> If[ValueQ@n, 12, 13],
-						"commitCharacters" -> {"[", "\t"},
-						"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
-					|>, 
-					{n,names}];
-			
-			result = <|
-				"items" -> items,
-				"isIncomplete" -> True
-				|>;,
-			result = <| "isIncomplete" -> True, "items" -> {}|>;
-		];
-		sendResponse@<|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-];
-
-balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
-handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind, f, ast},
-	kind[s_]:= Switch[
-				s, 
-				"Symbol", 13, 
-				"Integer", 16, 
-				"Real", 16,
-				"Complex", 16,
-				"Rational", 16,
-				"List", 18,
-				"Association", 23,
-				"Function", 12, 
-				"String", 15, 
-				"Module", 12,
-				_, 19];
-
-	uri = json["params"]["textDocument"]["uri"];
-	src = documents[json["params", "textDocument", "uri"]];
-	(*ast = AST`ParseFile@Export[FileNameJoin[{$TemporaryDirectory, "wolf-lsp"<> ToString@RandomReal[] <> ".txt"}], src];*)
-	ast = CodeParse[src];
-
-
-	f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
-		astStr=ToFullFormString[node[[2,1]]];
-		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
-		loc=node[[-1]][Source];
-		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-		If[Head@rhs ==CallNode,
-		kind = rhs[[1,2]],
-		kind = rhs[[2]]
-		];
-		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
-
-	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
-
-	result = Table[
-		symbolDefinitions[s["name"]] = s;
-		TimeConstrained[
-		<|
-			"name" -> s["name"] /. ""->"-",
-			"kind" -> kind[s["kind"]],
-			"detail"-> (StringReplace[If[StringQ[s["definition"]], s["definition"], ""] , "$"->""]) ,
-			"location"-><|
-				"uri"-> uri,
-				"range"->toRange[s["loc"]]
-				|>
-		|>, 0.05, 
-		<|
-			"name" -> s["name"] ,
-			"kind" -> 19,
-			"detail"-> "",
-			"location"-><|
-				"uri"->uri,
-				"range"->toRange[s["loc"]]
-				|>
-		|>], {s, symbols[[1;;]]}];
-
-
-	response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-	sendResponse[response];
-];
-
-signatureQueue = {};
-handle["textDocument/signatureHelp", json_]:=Module[{},
-            position = json["params"]["position"];
-				uri = json["params"]["textDocument"]["uri"];
-				src = documents[json["params","textDocument","uri"]];
-				symbol = getFunctionAtPosition[src, position];
-
-				activeParameter = 0;
-				activeSignature = 0;
-				If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
-					activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"];
-				];
-
-				If[json["params"]["context"]["triggerCharacter"] === ",", 
-					If[
-						MemberQ[Keys[json["params"]["context"]], "activeSignatureHelp"] &&
-						MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
-						activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
-					activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
-					];
-				];
-
-				value = extractUsage[symbol];
-				params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
-				opts = Information[symbol, "Options"] /. {
-					Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
-					RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]};
-			
-				result = <|
-					"signatures" -> Table[
-						<|
-							"label" -> StringRiffle[v, ", "], 
-							"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"],
-							"parameters" -> (<|"label" -> #|> & /@ v)
-						|>, {v, params}],
-					"activeSignature" -> activeSignature,
-					"activeParameter" -> activeParameter
-				|>;
-				
-				sendResponse<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
-];
-
-hoverQueue = {};
-
 boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
 ErrorBox[f_]:>{f}};
 
@@ -275,47 +51,6 @@ convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[M
 convertBoxExpressionToHTML[Information[BarChart]];
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
-
-
-handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
-            position = json["params", "position"];
-				uri = json["params"]["textDocument"]["uri"];
-				src = documents[json["params","textDocument","uri"]];
-				symbol = getWordAtPosition[src, position];
-
-				value = Which[
-					MemberQ[Keys@symbolDefinitions, symbol],
-						symbolDefinitions[symbol]["definition"],
-					True,
-						extractUsage[symbol]
-				];
-
-				result = <|"contents"-><|
-						"kind" -> "markdown",
-						"value" -> "```wolfram\n" <> value <> "\n```"
-					|>
-				|>;
-
-				sendResponse@<|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
-];
-
-printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
-	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( x:ToString@symbol):>"\n"<>x]
-];
-
-handle["clearTasks", json_]:=Module[{},
-	TaskRemove[Tasks[]];
-	response = <|"id"->json["id"],"result"-><|"output"->"Tasks Cleared"|>|>;
-	sendResponse[response];
-	startEvaluators[];
-];
-
-responseNumber = 1;
-responseID[] := Module[{}, 
-	responseNumber = responseNumber + 1;
-	responseNumber
-];
-
 handle["runCell", json_]:=Module[{},
 	uri = json["params", "textDocument"];
 	src = json["params", "source"];
@@ -325,38 +60,6 @@ handle["runCell", json_]:=Module[{},
 		"start" -> <|"line" -> 1, "character" -> 1 |>,
 		"end" -> <|"line" -> 1, "character" -> 1 |>
 	|> |>, json, newPosition}];
-];
-
-handle["moveCursor", json_]:=Module[{range, uri, src, end, workingfolder, code, newPosition, response},
-	range = json["params", "range"];
-	uri = json["params", "textDocument"]["uri", "external"];
-	src = documents[json["params","textDocument","uri", "external"]];
-	end = range["end"];
-	workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
-
-	code = Which[
-		range["start"] === range["end"], (* run line or group of lines *)
-			getCodeAtPosition[src, range["start"]],
-		!(range["start"] === range["end"]),
-			<|
-				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
-					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-				|>
-			|>,
-		True,
-		<|
-			"code" -> "", "range" -> <|
-				"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-				"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-			|>
-		|>
-	];
-
-	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-
-	response = <|"method"->"moveCursor","params"-><|"position"->newPosition|>|>;
-	sendResponse[response];
 ];
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
@@ -384,31 +87,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 			|>
 		|>
 	];
-	Print["test1"];
-	Print[code];
-	Save["/Users/mark/Downloads/range.m",range];
-
-	decoration = {
-		<|"range" -> <|
-			"start" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>,
-			"end" -> <|"line" -> code["range"][[2, 1]]-1, "character" -> code["range"][[2, 2]] |>
-			|>,
-			"renderOptions" -> <|
-				"after" -> <|
-					"contentText" -> "...",
-					(* "backgroundColor" -> "background", *)
-					"color" -> "foreground",
-					"margin" -> "20px",
-					"borderSpacing" -> "20px",
-					"borderRadius" -> "5px"
-				|>
-			|>
-		|>
-	};
-
-	response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
-	sendResponse[response4];	
-
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 	(* Add the evaluation to the evaluation queue *)
 	evaluateFromQueue[code, json, newPosition]
@@ -416,7 +94,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result},
-	
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringReplace[StringTrim[code2["code"]], ";" ~~ EndOfString -> ""];
@@ -542,7 +219,6 @@ transforms[output_]:=Module[{},
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
-	validate[];
 ];
 
 handle["textDocument/didChange", json_]:=Module[{},
@@ -556,19 +232,6 @@ handle["textDocument/didSave", json_]:=Module[{},
 	validate[];
 ];
 
-handle["windowFocused", json_]:=Module[{},
-	If[json["params"],
-		handlerWait = 0.01,
-		handlerWait = 0.1
-	]
-];
-
-handle["$/cancelRequest", json_]:=Module[{},
-	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
-	(* response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; *)
-	(*sendResponse[response];*)
-];
-
 handle["abort", json_]:=Module[{},
 	(* TaskRemove /@ Tasks[];
 	AbortKernels[];
@@ -579,28 +242,7 @@ handle["abort", json_]:=Module[{},
 	AbortKernels[];
 ];
 
-validate[]:=Module[{lints, severities, msgs, response},
-			KeyValueMap[
-				Function[{uri, src},
-					lints = CodeInspect[src];
-					severities = <| "Fatal"->0, "Warning"->1, "Information"->2, "Hint"->3 |>;
-					msgs = Map[<|
-						"message"->#[[2]],
-						"range"-><|
-							"start" -> <| "line" -> #[[4, 1, 1, 1]]-1, "character" -> #[[4, 1, 1, 2]]-1 |>,
-							"end" -> <| "line" -> #[[4, 1, 2, 1]]-1, "character" -> #[[4, 1, 2, 2]]-1 |>
-						|>,
-						"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]],0] |> &, lints];
-					
-					response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
-					
-					sendResponse[response];
-				],
-				documents
-			]
-];
-
-evaluateString["", width_:10000]:={"", False};
+evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r}, 
 			
@@ -677,7 +319,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
 		
-		result1 = If[call == {},
+		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
 			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
 			
@@ -723,10 +365,6 @@ getFunctionAtPosition[src_, position_]:=Module[{symbol, p, r},
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 
-	(*
-	vals = {src, position};
-	Save["/Users/Mark/Downloads/dump.wl", vals]; *)
-
 
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = srcLines[[position["line"]+1]];
@@ -764,59 +402,136 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 
 ];
 
-(*
-handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind},
-	SessionSubmit[
-		(
+(* Kernel Start Section *)
 
-			kind[s_]:= Switch[
-						ToExpression@s[[1]], 
-						Symbol, 13, 
-						Integer, 16, 
-						Real, 16,
-						Complex, 16,
-						Rational, 16,
-						List, 18,
-						Association, 23,
-						Function, 12, 
-						String, 15, 
-						_, 19];
 
-			uri = json["params"]["textDocument"]["uri"];
-			src = documents[json["params", "textDocument", "uri"]];
-			functions = StringCases[src,Shortest[expr:(name:WordCharacter...~~"["~~Except["]"]...~~"]"~~Whitespace...~~(":="|"="))~~Except["="]]:>{name,expr}];
-			symbols = StringCases[src, Shortest[expr:(name:WordCharacter..~~Whitespace...~~(":="|"="))~~Except["="]]:>{name, expr}];
+(* ::Package:: *)
+$MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
-			symbolsAndRanges=MapAt[StringReplace[{":"->"","="->""}],
-				DeleteDuplicates[Flatten[getWordsPosition[#[[2]],src]&/@Join[functions,symbols],1]],{All,1}];
-    
-			result = Table[
-				TimeConstrained[
-				<|
-					"name" -> s[[1]],
-					"kind" -> kind[s[[1]]],
-					"detail"-> Quiet[ToString@Definition[s[[1]]]],
-					"location"-><|
-						"uri"->uri,
-						"range"->s[[2]]
-						|>
-				|>, 0.05, 
-				<|
-					"name" -> s[[1]],
-					"kind" -> 19,
-					"detail"-> "",
-					"location"-><|
-						"uri"->uri,
-						"range"->s[[2]]
-						|>
-				|>, 2], {s, symbolsAndRanges}];
-				
-		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-		sendResponse[response];
+sendResponse[res_Association]:=Module[{byteResponse},
+		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		If[Head[client] === SocketObject, 
+			BinaryWrite[client, # , "Character32"] &/@ byteResponse;
+		]
 
-		AppendTo[labels, DeleteCases[(#[[2]] & /@ symbols), Null]];
-		AppendTo[labels, DeleteCases[(#[[2]] & /@ functions), Null]];
-		labels = DeleteDuplicates[labels];
-	)];
 ];
-*)
+
+(* Off[General::stop]; *)
+(* $MessagePrePrint = InputForm; *)
+
+(* $MessagePrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>];) &); *)
+(* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
+
+
+If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
+If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
+(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
+Get[DirectoryName[path] <> "CodeFormatter.m"];
+
+(* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
+Write[log, port];
+Close[log];*)
+
+RPCPatterns=<|"HeaderByteArray"->PatternSequence[__,13,10,13,10],"SequenceSplitPattern"->{13,10,13,10},"ContentLengthRule"->"Content-Length: "~~length:NumberString:>length,"ContentTypeRule"->"Content-Type: "~~type_:>type|>;
+
+Unprotect[FoldWhile];
+FoldWhile[f_,x_,list_List,test_]:=FoldWhile[f,Prepend[list,x],test];
+FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,list,Length[#]>1&&test[First[#]]&]];
+Protect[FoldWhile];
+
+handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
+
+lastChange = Now;
+
+SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
+SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
+
+handleMessage[msg_Association, state_]:=Module[{},
+	If[KeyMemberQ[msg, "method"],
+		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
+			Check[
+				handle[msg["method"],msg], 
+				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
+			],
+
+			Check[handle[msg["method"],msg],
+				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
+			]
+		]		
+	];
+	If[state === "Continue", {"Continue",state}, {"Stop", state}]
+];
+
+ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
+ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
+ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
+
+
+getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
+getContentLength[header_String]:=(header//StringCases[RPCPatterns["ContentLengthRule"]]//Replace[{{len_String}:>ToExpression[len],_:>(Quit[1])}])
+
+SetAttributes[wrapper, HoldRest];
+wrapper[first_, fin_] := fin;
+wrapper[first_, rest__] := wrapper[rest];
+
+socketHandler[{stop_, state_}]:=Module[{},
+	Print["Closing socket connection..."];
+	Quit[1];
+];
+
+handlerWait = 0.001;
+flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
+
+socketHandler[state_]:=Module[{},
+	If[SocketReadyQ@client,
+		Replace[
+			handleMessageList[ReadMessages[client], state],
+			{
+				{"Continue", state2_} :> state2,
+				{stop_, state2_} :> {stop, state2},
+				{} :> state
+			}
+	],
+	Pause[handlerWait];
+	(* flush[client]; *)
+	state
+	]
+] // socketHandler;
+
+SERVER=SocketOpen[port,"TCP"];
+Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
+Print[SERVER];
+Print[port];
+
+Block[ {$IterationLimit=Infinity},
+	client={};
+	While[SameQ[client,{}],
+		client=First[SERVER["ConnectedClients"], {}];
+
+		state="Continue";
+		
+	];
+];
+
+Print["Client connected: "];
+Print[client];
+
+Block[{$IterationLimit = Infinity}, 
+
+	socketHandler[state]];
+
+listener = SocketListen[
+	port,
+	Function[{assoc},
+		With[{
+			data = assoc["Data"]
+		},
+			SERVER = assoc["SourceSocket"];
+			Check[readMessage[data], 
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
+			];
+		]
+	],
+	CharacterEncoding -> "UTF8"
+];
+CloseKernels[];
