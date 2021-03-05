@@ -291,7 +291,7 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 			MemberQ[Keys@symbolDefinitions, symbol],
 				symbolDefinitions[symbol]["definition"],
 			True,
-				extractUsage[symbol]
+				Check[extractUsage[symbol], symbol]
 		];
 
 		result = <|"contents"-><|
