@@ -165,56 +165,6 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	
 ];
 
-transforms[output_Graphics]:=Module[{}, 
-	(*imageToPNG[output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_Image]:=Module[{}, 
-	(*imageToPNG[output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_Legended]:=Module[{}, 
-	(*imageToPNG[output];*)
-	ExportString[Rasterize@output, "HTMLFragment"]
-];
-transforms[output_Grid]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_Column]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_Row]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_GraphicsRow]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_GraphicsColumn]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_GeoGraphics]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_Overlay]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[Rasterize@output, "HTMLFragment"]
-];
-transforms[output_Null]:=Module[{}, ""];
-
-transforms[output_InformationData]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
-];
-transforms[output_]:=Module[{}, 
-	ExportString[output, "HTMLFragment"]
-];
-
 
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
@@ -256,7 +206,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 
 			(
 				
-				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[StringRiffle[res["Messages"], "\n"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>];
+				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[res["Messages"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>];
 				Table[
 					sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[r, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
 					{r, res["Messages"]}];
@@ -450,6 +400,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
+				Get[DirectoryName[path] <> "transforms.wl"];
 				handle[msg["method"],msg], 
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],

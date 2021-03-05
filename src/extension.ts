@@ -199,6 +199,8 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
     wolframKernelClient = new LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions)
     wolframKernelClient.onReady().then(() => {
         wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+        wolframKernelClient.onNotification("wolframBusy", wolframBusy);
+        wolframKernelClient.onNotification("updateDecorations", updateDecorations);
     });
 
     let disposible = wolframKernelClient.start();
@@ -251,9 +253,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
 
     wolframClient.onReady().then(() => {
         //wolframClient.sendRequest("DocumentSymbolRequest");
-        wolframClient.onNotification("wolframBusy", wolframBusy);
         wolframClient.onNotification("wolframVersion", wolframVersion);
-        wolframClient.onNotification("updateDecorations", updateDecorations);
         wolframClient.onNotification("moveCursor", moveCursor);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
@@ -411,7 +411,7 @@ function onRunInWolfram(result:any){
 let maxPrintResults = 20;
 function updateResults(e:vscode.TextEditor | undefined, result:any, print:boolean) {
     if (printResults.length > maxPrintResults) {
-        printResults.pop();
+        printResults.shift();
     }
     
     if(typeof(e) !== "undefined") {
@@ -479,19 +479,19 @@ function restartWolfram() {
     // }
 
     wolframClient.stop();
+    wolframKernelClient.stop();
 
     let isWin = /^win/.test(process.platform);
     if(isWin) {
         let cp = require('child_process');
         cp.exec('taskkill /PID ' + wolfram.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
-            // console.log('stdout: ' + stdout);
-            // console.log('stderr: ' + stderr);
-            // if(error !== null) {
-            //      console.log('exec error: ' + error);
-            // }
-        });     
+        }); 
+        cp.exec('taskkill /PID ' + wolframKernel.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
+        }); 
+
     } else {        
         kill(wolfram.pid);
+        kill(wolframKernel.pid);
     }
 
     //let context = myContext;

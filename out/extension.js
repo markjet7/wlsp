@@ -183,6 +183,8 @@ function loadWolframKernelClient(outputChannel, context) {
     wolframKernelClient = new vscode_languageclient_1.LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions);
     wolframKernelClient.onReady().then(() => {
         wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+        wolframKernelClient.onNotification("wolframBusy", wolframBusy);
+        wolframKernelClient.onNotification("updateDecorations", updateDecorations);
     });
     let disposible = wolframKernelClient.start();
     return disposible;
@@ -225,9 +227,7 @@ function loadWolframServer(outputChannel, context) {
     wolframClient = new vscode_languageclient_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
     wolframClient.onReady().then(() => {
         //wolframClient.sendRequest("DocumentSymbolRequest");
-        wolframClient.onNotification("wolframBusy", wolframBusy);
         wolframClient.onNotification("wolframVersion", wolframVersion);
-        wolframClient.onNotification("updateDecorations", updateDecorations);
         wolframClient.onNotification("moveCursor", moveCursor);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
@@ -365,7 +365,7 @@ function onRunInWolfram(result) {
 let maxPrintResults = 20;
 function updateResults(e, result, print) {
     if (printResults.length > maxPrintResults) {
-        printResults.pop();
+        printResults.shift();
     }
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
@@ -415,19 +415,18 @@ function restartWolfram() {
     //     console.log("Failed to stop wolfram: " + wolfram.pid.toString());
     // }
     wolframClient.stop();
+    wolframKernelClient.stop();
     let isWin = /^win/.test(process.platform);
     if (isWin) {
         let cp = require('child_process');
         cp.exec('taskkill /PID ' + wolfram.pid + ' /T /F', function (error, stdout, stderr) {
-            // console.log('stdout: ' + stdout);
-            // console.log('stderr: ' + stderr);
-            // if(error !== null) {
-            //      console.log('exec error: ' + error);
-            // }
+        });
+        cp.exec('taskkill /PID ' + wolframKernel.pid + ' /T /F', function (error, stdout, stderr) {
         });
     }
     else {
         kill(wolfram.pid);
+        kill(wolframKernel.pid);
     }
     //let context = myContext;
     wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
