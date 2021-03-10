@@ -396,9 +396,9 @@ function runCell() {
     //     }
     // }
 }
-function runExpression(expression) {
+function runExpression(expression, line, end) {
     let e = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
-    wolframClient.sendNotification("runExpression", { print: false, expression: expression, textDocument: e === null || e === void 0 ? void 0 : e.document });
+    wolframKernelClient.sendNotification("runExpression", { print: false, expression: expression, textDocument: e === null || e === void 0 ? void 0 : e.document, line: line, end: end });
 }
 function printInWolfram() {
     let print = true;

@@ -453,10 +453,10 @@ function runCell() {
 
 
 
-function runExpression(expression:string) {
+function runExpression(expression:string, line:0, end:100) {
     let e: vscode.TextEditor | undefined = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
     
-    wolframClient.sendNotification("runExpression", {print:false, expression:expression, textDocument:e?.document});
+    wolframKernelClient.sendNotification("runExpression", {print:false, expression:expression, textDocument:e?.document, line:line, end:end});
 }
 
 

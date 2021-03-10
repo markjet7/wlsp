@@ -30,6 +30,7 @@ ServerCapabilities=<|
 	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
+	"codeLensProvider"-> <|"resolveProvider"->True|>,
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
 		
 handle["initialize",json_]:=Module[{response, response2},
@@ -55,6 +56,33 @@ handle["shutdown", json_]:=Module[{},
 	Quit[1];
 	Abort[];
 	Exit[];
+];
+
+handle["codeLens/resolve", json_]:=Module[{},
+	Print["resolve"];
+];
+
+handle["textDocument/codeLens", json_]:=Module[{src, positions, lens},
+	src = documents[json["params","textDocument","uri"]];
+	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ StringPosition[src, "\n" ~~(" "|"\t")...~~"\n", Overlaps -> False];
+	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, StringPosition[src, "\n" ~~(" "|"\t")...~~"\n", Overlaps -> False], 2,1];
+	lens = Table[
+		<|
+			"range" -> 
+				<|
+					"start" -><|"line"->l[[1]], "character"->0|>,
+					"end" -><|"line"->l[[1]], "character"->20|>
+				|>,
+			"command" -> <|
+				"title" -> "Run",
+				"command" -> "wolfram.runExpression",
+				"arguments" -> {l[[2]], l[[1]]+1, StringLength@l[[2]]}
+			|>
+		|>,
+		{l, Transpose[{Most@lines, sections}]}
+	];
+
+	sendResponse[<|"id"->json["id"], "result"->lens|>];
 ];
 
 handle["textDocument/prepareRename", json_]:=Module[{pos, src, str, renames, result, response},

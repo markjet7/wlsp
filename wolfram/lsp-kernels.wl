@@ -106,8 +106,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString[output, TotalWidth->5000000], 
-				"result"->ToString[result, InputForm, TotalWidth -> 5000000], 
+			"params"-><|"output"->ToString[output, TotalWidth->1000000], 
+				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
@@ -152,7 +152,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 
 handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code, response},
 	expr = json["params", "expression"];
-	position = <|"line" -> 0, "character" -> 0 |>;
+	line = json["params", "line"];
+	end = json["params", "end"];
+	position = <|"line" -> line, "character" -> end |>;
 
 	code = <|
 		"code" -> expr, "range" -> <|
