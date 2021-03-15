@@ -1,4 +1,6 @@
-BeginPackage["wolframLSP`"];
+
+(* Kernel Start Section *)
+
 
 (* ::Package:: *)
 $MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
@@ -21,7 +23,6 @@ sendResponse[res_Association]:=Module[{byteResponse},
 If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "lsp-handler.wl"];
 Get[DirectoryName[path] <> "CodeFormatter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
@@ -46,6 +47,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
+				Get[DirectoryName[path] <> "transforms.wl"];
 				handle[msg["method"],msg], 
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
@@ -75,14 +77,13 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.01;
+handlerWait = 0.1;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client,
-		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 		Replace[
+		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 			handleMessageList[ReadMessages[client], state],
 			{
 				{"Continue", state2_} :> state2,
@@ -124,9 +125,10 @@ listener = SocketListen[
 		With[{
 			data = assoc["Data"]
 		},
-			Get[DirectoryName[path] <> "lsp-handler.wl"];
 			SERVER = assoc["SourceSocket"];
-			Check[readMessage[data], 
+			Check[
+		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+            readMessage[data], 
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
 			];
 		]
@@ -134,5 +136,3 @@ listener = SocketListen[
 	CharacterEncoding -> "UTF8"
 ];
 CloseKernels[];
-
-EndPackage[];

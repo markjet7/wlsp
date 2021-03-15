@@ -58,7 +58,7 @@ let theKernelDisposible;
 function activate(context) {
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
-    kernelPath = context.asAbsolutePath(path.join('wolfram', 'lsp-kernels.wl'));
+    kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
     try {
         // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
@@ -185,6 +185,7 @@ function loadWolframKernelClient(outputChannel, context) {
         wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
         wolframKernelClient.onNotification("wolframBusy", wolframBusy);
         wolframKernelClient.onNotification("updateDecorations", updateDecorations);
+        wolframKernelClient.onNotification("updateVarTable", updateVarTable);
     });
     let disposible = wolframKernelClient.start();
     return disposible;
@@ -323,14 +324,13 @@ function moveCursor(params) {
 }
 function launchKernel() {
     kernelStatusBar.color = "red";
-    wolframClient.sendRequest("launchKernel").then((result) => {
-        if (result.launched) {
-            kernelStatusBar.color = "yellow";
-        }
-        else {
-            kernelStatusBar.color = undefined;
-        }
-    });
+    // wolframClient.sendRequest("launchKernel").then((result:any) => {
+    //     if (result.launched){
+    //         kernelStatusBar.color = "yellow"
+    //     } else {
+    //         kernelStatusBar.color = undefined
+    //     }
+    // })
 }
 let printResults = [];
 function runInWolfram(print = false) {
@@ -361,6 +361,13 @@ function onRunInWolfram(result) {
     if (e) {
         updateResults(e, result, result["print"]);
     }
+}
+let variableTable = {};
+function updateVarTable(vars) {
+    for (let index = 0; index < vars["values"].length; index++) {
+        variableTable[vars["values"][index][0]] = vars["values"][index][1];
+    }
+    updateOutputPanel();
 }
 let maxPrintResults = 20;
 function updateResults(e, result, print) {
@@ -629,7 +636,7 @@ function showOutput() {
             });
             outputPanel.webview.html = getOutputContent(outputPanel.webview);
             outputPanel.webview.onDidReceiveMessage(message => {
-                runExpression(message.text);
+                runExpression(message.text, 0, 100);
                 return;
             }, undefined, theContext.subscriptions);
             outputPanel.onDidDispose(() => {
@@ -651,7 +658,11 @@ function updateOutputPanel() {
     // if(typeof(outputPanel) === "undefined") {
     //     loadOutputPanel(myContext, 2);
     // }
-    outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out });
+    let vars = "<tr><td>Var</td><td>Value</td></tr>\n";
+    Object.keys(variableTable).forEach(k => {
+        vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n";
+    });
+    outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: vars });
 }
 function getOutputContent(webview) {
     let timeNow = new Date().getTime();
@@ -693,16 +704,24 @@ function getOutputContent(webview) {
                 width: 100%;
             }
 
+            #vars {
+                height:40vh;
+                position:relative;
+                top:0;
+                border-bottom: solid white 1px;
+            }
+
             .outer {
-                height:100%;
+                height:50vh;
                 display:block;
                 position:relative;
+                top:40%;
             }
             #scratch {
                 position:fixed;
                 width:95vw;
                 bottom:0px;
-                height: 8vh;
+                height: 10vh;
             }
 
             #scratch textarea {
@@ -713,9 +732,9 @@ function getOutputContent(webview) {
 
             #outputs {
                 display: block;
-                height: 90vh;
+                height: 80vh;
                 position: fixed;
-                top: 0;
+                top: 20%;
                 overflow-y: scroll;
             }
 
@@ -791,11 +810,20 @@ function getOutputContent(webview) {
             outputDiv.innerHTML = message.text;
 
             outputDiv.scrollTop = outputDiv.scrollHeight;
+
+            const varT = document.getElementById('varTable');
+            varT.innerHTML = message.vars;
         })
         </script>
     </head>
     <body onload="scrollToBottom()">
         <div class="outer">
+            <div id="vars">
+                <table id="varTable">
+                    <tr><td>Var</td><td>Value</td></tr>
+                    <tr><td>Mark</td><td>5</td></tr>
+                </table>
+            </div>
             <div class="inner" id='outputs'>
                 
             </div>

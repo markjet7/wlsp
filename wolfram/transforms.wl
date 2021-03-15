@@ -46,5 +46,5 @@ transforms[output_InformationData]:=Module[{},
 	ExportString[output, "HTMLFragment"]
 ];
 transforms[output_]:=Module[{}, 
-	ExportString[ToString[output, TotalWidth->1000], "HTMLFragment"]
+	ExportString[ToString[output, InputForm, TotalWidth->1000], "HTMLFragment"]
 ];
