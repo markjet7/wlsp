@@ -658,9 +658,16 @@ function updateOutputPanel() {
     // if(typeof(outputPanel) === "undefined") {
     //     loadOutputPanel(myContext, 2);
     // }
-    let vars = "<tr><td>Var</td><td>Value</td></tr>\n";
+    let vars = "<tr><th>Var</th><th>Value</th></tr>\n";
+    let i = 0;
     Object.keys(variableTable).forEach(k => {
-        vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n";
+        if (i % 2 === 0) {
+            vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n";
+        }
+        else {
+            vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n";
+        }
+        i++;
     });
     outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: vars });
 }
@@ -670,9 +677,6 @@ function getOutputContent(webview) {
     <html lang="en">
     <head>
         <style type="text/css">
-            td {
-                margin:10px;
-            }
 
             body{
                 overflow:scroll;
@@ -705,23 +709,25 @@ function getOutputContent(webview) {
             }
 
             #vars {
-                height:40vh;
+                height:38vh;
                 position:relative;
                 top:0;
                 border-bottom: solid white 1px;
+                overflow-y:scroll;
+                width:93vw;
             }
 
             .outer {
-                height:50vh;
+                height:100vh;
                 display:block;
                 position:relative;
-                top:40%;
+                top:0;
             }
             #scratch {
                 position:fixed;
                 width:95vw;
                 bottom:0px;
-                height: 10vh;
+                height: 8vh;
             }
 
             #scratch textarea {
@@ -732,9 +738,9 @@ function getOutputContent(webview) {
 
             #outputs {
                 display: block;
-                height: 80vh;
+                height: 50vh;
                 position: fixed;
-                top: 20%;
+                top: 40vh;
                 overflow-y: scroll;
             }
 
@@ -744,6 +750,7 @@ function getOutputContent(webview) {
                 padding: 5px;
                 display: block;
                 margin:0px;
+                width:93vw;
             }
 
             #result img{
@@ -820,15 +827,15 @@ function getOutputContent(webview) {
         <div class="outer">
             <div id="vars">
                 <table id="varTable">
-                    <tr><td>Var</td><td>Value</td></tr>
-                    <tr><td>Mark</td><td>5</td></tr>
+                    <th><td>Var</td><td>Value</td></th>
+                    <tr><td></td><td>No values defined yet</td></tr>
                 </table>
             </div>
             <div class="inner" id='outputs'>
                 
             </div>
             <div id="scratch">
-                <textarea id="expression" onkeydown="run(this)" rows="1" placeholder="Shift+Enter to run"></textarea>
+                <textarea id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></textarea>
             </div> 
         </div>
     </body>

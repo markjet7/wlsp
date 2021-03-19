@@ -64,24 +64,27 @@ handle["codeLens/resolve", json_]:=Module[{},
 
 handle["textDocument/codeLens", json_]:=Module[{src, positions, lens},
 	src = documents[json["params","textDocument","uri"]];
-	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ StringPosition[src, "\n" ~~(" "|"\t")...~~"\n", Overlaps -> False];
-	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, StringPosition[src, "\n" ~~(" "|"\t")...~~"\n", Overlaps -> False], 2,1];
-	lens = Table[
-		<|
-			"range" -> 
-				<|
-					"start" -><|"line"->l[[1]], "character"->0|>,
-					"end" -><|"line"->l[[1]], "character"->20|>
-				|>,
-			"command" -> <|
-				"title" -> "Run",
-				"command" -> "wolfram.runExpression",
-				"arguments" -> {l[[2]], l[[1]]+1, StringLength@l[[2]]}
-			|>
-		|>,
-		{l, Transpose[{Most@lines, sections}]}
+	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
+	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
+	If[sections != {},
+		lens = Table[
+			<|
+				"range" -> 
+					<|
+						"start" -><|"line"->l[[1]], "character"->0|>,
+						"end" -><|"line"->l[[1]], "character"->20|>
+					|>,
+				"command" -> <|
+					"title" -> "Run " <> ToString@StringCount[Echo@StringTrim[l[[2]], WhitespaceCharacter...~~"(*  *)"], "\n"] <> " lines",
+					"command" -> "wolfram.runExpression",
+					"arguments" -> {StringReplace[l[[2]], "(*  *)" ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
+				|>
+			|>,
+			{l, Transpose[{Most@lines, sections}]}
+		];,
+		lens = {}
 	];
-
+	
 	sendResponse[<|"id"->json["id"], "result"->lens|>];
 ];
 
