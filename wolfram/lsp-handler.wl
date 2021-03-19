@@ -62,7 +62,7 @@ handle["codeLens/resolve", json_]:=Module[{},
 	Print["resolve"];
 ];
 
-handle["textDocument/codeLens", json_]:=Module[{src, positions, lens},
+handle["textDocument/codeLens", json_]:=Module[{src, positions, lens, lines, sections},
 	src = documents[json["params","textDocument","uri"]];
 	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
 	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
@@ -75,7 +75,7 @@ handle["textDocument/codeLens", json_]:=Module[{src, positions, lens},
 						"end" -><|"line"->l[[1]], "character"->20|>
 					|>,
 				"command" -> <|
-					"title" -> "Run " <> ToString@StringCount[Echo@StringTrim[l[[2]], WhitespaceCharacter...~~"(*  *)"], "\n"] <> " lines",
+					"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~"(*  *)"], "\n"] <> " lines",
 					"command" -> "wolfram.runExpression",
 					"arguments" -> {StringReplace[l[[2]], "(*  *)" ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
 				|>
@@ -540,23 +540,47 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
-getFunctionAtPosition[src_, position_]:=Module[{symbol, p, r},
-	p = position;
-	symbol = "";
-	NestWhile[
-		(
-			p["character"] = p["character"] - #;
-			#+1) &,
-		0,
-		And[
-			(
-				symbol = getWordAtPosition[src, p];
-				!NameQ[symbol]
-			),
-			# < 50] &
-	];
+
+getFunctionAtPosition[src_,position_]:=Module[{symbol,p,r,lbs,rbs},
+	p=position;
+	symbol="";
+	lbs=0;
+	rbs=0;
+	NestWhile[(
+		p["character"]=p["character"]-1;
+		Which[(p["line"]===0)&&(p["character"]<=0),
+			0,
+			p["character"]===0,
+			p["line"]=p["line"]-1;p["character"]=StringLength[StringSplit[src,"\n"][[p["line"]-1]]];p["character"],
+			True,
+			#-1
+		]
+		)&, p["character"],
+		(Switch[
+			getCharAtPosition[src,p],
+			"[",
+			lbs=lbs+1,
+			"]",
+			rbs=rbs+1,_,Identity];
+			Which[
+				lbs > rbs,
+				p["character"] = p["character"]-1;
+				symbol=getWordAtPosition[src, p];
+				False,
+				(p["line"]===0)&&(p["character"]===1),
+				False,
+				True,
+			True])
+	&];
 	symbol
 ];
+
+getCharAtPosition[src_,position_]:=Module[{}, 
+	If[src === "", 
+		"",
+		StringTake[StringSplit[src,"\n"][[position["line"]+1]],{position["character"]}]]
+];
+
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 

@@ -43,7 +43,7 @@ transforms[output_Null]:=Module[{}, ""];
 
 transforms[output_InformationData]:=Module[{}, 
 	(*imageToPNG[Rasterize@output];*)
-	ExportString[output, "HTMLFragment"]
+	ExportString[Rasterize@output, "HTMLFragment"]
 ];
 transforms[output_]:=Module[{}, 
 	ExportString[ToString[output, InputForm, TotalWidth->1000], "HTMLFragment"]
