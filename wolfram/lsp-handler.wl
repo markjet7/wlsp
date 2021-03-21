@@ -286,7 +286,8 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
 		opts = Information[symbol, "Options"] /. {
 			Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
-			RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]};
+			RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]
+			};
 	
 		result = <|
 			"signatures" -> Table[
@@ -302,13 +303,14 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 		sendResponse[response];,
 
+		
 		response = <|
 			"signatures" -> {},
 			"activeSignature" -> activeSignature,
 			"activeParameter" -> activeParameter
 		|>;
-		sendResponse[response];
-	]
+		sendResponse[response]; 
+	];
 ];
 
 handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
@@ -540,47 +542,11 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
-
-getFunctionAtPosition[src_,position_]:=Module[{symbol,p,r,lbs,rbs},
-	p=position;
-	symbol="";
-	lbs=0;
-	rbs=0;
-	NestWhile[(
-		p["character"]=p["character"]-1;
-		Which[(p["line"]===0)&&(p["character"]<=0),
-			0,
-			p["character"]===0,
-			p["line"]=p["line"]-1;p["character"]=StringLength[StringSplit[src,"\n"][[p["line"]-1]]];p["character"],
-			True,
-			#-1
-		]
-		)&, p["character"],
-		(Switch[
-			getCharAtPosition[src,p],
-			"[",
-			lbs=lbs+1,
-			"]",
-			rbs=rbs+1,_,Identity];
-			Which[
-				lbs > rbs,
-				p["character"] = p["character"]-1;
-				symbol=getWordAtPosition[src, p];
-				False,
-				(p["line"]===0)&&(p["character"]===1),
-				False,
-				True,
-			True])
-	&];
+getFunctionAtPosition[src_,position_]:=Module[{symbol,p,r,lbs,rbs, functions},
+	functions = Cases[CodeParse[src],CallNode[LeafNode[Symbol,f:Except["List"|"Association"],_],___,<|Source->loc_|>]:>{f, loc}, Infinity];
+	symbol=SelectFirst[functions,IntervalMemberQ[Interval[#[[2]][[ All, 1]]],position["line"]+1] && IntervalMemberQ[Interval[#[[2]][[ All, 2]]],position["character"]+1]&,{""}][[1]];
 	symbol
 ];
-
-getCharAtPosition[src_,position_]:=Module[{}, 
-	If[src === "", 
-		"",
-		StringTake[StringSplit[src,"\n"][[position["line"]+1]],{position["character"]}]]
-];
-
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 
