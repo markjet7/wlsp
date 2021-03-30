@@ -349,6 +349,8 @@ convertBoxExpressionToHTML[Information[BarChart]];
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
+extractUsage[_Null]:="";
+
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
 	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( x:ToString@symbol):>"\n"<>x]
 ];
@@ -430,37 +432,6 @@ validate[]:=Module[{lints, severities, msgs, response},
 				],
 				documents
 			];
-];
-
-
-evaluateString[string_, width_:10000]:= Module[{res, r, start}, 
-	start = Now;
-	While[!(Head@evaluationKernel === KernelObject),
-		CloseKernels[];
-		(evaluationKernel = First@LaunchKernels[1]); 
-		Pause[1];
-		If[QuantityMagnitude[DateDifference[start,Now],"Minutes"] > 2, 
-			sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to launch evaluation kernel" |> |>];
-			Break[]
-		];
-	];
-	res = ParallelEvaluate[EvaluationData[ToExpression[string]], evaluationKernel];
-	If[
-		res["Success"], 
-		(
-			(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Success: " <> ToString[res["Result"], InputForm, TotalWidth->1000] |> |>]; *)
-			{res["Result"], True}
-		),
-
-		(
-			sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[StringRiffle[res["Messages"], "\n"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>];
-			Table[
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[r, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
-				{r, res["Messages"]}];
-				
-			{res["Result"], False}
-		)
-	]
 ];
 
 rangeToStartEnd[range_List]:=Module[{},
