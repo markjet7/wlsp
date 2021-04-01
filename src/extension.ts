@@ -362,14 +362,49 @@ function moveCursor(params:any) {
 
 
 function launchKernel(){
-    kernelStatusBar.color = "red";
-    // wolframClient.sendRequest("launchKernel").then((result:any) => {
-    //     if (result.launched){
-    //         kernelStatusBar.color = "yellow"
-    //     } else {
-    //         kernelStatusBar.color = undefined
+    kernelStatusBar.color = "yellow";
+
+    wolframKernelClient.stop();
+
+    let isWin = /^win/.test(process.platform);
+    if(isWin) {
+        let cp = require('child_process');
+        cp.exec('taskkill /PID ' + wolfram.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
+        }); 
+        cp.exec('taskkill /PID ' + wolframKernel.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
+        }); 
+
+    } else {        
+        kill(wolframKernel.pid);
+    }
+
+    //let context = myContext;
+    wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
+    wolframStatusBar.show();
+
+    vscode.window.showInformationMessage("Wolfram Kernel is restarting.");
+    // context.subscriptions.forEach((sub:any) => {
+    //     try {
+    //         sub.dispose();
+    //     } catch (error) {
+    //         console.log("subs: " + error);
     //     }
-    // })
+    // });
+    // context.subscriptions.push(loadWolframServer(outputChannel, context));
+
+
+    fp(3010).then((freep:any) => { 
+        kernelPORT = freep[0];
+        console.log("Port: " + kernelPORT.toString());
+        loadwolframKernel().then(async (success:any) => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
+            theContext.subscriptions.push(theKernelDisposible);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
+    
+        });
+    }); 
+    
 }
 
 let printResults:any[] = [];
