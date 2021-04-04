@@ -339,15 +339,12 @@ function moveCursor(params:any) {
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
         let decorationLine = e.document.lineAt(outputPosition.line-1)
+        let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
+        let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
+        let range = new vscode.Range(start, end)
+
         let d:vscode.DecorationOptions = {
-            "range": {
-                "start": {
-                    "line": decorationLine.lineNumber, "character":  decorationLine.range.end.character
-                },
-                "end": {
-                    "line": decorationLine.lineNumber, "character": decorationLine.range.end.character+3
-                }
-            },
+            "range": range,
             "renderOptions": {
                 "after": {
                     "contentText": "...",
