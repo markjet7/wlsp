@@ -106,7 +106,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString[output, TotalWidth->1000000], 
+			"params"-><|"output"->ToString[">> " <> string, TotalWidth -> 150] <> \[NewLine] <> "\n\n>>  " <> ToString[output, TotalWidth->100000], 
 				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
@@ -166,7 +166,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 
 		values = Table[{v["name"], ToString[ToExpression[v["name"]], InputForm, TotalWidth->100]}, {v, symbols}];
 		result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
-		Print[result];
 		sendResponse[
 			result
 		]; 
@@ -239,7 +238,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 					sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[r, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
 					{r, res["Messages"]}];
 				 
-				{res["Result"], False}
+				{ToString[StringRiffle[res["Messages"], "\n"] <> "\n" <> ToString@res["Result"], InputForm, TotalWidth -> 1000], False}
 			)
 		]
 ];
