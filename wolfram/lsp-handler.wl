@@ -26,7 +26,7 @@ ServerCapabilities=<|
 	"textDocumentSync"->1,
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
-	"documentFormattingProvider" -> False,
+	"documentFormattingProvider" -> True,
 	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"."}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
@@ -52,6 +52,7 @@ handle["initialize",json_]:=Module[{response, response2},
 
 handle["shutdown", json_]:=Module[{},
 	state = "Stop";
+	Print["Stopping LSP"];
 	Close[SERVER];
 	Quit[1];
 	Abort[];
@@ -318,7 +319,7 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
-		symbol = getWordAtPosition[src, position];
+		symbol = ToString@getWordAtPosition[src, position];
 
 		value = Which[
 			MemberQ[Keys@symbolDefinitions, symbol],
@@ -347,7 +348,7 @@ ErrorBox[f_]:>{f}};
 convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
 convertBoxExpressionToHTML[Information[BarChart]];
 
-extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
+extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
 extractUsage[_Null]:="";
 

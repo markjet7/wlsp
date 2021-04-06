@@ -32,11 +32,14 @@ handle["initialize",json_]:=Module[{response, response2},
     
 	documents = <||>;
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
+	Print["Installing Java"];
+	InstallJava[];
 ];
 
 
 handle["shutdown", json_]:=Module[{},
 	state = "Stop";
+	Print["Stopping Kernels"];
 	CloseKernels[];
 	Close[SERVER];
 	Quit[1];
@@ -106,7 +109,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString[">> " <> string, TotalWidth -> 150] <> \[NewLine] <> "\n\n>>  " <> ToString[output, TotalWidth->100000], 
+			"params"-><|"output"->ToString[">> " <> string, TotalWidth -> 150] <> "\n\n>>  " <> ToString[output, TotalWidth->100000], 
 				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],

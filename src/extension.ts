@@ -49,11 +49,15 @@ vscode.commands.registerCommand('wolfram.clearDecorations', clearDecorations);
 vscode.commands.registerCommand('wolfram.showOutput', showOutput);
 vscode.commands.registerCommand('wolfram.help', help);    
 vscode.commands.registerCommand('wolfram.restart', restartWolfram);   
-vscode.commands.registerCommand('wolfram.launchKernel', launchKernel); 
+vscode.commands.registerCommand('wolfram.restartKernel', restartKernel); 
 vscode.commands.registerCommand('wolfram.abort', abort); 
 
 let theDisposible:vscode.Disposable;
 let theKernelDisposible:vscode.Disposable;
+
+function randomPort(){
+    return Math.random()*(65535 - 49152)+49152
+}
 export function activate(context: vscode.ExtensionContext){
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
@@ -65,7 +69,7 @@ export function activate(context: vscode.ExtensionContext){
     } catch {}
 
     
-    fp(3000).then((freep:any) => { 
+    fp(randomPort()).then((freep:any) => { 
         PORT = freep[0];
         console.log("Port: " + PORT.toString());
         loadwolfram().then(async (success:any) => {
@@ -77,7 +81,7 @@ export function activate(context: vscode.ExtensionContext){
         });
     }); 
 
-    fp(3010).then((freep:any) => { 
+    fp(randomPort()).then((freep:any) => { 
         kernelPORT = freep[0];
         console.log("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
@@ -103,7 +107,7 @@ let loadwolframKernel = function() {
             } else {
                 wolframKernel = cp.spawn('wolframscript', ['-file', kernelPath, kernelPORT.toString(), kernelPath], {detached:true});
             }
-            console.log("Launching wolframscript: " + wolframKernel.pid.toString());
+            console.log("Launching wolframkernel: " + wolframKernel.pid.toString());
 
             wolframKernel.stdout?.once('data', (data) => {
                 resolve(true);
@@ -358,7 +362,7 @@ function moveCursor(params:any) {
 }
 
 
-function launchKernel(){
+function restartKernel(){
     kernelStatusBar.color = "yellow";
 
     wolframKernelClient.stop();
@@ -374,7 +378,6 @@ function launchKernel(){
     } else {        
         kill(wolframKernel.pid);
     }
-
     //let context = myContext;
     wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
     wolframStatusBar.show();
@@ -390,7 +393,7 @@ function launchKernel(){
     // context.subscriptions.push(loadWolframServer(outputChannel, context));
 
 
-    fp(3010).then((freep:any) => { 
+    fp(randomPort()).then((freep:any) => { 
         kernelPORT = freep[0];
         console.log("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
@@ -518,6 +521,11 @@ function restartWolfram() {
     // } catch {
     //     console.log("Failed to stop wolfram: " + wolfram.pid.toString());
     // }
+    console.log("Restarting");
+    wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
+    wolframStatusBar.show();
+
+    vscode.window.showInformationMessage("Wolfram is restarting.");
 
     wolframClient.stop();
     wolframKernelClient.stop();
@@ -536,10 +544,6 @@ function restartWolfram() {
     }
 
     //let context = myContext;
-    wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
-    wolframStatusBar.show();
-
-    vscode.window.showInformationMessage("Wolfram is restarting.");
     // context.subscriptions.forEach((sub:any) => {
     //     try {
     //         sub.dispose();
@@ -551,10 +555,25 @@ function restartWolfram() {
     
     theContext.subscriptions.length = 0;
 
-    fp(3000).then((freep:any) => { 
+
+    fp(randomPort()).then((freep:any) => { 
+        kernelPORT = freep[0];
+        console.log("Kernel Port: " + kernelPORT.toString());
+        loadwolframKernel().then(async (success:any) => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            theKernelDisposible.dispose();
+            theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
+            theContext.subscriptions.push(theKernelDisposible);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
+    
+        });
+    }); 
+
+    fp(randomPort()).then((freep:any) => { 
         PORT = freep[0];
-        console.log("Port: " + PORT.toString());
-        loadwolfram().then((success:any) => {
+        console.log("LSP Port: " + PORT.toString());
+        loadwolfram().then(async (success:any) => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
@@ -581,14 +600,17 @@ let kill = function (pid:any) {
                     return p.PID;
                 })
             ).forEach(function (tpid) {
-                try { process.kill(tpid, signal); }
-                catch (ex) { }
+                try { process.kill(tpid, signal);}
+                catch (ex) {
+                    console.log("Failed to kill: " + tpid.toString())
+                 }
             });
             callback();
         });
     } else {
         try { process.kill(pid, signal); }
-        catch (ex) { }
+        catch (ex) { 
+            console.log("Failed to kill: " + pid.toString())}
         callback();
     }
 };
