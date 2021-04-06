@@ -432,6 +432,74 @@ es.pipeable = function () {
 
 /***/ }),
 
+/***/ "./node_modules/find-free-port/index.js":
+/*!**********************************************!*\
+  !*** ./node_modules/find-free-port/index.js ***!
+  \**********************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+const net = __webpack_require__(/*! net */ "net");
+
+// call method 1: (port, cb(err, freePort))
+// call method 2: (portBeg, portEnd, cb(err, freePort))
+// call method 3: (portBeg, host, cb(err, freePort))
+// call method 4: (portBeg, portEnd, host, cb(err, freePort))
+// call method 5: (portBeg, portEnd, host, howmany, cb(err, freePort1, freePort2, ...))
+
+function findFreePort(beg, ...rest){
+  const p = rest.slice(0, rest.length - 1), cb = rest[rest.length - 1];
+  let [end, ip, cnt] = Array.from(p);
+  if (!ip && end && !/^\d+$/.test(end)) { // deal with method 3
+    ip = end;
+    end = 65534;
+  } else {
+    if (end == null) { end = 65534; }
+  }
+  if (cnt == null) { cnt = 1; }
+
+  const retcb = cb;
+  const res = [];
+  const probe = function(ip, port, cb){
+    const s = net.createConnection({port: port, host: ip})
+    s.on('connect', function(){ s.end(); cb(null, port + 1); });
+    s.on('error', err=> { cb(port); });  // can't connect, port is available
+  };
+  var onprobe = function(port, nextPort){
+    if (port) {
+      res.push(port);
+      if (res.length >= cnt) {
+        retcb(null, ...res)
+      } else {
+        setImmediate(()=> probe(ip, port+1, onprobe));
+      }
+    } else {
+      if (nextPort>=end) {
+        retcb(new Error("No available ports"));
+      } else {
+        setImmediate(()=> probe(ip, nextPort, onprobe));
+      }
+    }
+  };
+  return probe(ip, beg, onprobe);
+};
+
+function findFreePortPmfy(beg, ...rest) {
+  const last = rest[rest.length - 1];
+  if (typeof last === 'function') {
+    findFreePort(beg, ...rest);
+  } else {
+    return new Promise((resolve, reject) => {
+      findFreePort(beg, ...rest, (err, ...ports) => {
+        if (err) reject(err)
+        else resolve(ports);
+      })
+    })
+  }
+}
+module.exports = findFreePortPmfy
+
+/***/ }),
+
 /***/ "./node_modules/from/index.js":
 /*!************************************!*\
   !*** ./node_modules/from/index.js ***!
@@ -507,126 +575,6 @@ function from (source) {
   })
   return s
 }
-
-
-/***/ }),
-
-/***/ "./node_modules/get-port/index.js":
-/*!****************************************!*\
-  !*** ./node_modules/get-port/index.js ***!
-  \****************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-
-const net = __webpack_require__(/*! net */ "net");
-
-class Locked extends Error {
-	constructor(port) {
-		super(`${port} is locked`);
-	}
-}
-
-const lockedPorts = {
-	old: new Set(),
-	young: new Set()
-};
-
-// On this interval, the old locked ports are discarded,
-// the young locked ports are moved to old locked ports,
-// and a new young set for locked ports are created.
-const releaseOldLockedPortsIntervalMs = 1000 * 15;
-
-// Lazily create interval on first use
-let interval;
-
-const getAvailablePort = options => new Promise((resolve, reject) => {
-	const server = net.createServer();
-	server.unref();
-	server.on('error', reject);
-	server.listen(options, () => {
-		const {port} = server.address();
-		server.close(() => {
-			resolve(port);
-		});
-	});
-});
-
-const portCheckSequence = function * (ports) {
-	if (ports) {
-		yield * ports;
-	}
-
-	yield 0; // Fall back to 0 if anything else failed
-};
-
-module.exports = async options => {
-	let ports;
-
-	if (options) {
-		ports = typeof options.port === 'number' ? [options.port] : options.port;
-	}
-
-	if (interval === undefined) {
-		interval = setInterval(() => {
-			lockedPorts.old = lockedPorts.young;
-			lockedPorts.young = new Set();
-		}, releaseOldLockedPortsIntervalMs);
-
-		// Does not exist in some environments (Electron, Jest jsdom env, browser, etc).
-		if (interval.unref) {
-			interval.unref();
-		}
-	}
-
-	for (const port of portCheckSequence(ports)) {
-		try {
-			let availablePort = await getAvailablePort({...options, port}); // eslint-disable-line no-await-in-loop
-			while (lockedPorts.old.has(availablePort) || lockedPorts.young.has(availablePort)) {
-				if (port !== 0) {
-					throw new Locked(port);
-				}
-
-				availablePort = await getAvailablePort({...options, port}); // eslint-disable-line no-await-in-loop
-			}
-
-			lockedPorts.young.add(availablePort);
-			return availablePort;
-		} catch (error) {
-			if (!['EADDRINUSE', 'EACCES'].includes(error.code) && !(error instanceof Locked)) {
-				throw error;
-			}
-		}
-	}
-
-	throw new Error('No available ports found');
-};
-
-module.exports.makeRange = (from, to) => {
-	if (!Number.isInteger(from) || !Number.isInteger(to)) {
-		throw new TypeError('`from` and `to` must be integer numbers');
-	}
-
-	if (from < 1024 || from > 65535) {
-		throw new RangeError('`from` must be between 1024 and 65535');
-	}
-
-	if (to < 1024 || to > 65536) {
-		throw new RangeError('`to` must be between 1024 and 65536');
-	}
-
-	if (to < from) {
-		throw new RangeError('`to` must be greater than or equal to `from`');
-	}
-
-	const generator = function * (from, to) {
-		for (let port = from; port <= to; port++) {
-			yield port;
-		}
-	};
-
-	return generator(from, to);
-};
 
 
 /***/ }),
@@ -1191,7 +1139,7 @@ exports.activate = void 0;
 const vscode = __webpack_require__(/*! vscode */ "vscode");
 const path = __webpack_require__(/*! path */ "path");
 const net = __webpack_require__(/*! net */ "net");
-const fp = __webpack_require__(/*! get-port */ "./node_modules/get-port/index.js");
+const fp = __webpack_require__(/*! find-free-port */ "./node_modules/find-free-port/index.js");
 const psTree = __webpack_require__(/*! ps-tree */ "./node_modules/ps-tree/index.js");
 const cp = __webpack_require__(/*! child_process */ "child_process");
 const vscode_languageclient_1 = __webpack_require__(/*! vscode-languageclient */ "./node_modules/vscode-languageclient/lib/main.js");
@@ -1236,28 +1184,35 @@ let theKernelDisposible;
 function randomPort() {
     return Math.round(Math.random() * (65535 - 49152) + 49152);
 }
-function launchWolframAtPortwithChannelContextLoad(load, port, channel, context, disposible, loadclient) {
-    return __awaiter(this, void 0, void 0, function* () {
-        port = yield fp({ port: randomPort() });
-        console.log("Opening Port: " + port.toString());
-        load().then((success) => __awaiter(this, void 0, void 0, function* () {
-            yield new Promise(resolve => setTimeout(resolve, 5000));
-            theDisposible = loadclient(channel, context);
-            context.subscriptions.push(disposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
-        }));
-    });
-}
 function activate(context) {
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
-    // try{
-    //     context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-    // } catch {}
-    launchWolframAtPortwithChannelContextLoad(loadwolfram, PORT, outputChannel, context, theDisposible, loadWolframServer);
-    launchWolframAtPortwithChannelContextLoad(loadwolframKernel, kernelPORT, outputChannel, context, theKernelDisposible, loadWolframKernelClient);
+    try {
+        // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+    }
+    catch (_a) { }
+    fp(randomPort()).then((freep) => {
+        PORT = freep[0];
+        console.log("Port: " + PORT.toString());
+        loadwolfram().then((success) => __awaiter(this, void 0, void 0, function* () {
+            yield new Promise(resolve => setTimeout(resolve, 5000));
+            theDisposible = loadWolframServer(outputChannel, context);
+            context.subscriptions.push(theDisposible);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
+        }));
+    });
+    fp(randomPort()).then((freep) => {
+        kernelPORT = freep[0];
+        console.log("Port: " + kernelPORT.toString());
+        loadwolframKernel().then((success) => __awaiter(this, void 0, void 0, function* () {
+            yield new Promise(resolve => setTimeout(resolve, 5000));
+            theKernelDisposible = loadWolframKernelClient(outputChannel, context);
+            context.subscriptions.push(theKernelDisposible);
+            // wolframNotebookProvider.setWolframClient(wolframClient);
+        }));
+    });
 }
 exports.activate = activate;
 let wolframKernel;
@@ -1275,7 +1230,7 @@ let loadwolframKernel = function () {
                 else {
                     wolframKernel = cp.spawn('wolframscript', ['-file', kernelPath, kernelPORT.toString(), kernelPath], { detached: true });
                 }
-                console.log("Launching wolframkernel: " + wolframKernel.pid.toString() + " at port: " + kernelPORT.toString());
+                console.log("Launching wolframkernel: " + wolframKernel.pid.toString());
                 (_a = wolframKernel.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
                     resolve(true);
                 });
@@ -1312,7 +1267,7 @@ let loadwolfram = function () {
                 else {
                     wolfram = cp.spawn('wolframscript', ['-file', lspPath, PORT.toString(), lspPath], { detached: true });
                 }
-                console.log("Launching the LSP: " + wolfram.pid.toString() + " at port " + PORT.toString());
+                console.log("Launching wolframscript: " + wolfram.pid.toString());
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
                     resolve(true);
                 });
@@ -1518,7 +1473,7 @@ function restartKernel() {
     //     }
     // });
     // context.subscriptions.push(loadWolframServer(outputChannel, context));
-    fp({ port: randomPort() }).then((freep) => {
+    fp(randomPort()).then((freep) => {
         kernelPORT = freep[0];
         console.log("Port: " + kernelPORT.toString());
         loadwolframKernel().then((success) => __awaiter(this, void 0, void 0, function* () {
@@ -1646,7 +1601,7 @@ function restartWolfram() {
     // });
     // context.subscriptions.push(loadWolframServer(outputChannel, context));
     theContext.subscriptions.length = 0;
-    fp({ port: randomPort() }).then((freep) => {
+    fp(randomPort()).then((freep) => {
         kernelPORT = freep[0];
         console.log("Kernel Port: " + kernelPORT.toString());
         loadwolframKernel().then((success) => __awaiter(this, void 0, void 0, function* () {
@@ -1657,7 +1612,7 @@ function restartWolfram() {
             // wolframNotebookProvider.setWolframClient(wolframClient);
         }));
     });
-    fp({ port: randomPort() }).then((freep) => {
+    fp(randomPort()).then((freep) => {
         PORT = freep[0];
         console.log("LSP Port: " + PORT.toString());
         loadwolfram().then((success) => __awaiter(this, void 0, void 0, function* () {

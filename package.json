@@ -174,7 +174,7 @@
     "dependencies": {
         "@shelacek/ubjson": "1.0.1",
         "@types/socket.io": "^2.1.11",
-        "get-port": "^5.1.1",
+        "find-free-port": "^2.0.0",
         "open": "7.1.0",
         "ps-tree": "^1.2.0",
         "supports-color": "^7.1.0",
