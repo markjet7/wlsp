@@ -15,7 +15,22 @@
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			}
+		},
+		{
+			"type": "npm",
+			"script": "webpack-dev",
+			"problemMatcher": "$tsc-watch",
+			"label": "npm: webpack-dev",
+			"detail": "webpack --mode development --watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always"
 			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		}
 	]
 }
