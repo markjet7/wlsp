@@ -34,6 +34,7 @@ handle["initialize",json_]:=Module[{response, response2},
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	Print["Installing Java"];
 	InstallJava[];
+	evalnumber = 1;
 ];
 
 
@@ -95,7 +96,6 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	evaluateFromQueue[code, json, newPosition]
 ];
 
-
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
@@ -109,13 +109,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString[">> " <> string, TotalWidth -> 150] <> "\n\n>>  " <> ToString[output, TotalWidth->100000], 
+			"params"-><|"output"->ToString["In[" <> ToString@evalnumber <> "]:" <> string, TotalWidth -> 150] <> "\nOut[" <> ToString@evalnumber <> "]:" <> ToString[output, TotalWidth->100000], 
 				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
 			|>;
-		
+		evalnumber = evalnumber + 1;
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];

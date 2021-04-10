@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext){
     
     fp(randomPort()).then((freep:any) => { 
         PORT = freep[0];
-        console.log("Port: " + PORT.toString());
+        outputChannel.appendLine("Port: " + PORT.toString());
         loadwolfram().then(async (success:any) => {
             await new Promise(resolve => setTimeout(resolve, 5000));
             theDisposible = loadWolframServer(outputChannel, context)
@@ -83,7 +83,7 @@ export function activate(context: vscode.ExtensionContext){
 
     fp(randomPort()).then((freep:any) => { 
         kernelPORT = freep[0];
-        console.log("Port: " + kernelPORT.toString());
+        outputChannel.appendLine("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
             await new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, context)
@@ -107,27 +107,27 @@ let loadwolframKernel = function() {
             } else {
                 wolframKernel = cp.spawn('wolframscript', ['-file', kernelPath, kernelPORT.toString(), kernelPath], {detached:true});
             }
-            console.log("Launching wolframkernel: " + wolframKernel.pid.toString());
+            outputChannel.appendLine("Launching wolframkernel: " + wolframKernel.pid.toString());
 
             wolframKernel.stdout?.once('data', (data) => {
                 resolve(true);
             });
 
             wolframKernel.stdout?.on('data', (data) => {
-                console.log("STDOUT: " + data.toString());
+                outputChannel.appendLine("STDOUT: " + data.toString());
             });
 
             wolframKernel.on('SIGPIPE', (data) => {
-                console.log("SIGPIPE");
+                outputChannel.appendLine("SIGPIPE");
             });
 
 
             wolframKernel.stdout?.on('error', (data) => {
-                console.log("STDOUT Error" + data.toString());
+                outputChannel.appendLine("STDOUT Error" + data.toString());
             });
 
             } catch (error) {
-                console.log(error.message)
+                outputChannel.appendLine(error.message)
                 vscode.window.showErrorMessage("Wolframscript failed to load kernel.")
                 return reject(false);
             }  
@@ -149,27 +149,27 @@ let loadwolfram = function() {
             } else {
                 wolfram = cp.spawn('wolframscript', ['-file', lspPath, PORT.toString(), lspPath], {detached:true});
             }
-            console.log("Launching wolframscript: " + wolfram.pid.toString());
+            outputChannel.appendLine("Launching wolframscript: " + wolfram.pid.toString());
 
             wolfram.stdout?.once('data', (data) => {
                 resolve(true);
             });
 
             wolfram.stdout?.on('data', (data) => {
-                console.log("STDOUT: " + data.toString());
+                outputChannel.appendLine("STDOUT: " + data.toString());
             });
 
             wolfram.on('SIGPIPE', (data) => {
-                console.log("SIGPIPE");
+                outputChannel.appendLine("SIGPIPE");
             });
 
 
             wolfram.stdout?.on('error', (data) => {
-                console.log("STDOUT Error" + data.toString());
+                outputChannel.appendLine("STDOUT Error" + data.toString());
             });
 
             } catch (error) {
-                console.log(error.message)
+                outputChannel.appendLine(error.message)
                 vscode.window.showErrorMessage("Wolframscript failed to load.")
                 return reject(false);
             }  
@@ -232,14 +232,14 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
                 });
 
                 // client.on("error", (e) => { 
-                //     console.log("Error:" + e.message);
+                //     outputChannel.appendLine("Error:" + e.message);
                 //     // loadWolframServer(outputChannel, context);
                 //     setTimeout(() =>  loadWolframServer(outputChannel, context), 1000);
                 //     client.destroy();
                     
                 // });
 
-                // client.on("timeout", () => { console.log("Timeout"); reject();});
+                // client.on("timeout", () => { outputChannel.appendLine("Timeout"); reject();});
                 //logtime("connected");
             //}, 10000);
         });
@@ -387,7 +387,7 @@ function restartKernel(){
     //     try {
     //         sub.dispose();
     //     } catch (error) {
-    //         console.log("subs: " + error);
+    //         outputChannel.appendLine("subs: " + error);
     //     }
     // });
     // context.subscriptions.push(loadWolframServer(outputChannel, context));
@@ -395,7 +395,7 @@ function restartKernel(){
 
     fp(randomPort()).then((freep:any) => { 
         kernelPORT = freep[0];
-        console.log("Port: " + kernelPORT.toString());
+        outputChannel.appendLine("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
             await new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
@@ -519,9 +519,9 @@ function restartWolfram() {
     // try {
     //     kill(wolfram.pid);
     // } catch {
-    //     console.log("Failed to stop wolfram: " + wolfram.pid.toString());
+    //     outputChannel.appendLine("Failed to stop wolfram: " + wolfram.pid.toString());
     // }
-    console.log("Restarting");
+    outputChannel.appendLine("Restarting");
     wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
     wolframStatusBar.show();
 
@@ -548,7 +548,7 @@ function restartWolfram() {
     //     try {
     //         sub.dispose();
     //     } catch (error) {
-    //         console.log("subs: " + error);
+    //         outputChannel.appendLine("subs: " + error);
     //     }
     // });
     // context.subscriptions.push(loadWolframServer(outputChannel, context));
@@ -558,7 +558,7 @@ function restartWolfram() {
 
     fp(randomPort()).then((freep:any) => { 
         kernelPORT = freep[0];
-        console.log("Kernel Port: " + kernelPORT.toString());
+        outputChannel.appendLine("Kernel Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
             await new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible.dispose();
@@ -571,7 +571,7 @@ function restartWolfram() {
 
     fp(randomPort()).then((freep:any) => { 
         PORT = freep[0];
-        console.log("LSP Port: " + PORT.toString());
+        outputChannel.appendLine("LSP Port: " + PORT.toString());
         loadwolfram().then(async (success:any) => {
             await new Promise(resolve => setTimeout(resolve, 5000));
             // loadWolframServer(outputChannel, context)
@@ -602,7 +602,7 @@ let kill = function (pid:any) {
             ).forEach(function (tpid) {
                 try { process.kill(tpid, signal);}
                 catch (ex) {
-                    console.log("Failed to kill: " + tpid.toString())
+                    outputChannel.appendLine("Failed to kill: " + tpid.toString())
                  }
             });
             callback();
@@ -610,7 +610,7 @@ let kill = function (pid:any) {
     } else {
         try { process.kill(pid, signal); }
         catch (ex) { 
-            console.log("Failed to kill: " + pid.toString())}
+            outputChannel.appendLine("Failed to kill: " + pid.toString())}
         callback();
     }
 };
@@ -820,7 +820,7 @@ function updateOutputPanel(){
     for (let i = 0; i < printResults.length; i++) {
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
         out += "<div id='result'>" + 
-            printResults[i] + // .replace(/^\"/, '').replace(/\"$/, '')
+            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br>') + // .replace(/^\"/, '').replace(/\"$/, '')
             "</div>";
     }
     //out += "</table>";

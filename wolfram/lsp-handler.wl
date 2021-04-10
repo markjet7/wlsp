@@ -63,10 +63,11 @@ handle["codeLens/resolve", json_]:=Module[{},
 	Print["resolve"];
 ];
 
-handle["textDocument/codeLens", json_]:=Module[{src, positions, lens, lines, sections},
+handle["textDocument/codeLens", json_]:=Module[{src, positions, lens, lines, sections, sectionPattern},
 	src = documents[json["params","textDocument","uri"]];
-	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
-	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, "(*  *)", Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
+	sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
+	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
+	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
 	If[sections != {},
 		lens = Table[
 			<|
@@ -76,9 +77,9 @@ handle["textDocument/codeLens", json_]:=Module[{src, positions, lens, lines, sec
 						"end" -><|"line"->l[[1]], "character"->20|>
 					|>,
 				"command" -> <|
-					"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~"(*  *)"], "\n"] <> " lines",
+					"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~sectionPattern], "\n"] <> " lines",
 					"command" -> "wolfram.runExpression",
-					"arguments" -> {StringReplace[l[[2]], "(*  *)" ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
+					"arguments" -> {StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
 				|>
 			|>,
 			{l, Transpose[{Most@lines, sections}]}
@@ -322,6 +323,8 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 		symbol = ToString@getWordAtPosition[src, position];
 
 		value = Which[
+			symbol === "",
+			"",
 			MemberQ[Keys@symbolDefinitions, symbol],
 				symbolDefinitions[symbol]["definition"],
 			True,
