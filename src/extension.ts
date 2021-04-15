@@ -820,7 +820,7 @@ function updateOutputPanel(){
     for (let i = 0; i < printResults.length; i++) {
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
         out += "<div id='result'>" + 
-            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br>') + // .replace(/^\"/, '').replace(/\"$/, '')
+            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br><br>') + // .replace(/^\"/, '').replace(/\"$/, '')
             "</div>";
     }
     //out += "</table>";

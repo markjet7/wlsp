@@ -349,7 +349,6 @@ boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},Sub
 ErrorBox[f_]:>{f}};
 
 convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
-convertBoxExpressionToHTML[Information[BarChart]];
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 

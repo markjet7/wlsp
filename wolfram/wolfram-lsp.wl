@@ -81,7 +81,7 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client,
-		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+		(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 		Replace[
 			handleMessageList[ReadMessages[client], state],
 			{
@@ -124,7 +124,7 @@ listener = SocketListen[
 		With[{
 			data = assoc["Data"]
 		},
-			Get[DirectoryName[path] <> "lsp-handler.wl"];
+			(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 			SERVER = assoc["SourceSocket"];
 			Check[readMessage[data], 
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
