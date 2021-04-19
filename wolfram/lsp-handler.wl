@@ -284,7 +284,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 			];
 		];
 
-		value = extractUsage[symbol];
+		value = Check[extractUsage[symbol], ""];
 		params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
 		opts = Information[symbol, "Options"] /. {
 			Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 

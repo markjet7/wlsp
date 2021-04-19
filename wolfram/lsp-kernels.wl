@@ -99,17 +99,17 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
-		string = StringReplace[StringTrim[code2["code"]], ";" ~~ EndOfString -> ""];
+		string = StringTrim[code2["code"]];
 		{result, successQ} = evaluateString[string];
 
 		If[
 			successQ,  
-			output = transforms[result] /. Null ->"",
+			output = transforms[result] /. {Null ->"", "Null" -> ""},
 			output = result;
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString["In[" <> ToString@evalnumber <> "]:" <> string, TotalWidth -> 150] <> "\nOut[" <> ToString@evalnumber <> "]:" <> ToString[output, TotalWidth->100000], 
+			"params"-><|"output"->ToString["In[" <> ToString@evalnumber <> "]: " <> string, TotalWidth -> 150] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->100000], 
 				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
@@ -226,7 +226,7 @@ evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r}, 
 			
-		res = EvaluationData[MemoryConstrained[ToExpression[string], IntegerPart[0.8*MemoryAvailable[]], "Memory Limit Exceeded"]];
+		res = EvaluationData[ToExpression[string]];
 		If[
 			res["Success"], 
 			(
@@ -239,9 +239,11 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[res["Messages"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>];
 				Table[
 					sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[r, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
-					{r, res["Messages"]}];
+					{r, Take[res["Messages"],UpTo[3]]}];
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[ToString@Length[res["Messages"]] <> " errors suppressed.", InputForm, CharacterEncoding->"ASCII"] |> |>];
+					
 				 
-				{ToString[StringRiffle[res["Messages"], "\n"] <> "\n" <> ToString@res["Result"], InputForm, TotalWidth -> 1000], False}
+				{ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False}
 			)
 		]
 ];

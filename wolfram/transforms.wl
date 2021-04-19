@@ -24,11 +24,11 @@ transforms[output_Row]:=Module[{},
 	ExportString[output, "HTMLFragment"]
 ];
 transforms[output_GraphicsRow]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
+	imageToPNG[Rasterize@output];
 	ExportString[output, "HTMLFragment"]
 ];
 transforms[output_GraphicsColumn]:=Module[{}, 
-	(*imageToPNG[Rasterize@output];*)
+	imageToPNG[Rasterize@output];
 	ExportString[output, "HTMLFragment"]
 ];
 transforms[output_GeoGraphics]:=Module[{}, 
