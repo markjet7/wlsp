@@ -53,6 +53,8 @@ vscode.commands.registerCommand('wolfram.help', help);
 vscode.commands.registerCommand('wolfram.restart', restartWolfram);
 vscode.commands.registerCommand('wolfram.restartKernel', restartKernel);
 vscode.commands.registerCommand('wolfram.abort', abort);
+vscode.commands.registerCommand('wolfram.textToSection', textToSection);
+vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
 let theDisposible;
 let theKernelDisposible;
 function randomPort() {
@@ -437,6 +439,36 @@ function printInWolfram() {
     let print = true;
     runInWolfram(print);
 }
+function textToSection() {
+    let e = vscode.window.activeTextEditor;
+    let lines;
+    let newlines = "";
+    if (e) {
+        let sel = e.selection;
+        lines = e === null || e === void 0 ? void 0 : e.document.getText(new vscode.Range(sel.start, sel.end)).split('\n');
+        lines.forEach(l => {
+            newlines += "(*" + l + "*)\n";
+        });
+        e.edit(editbuilder => {
+            editbuilder.replace(sel, newlines);
+        });
+    }
+}
+function textFromSection() {
+    let e = vscode.window.activeTextEditor;
+    let lines;
+    let newlines = "";
+    if (e) {
+        let sel = e.selection;
+        lines = e === null || e === void 0 ? void 0 : e.document.getText(new vscode.Range(sel.start, sel.end)).split('\n');
+        lines.forEach(l => {
+            newlines = l.replace(/^\(\*/, "").replace(/\*\)$/, "");
+        });
+        e.edit(editbuilder => {
+            editbuilder.replace(sel, newlines);
+        });
+    }
+}
 function abort() {
     wolframClient.sendRequest("abort");
     wolframStatusBar.text = wolframVersionText;
@@ -694,7 +726,7 @@ function updateOutputPanel() {
     for (let i = 0; i < printResults.length; i++) {
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
         out += "<div id='result'>" +
-            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br>') + // .replace(/^\"/, '').replace(/\"$/, '')
+            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br><br>') + // .replace(/^\"/, '').replace(/\"$/, '')
             "</div>";
     }
     //out += "</table>";
