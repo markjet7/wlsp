@@ -189,6 +189,7 @@ function loadWolframKernelClient(outputChannel, context) {
         wolframKernelClient.onNotification("wolframBusy", wolframBusy);
         wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         wolframKernelClient.onNotification("updateVarTable", updateVarTable);
+        wolframKernelClient.onNotification("moveCursor", moveCursor);
     });
     let disposible = wolframKernelClient.start();
     return disposible;
@@ -232,7 +233,7 @@ function loadWolframServer(outputChannel, context) {
     wolframClient.onReady().then(() => {
         //wolframClient.sendRequest("DocumentSymbolRequest");
         wolframClient.onNotification("wolframVersion", wolframVersion);
-        wolframClient.onNotification("moveCursor", moveCursor);
+        // wolframClient.onNotification("moveCursor", moveCursor);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
     let disposible = wolframClient.start();
@@ -377,7 +378,7 @@ function runInWolfram(print = false) {
     else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-        wolframClient.sendNotification("moveCursor", { range: sel, textDocument: e.document });
+        // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: print });
     }
 }
@@ -694,7 +695,7 @@ function updateOutputPanel() {
     for (let i = 0; i < printResults.length; i++) {
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
         out += "<div id='result'>" +
-            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br>') + // .replace(/^\"/, '').replace(/\"$/, '')
+            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br><br>') + // .replace(/^\"/, '').replace(/\"$/, '')
             "</div>";
     }
     //out += "</table>";
@@ -794,6 +795,8 @@ function getOutputContent(webview) {
                 display: block;
                 margin:0px;
                 width:93vw;
+                height:48vh;
+                overflow:scroll;
             }
 
             #result img{

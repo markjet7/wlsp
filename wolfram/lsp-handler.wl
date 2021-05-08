@@ -321,7 +321,6 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 		symbol = ToString@getWordAtPosition[src, position];
-
 		value = Which[
 			symbol === "",
 			"",
@@ -532,9 +531,10 @@ getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = srcLines[[position["line"]+1]];
 
-
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
-		IntervalMemberQ[Interval[First@StringPosition[StringTrim@line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""];
+		IntervalMemberQ[
+			Interval[
+				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""];
 	
 	word
 ];

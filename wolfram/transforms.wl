@@ -1,4 +1,4 @@
-
+(*
 transforms[output_Graphics]:=Module[{}, 
 	(*imageToPNG[output];*)
 	ExportString[output, "HTMLFragment"]
@@ -45,6 +45,7 @@ transforms[output_InformationData]:=Module[{},
 	(*imageToPNG[Rasterize@output];*)
 	ExportString[Rasterize@output, "HTMLFragment"]
 ];
+*)
 transforms[output_]:=Module[{}, 
-	ExportString[ToString[output, InputForm, TotalWidth->1000], "HTMLFragment"]
+	ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]
 ];

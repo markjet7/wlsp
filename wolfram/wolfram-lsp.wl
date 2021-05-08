@@ -81,7 +81,7 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client,
-		(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
+		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 		Replace[
 			handleMessageList[ReadMessages[client], state],
 			{

@@ -66,6 +66,17 @@ handle["runCell", json_]:=Module[{},
 	|> |>, json, newPosition}];
 ];
 
+handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
+	range = json["params", "range"];
+	uri = json["params", "textDocument"]["uri", "external"];
+	src = documents[json["params","textDocument","uri", "external"]];
+	end = range["end"];
+	code = getcode[src, range];
+	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
+	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
+	Print["moving cursor"];
+];
+
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
@@ -73,28 +84,15 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	end = range["end"];
 	workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 
-	code = Which[
-		range["start"] === range["end"], (* run line or group of lines *)
-			getCodeAtPosition[src, range["start"]],
-		!(range["start"] === range["end"]),
-			<|
-				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
-					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-				|>
-			|>,
-		True,
-		<|
-			"code" -> "", "range" -> <|
-				"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-				"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
-			|>
-		|>
-	];
+	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
+	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
+
 	(* Add the evaluation to the evaluation queue *)
 	evaluateFromQueue[code, json, newPosition]
 ];
+
+
 
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values},
 		$busy = True;
@@ -109,7 +107,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"->ToString["In[" <> ToString@evalnumber <> "]: " <> string, TotalWidth -> 150] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->100000], 
+			"params"-><|"output"-> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->100000], 
 				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
@@ -288,6 +286,27 @@ getWordsPosition[word_, src_]:=Module[{sLines, lines, character, range},
 		{word, range}, {l, lines}]
 ];
 
+getCode[src_, range_]:=Module[{},
+	Which[
+		range["start"] === range["end"], (* run line or group of lines *)
+			getCodeAtPosition[src, range["start"]],
+		!(range["start"] === range["end"]),
+			<|
+				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
+					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+				|>
+			|>,
+		True,
+		<|
+			"code" -> "", "range" -> <|
+				"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
+				"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+			|>
+		|>
+	]
+]
+
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 		(* SetDirectory[$TemporaryDirectory];
 		Export["srcFile.wl", src, "Text"];
@@ -303,7 +322,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 		
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
+			<|"code"->getStringAtRange[src, call[[-1]][Source]], "range"->call[[-1]][Source]|>
 			
 		];
 		result1
@@ -353,7 +372,7 @@ getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 
 
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
-		IntervalMemberQ[Interval[First@StringPosition[StringTrim@line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""];
+		IntervalMemberQ[Interval[First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""];
 	
 	word
 ];
@@ -362,7 +381,10 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	sLines = StringSplit[string, EndOfLine, All];
 	sRanges=getSourceRanges[range];
 
-	StringJoin@Table[StringTake[StringReplace[sLines[[l[[1]]]],"\n"->"\n"], l[[2]]],{l, sRanges}]
+	StringJoin@Table[
+		StringTake[
+			sLines[[l[[1]]]], l[[2]]],
+		{l, sRanges}]
 ];
 
 getSourceRanges[{start_, end_}]:=Table[
@@ -373,7 +395,7 @@ lineRange[line_,start_,end_]:= {line, Which[
 	line == start[[1]] && line==end[[1]], {start[[2]], UpTo@end[[2]]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
-	line != start[[1]] && line==end[[1]], {1, end[[2]]}
+	line != start[[1]] && line==end[[1]], {1, UpTo@end[[2]]}
 ]};
 
 constructRPCBytes[_Missing]:= Module[{}, ""];

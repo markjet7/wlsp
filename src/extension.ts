@@ -206,6 +206,7 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
         wolframKernelClient.onNotification("wolframBusy", wolframBusy);
         wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         wolframKernelClient.onNotification("updateVarTable", updateVarTable);
+        wolframKernelClient.onNotification("moveCursor", moveCursor);
     });
 
     let disposible = wolframKernelClient.start();
@@ -259,7 +260,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
     wolframClient.onReady().then(() => {
         //wolframClient.sendRequest("DocumentSymbolRequest");
         wolframClient.onNotification("wolframVersion", wolframVersion);
-        wolframClient.onNotification("moveCursor", moveCursor);
+        // wolframClient.onNotification("moveCursor", moveCursor);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
     let disposible = wolframClient.start();
@@ -431,7 +432,7 @@ function runInWolfram(print=false){
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
-        wolframClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
+        // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         wolframKernelClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
     }
 }
@@ -924,6 +925,8 @@ function getOutputContent(webview:any) {
                 display: block;
                 margin:0px;
                 width:93vw;
+                height:48vh;
+                overflow:scroll;
             }
 
             #result img{
