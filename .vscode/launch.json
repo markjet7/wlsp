@@ -23,13 +23,13 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
+			"preLaunchTask": "${defaultBuildTask}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
-			],
-			"preLaunchTask": "${defaultBuildTask}"
+			]
 		},
 		{
 			"name": "Extension Tests",

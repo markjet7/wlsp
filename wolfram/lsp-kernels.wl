@@ -77,6 +77,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	Print["moving cursor"];
 ];
 
+
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
@@ -147,7 +148,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 
 		src = string; (* documents[json["params", "textDocument", "uri", "external"]]; *)
-		ast = CodeParse[string];
+		ast = CodeConcreteParse[string];
 
 
 		f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
@@ -308,23 +309,29 @@ getCode[src_, range_]:=Module[{},
 ]
 
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
+getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2},
 		(* SetDirectory[$TemporaryDirectory];
 		Export["srcFile.wl", src, "Text"];
-		tree=CodeParse["srcFile.wl"];
+		tree=CodeConcreteParse["srcFile.wl"];
 		ResetDirectory[]; *)
 		tree = CodeParse[src]; 
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 		
-
 		call = First[Cases[tree, 
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
-		
+
+
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-			<|"code"->getStringAtRange[src, call[[-1]][Source]], "range"->call[[-1]][Source]|>
+				str = getStringAtRange[src, call[[-1]][Source]];
+			<|"code"->StringReplace[str, {
+ 				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
+ 				StartOfLine ~~ "(*" -> "", 
+				"*)" ~~ EndOfLine  -> ""}], "range"->call[[-1]][Source]|>
 			
 		];
+		
 		result1
 ];
 
@@ -379,11 +386,15 @@ getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 
 getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	sLines = StringSplit[string, EndOfLine, All];
-	sRanges=getSourceRanges[range];
+	sRanges= getSourceRanges[range];
 
 	StringJoin@Table[
-		StringTake[
-			sLines[[l[[1]]]], l[[2]]],
+		Print[l];
+		Echo@StringTake[
+			StringReplace[
+				sLines[[l[[1]]]],
+				"\n"->"\n"], 
+			l[[2]]],
 		{l, sRanges}]
 ];
 

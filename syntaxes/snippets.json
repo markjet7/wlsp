@@ -91,31 +91,61 @@
     },
     "title": {
         "prefix": "title",
-        "body": "(* ::Title:: *)\n(*${1:Title}*)\n(*end*)",
+        "body": "(* ::Title:: *)\n(*${1:Title}*)",
         "description": "Title",
         "scope": "source.wolfram"
     },
     "subtitle": {
         "prefix": "subtitle",
-        "body": "(* ::Subtitle:: *)\n(*${1:Subtitle}*)\n(*end*)",
+        "body": "(* ::Subtitle:: *)\n(*${1:Subtitle}*)",
         "description": "Subtitle",
         "scope": "source.wolfram"
     },
     "chapter": {
         "prefix": "chapter",
-        "body": "(* ::Chapter:: *)\n(*${1:Chapter}*)\n(*end*)",
+        "body": "(* ::Chapter:: *)\n(*${1:Chapter}*)",
         "description": "Chapter",
         "scope": "source.wolfram"
     },
     "section": {
         "prefix": "section",
-        "body": "(* ::Section:: *)\n(*${1:Section}*)\n(*end*)",
+        "body": "(* ::Section:: *)\n(*${1:Section}*)",
         "description": "Section",
+        "scope": "source.wolfram"
+    },
+    "subsection": {
+        "prefix": "subsection",
+        "body": "(* ::Subsection:: *)\n(*${1:Subsection}*)",
+        "description": "Subsection",
+        "scope": "source.wolfram"
+    },
+    "subsubsection": {
+        "prefix": "Subsubsection",
+        "body": "(* ::Subsubsection:: *)\n(*${1:Subsubsection}*)",
+        "description": "Subsubsection",
+        "scope": "source.wolfram"
+    },
+    "input": {
+        "prefix": "input",
+        "body": "(* ::Input:: *)\n(*${1:Input}*)",
+        "description": "Input Section",
+        "scope": "source.wolfram"
+    },
+    "natural_language_input": {
+        "prefix": "natural",
+        "body": "(* ::NaturalLanguageInput:: *)\n(*${1:Natural Language Input}*)",
+        "description": "Natural Language Section",
+        "scope": "source.wolfram"
+    },
+    "external_language": {
+        "prefix": "external",
+        "body": "(* ::ExternalLanguage:: *)\n(*${1:ExternalLanguage}*)",
+        "description": "External Language",
         "scope": "source.wolfram"
     },
     "text": {
         "prefix": "text",
-        "body": "(* ::Text:: *)\n(*${1:Text Section}*)\n(*end*)",
+        "body": "(* ::Text:: *)\n(*${1:Text Section}*)",
         "description": "Text Section",
         "scope": "source.wolfram"
     },

@@ -51,7 +51,8 @@ vscode.commands.registerCommand('wolfram.help', help);
 vscode.commands.registerCommand('wolfram.restart', restartWolfram);   
 vscode.commands.registerCommand('wolfram.restartKernel', restartKernel); 
 vscode.commands.registerCommand('wolfram.abort', abort); 
-
+vscode.commands.registerCommand('wolfram.textToSection', textToSection);
+vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
 let theDisposible:vscode.Disposable;
 let theKernelDisposible:vscode.Disposable;
 
@@ -509,6 +510,49 @@ function runExpression(expression:string, line:0, end:100) {
 function printInWolfram(){
     let print = true;
     runInWolfram(print);
+}
+
+
+function textToSection() {
+    let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+    
+    let lines: string[];
+    let newlines: string = "";
+
+    if (e){
+        let sel: vscode.Selection = e.selection;
+        lines = e?.document.getText(new vscode.Range(sel.start, sel.end)).split('\n');
+        
+        lines.forEach(l => {
+            newlines += "(*" + l + "*)\n"
+        });
+
+
+        e.edit(editbuilder => {    
+            editbuilder.replace(sel, newlines.trimRight())
+        })
+    }
+}
+
+function textFromSection() {
+    let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+    
+    let lines: string[];
+    let newlines: string = "";
+
+    if (e){
+        let sel: vscode.Selection = e.selection;
+        lines = e?.document.getText(new vscode.Range(sel.start, sel.end)).split('\n');
+        
+        lines.forEach(l => {
+            newlines += l.replace(/^\(\*/, "").replace(/\*\)$/, "") + "\n"
+        });
+
+
+        e.edit(editbuilder => {    
+            editbuilder.replace(sel, newlines.trimRight())
+        })
+    }
 }
 
 function abort() {
