@@ -528,7 +528,7 @@ function textToSection() {
 
 
         e.edit(editbuilder => {    
-            editbuilder.replace(sel, newlines)
+            editbuilder.replace(sel, newlines.trimRight())
         })
     }
 }
@@ -544,12 +544,12 @@ function textFromSection() {
         lines = e?.document.getText(new vscode.Range(sel.start, sel.end)).split('\n');
         
         lines.forEach(l => {
-            newlines = l.replace(/^\(\*/, "").replace(/\*\)$/, "")
+            newlines += l.replace(/^\(\*/, "").replace(/\*\)$/, "") + "\n"
         });
 
 
         e.edit(editbuilder => {    
-            editbuilder.replace(sel, newlines)
+            editbuilder.replace(sel, newlines.trimRight())
         })
     }
 }
