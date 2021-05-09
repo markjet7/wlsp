@@ -9,13 +9,13 @@ import {
 
 export interface RawNotebookCell {
     indentation?: string;
-    metadata:vscode.NotebookCellMetadata;
+    metadata:any;
 	language: string;
 	source: string;
-	cellKind: vscode.CellKind;
+	cell_type: 'text' | 'code';
 }
 
-export class WolframNotebook implements vscode.NotebookDocument {
+export class WolframNotebook {
     public mapping: Map<number, any> = new Map();
     private wolframClient:LanguageClient;
 	private preloadScript = false;
@@ -75,7 +75,7 @@ export class WolframNotebook implements vscode.NotebookDocument {
 
     async execute(document: vscode.NotebookDocument, cell: vscode.NotebookCell | undefined) {
         if (cell) {
-            const index = document.cells.indexOf(cell);
+            const index = document.getCells().indexOf(cell);
             let source = cell.document.getText();
             let r:vscode.Selection = new vscode.Selection(
                 0,
@@ -86,22 +86,25 @@ export class WolframNotebook implements vscode.NotebookDocument {
             
             if (this.wolframClient){       
                 await this.wolframClient.sendRequest("runCell", {range:r, textDocument:document.uri.toString(), print:false, source:source}).then((result:any) => {
-                    document.cells[index].outputs = [
-                        {
-                            outputKind: vscode.CellOutputKind.Rich,
-                            data:{
-                                "text/html": [
-                                    "<div style=\"min-height:50px; max-height:300px; overflow:scroll\">" + result.output.toString() + "<\div>"
-                                ],
-                                "application/json": {result: result.output.toString()},
-                                "text/plain": [
-                                    result.result.toString()
-                                ],
-                                'image/png':[
-                                    result.output.toString()
-                                ]
-                            }
-                        }]
+                    let c = document.cellAt(index);
+                    
+                    // c.outputs.concat([
+                    //     {
+
+                    //         output_type: 'stream',
+                    //         data:{
+                    //             "text/html": [
+                    //                 "<div style=\"min-height:50px; max-height:300px; overflow:scroll\">" + result.output.toString() + "<\div>"
+                    //             ],
+                    //             "application/json": {result: result.output.toString()},
+                    //             "text/plain": [
+                    //                 result.result.toString()
+                    //             ],
+                    //             'image/png':[
+                    //                 result.output.toString()
+                    //             ]
+                    //         }
+                    //     }])
                     })  
                 }     else {
                     console.log("Wolfram not connected");
@@ -122,14 +125,14 @@ export class WolframNotebook implements vscode.NotebookDocument {
 				displayOrder: this.displayOrders
             },
             cells: this.cells.map(((raw_cell:any):vscode.NotebookCellData => {
-                let outputs:vscode.CellOutput[] = [];
+                let outputs:vscode.NotebookCellOutput[] = [];
                 let metadata = {editable:true, runnable:true, cellEditable:true, cellRunnable:true};
                 return {
-                    cellKind: raw_cell.cellKind,
+                    kind: raw_cell.cellKind,
                     source: raw_cell.source,
                     language: raw_cell.language || 'wolfram',
                     outputs: outputs,
-                    metadata
+                    metadata: metadata
                 }
             }))
         }
@@ -157,7 +160,7 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
 
         this.wolframClient = _wolframClient;
 		const emitter = new vscode.EventEmitter<void>();
-		vscode.notebook.registerNotebookKernelProvider({ viewType: viewType }, {
+		vscode.notebook.registerNotebookContentProvider({ notebookType: viewType }, {
 			onDidChangeKernels: undefined,
 			provideKernels: () => {
 				return [this];
@@ -181,9 +184,13 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
         let actualUri = context.backupId ? vscode.Uri.parse(context.backupId) : uri; 
 
         try {
+
+            this.wolframClient.sendRequest("openNotebook", {path:actualUri}).then(async (result:any) => {
+                let source = (await vscode.workspace.fs.readFile(actualUri)).toString();
+
+            
             
             const metadata:vscode.NotebookDocumentMetadata =  { editable: true, cellEditable: true, cellHasExecutionOrder: true, cellRunnable: true, runnable: true };
-            const source = (await vscode.workspace.fs.readFile(actualUri)).toString();
                         // {
             //     cells: [{
             //         cell_type: 'markdown',
@@ -192,27 +199,29 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
             //         ]
             //     }]
             // }
-            let rawcells = source.replace(/\r/gm,"\n").split(/\n\n\n\n|(?<=::\s+\*\))\n+/).map((s:any) => {
-                    let trimmed = s.trim();
-                    if (trimmed.substr(0, 3) == "(* " && trimmed.substr(trimmed.length - 3) == " *)"){
-                        return {
-                            type: 'markdown',
-                            source: s,
-                            metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'markdown'},
-                            language:'markdown',
-                            cellKind: vscode.CellKind.Markdown,
-                            outputs:[]
-                        }
-                    } else {
-                        return {
-                                type: 'wolfram',
-                                source: s,
-                                metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'wolfram'},
-                                language:'wolfram',
-                                cellKind: vscode.CellKind.Code,
-                                outputs:[]
-                            }}
-                })
+            let rawcells:any = [];
+            
+            // = source.replace(/\r/gm,"\n").split(/\n\n\n\n|(?<=::\s+\*\))\n+/).map((s:any) => {
+            //         let trimmed = s.trim();
+            //         if (trimmed.substr(0, 3) == "(* " && trimmed.substr(trimmed.length - 3) == " *)"){
+            //             return {
+            //                 type: 'markdown',
+            //                 source: s,
+            //                 metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'markdown'},
+            //                 language:'markdown',
+            //                 cellKind: vscode.CellKind.Markdown,
+            //                 outputs:[]
+            //             }
+            //         } else {
+            //             return {
+            //                     type: 'wolfram',
+            //                     source: s,
+            //                     metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'wolfram'},
+            //                     language:'wolfram',
+            //                     cellKind: vscode.CellKind.Code,
+            //                     outputs:[]
+            //                 }}
+            //     })
             let languages = ['wolfram']       
         
             let wolframNotebook = new WolframNotebook(
@@ -231,6 +240,7 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
             
             this._notebooks.set(uri.toString(), wolframNotebook);
             return wolframNotebook.resolve();
+        })
         } catch (error) {
             console.log(error.message)
             throw new Error("Failed to load the document");

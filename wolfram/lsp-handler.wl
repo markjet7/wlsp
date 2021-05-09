@@ -392,6 +392,12 @@ handle["textDocument/didSave", json_]:=Module[{},
 	validate[];
 ];
 
+handle["openNotebook", json_]:=Module[{jupyterfile, response},
+	jupyterfile = First[Notebook2Jupyter[json["path"]]];
+	response = <|"id"->json["id"],"result"-><|"output"->jupyterfile|>|>;
+	sendResponse[response];
+];
+
 handle["windowFocused", json_]:=Module[{},
 	If[json["params"],
 		handlerWait = 0.01,

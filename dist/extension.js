@@ -17,7 +17,7 @@ const fp = require('find-free-port');
 const psTree = require('ps-tree');
 const cp = require("child_process");
 const vscode_languageclient_1 = require("vscode-languageclient");
-// import {WolframNotebook, WolframProvider} from './notebook';
+const notebook_1 = require("./notebook");
 let client;
 let wolframClient;
 let wolframKernelClient;
@@ -30,7 +30,7 @@ kernelStatusBar.command = "wolfram.launchKernel";
 kernelStatusBar.text = "$(lightbulb)";
 kernelStatusBar.color = "foreground";
 kernelStatusBar.show();
-// let wolframNotebookProvider:WolframProvider;
+let wolframNotebookProvider;
 let PORT;
 let kernelPORT;
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
@@ -64,9 +64,10 @@ function activate(context) {
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-    // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
+    wolframNotebookProvider = new notebook_1.WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
+    context.subscriptions.push();
     try {
-        // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+        context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
     }
     catch (_a) { }
     fp(randomPort()).then((freep) => {
@@ -76,7 +77,7 @@ function activate(context) {
             yield new Promise(resolve => setTimeout(resolve, 5000));
             theDisposible = loadWolframServer(outputChannel, context);
             context.subscriptions.push(theDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
         }));
     });
     fp(randomPort()).then((freep) => {
@@ -86,7 +87,7 @@ function activate(context) {
             yield new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, context);
             context.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
         }));
     });
 }
@@ -191,6 +192,7 @@ function loadWolframKernelClient(outputChannel, context) {
         wolframKernelClient.onNotification("wolframBusy", wolframBusy);
         wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         wolframKernelClient.onNotification("updateVarTable", updateVarTable);
+        wolframKernelClient.onNotification("moveCursor", moveCursor);
     });
     let disposible = wolframKernelClient.start();
     return disposible;
@@ -234,7 +236,7 @@ function loadWolframServer(outputChannel, context) {
     wolframClient.onReady().then(() => {
         //wolframClient.sendRequest("DocumentSymbolRequest");
         wolframClient.onNotification("wolframVersion", wolframVersion);
-        wolframClient.onNotification("moveCursor", moveCursor);
+        // wolframClient.onNotification("moveCursor", moveCursor);
         // wolframClient.onNotification("wolframResult", wolframResult);
     });
     let disposible = wolframClient.start();
@@ -356,7 +358,7 @@ function restartKernel() {
             yield new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext);
             theContext.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
         }));
     });
 }
@@ -379,7 +381,7 @@ function runInWolfram(print = false) {
     else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-        wolframClient.sendNotification("moveCursor", { range: sel, textDocument: e.document });
+        // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: print });
     }
 }
@@ -515,7 +517,7 @@ function restartWolfram() {
             theKernelDisposible.dispose();
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext);
             theContext.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
         }));
     });
     fp(randomPort()).then((freep) => {
@@ -526,10 +528,11 @@ function restartWolfram() {
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
-            // try{
-            //     theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-            // } catch {}
+            wolframNotebookProvider.setWolframClient(wolframClient);
+            try {
+                theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+            }
+            catch (_a) { }
             theContext.subscriptions.push(theDisposible);
             wolframStatusBar.text = wolframVersionText;
         }));
@@ -826,6 +829,8 @@ function getOutputContent(webview) {
                 display: block;
                 margin:0px;
                 width:93vw;
+                height:48vh;
+                overflow:scroll;
             }
 
             #result img{

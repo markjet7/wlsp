@@ -12,7 +12,7 @@ import {
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
 import { EEXIST } from 'constants';
-// import {WolframNotebook, WolframProvider} from './notebook';
+import {WolframNotebook, WolframProvider} from './notebook';
 
 let client:LanguageClient;
 let wolframClient:LanguageClient;
@@ -27,7 +27,7 @@ kernelStatusBar.text = "$(lightbulb)";
 kernelStatusBar.color = "foreground";
 kernelStatusBar.show();
 
-// let wolframNotebookProvider:WolframProvider;
+let wolframNotebookProvider:WolframProvider;
 let PORT:any;
 let kernelPORT:any;
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
@@ -63,10 +63,10 @@ export function activate(context: vscode.ExtensionContext){
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-    // wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
-    
+    wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
+    context.subscriptions.push()
     try{
-        // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+        context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
     } catch {}
 
     
@@ -77,7 +77,7 @@ export function activate(context: vscode.ExtensionContext){
             await new Promise(resolve => setTimeout(resolve, 5000));
             theDisposible = loadWolframServer(outputChannel, context)
             context.subscriptions.push(theDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
     }); 
@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext){
             await new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, context)
             context.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
     }); 
@@ -402,7 +402,7 @@ function restartKernel(){
             await new Promise(resolve => setTimeout(resolve, 5000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
             theContext.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
     }); 
@@ -609,7 +609,7 @@ function restartWolfram() {
             theKernelDisposible.dispose();
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
             theContext.subscriptions.push(theKernelDisposible);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
+            wolframNotebookProvider.setWolframClient(wolframClient);
     
         });
     }); 
@@ -622,10 +622,10 @@ function restartWolfram() {
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
-            // wolframNotebookProvider.setWolframClient(wolframClient);
-            // try{
-            //     theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-            // } catch {}
+            wolframNotebookProvider.setWolframClient(wolframClient);
+            try{
+                theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+            } catch {}
             theContext.subscriptions.push(theDisposible);
             wolframStatusBar.text = wolframVersionText;
     

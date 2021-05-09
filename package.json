@@ -3,6 +3,7 @@
     "displayName": "wlsp",
     "description": "wolfram-language-server",
     "publisher": "markmba",
+    "enableProposedApi": true,
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
@@ -17,10 +18,11 @@
     "activationEvents": [
         "onLanguage:wolfram"
     ],
+    
     "contributes": {
         "notebookProvider": [
             {
-                "viewType": "wolfram",
+                "viewType": "wolfram.notebook",
                 "displayName": "Wolfram Notebook",
                 "priority": "option",
                 "selector": [
@@ -28,6 +30,18 @@
                         "filenamePattern": "*.{wl,wls}"
                     }
                 ]
+            }
+        ],
+        "customEditors": [
+            {
+                "viewType": "wolfram.editor",
+                "displayName": "Wolfram Text Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "*.{wl,wls}"
+                    }
+                ],
+                "priority": "option"
             }
         ],
         "languages": [
@@ -185,6 +199,7 @@
         "tmp": "0.2.1",
         "ts-loader": "^8.1.0",
         "typescript": "^3.9.7",
+        "vscode-dts": "^0.3.1",
         "vscode-test": "^1.3.0",
         "webpack": "^5.30.0",
         "webpack-cli": "^4.7.0"

@@ -23,6 +23,7 @@ If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 Get[DirectoryName[path] <> "lsp-handler.wl"];
 Get[DirectoryName[path] <> "CodeFormatter.m"];
+Get[DirectoryName[path] <> "notebook2jupyter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
