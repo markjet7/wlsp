@@ -308,7 +308,6 @@ getCode[src_, range_]:=Module[{},
 	]
 ]
 
-getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2},
 		(* SetDirectory[$TemporaryDirectory];
 		Export["srcFile.wl", src, "Text"];

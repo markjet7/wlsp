@@ -22,26 +22,14 @@
     "contributes": {
         "notebookProvider": [
             {
-                "viewType": "wolfram.notebook",
+                "viewType": "wolfram",
                 "displayName": "Wolfram Notebook",
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.{wl,wls}"
+                        "filenamePattern": "*.{nb, wl,wls}"
                     }
                 ]
-            }
-        ],
-        "customEditors": [
-            {
-                "viewType": "wolfram.editor",
-                "displayName": "Wolfram Text Editor",
-                "selector": [
-                    {
-                        "filenamePattern": "*.{wl,wls}"
-                    }
-                ],
-                "priority": "option"
             }
         ],
         "languages": [
@@ -51,6 +39,7 @@
                     "Wolfram"
                 ],
                 "extensions": [
+                    ".nb",
                     ".wl",
                     ".wls"
                 ],

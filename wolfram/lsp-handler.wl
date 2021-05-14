@@ -393,9 +393,10 @@ handle["textDocument/didSave", json_]:=Module[{},
 ];
 
 handle["openNotebook", json_]:=Module[{jupyterfile, response},
-	jupyterfile = First[Notebook2Jupyter[json["path"]]];
+	jupyterfile = Echo@First[Notebook2Jupyter[json["params"]["path"]["path"]]];
 	response = <|"id"->json["id"],"result"-><|"output"->jupyterfile|>|>;
 	sendResponse[response];
+	Print@response;
 ];
 
 handle["windowFocused", json_]:=Module[{},

@@ -1,4 +1,5 @@
 import { throws } from 'assert';
+import { meta } from 'eslint/lib/rules/*';
 import { Runnable } from 'mocha';
 import * as vscode from 'vscode';
 import { 
@@ -114,29 +115,14 @@ export class WolframNotebook {
     }
 
     resolve(): vscode.NotebookData {
-        let result = {
-            languages: ['wolfram'],
-            metadata: {
-
-				editable: this.metadata?.editable === undefined ? true : this.metadata?.editable,
-				runnable: this.metadata?.runnable === undefined ? true : this.metadata?.runnable,
-				cellEditable: this.metadata?.cellEditable === undefined ? true : this.metadata?.cellEditable,
-				cellRunnable: this.metadata?.cellRunnable === undefined ? true : this.metadata?.cellRunnable,
-				displayOrder: this.displayOrders
-            },
-            cells: this.cells.map(((raw_cell:any):vscode.NotebookCellData => {
+        let result = new vscode.NotebookData(
+            this.cells.map(((raw_cell:any):vscode.NotebookCellData => {
                 let outputs:vscode.NotebookCellOutput[] = [];
                 let metadata = {editable:true, runnable:true, cellEditable:true, cellRunnable:true};
-                return {
-                    kind: raw_cell.cellKind,
-                    source: raw_cell.source,
-                    language: raw_cell.language || 'wolfram',
-                    outputs: outputs,
-                    metadata: metadata
-                }
+                return new vscode.NotebookCellData(raw_cell.cellKind, raw_cell.source, 'wolfram', outputs, raw_cell.metadata || undefined)
+ 
             }))
-        }
-
+        )
         return result;
     }
 
@@ -148,9 +134,8 @@ async function timeFn(fn: () => Promise<void>): Promise<number> {
     return Date.now() - startTime;
 }
 
-export class WolframProvider implements vscode.NotebookContentProvider, vscode.NotebookKernel {
-    private _onDidChangeNotebook = new vscode.EventEmitter<vscode.NotebookDocumentEditEvent>();
-	public _notebooks: Map<string, WolframNotebook> = new Map();
+export class WolframProvider implements vscode.NotebookContentProvider {
+    public _notebooks: Map<string, WolframNotebook> = new Map();
 	onDidChange: vscode.Event<void> = new vscode.EventEmitter<void>().event;
 	label: string = 'Wolfram';
     isPreferred: boolean = true;
@@ -160,12 +145,7 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
 
         this.wolframClient = _wolframClient;
 		const emitter = new vscode.EventEmitter<void>();
-		vscode.notebook.registerNotebookContentProvider({ notebookType: viewType }, {
-			onDidChangeKernels: undefined,
-			provideKernels: () => {
-				return [this];
-			}
-		});
+		vscode.notebook.registerNotebookContentProvider(viewType, this);
 
 		setTimeout(() => {
 			emitter.fire();
@@ -182,15 +162,18 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
     
     async openNotebook(uri: vscode.Uri, context:vscode.NotebookDocumentOpenContext): Promise<vscode.NotebookData> {
         let actualUri = context.backupId ? vscode.Uri.parse(context.backupId) : uri; 
+        let wolframNotebook: WolframNotebook;
+        let source = "";
 
         try {
 
             this.wolframClient.sendRequest("openNotebook", {path:actualUri}).then(async (result:any) => {
-                let source = (await vscode.workspace.fs.readFile(actualUri)).toString();
-
+                source = (await vscode.workspace.fs.readFile(result.result.output)).toString();
+            });
             
             
-            const metadata:vscode.NotebookDocumentMetadata =  { editable: true, cellEditable: true, cellHasExecutionOrder: true, cellRunnable: true, runnable: true };
+            const metadata:vscode.NotebookDocumentMetadata =  new vscode.NotebookDocumentMetadata() 
+            metadata.with({ editable: true, cellEditable: true, cellHasExecutionOrder: true, cellRunnable: true, runnable: true });
                         // {
             //     cells: [{
             //         cell_type: 'markdown',
@@ -224,7 +207,7 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
             //     })
             let languages = ['wolfram']       
         
-            let wolframNotebook = new WolframNotebook(
+            wolframNotebook = new WolframNotebook(
                 uri,
                 uri.fsPath.toString(),
                 "wolfram.input",
@@ -239,24 +222,26 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
             //let wolframNotebook = new WolframNotebook(this._extensionPath, notebookRaw, true, this.wolframClient);
             
             this._notebooks.set(uri.toString(), wolframNotebook);
-            return wolframNotebook.resolve();
-        })
+            
+        return wolframNotebook.resolve();
         } catch (error) {
             console.log(error.message)
             throw new Error("Failed to load the document");
+            return wolframNotebook.resolve();
         }
     }
 
     async executeCell(document: vscode.NotebookDocument, cell: vscode.NotebookCell | undefined): Promise<void> {
 		if (cell) {
-			cell.metadata.statusMessage = 'Running';
-			cell.metadata.runStartTime = Date.now();
-            cell.metadata.runState = vscode.NotebookCellRunState.Running;
-            cell.outputs = [];
+			// cell.metadata.statusMessage = 'Running';
+			// cell.metadata.runStartTime = Date.now();
+            // cell.metadata.runState = vscode.NotebookCellRunState.Running;
+            // cell.outputs = [];
 		} else {
-            document.cells.map((c:any) => {
-                this.executeCell(document, c);
-            })
+            for (let index = 0; index < document.cellCount; index++) {
+                this.executeCell(document, document.cellAt(index))
+                
+            }
         }
 
 		const duration = await timeFn(async () => {
@@ -267,9 +252,9 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
 		});
 
 		if (cell) {
-			cell.metadata.lastRunDuration = duration;
-			cell.metadata.statusMessage = 'Success'
-			cell.metadata.runState = vscode.NotebookCellRunState.Success;
+			// cell.metadata.lastRunDuration = duration;
+			// cell.metadata.statusMessage = 'Success'
+			// cell.metadata.runState = vscode.NotebookCellRunState.Success;
 		}
     }
 
@@ -283,29 +268,29 @@ export class WolframProvider implements vscode.NotebookContentProvider, vscode.N
 
     async cancelCellExecution(document:vscode.NotebookDocument, cell: vscode.NotebookCell | undefined){
         if(cell) {
-            cell.metadata.statusMessage = "Cancelled";
-            cell.metadata.runState = vscode.NotebookCellRunState.Error;
+            // cell.metadata.statusMessage = "Cancelled";
+            // cell.metadata.runState = vscode.NotebookCellRunState.Error;
         }
     }
 
      // The following are dummy implementations not relevant to this example.
     // onDidChangeNotebook = new vscode.EventEmitter<vscode.NotebookDocumentEditEvent>().event;
 
-	onDidChangeNotebook: vscode.Event<vscode.NotebookDocumentEditEvent> = this._onDidChangeNotebook.event;
+	// onDidChangeNotebook: vscode.Event<vscode.NotebookDocumentEditEvent> = this._onDidChangeNotebook.event;
 
     async resolveNotebook(): Promise<void> { 
         return 
      }
     async saveNotebook(document: vscode.NotebookDocument, cancellation: vscode.CancellationToken): Promise<void> { 
-         const stringOutput = document.cells.map((c:any) => {
+         const stringOutput = document.getCells().map((c:any) => {
             return c.document.getText() +"\n\n\n"
          }).reduce((p, c) => {return p + c}).trim();
          await vscode.workspace.fs.writeFile(document.uri, Buffer.from(stringOutput));
      }
     async saveNotebookAs(targetResource: vscode.Uri, document: vscode.NotebookDocument, cancellation: vscode.CancellationToken): Promise<void> { 
-        const stringOutput = document.cells.map((c:any) => {
+        const stringOutput = document.getCells().map((c:any) => {
            return c.source
-        }).reduce((p, c) => {return p + c});
+        }).reduce((p:any, c:any) => {return p + c});
         await vscode.workspace.fs.writeFile(targetResource, Buffer.from(stringOutput));}
     async backupNotebook(): Promise<vscode.NotebookDocumentBackup> { return { id: '', delete: () => { } };}
 }

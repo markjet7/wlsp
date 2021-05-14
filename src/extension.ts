@@ -64,10 +64,8 @@ export function activate(context: vscode.ExtensionContext){
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     wolframNotebookProvider = new WolframProvider("wolfram", context.extensionPath.toString(), true, wolframClient);
-    context.subscriptions.push()
-    try{
-        context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-    } catch {}
+    // context.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+
 
     
     fp(randomPort()).then((freep:any) => { 
@@ -622,10 +620,9 @@ function restartWolfram() {
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
-            wolframNotebookProvider.setWolframClient(wolframClient);
-            try{
-                theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
-            } catch {}
+            wolframNotebookProvider.setWolframClient(wolframClient)
+            // theContext.subscriptions.push(vscode.notebook.registerNotebookContentProvider('wolfram', wolframNotebookProvider));
+   
             theContext.subscriptions.push(theDisposible);
             wolframStatusBar.text = wolframVersionText;
     
