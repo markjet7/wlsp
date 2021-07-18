@@ -1,7 +1,7 @@
 BeginPackage["wolframLSP`"];
 
 (* ::Package:: *)
-$MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+$MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
@@ -90,7 +90,7 @@ socketHandler[state_]:=Module[{},
 				{stop_, state2_} :> {stop, state2},
 				{} :> state
 			}
-	],
+		],
 	Pause[handlerWait];
 	(* flush[client]; *)
 	state

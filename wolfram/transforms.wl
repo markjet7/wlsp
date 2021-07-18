@@ -46,6 +46,10 @@ transforms[output_InformationData]:=Module[{},
 	ExportString[Rasterize@output, "HTMLFragment"]
 ];
 *)
+transforms[output_Legended]:=Module[{}, 
+	(*imageToPNG[output];*)
+	ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]
+];
 transforms[output_]:=Module[{}, 
 	ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]
 ];

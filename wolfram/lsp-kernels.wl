@@ -74,7 +74,6 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	code = getcode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
-	Print["moving cursor"];
 ];
 
 
@@ -87,7 +86,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
+	sendResponse[<|"method" -> "moveCursor", "params" -> <|"position" -> newPosition |>|>];
 
 	(* Add the evaluation to the evaluation queue *)
 	evaluateFromQueue[code, json, newPosition]
@@ -95,7 +94,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
@@ -108,8 +107,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"-> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->100000], 
-				"result"->ToString[result, InputForm, TotalWidth -> 1000000], 
+			"params"-><|"output"-> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->Infinity], 
+				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
@@ -151,7 +150,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		ast = CodeConcreteParse[string];
 
 
-		f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
+		(* f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
 			astStr=ToFullFormString[node[[2,1]]];
 			name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
 			loc=node[[-1]][Source];
@@ -161,12 +160,20 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 			kind = rhs[[2]]
 			];
 			definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-			<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
-
+			<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>]; *)
+		f[node_]:=Module[{},
+			symbol = FirstCase[node, LeafNode[Symbol, name_, _] :> name, "var", Infinity, Heads->True];
+			(* sourcestart = FirstCase[node, {___, LeafNode[Token`Equal, ___], start_, ___} :> start[[3]][Source][[1]], Infinity]+{0, 1};
+			sourceend = node[[3]][Source][[2]];
+			definition = getStringAtRange[src, {sourcestart, sourceend}]; *)
+			definition = ToExpression[symbol];
+			kind = Head@value;
+			<|"name" -> symbol, "definition" -> definition, "kind" -> kind|>
+		];
 		
-		symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"),_],___],Infinity];
+		symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
 
-		values = Table[{v["name"], ToString[ToExpression[v["name"]], InputForm, TotalWidth->100]}, {v, symbols}];
+		values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->500]}, {v, symbols}];
 		result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
 		sendResponse[
 			result
@@ -242,7 +249,8 @@ evaluateString[string_, width_:10000]:= Module[{res, r},
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> ToString[ToString@Length[res["Messages"]] <> " errors suppressed.", InputForm, CharacterEncoding->"ASCII"] |> |>];
 					
 				 
-				{ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False}
+				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
+				{res["Result"], True}
 			)
 		]
 ];
@@ -308,7 +316,7 @@ getCode[src_, range_]:=Module[{},
 	]
 ]
 
-getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
+(* getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1}, *)
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2},
 		(* SetDirectory[$TemporaryDirectory];
 		Export["srcFile.wl", src, "Text"];
@@ -389,8 +397,7 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	sRanges= getSourceRanges[range];
 
 	StringJoin@Table[
-		Print[l];
-		Echo@StringTake[
+		StringTake[
 			StringReplace[
 				sLines[[l[[1]]]],
 				"\n"->"\n"], 

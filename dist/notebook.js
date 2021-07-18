@@ -9,8 +9,42 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.WolframProvider = exports.WolframNotebook = void 0;
+exports.deactivate = exports.WolframNotebook = exports.WolframNotebookSerializer = exports.activate = void 0;
 const vscode = require("vscode");
+function activate(context) {
+    context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer()));
+}
+exports.activate = activate;
+class WolframNotebookSerializer {
+    deserializeNotebook(content, _token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var contents = new TextDecoder().decode(content);
+            let raw;
+            try {
+                raw = JSON.parse(contents);
+            }
+            catch (_a) {
+                raw = [];
+            }
+            const cells = raw.map(item => new vscode.NotebookCellData(item.kind, item.value, item.language));
+            return new vscode.NotebookData(cells);
+        });
+    }
+    serializeNotebook(data, _token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let contents = [];
+            for (const cell of data.cells) {
+                contents.push({
+                    kind: cell.kind,
+                    language: cell.languageId,
+                    value: cell.value
+                });
+            }
+            return new TextEncoder().encode(JSON.stringify(contents));
+        });
+    }
+}
+exports.WolframNotebookSerializer = WolframNotebookSerializer;
 class WolframNotebook {
     constructor(uri, fileName, viewType, isDirty, isUntitled, cells, languages, metadata, _wolframClient) {
         this.uri = uri;
@@ -64,65 +98,6 @@ class WolframNotebook {
     setWolframClient(_wolframClient) {
         this.wolframClient = _wolframClient;
     }
-    execute(document, cell) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (cell) {
-                const index = document.getCells().indexOf(cell);
-                let source = cell.document.getText();
-                let r = new vscode.Selection(0, 0, 0, 0);
-                if (this.wolframClient) {
-                    yield this.wolframClient.sendRequest("runCell", { range: r, textDocument: document.uri.toString(), print: false, source: source }).then((result) => {
-                        let c = document.cellAt(index);
-                        // c.outputs.concat([
-                        //     {
-                        //         output_type: 'stream',
-                        //         data:{
-                        //             "text/html": [
-                        //                 "<div style=\"min-height:50px; max-height:300px; overflow:scroll\">" + result.output.toString() + "<\div>"
-                        //             ],
-                        //             "application/json": {result: result.output.toString()},
-                        //             "text/plain": [
-                        //                 result.result.toString()
-                        //             ],
-                        //             'image/png':[
-                        //                 result.output.toString()
-                        //             ]
-                        //         }
-                        //     }])
-                    });
-                }
-                else {
-                    console.log("Wolfram not connected");
-                    vscode.window.showErrorMessage("Wolfram not connected.");
-                }
-            }
-        });
-    }
-    resolve() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        let result = {
-            languages: ['wolfram'],
-            metadata: {
-                editable: ((_a = this.metadata) === null || _a === void 0 ? void 0 : _a.editable) === undefined ? true : (_b = this.metadata) === null || _b === void 0 ? void 0 : _b.editable,
-                runnable: ((_c = this.metadata) === null || _c === void 0 ? void 0 : _c.runnable) === undefined ? true : (_d = this.metadata) === null || _d === void 0 ? void 0 : _d.runnable,
-                cellEditable: ((_e = this.metadata) === null || _e === void 0 ? void 0 : _e.cellEditable) === undefined ? true : (_f = this.metadata) === null || _f === void 0 ? void 0 : _f.cellEditable,
-                cellRunnable: ((_g = this.metadata) === null || _g === void 0 ? void 0 : _g.cellRunnable) === undefined ? true : (_h = this.metadata) === null || _h === void 0 ? void 0 : _h.cellRunnable,
-                displayOrder: this.displayOrders
-            },
-            cells: this.cells.map(((raw_cell) => {
-                let outputs = [];
-                let metadata = { editable: true, runnable: true, cellEditable: true, cellRunnable: true };
-                return {
-                    kind: raw_cell.cellKind,
-                    source: raw_cell.source,
-                    language: raw_cell.language || 'wolfram',
-                    outputs: outputs,
-                    metadata: metadata
-                };
-            }))
-        };
-        return result;
-    }
 }
 exports.WolframNotebook = WolframNotebook;
 function timeFn(fn) {
@@ -132,156 +107,142 @@ function timeFn(fn) {
         return Date.now() - startTime;
     });
 }
-class WolframProvider {
-    constructor(viewType, _extensionPath, fillOutputs, _wolframClient) {
-        this._extensionPath = _extensionPath;
-        this.fillOutputs = fillOutputs;
-        this._wolframClient = _wolframClient;
-        this._onDidChangeNotebook = new vscode.EventEmitter();
-        this._notebooks = new Map();
-        this.onDidChange = new vscode.EventEmitter().event;
-        this.label = 'Wolfram';
-        this.isPreferred = true;
-        // The following are dummy implementations not relevant to this example.
-        // onDidChangeNotebook = new vscode.EventEmitter<vscode.NotebookDocumentEditEvent>().event;
-        this.onDidChangeNotebook = this._onDidChangeNotebook.event;
-        this.wolframClient = _wolframClient;
-        const emitter = new vscode.EventEmitter();
-        vscode.notebook.registerNotebookContentProvider({ notebookType: viewType }, {
-            onDidChangeKernels: undefined,
-            provideKernels: () => {
-                return [this];
-            }
-        });
-        setTimeout(() => {
-            emitter.fire();
-        }, 5000);
-    }
-    setWolframClient(_wolframClient) {
-        this.wolframClient = _wolframClient;
-        this._notebooks.forEach((n, k) => {
-            n.setWolframClient(_wolframClient);
-        });
-    }
-    openNotebook(uri, context) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let actualUri = context.backupId ? vscode.Uri.parse(context.backupId) : uri;
-            try {
-                this.wolframClient.sendRequest("openNotebook", { path: actualUri }).then((result) => __awaiter(this, void 0, void 0, function* () {
-                    let source = (yield vscode.workspace.fs.readFile(actualUri)).toString();
-                    const metadata = { editable: true, cellEditable: true, cellHasExecutionOrder: true, cellRunnable: true, runnable: true };
-                    // {
-                    //     cells: [{
-                    //         cell_type: 'markdown',
-                    //         source: [
-                    //             '# header'
-                    //         ]
-                    //     }]
-                    // }
-                    let rawcells = [];
-                    // = source.replace(/\r/gm,"\n").split(/\n\n\n\n|(?<=::\s+\*\))\n+/).map((s:any) => {
-                    //         let trimmed = s.trim();
-                    //         if (trimmed.substr(0, 3) == "(* " && trimmed.substr(trimmed.length - 3) == " *)"){
-                    //             return {
-                    //                 type: 'markdown',
-                    //                 source: s,
-                    //                 metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'markdown'},
-                    //                 language:'markdown',
-                    //                 cellKind: vscode.CellKind.Markdown,
-                    //                 outputs:[]
-                    //             }
-                    //         } else {
-                    //             return {
-                    //                     type: 'wolfram',
-                    //                     source: s,
-                    //                     metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'wolfram'},
-                    //                     language:'wolfram',
-                    //                     cellKind: vscode.CellKind.Code,
-                    //                     outputs:[]
-                    //                 }}
-                    //     })
-                    let languages = ['wolfram'];
-                    let wolframNotebook = new WolframNotebook(uri, uri.fsPath.toString(), "wolfram.input", false, false, rawcells, languages, metadata, this.wolframClient);
-                    //let wolframNotebook = new WolframNotebook(this._extensionPath, notebookRaw, true, this.wolframClient);
-                    this._notebooks.set(uri.toString(), wolframNotebook);
-                    return wolframNotebook.resolve();
-                }));
-            }
-            catch (error) {
-                console.log(error.message);
-                throw new Error("Failed to load the document");
-            }
-        });
-    }
-    executeCell(document, cell) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (cell) {
-                cell.metadata.statusMessage = 'Running';
-                cell.metadata.runStartTime = Date.now();
-                cell.metadata.runState = vscode.NotebookCellRunState.Running;
-                cell.outputs = [];
-            }
-            else {
-                document.cells.map((c) => {
-                    this.executeCell(document, c);
-                });
-            }
-            const duration = yield timeFn(() => __awaiter(this, void 0, void 0, function* () {
-                const wolframNotebook = this._notebooks.get(document.uri.toString());
-                if (wolframNotebook) {
-                    return wolframNotebook.execute(document, cell);
-                }
-            }));
-            if (cell) {
-                cell.metadata.lastRunDuration = duration;
-                cell.metadata.statusMessage = 'Success';
-                cell.metadata.runState = vscode.NotebookCellRunState.Success;
-            }
-        });
-    }
-    executeAllCells(document) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.executeCell(document, undefined);
-        });
-    }
-    cancelAllCellsExecution(document) {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
-    }
-    cancelCellExecution(document, cell) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (cell) {
-                cell.metadata.statusMessage = "Cancelled";
-                cell.metadata.runState = vscode.NotebookCellRunState.Error;
-            }
-        });
-    }
-    resolveNotebook() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return;
-        });
-    }
-    saveNotebook(document, cancellation) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const stringOutput = document.cells.map((c) => {
-                return c.document.getText() + "\n\n\n";
-            }).reduce((p, c) => { return p + c; }).trim();
-            yield vscode.workspace.fs.writeFile(document.uri, Buffer.from(stringOutput));
-        });
-    }
-    saveNotebookAs(targetResource, document, cancellation) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const stringOutput = document.cells.map((c) => {
-                return c.source;
-            }).reduce((p, c) => { return p + c; });
-            yield vscode.workspace.fs.writeFile(targetResource, Buffer.from(stringOutput));
-        });
-    }
-    backupNotebook() {
-        return __awaiter(this, void 0, void 0, function* () { return { id: '', delete: () => { } }; });
-    }
-}
-exports.WolframProvider = WolframProvider;
+// export class WolframProvider implements vscode.NotebookContentProvider, vscode.NotebookKernel {
+//     private _onDidChangeNotebook = new vscode.EventEmitter<vscode.NotebookDocumentEditEvent>();
+// 	public _notebooks: Map<string, WolframNotebook> = new Map();
+// 	onDidChange: vscode.Event<void> = new vscode.EventEmitter<void>().event;
+// 	label: string = 'Wolfram';
+//     isPreferred: boolean = true;
+//     private wolframClient:LanguageClient;
+//     constructor(viewType: string, private _extensionPath: string, private fillOutputs: boolean, private _wolframClient:LanguageClient) {
+//         this.wolframClient = _wolframClient;
+// 		const emitter = new vscode.EventEmitter<void>();
+// 		vscode.notebook.registerNotebookContentProvider({ notebookType: viewType }, {
+// 			onDidChangeKernels: undefined,
+// 			provideKernels: () => {
+// 				return [this];
+// 			}
+// 		});
+// 		setTimeout(() => {
+// 			emitter.fire();
+// 		}, 5000);
+//     }
+//     public setWolframClient(_wolframClient:LanguageClient) {
+//         this.wolframClient = _wolframClient;
+//         this._notebooks.forEach((n:WolframNotebook, k:string) => {
+//             n.setWolframClient(_wolframClient);
+//         })
+//     }
+//     async openNotebook(uri: vscode.Uri, context:vscode.NotebookDocumentOpenContext): Promise<vscode.NotebookData> {
+//         let actualUri = context.backupId ? vscode.Uri.parse(context.backupId) : uri; 
+//         try {
+//             this.wolframClient.sendRequest("openNotebook", {path:actualUri}).then(async (result:any) => {
+//                 let source = (await vscode.workspace.fs.readFile(actualUri)).toString();
+//             // const metadata:vscode.NotebookDocumentMetadata =  { editable: true, cellEditable: true, cellHasExecutionOrder: true, cellRunnable: true, runnable: true };
+//                         // {
+//             //     cells: [{
+//             //         cell_type: 'markdown',
+//             //         source: [
+//             //             '# header'
+//             //         ]
+//             //     }]
+//             // }
+//             let rawcells:any = [];
+//             // = source.replace(/\r/gm,"\n").split(/\n\n\n\n|(?<=::\s+\*\))\n+/).map((s:any) => {
+//             //         let trimmed = s.trim();
+//             //         if (trimmed.substr(0, 3) == "(* " && trimmed.substr(trimmed.length - 3) == " *)"){
+//             //             return {
+//             //                 type: 'markdown',
+//             //                 source: s,
+//             //                 metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'markdown'},
+//             //                 language:'markdown',
+//             //                 cellKind: vscode.CellKind.Markdown,
+//             //                 outputs:[]
+//             //             }
+//             //         } else {
+//             //             return {
+//             //                     type: 'wolfram',
+//             //                     source: s,
+//             //                     metadata:{editable:true, runnable:true, cellEditable:true, cellRunnable:true, language_info:'wolfram'},
+//             //                     language:'wolfram',
+//             //                     cellKind: vscode.CellKind.Code,
+//             //                     outputs:[]
+//             //                 }}
+//             //     })
+//             let languages = ['wolfram']       
+//             let wolframNotebook = new WolframNotebook(
+//                 uri,
+//                 uri.fsPath.toString(),
+//                 "wolfram.input",
+//                 false,
+//                 false,
+//                 rawcells,
+//                 languages,
+//                 metadata,
+//                 this.wolframClient
+//             )
+//             //let wolframNotebook = new WolframNotebook(this._extensionPath, notebookRaw, true, this.wolframClient);
+//             this._notebooks.set(uri.toString(), wolframNotebook);
+//             return wolframNotebook.resolve();
+//         })
+//         } catch (error) {
+//             console.log(error.message)
+//             throw new Error("Failed to load the document");
+//         }
+//     }
+//     async executeCell(document: vscode.NotebookDocument, cell: vscode.NotebookCell | undefined): Promise<void> {
+// 		if (cell) {
+// 			// cell.metadata.statusMessage = 'Running';
+// 			// cell.metadata.runStartTime = Date.now();
+//             // cell.metadata.runState = vscode.NotebookCellRunState.Running;
+//             // cell.outputs = [];
+// 		} else {
+//             // document.cells.map((c:any) => {
+//             //     this.executeCell(document, c);
+//             // })
+//         }
+// 		const duration = await timeFn(async () => {
+// 			const wolframNotebook = this._notebooks.get(document.uri.toString());
+// 			if (wolframNotebook) {
+// 				return wolframNotebook.execute(document, cell);
+// 			}
+// 		});
+// 		if (cell) {
+// 			// cell.metadata.lastRunDuration = duration;
+// 			// cell.metadata.statusMessage = 'Success'
+// 			// cell.metadata.runState = vscode.NotebookCellRunState.Success;
+// 		}
+//     }
+//     async executeAllCells(document:vscode.NotebookDocument):Promise<void>{
+// 		await this.executeCell(document, undefined);
+//     }
+//     async cancelAllCellsExecution(document:vscode.NotebookDocument):Promise<void> {
+//     }
+//     async cancelCellExecution(document:vscode.NotebookDocument, cell: vscode.NotebookCell | undefined){
+//         if(cell) {
+//             // cell.metadata.statusMessage = "Cancelled";
+//             // cell.metadata.runState = vscode.NotebookCellRunState.Error;
+//         }
+//     }
+//      // The following are dummy implementations not relevant to this example.
+//     // onDidChangeNotebook = new vscode.EventEmitter<vscode.NotebookDocumentEditEvent>().event;
+// 	onDidChangeNotebook: vscode.Event<vscode.NotebookDocumentEditEvent> = this._onDidChangeNotebook.event;
+//     async resolveNotebook(): Promise<void> { 
+//         return 
+//      }
+//     async saveNotebook(document: vscode.NotebookDocument, cancellation: vscode.CancellationToken): Promise<void> { 
+//          const stringOutput = document.cells.map((c:any) => {
+//             return c.document.getText() +"\n\n\n"
+//          }).reduce((p, c) => {return p + c}).trim();
+//          await vscode.workspace.fs.writeFile(document.uri, Buffer.from(stringOutput));
+//      }
+//     async saveNotebookAs(targetResource: vscode.Uri, document: vscode.NotebookDocument, cancellation: vscode.CancellationToken): Promise<void> { 
+//         const stringOutput = document.cells.map((c:any) => {
+//            return c.source
+//         }).reduce((p, c) => {return p + c});
+//         await vscode.workspace.fs.writeFile(targetResource, Buffer.from(stringOutput));}
+//     async backupNotebook(): Promise<vscode.NotebookDocumentBackup> { return { id: '', delete: () => { } };}
+// }
 function deactivate() { }
 exports.deactivate = deactivate;
 //# sourceMappingURL=notebook.js.map

@@ -1,0 +1,140 @@
+{
+	"begin": {
+		"prefix": "begin",
+		"body": "Begin[\"${1:\\`Private\\`}\"]\n$0\nEnd[]",
+		"description": "Begin ... `Private`",
+		"scope": "source.wolfram"
+	},
+	"package": {
+		"prefix": "package",
+		"body": "BeginPackage[\"${TM_FILENAME/\\.m$/`/}\"]\n$0\nEndPackage[]",
+		"description": "BeginPackage",
+		"scope": "source.wolfram"
+	},
+	"cases": {
+		"prefix": "cases",
+		"body": "Cases[${1:list}, ${2:{$3\\}${4: /; ${5:{$6\\}}}${7: ${8::>} ${9:{$10\\}}}}]$0",
+		"description": "Cases",
+		"scope": "source.wolfram"
+	},
+	"do": {
+		"prefix": "do",
+		"body": "Do[${0:(* body *)}, {${1:(* i *)}, ${2:(* i_min *)}, ${3:(* i_max *)}${4:, ${5:(* di *)}}}]",
+		"description": "Do",
+		"scope": "source.wolfram"
+	},
+	"for": {
+		"prefix": "for",
+		"body": "For[${1:${2:i} = ${3:(* start *)}}, ${4:(* condition *)}, ${5:(* increment *)}, ${0:(* body *)}]",
+		"description": "For",
+		"scope": "source.wolfram"
+	},
+	"if": {
+		"prefix": "if",
+		"body": "If[${1:(* condition *)}, ${2:(* value when true *)}, ${3:(* value when false *)}, ${4:(* value otherwise *)}]",
+		"description": "If/Condition/True/False/Otherwise",
+		"scope": "source.wolfram"
+	},
+	"if1": {
+		"prefix": "if",
+		"body": "If[${1:(* condition *)}, ${2:(* value when true *)}]",
+		"description": "If/Condition/True",
+		"scope": "source.wolfram"
+	},
+	"if2": {
+		"prefix": "if",
+		"body": "If[${1:(* condition *)}, ${2:(* value when true *)}, ${3:(* value when false *)}]",
+		"description": "If/Condition/True/False",
+		"scope": "source.wolfram"
+	},
+	"map": {
+		"prefix": "map",
+		"body": "Map[${1:(* function *)}, ${2:(* expression *)}, ${3:(* levelspec *)}]",
+		"description": "Map",
+		"scope": "source.wolfram"
+	},
+	"table": {
+		"prefix": "table",
+		"body": "Table[${1:(* function *)}, {${2: (* var *)}, ${3:(* range *)}}]",
+		"description": "Map",
+		"scope": "source.wolfram"
+	},
+	"module": {
+		"prefix": "module",
+		"body": "Module[{${1:${2:x}${3: = ${4:x0}}}},\n\t${0:expr}\n]\n\t",
+		"description": "Module",
+		"scope": "source.wolfram"
+	},
+	":=": {
+		"prefix": ":=",
+		"body": "$1[$2] := $0",
+		"description": "SetDelayed",
+		"scope": "source.wolfram"
+	},
+	"r": {
+		"prefix": "r",
+		"body": "$1 -> $2$0",
+		"description": "Special: rule",
+		"scope": "source.wolfram"
+	},
+	"select": {
+		"prefix": "select",
+		"body": "Select[${1:(* list *)}, ${0:(* filter *)}${2:, ${3:(* first n elemens *)}}]",
+		"description": "Select",
+		"scope": "source.wolfram"
+	},
+	"while": {
+		"prefix": "while",
+		"body": "While[${1:(* test condition *)}, ${0:(* body *)}]",
+		"description": "While",
+		"scope": "source.wolfram"
+    },
+    "title": {
+        "prefix": "title",
+        "body": "(* ::Title:: *)\n(*${1:Title}*)\n(*end*)",
+        "description": "Title",
+        "scope": "source.wolfram"
+    },
+    "subtitle": {
+        "prefix": "subtitle",
+        "body": "(* ::Subtitle:: *)\n(*${1:Subtitle}*)\n(*end*)",
+        "description": "Subtitle",
+        "scope": "source.wolfram"
+    },
+    "chapter": {
+        "prefix": "chapter",
+        "body": "(* ::Chapter:: *)\n(*${1:Chapter}*)\n(*end*)",
+        "description": "Chapter",
+        "scope": "source.wolfram"
+    },
+    "section": {
+        "prefix": "section",
+        "body": "(* ::Section:: *)\n(*${1:Section}*)\n(*end*)",
+        "description": "Section",
+        "scope": "source.wolfram"
+    },
+    "text": {
+        "prefix": "text",
+        "body": "(* ::Text:: *)\n(*${1:Text Section}*)\n(*end*)",
+        "description": "Text Section",
+        "scope": "source.wolfram"
+    },
+    "plot": {
+        "prefix": "plot",
+        "body": "Plot[${1:Function}, {${2:Variable}, ${3:Min}, ${4:Max}}, ${5:Options}]",
+        "description": "Text Section",
+        "scope": "source.wolfram"
+    },
+    "listplot": {
+        "prefix": "listplot",
+        "body": "ListPlot[${1:List}, ${5:Options}]",
+        "description": "Text Section",
+        "scope": "source.wolfram"
+    },
+    "barchart": {
+        "prefix": "barchart",
+        "body": "BarChart[${1:List}, ${5:Options}]",
+        "description": "Text Section",
+        "scope": "source.wolfram"
+    }
+}
