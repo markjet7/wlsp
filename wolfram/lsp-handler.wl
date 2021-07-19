@@ -196,7 +196,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
 handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind, f, ast},
-	
+	Check[
 				(
 
 					kind[s_]:= Switch[
@@ -258,7 +258,12 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 
 				response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 				sendResponse[response];  
-			)
+			),
+				response = <|"id"->json["id"],"result"->{}|>;
+				sendResponse[response];  
+				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
+	]
+
 ];
 
 signatureQueue = {};
@@ -316,11 +321,11 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 ];
 
 handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
+	position = json["params", "position"];
+	uri = json["params"]["textDocument"]["uri"];
+	src = documents[json["params","textDocument","uri"]];
+	symbol = ToString@getWordAtPosition[src, position];
 	Check[
-		position = json["params", "position"];
-		uri = json["params"]["textDocument"]["uri"];
-		src = documents[json["params","textDocument","uri"]];
-		symbol = ToString@getWordAtPosition[src, position];
 		value = Which[
 			symbol === "",
 			"",
@@ -341,6 +346,7 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 
 		response = <|"id"->json["id"], "result"->""|>;
 		sendResponse[response];
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>];
 	];
 ];
 
@@ -423,6 +429,7 @@ handle["abort", json_]:=Module[{},
 ];
 
 validate[]:=Module[{lints, severities, msgs, response},
+		Check[
 			KeyValueMap[
 				Function[{uri, src},
 					lints = CodeInspect[src];
@@ -440,7 +447,11 @@ validate[]:=Module[{lints, severities, msgs, response},
 					sendResponse[response];
 				],
 				documents
-			];
+			];,
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> {} |>|>;
+		sendResponse[response];
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>];
+	]		
 ];
 
 rangeToStartEnd[range_List]:=Module[{},

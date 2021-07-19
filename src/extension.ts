@@ -450,7 +450,7 @@ function onRunInWolfram(result:any){
 let variableTable:any = {}
 function updateVarTable(vars:any) {
     for (let index = 0; index < vars["values"].length; index++) {
-        variableTable[vars["values"][index][0]] = vars["values"][index][1]
+        variableTable[vars["values"][index][0]] = vars["values"][index][1].slice(0, 200) + "...";
     }
     updateOutputPanel();
 }
