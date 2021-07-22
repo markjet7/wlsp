@@ -115,9 +115,12 @@ Block[ {$IterationLimit=Infinity},
 Print["Client connected: "];
 Print[client];
 
-Block[{$IterationLimit = Infinity}, 
-
-	socketHandler[state]];
+MemoryConstrained[
+	Block[{$IterationLimit = Infinity}, 
+			socketHandler[state]
+	];,
+	8*1024^3
+];
 
 listener = SocketListen[
 	port,

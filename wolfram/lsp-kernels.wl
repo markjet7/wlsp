@@ -107,7 +107,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		];
 		
 		response = <|"method"->"onRunInWolfram", 
-			"params"-><|"output"-> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""] <> "\nOut[" <> ToString@evalnumber <> "]: " <> ToString[output, TotalWidth->Infinity], 
+			"params"-><|
+				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
+				"output"-> ToString[output, TotalWidth->Infinity], 
 				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],

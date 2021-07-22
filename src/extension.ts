@@ -13,6 +13,7 @@ import {
 	TransportKind } from 'vscode-languageclient';
 import { EEXIST } from 'constants';
 import {WolframNotebook, WolframNotebookSerializer} from './notebook';
+const fs = require('fs')
 
 let client:LanguageClient;
 let wolframClient:LanguageClient;
@@ -305,7 +306,11 @@ function didOpenTextDocument(document:vscode.TextDocument): void{
         return;
     }
     if (document.languageId==="wolfram"){
-        wolframClient.sendRequest("DocumentSymbolRequest");
+        if (wolframClient !== undefined) {
+            wolframClient.onReady().then(ready => {
+                wolframClient.sendRequest("DocumentSymbolRequest");
+            });
+        }
     }
 
     return;
@@ -316,17 +321,26 @@ function didChangeTextDocument(event:vscode.TextDocumentChangeEvent):void {
     // remove old decorations
     let editor = vscode.window.activeTextEditor;
     let decorations:vscode.DecorationOptions[] = [];
-    if(editor){
+    if(editor == null){
+        return
+    } else {
         let position = editor?.selection.active;
 
         let uri = editor.document.uri.toString();
-        Object.keys(workspaceDecorations[uri]).forEach((line:any, index) => {
-            if (parseInt(line, 10) < position.line) {
-                decorations.push(workspaceDecorations[uri][line]);
-            } else {
-                delete workspaceDecorations[uri][line];
-            }
-        });
+
+        if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
+            workspaceDecorations = {};
+        }
+
+        if (workspaceDecorations[uri] !== undefined) {
+            Object.keys(workspaceDecorations[uri]).forEach((line:any) => {
+                if (parseInt(line, 10) < position.line) {
+                    decorations.push(workspaceDecorations[uri][line]);
+                } else {
+                    delete workspaceDecorations[uri][line];
+                }
+            });
+    }
 
         editor.setDecorations(variableDecorationType, decorations);
     }
@@ -687,10 +701,16 @@ function runToLine() {
 }
 
 function didChangeWindowState(state:vscode.WindowState) {
-    if(state.focused === true){
-        wolframClient.sendNotification("windowFocused", true);
-    } else {
-        wolframClient.sendNotification("windowFocused", false);
+    if (wolframClient !== null || wolframClient !== undefined) {
+        if(state.focused === true){
+            wolframClient.onReady().then(ready  => {
+                wolframClient.sendNotification("windowFocused", true);
+            });
+        } else {
+            wolframClient.onReady().then(ready  => {
+                wolframClient.sendNotification("windowFocused", false);
+            });
+        }
     }
 }
 
@@ -795,7 +815,8 @@ function help() {
         "Wolfram Help",
         2,
         {
-            enableScripts: true
+            enableScripts: true,
+            retainContextWhenHidden: true
         }
     );
     helpPanel.webview.html = `<!DOCTYPE html>
@@ -835,11 +856,11 @@ function showOutput() {
             "Wolfram Output",
             {viewColumn:outputColumn+1, preserveFocus:true},
             {
-                localResourceRoots: [vscode.Uri.file(path.join(theContext.extensionPath, 'media'))],
-                enableScripts: true
+                localResourceRoots: [vscode.Uri.file(path.join(theContext.extensionPath, 'wolfram'))],
+                enableScripts: true,
+                retainContextWhenHidden: true
             });
         
-
         outputPanel.webview.html = getOutputContent(outputPanel.webview);
 
         outputPanel.webview.onDidReceiveMessage(
@@ -865,9 +886,19 @@ function updateOutputPanel(){
 
     for (let i = 0; i < printResults.length; i++) {
         // out += "<tr><td>" + i.toString() + ": </td><td>" + img3 + "</td></tr>";
+
+        
+        let data = "";
+        try{
+            data += fs.readFileSync(printResults[i], 'utf8');
+        } catch(e){
+            data += "Error reading result";
+        }
+
         out += "<div id='result'>" + 
-            printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br><br>') + // .replace(/^\"/, '').replace(/\"$/, '')
-            "</div>";
+        // printResults[i].replace(/(?:\r\n|\r|\n)/g, '<br><br>') + // .replace(/^\"/, '').replace(/\"$/, '')
+        data + 
+        "</div>";
     }
     //out += "</table>";
 
@@ -970,7 +1001,7 @@ function getOutputContent(webview:any) {
                 display: block;
                 margin:0px;
                 width:93vw;
-                height:48vh;
+                /* height:48vh; */
                 overflow:scroll;
             }
 
@@ -995,8 +1026,10 @@ function getOutputContent(webview:any) {
         and only allow scripts that have a specific nonce.
         
         <meta http-equiv="Content-Security-Policy" content="default-src 'none';">
+
+        <meta http-equiv="Content-Security-Policy" content="default-src 'all'; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource};"/>
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource};"/>
+        <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Wolfram Output</title>
         <script>
@@ -1053,7 +1086,6 @@ function getOutputContent(webview:any) {
                 </table>
             </div>
             <div class="inner" id='outputs'>
-                
             </div>
             <div id="scratch">
                 <textarea id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></textarea>
