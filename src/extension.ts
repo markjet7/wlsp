@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext){
         PORT = freep[0];
         outputChannel.appendLine("Port: " + PORT.toString());
         loadwolfram().then(async (success:any) => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
             theDisposible = loadWolframServer(outputChannel, context)
             context.subscriptions.push(theDisposible);
             // wolframNotebookProvider.setWolframClient(wolframClient);
@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext){
         kernelPORT = freep[0];
         outputChannel.appendLine("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, context)
             context.subscriptions.push(theKernelDisposible);
             // wolframNotebookProvider.setWolframClient(wolframClient);
@@ -271,7 +271,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
     return disposible;
 }
 
-let wolframVersionText:string = "";
+let wolframVersionText:string = "wolfram v.?";
 function wolframVersion(data:any) {        
     wolframVersionText = data["output"];
     wolframStatusBar.text = wolframVersionText;
@@ -396,7 +396,7 @@ function restartKernel(){
         kill(wolframKernel.pid);
     }
     //let context = myContext;
-    wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
+    wolframStatusBar.text = "$(repo-sync~spin) Restarting Wolfram...";
     wolframStatusBar.show();
 
     vscode.window.showInformationMessage("Wolfram Kernel is restarting.");
@@ -414,7 +414,7 @@ function restartKernel(){
         kernelPORT = freep[0];
         outputChannel.appendLine("Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
             theContext.subscriptions.push(theKernelDisposible);
             // wolframNotebookProvider.setWolframClient(wolframClient);
@@ -571,7 +571,7 @@ function textFromSection() {
 }
 
 function abort() {
-    wolframClient.sendRequest("abort");
+    wolframClient.sendNotification("abort");
     wolframStatusBar.text = wolframVersionText;
 }
 
@@ -620,7 +620,7 @@ function restartWolfram() {
         kernelPORT = freep[0];
         outputChannel.appendLine("Kernel Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
             theKernelDisposible.dispose();
             theKernelDisposible = loadWolframKernelClient(outputChannel, theContext)
             theContext.subscriptions.push(theKernelDisposible);
@@ -633,7 +633,7 @@ function restartWolfram() {
         PORT = freep[0];
         outputChannel.appendLine("LSP Port: " + PORT.toString());
         loadwolfram().then(async (success:any) => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
             // loadWolframServer(outputChannel, context)
             theDisposible.dispose();
             theDisposible = loadWolframServer(outputChannel, theContext);
@@ -659,10 +659,10 @@ let kill = function (pid:any) {
                 children.map(function (p:any) {
                     return p.PID;
                 })
-            ).forEach(function (tpid) {
-                try { process.kill(tpid, signal);}
+            ).forEach(function (pid) {
+                try { process.kill(pid, signal);}
                 catch (ex) {
-                    outputChannel.appendLine("Failed to kill: " + tpid.toString())
+                    outputChannel.appendLine("Failed to kill: " + pid.toString())
                  }
             });
             callback();
@@ -736,7 +736,7 @@ function clearDecorations() {
 
 function updateDecorations(decorations:vscode.DecorationOptions[]) {
     let editor = vscode.window.activeTextEditor;
-    if(editor?.document.uri.scheme==='file') {
+    if(editor?.document.uri.scheme==='file' || editor?.document.uri.scheme==='untitled') {
         //editor.setDecorations(variableDecorationType, []);
 
         if(typeof(editor) === "undefined"){

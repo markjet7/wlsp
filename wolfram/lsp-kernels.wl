@@ -98,7 +98,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
-		{result, successQ} = evaluateString[string];
+		If[string=="", 
+			{result, successQ} = {"", True},
+			{result, successQ} = evaluateString[string];	
+		];
 
 		If[
 			successQ,  

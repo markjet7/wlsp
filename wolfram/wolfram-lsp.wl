@@ -103,18 +103,25 @@ Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
 Print[SERVER];
 Print[port];
 
-Block[ {$IterationLimit=Infinity},
+Block[ {$IterationLimit=1*^6},
 	client={};
 	While[SameQ[client,{}],
 		client=First[SERVER["ConnectedClients"], {}];
+		Pause[0.001];
 
 		state="Continue";
 		
 	];
 ];
 
-Print["Client connected: "];
-Print[client];
+
+
+If[SameQ[client,{}],
+	Print["Connection failed. Restart extension."];
+	Close[SERVER];
+	Quit[1],
+	Print["Client connected: "];
+	Print[client];];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 

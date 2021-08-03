@@ -53,7 +53,7 @@ transforms[output_InformationData]:=Module[{},
 transforms =.;
 transforms[output_]:=Module[{f}, 
 	f = CreateFile[];
-	WriteString[Echo@f, ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]];
+	WriteString[f, ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]];
 	Close[f];
 	f
 ];

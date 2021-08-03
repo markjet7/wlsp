@@ -7,8 +7,8 @@ $MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
-		If[Head[client] === SocketObject, 
-			BinaryWrite[client, # , "Character32"] &/@ byteResponse;
+		If[Head[client2] === SocketObject, 
+			BinaryWrite[client2, # , "Character32"] &/@ byteResponse;
 		]
 
 ];
@@ -60,9 +60,9 @@ handleMessage[msg_Association, state_]:=Module[{},
 	If[state === "Continue", {"Continue",state}, {"Stop", state}]
 ];
 
-ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
+ReadMessages[client_SocketObject]:=ReadMessagesImpl[client2,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
-ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
+ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client2,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client2]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client2]]},{msgs}})}]])];
 
 
 getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
@@ -77,23 +77,23 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.1;
+handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
-	If[SocketReadyQ@client,
+	If[SocketReadyQ@client2,
 		Replace[
 		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-			handleMessageList[ReadMessages[client], state],
+			handleMessageList[ReadMessages[client2], state],
 			{
 				{"Continue", state2_} :> state2,
 				{stop_, state2_} :> {stop, state2},
 				{} :> state
 			}
-	],
-	Pause[handlerWait];
-	(* flush[client]; *)
-	state
+		],
+		Pause[handlerWait];
+		 (* flush[client2];  *)
+		state
 	]
 ] // socketHandler;
 
@@ -102,18 +102,23 @@ Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
 Print[SERVER];
 Print[port];
 
-Block[ {$IterationLimit=Infinity},
-	client={};
-	While[SameQ[client,{}],
-		client=First[SERVER["ConnectedClients"], {}];
+Block[ {$IterationLimit=1*^6},
+	client2={};
+	While[SameQ[client2,{}],
+		client2=First[SERVER["ConnectedClients"], {}];
+		Pause[0.001];
 
 		state="Continue";
 		
 	];
 ];
 
-Print["Client connected: "];
-Print[client];
+If[SameQ[client2,{}],
+	Print["Connection failed. Restart extension."];
+	Close[SERVER];
+	Quit[1],
+	Print["client2 connected: "];
+	Print[client2];];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
@@ -132,10 +137,11 @@ listener = SocketListen[
 			Check[
 		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
             readMessage[data], 
+				Print["Startup kernel server failed"];
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
 			];
 		]
 	],
 	CharacterEncoding -> "UTF8"
-];
+]; 
 CloseKernels[];
