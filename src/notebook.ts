@@ -91,7 +91,7 @@ export class WolframNotebook {
         public isUntitled:boolean,
         public cells: readonly any[],
         public languages: string[],
-        public metadata: vscode.NotebookDocumentMetadata,
+        // public metadata: vscode.NotebookDocumentMetadata,
         private _wolframClient:LanguageClient) {
 
             // this.uri = uri;
@@ -101,7 +101,7 @@ export class WolframNotebook {
             this.isUntitled = isUntitled;
             this.cells = cells;
             this.languages = languages;
-            this.metadata = metadata;
+            // this.metadata = metadata;
             this.wolframClient = _wolframClient;
     }
     // uri: vscode.Uri;

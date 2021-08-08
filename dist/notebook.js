@@ -46,7 +46,9 @@ class WolframNotebookSerializer {
 }
 exports.WolframNotebookSerializer = WolframNotebookSerializer;
 class WolframNotebook {
-    constructor(uri, fileName, viewType, isDirty, isUntitled, cells, languages, metadata, _wolframClient) {
+    constructor(uri, fileName, viewType, isDirty, isUntitled, cells, languages, 
+    // public metadata: vscode.NotebookDocumentMetadata,
+    _wolframClient) {
         this.uri = uri;
         this.fileName = fileName;
         this.viewType = viewType;
@@ -54,7 +56,6 @@ class WolframNotebook {
         this.isUntitled = isUntitled;
         this.cells = cells;
         this.languages = languages;
-        this.metadata = metadata;
         this._wolframClient = _wolframClient;
         this.mapping = new Map();
         this.preloadScript = false;
@@ -83,7 +84,7 @@ class WolframNotebook {
         this.isUntitled = isUntitled;
         this.cells = cells;
         this.languages = languages;
-        this.metadata = metadata;
+        // this.metadata = metadata;
         this.wolframClient = _wolframClient;
     }
     // uri: vscode.Uri;
