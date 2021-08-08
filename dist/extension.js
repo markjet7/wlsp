@@ -597,10 +597,9 @@ function restart() {
     vscode.window.showInformationMessage("Wolfram is restarting.");
     stopWolfram(wolframClient, wolfram);
     stopWolfram(wolframKernelClient, wolframKernel);
-    retry(function () { return connectKernel(outputChannel, theContext); });
-    retry(function () { return connectKernelClient(outputChannel, theContext); });
     wolframStatusBar.text = "Wolfram v.?";
     wolframStatusBar.show();
+    retry(function () { return connectKernel(outputChannel, theContext); });
 }
 function restartWolfram() {
     // try {
@@ -689,7 +688,7 @@ let kill = function (pid) {
             process.kill(pid, signal);
         }
         catch (ex) {
-            outputChannel.appendLine("Failed to kill: " + pid.toString());
+            outputChannel.appendLine("Failed to kill wolfram process");
         }
         callback();
     }

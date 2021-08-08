@@ -797,7 +797,7 @@ let kill = function (pid:any) {
     } else {
         try { process.kill(pid, signal); }
         catch (ex) { 
-            outputChannel.appendLine("Failed to kill: " + pid.toString())}
+            outputChannel.appendLine("Failed to kill wolfram process")}
         callback();
     }
 };
