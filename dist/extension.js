@@ -485,7 +485,13 @@ function runInWolfram(print = false) {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-        wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: print });
+        try {
+            wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: print });
+        }
+        catch (_a) {
+            console.log("Kernel is not ready. Restarting...");
+            restart();
+        }
     }
 }
 function onRunInWolfram(result) {
@@ -699,15 +705,21 @@ function runToLine() {
     let outputPosition = new vscode.Position(sel.line + 1, 0);
     let r = new vscode.Selection(0, 0, sel.line, sel.character);
     e.revealRange(r, vscode.TextEditorRevealType.Default);
-    wolframClient.sendRequest("runInWolfram", { range: r, textDocument: e.document, print: false }).then((result) => {
-        // cursor has not moved yet
-        if (e.selection.active.line === outputPosition.line - 1 && e.selection.active.character === outputPosition.character) {
-            outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
-            e.selection = new vscode.Selection(outputPosition, outputPosition);
-            e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-        }
-        updateResults(e, result, false);
-    });
+    try {
+        wolframKernelClient.sendRequest("runInWolfram", { range: r, textDocument: e.document, print: false }).then((result) => {
+            // cursor has not moved yet
+            if (e.selection.active.line === outputPosition.line - 1 && e.selection.active.character === outputPosition.character) {
+                outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
+                e.selection = new vscode.Selection(outputPosition, outputPosition);
+                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            }
+            updateResults(e, result, false);
+        });
+    }
+    catch (_a) {
+        console.log("Kernel is not ready. Restarting...");
+        restart();
+    }
 }
 function didChangeWindowState(state) {
     if (wolframClient !== null || wolframClient !== undefined) {

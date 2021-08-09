@@ -546,7 +546,13 @@ function runInWolfram(print=false){
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
 
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-        wolframKernelClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
+        
+        try {
+            wolframKernelClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:print});
+        } catch {
+            console.log("Kernel is not ready. Restarting...")
+            restart()
+        }
     }
 }
 
@@ -815,7 +821,8 @@ function runToLine() {
   
     e.revealRange(r, vscode.TextEditorRevealType.Default);
 
-    wolframClient.sendRequest("runInWolfram", {range:r, textDocument:e.document, print:false}).then((result:any) => {
+    try {    
+        wolframKernelClient.sendRequest("runInWolfram", {range:r, textDocument:e.document, print:false}).then((result:any) => {
         // cursor has not moved yet
         if (e.selection.active.line === outputPosition.line-1 && e.selection.active.character === outputPosition.character){
             outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
@@ -823,8 +830,14 @@ function runToLine() {
             e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         }
 
-        updateResults(e, result, false);
-    });
+            updateResults(e, result, false);
+        });
+    } catch {
+        console.log("Kernel is not ready. Restarting...")
+        restart()
+    }
+
+
 }
 
 function didChangeWindowState(state:vscode.WindowState) {
