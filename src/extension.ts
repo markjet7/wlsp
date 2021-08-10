@@ -76,7 +76,7 @@ function connectKernel(outputChannel:any, context:any) {
 
         loadwolfram().then(async (success:any) => {
             console.log("Wolfram loaded. Connecting...");
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
             let theDisposible = loadWolframServer(outputChannel, context);
             if(theDisposible != null) {
                 console.log("Connected");
@@ -108,11 +108,12 @@ function connectKernelClient(outputChannel:any, context:any) {
         outputChannel.appendLine("Kernel Port: " + kernelPORT.toString());
         loadwolframKernel().then(async (success:any) => {
             console.log("Wolfram kernel loaded. Connecting...");
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
             let theDisposible = loadWolframKernelClient(outputChannel, context);
             if(theDisposible != null) {
                 console.log("Connected to Kernel");
                 context.subscriptions.push(theDisposible);
+                vscode.window.showInformationMessage("Wolfram is ready.");
                 resolve(true);
             } else {
                 console.log("Failed to connect to Kernel");
@@ -146,7 +147,7 @@ export function activate(context: vscode.ExtensionContext){
     //     PORT = freep[0];
     //     outputChannel.appendLine("Port: " + PORT.toString());
     //     loadwolfram().then(async (success:any) => {
-    //         await new Promise(resolve => setTimeout(resolve, 3000));
+    //         await new Promise(resolve => setTimeout(resolve, 5000));
     //         theDisposible = loadWolframServer(outputChannel, context)
     //         context.subscriptions.push(theDisposible);
     //         // wolframNotebookProvider.setWolframClient(wolframClient);
@@ -284,7 +285,7 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
             client.connect(kernelPORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 3000); 
+                client.setKeepAlive(true, 5000); 
                 resolve({
                     reader: client,
                     writer: client
@@ -326,7 +327,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext){
             let client = new net.Socket();
             //setTimeout(() =>{
                 client.connect(PORT, "127.0.0.1", () => {
-                    client.setKeepAlive(true, 3000);
+                    client.setKeepAlive(true, 5000);
                     resolve({
                         reader: client,
                         writer: client

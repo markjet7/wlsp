@@ -60,49 +60,50 @@ handle["shutdown", json_]:=Module[{},
 	Exit[];
 ];
 
-handle["codeLens/resolve", json_]:=Module[{},
+handle["codeLens/resolve", json_]:=Module[{json},
 	Print["resolve"];
 ];
 
-handle["textDocument/codeLens", json_]:=Module[{src, positions, lens, lines, sections, sectionPattern},
-	src = documents[json["params","textDocument","uri"]];
-	sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
-	lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
-	sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
-	If[sections != {},
-		lens = Table[
-			<|
-				"range" -> 
-					<|
-						"start" -><|"line"->l[[1]], "character"->0|>,
-						"end" -><|"line"->l[[1]], "character"->20|>
-					|>,
-				"command" -> <|
-					"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~sectionPattern], "\n"] <> " lines",
-					"command" -> "wolfram.runExpression",
-					"arguments" -> {StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
-				|>
-			|>,
-			{l, Transpose[{Most@lines, sections}]}
-		];,
-		lens = {}
-	];
-	
-	sendResponse[<|"id"->json["id"], "result"->lens|>];
+handle["textDocument/codeLens", json_]:=Module[{src, lens, lines, sections, sectionPattern},
+	Check[
+		src = documents[json["params","textDocument","uri"]];
+		sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
+		lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
+		sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
+		If[sections != {},
+			lens = Table[
+				<|
+					"range" -> 
+						<|
+							"start" -><|"line"->l[[1]], "character"->0|>,
+							"end" -><|"line"->l[[1]], "character"->20|>
+						|>,
+					"command" -> <|
+						"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~sectionPattern], "\n"] <> " lines",
+						"command" -> "wolfram.runExpression",
+						"arguments" -> {StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
+					|>
+				|>,
+				{l, Transpose[{Most@lines, sections}]}
+			];,
+			lens = {}
+		];
+		
+		sendResponse[<|"id"->json["id"], "result"->lens|>];,
+	sendResponse[<|"id"->json["id"], "result"->{}|>];]
 ];
 
 handle["textDocument/prepareRename", json_]:=Module[{pos, src, str, renames, result, response},
-	pos = rangeFromVSCode@json["params", "textDocument", "position"];
+	pos = posFromVSCode@json["params", "position"];
 	src = documents[json["params","textDocument","uri"]];
 	str = getWordAtPosition[src, pos];
-
 	renames = getWordsPosition[str, src];
 	result = <|"range"-> renames[[1,2]]|>;
 	response = <|"id"->json["id"],"result"->result |>;
 	sendResponse[response]; 
 ]; 
 
-handle["textDocument/rename", json_]:=Module[{},
+handle["textDocument/rename", json_]:=Module[{pos, src, newName, str, renames, edits, result, response, response3},
 	pos = json["params", "position"];
 	src = documents[json["params","textDocument","uri"]];
 	newName = json["params", "newName"];
@@ -321,19 +322,22 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 	];
 ];
 
-handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, result, response},
-	position = json["params", "position"];
-	uri = json["params"]["textDocument"]["uri"];
-	src = documents[json["params","textDocument","uri"]];
-	symbol = ToString@getWordAtPosition[src, position];
+handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
+
 	Check[
+		position = json["params", "position"];
+		uri = json["params"]["textDocument"]["uri"];
+		src = documents[json["params","textDocument","uri"]];
+		symbol = ToString@getWordAtPosition[src, position];
 		value = Which[
 			symbol === "",
-			"",
+			symbol,
 			MemberQ[Keys@symbolDefinitions, symbol],
 				symbolDefinitions[symbol]["definition"],
 			True,
-				Check[extractUsage[symbol], symbol]
+				Check[
+					v = extractUsage[symbol];
+					If[v ==="", symbol, v], symbol]
 		];
 
 		result = <|"contents"-><|
@@ -347,6 +351,7 @@ handle["textDocument/hover", json_]:=Module[{position, uri, src, symbol, value, 
 
 		response = <|"id"->json["id"], "result"->""|>;
 		sendResponse[response];
+		
 		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>];
 	];
 ];
@@ -358,7 +363,7 @@ convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[M
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
-extractUsage[_Null]:="";
+extractUsage[a_Null]:="";
 
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
 	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( x:ToString@symbol):>"\n"<>x]
@@ -385,7 +390,7 @@ handle["runCell", json_]:=Module[{},
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
-	validate[];
+	(* validate[]; *)
 ];
 
 handle["textDocument/didChange", json_]:=Module[{},
@@ -396,14 +401,13 @@ handle["textDocument/didChange", json_]:=Module[{},
 ];
 
 handle["textDocument/didSave", json_]:=Module[{},
-	validate[];
+	validate[json];
 ];
 
 handle["openNotebook", json_]:=Module[{jupyterfile, response},
-	jupyterfile = Echo@First[Notebook2Jupyter[json["params"]["path"]["path"]]];
+	jupyterfile = First[Notebook2Jupyter[json["params"]["path"]["path"]]];
 	response = <|"id"->json["id"],"result"-><|"output"->jupyterfile|>|>;
 	sendResponse[response];
-	Print@response;
 ];
 
 handle["windowFocused", json_]:=Module[{},
@@ -427,6 +431,27 @@ handle["abort", json_]:=Module[{},
 
 	Print["Aborting"];
 	AbortKernels[];
+];
+
+validate[json_]:=Module[{src, lints, severities, msgs, response},
+	Check[
+		uri = json["params", "textDocument"]["uri"];
+		src = documents[json["params","textDocument","uri"]];
+		lints = CodeInspect[src];
+		severities = <| "Fatal"->0, "Warning"->1, "Information"->2, "Hint"->3 |>;
+		msgs = Map[<|  
+			"message"->#[[2]], 
+			"range"-><|
+				"start" -> <| "line" -> #[[4, 1, 1, 1]]-1, "character" -> #[[4, 1, 1, 2]]-1 |>,
+				"end" -> <| "line" -> #[[4, 1, 2, 1]]-1, "character" -> #[[4, 1, 2, 2]]-1 |>
+			|>,
+			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]],0] |> &, lints];
+		
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
+		
+		sendResponse[response];,
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>]
+	]
 ];
 
 validate[]:=Module[{lints, severities, msgs, response},
@@ -468,6 +493,10 @@ rangeToStartEnd[range_]:=Module[{},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];
+
+posFromVSCode[pos_]:=Module[{},
+	<|"line" -> pos["line"], "character" -> pos["character"] + 1|>
+]
 
 rangeFromVSCode[range_]:=Module[{}, 
 	<|

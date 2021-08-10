@@ -74,7 +74,7 @@ function connectKernel(outputChannel, context) {
                 outputChannel.appendLine("Wolfram Port: " + PORT.toString());
                 loadwolfram().then((success) => __awaiter(this, void 0, void 0, function* () {
                     console.log("Wolfram loaded. Connecting...");
-                    yield new Promise(resolve => setTimeout(resolve, 3000));
+                    yield new Promise(resolve => setTimeout(resolve, 5000));
                     let theDisposible = loadWolframServer(outputChannel, context);
                     if (theDisposible != null) {
                         console.log("Connected");
@@ -109,11 +109,12 @@ function connectKernelClient(outputChannel, context) {
             outputChannel.appendLine("Kernel Port: " + kernelPORT.toString());
             loadwolframKernel().then((success) => __awaiter(this, void 0, void 0, function* () {
                 console.log("Wolfram kernel loaded. Connecting...");
-                yield new Promise(resolve => setTimeout(resolve, 3000));
+                yield new Promise(resolve => setTimeout(resolve, 5000));
                 let theDisposible = loadWolframKernelClient(outputChannel, context);
                 if (theDisposible != null) {
                     console.log("Connected to Kernel");
                     context.subscriptions.push(theDisposible);
+                    vscode.window.showInformationMessage("Wolfram is ready.");
                     resolve(true);
                 }
                 else {
@@ -144,7 +145,7 @@ function activate(context) {
     //     PORT = freep[0];
     //     outputChannel.appendLine("Port: " + PORT.toString());
     //     loadwolfram().then(async (success:any) => {
-    //         await new Promise(resolve => setTimeout(resolve, 3000));
+    //         await new Promise(resolve => setTimeout(resolve, 5000));
     //         theDisposible = loadWolframServer(outputChannel, context)
     //         context.subscriptions.push(theDisposible);
     //         // wolframNotebookProvider.setWolframClient(wolframClient);
@@ -262,7 +263,7 @@ function loadWolframKernelClient(outputChannel, context) {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
             client.connect(kernelPORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 3000);
+                client.setKeepAlive(true, 5000);
                 resolve({
                     reader: client,
                     writer: client
@@ -299,7 +300,7 @@ function loadWolframServer(outputChannel, context) {
             let client = new net.Socket();
             //setTimeout(() =>{
             client.connect(PORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 3000);
+                client.setKeepAlive(true, 5000);
                 resolve({
                     reader: client,
                     writer: client
