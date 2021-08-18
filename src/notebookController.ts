@@ -8,7 +8,7 @@ export function activate(context: vscode.ExtensionContext) {
   
 export class WolframController {
     readonly controllerId = 'wolfram-notebook';
-    readonly notebookType = 'wolfram.notebook';
+    readonly notebookType = 'wolfram-notebook';
     readonly label = 'Wolfram Notebook';
     readonly supportedLanguages = ['wolfram'];
 

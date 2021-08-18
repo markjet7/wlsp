@@ -22,7 +22,7 @@
         "notebooks": [
             {
                 "id": "wolfram-notebook",
-                "type": "wolfram.notebook",
+                "type": "wolfram-notebook",
                 "displayName": "Wolfram Notebook",
                 "priority": "option",
                 "selector": [
