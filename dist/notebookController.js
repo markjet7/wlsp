@@ -9,13 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activate = void 0;
+exports.WolframController = exports.activate = void 0;
 const vscode = require("vscode");
+const extension_1 = require("./extension");
 function activate(context) {
-    context.subscriptions.push(new Controller());
+    context.subscriptions.push(new WolframController());
 }
 exports.activate = activate;
-class Controller {
+class WolframController {
     constructor() {
         this.controllerId = 'wolfram-notebook';
         this.notebookType = 'wolfram.notebook';
@@ -38,16 +39,27 @@ class Controller {
             execution.executionOrder = ++this._executionOrder;
             execution.start(Date.now()); // Keep track of elapsed time to execute cell.
             /* Do some execution here; not implemented */
-            execution.replaceOutput([
-                new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.text('Dummy output text!')
-                ])
-            ]);
-            execution.end(true, Date.now());
+            try {
+                extension_1.wolframKernelClient.sendRequest("runExpression", {
+                    expression: cell.document.getText(),
+                    line: 0,
+                    end: 0
+                }).then((result) => {
+                    execution.replaceOutput([
+                        new vscode.NotebookCellOutput([
+                            vscode.NotebookCellOutputItem.text(result["output"])
+                        ])
+                    ]);
+                    execution.end(true, Date.now());
+                });
+            }
+            catch (err) {
+            }
         });
     }
     dispose() {
         this._controller.dispose();
     }
 }
+exports.WolframController = WolframController;
 //# sourceMappingURL=notebookController.js.map

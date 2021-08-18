@@ -110,7 +110,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 			output = result;
 		];
 		
-		response = <|"method"->"onRunInWolfram", 
+		
+		response = <|
+		 	"id" -> If[KeyMemberQ[json, "id"], json["id"], ""],
+			"method"->"onRunInWolfram", 
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
 				"output"-> ToString[output, TotalWidth->Infinity], 

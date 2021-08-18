@@ -27,7 +27,7 @@
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.{wl,wls}"
+                        "filenamePattern": "*.wl"
                     }
                 ]
             }
@@ -38,7 +38,7 @@
                 "displayName": "Wolfram Text Editor",
                 "selector": [
                     {
-                        "filenamePattern": "*.{wl,wls}"
+                        "filenamePattern": "*.wl"
                     }
                 ],
                 "priority": "option"

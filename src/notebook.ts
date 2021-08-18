@@ -7,11 +7,7 @@ import {
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
 
-// export function activate(context: vscode.ExtensionContext) {
-//     context.subscriptions.push(
-//         vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
-//     );
-// }
+
 
 export interface RawNotebookCell {
     indentation?: string;
@@ -21,6 +17,11 @@ export interface RawNotebookCell {
     kind: vscode.NotebookCellKind;
 }
 
+// export function activate(context: vscode.ExtensionContext) {
+//     context.subscriptions.push(
+//       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
+//   );
+// }
 export class WolframNotebookSerializer implements vscode.NotebookSerializer {
     async deserializeNotebook(
       content: Uint8Array,

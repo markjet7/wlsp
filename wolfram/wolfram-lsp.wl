@@ -120,8 +120,8 @@ If[SameQ[client,{}],
 	Print["Connection failed. Restart extension."];
 	Close[SERVER];
 	Quit[1],
-	Print["Client connected: "];
-	Print[client];];
+	Print["Client connected: " <> ToString@client];
+];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 

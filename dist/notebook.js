@@ -9,23 +9,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.WolframNotebook = exports.WolframNotebookSerializer = exports.activate = void 0;
+exports.deactivate = exports.WolframNotebook = exports.WolframNotebookSerializer = void 0;
 const vscode = require("vscode");
-function activate(context) {
-    context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer()));
-}
-exports.activate = activate;
+// export function activate(context: vscode.ExtensionContext) {
+//     context.subscriptions.push(
+//       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
+//   );
+// }
 class WolframNotebookSerializer {
     deserializeNotebook(content, _token) {
         return __awaiter(this, void 0, void 0, function* () {
             var contents = new TextDecoder().decode(content);
-            let raw;
-            try {
-                raw = JSON.parse(contents);
-            }
-            catch (_a) {
-                raw = [];
-            }
+            let raw = [];
+            contents.split(/\r?\n\r?\n/).forEach(line => {
+                raw.push({
+                    kind: vscode.NotebookCellKind.Code,
+                    value: line,
+                    language: "wolfram"
+                });
+            });
             const cells = raw.map(item => new vscode.NotebookCellData(item.kind, item.value, item.language));
             return new vscode.NotebookData(cells);
         });

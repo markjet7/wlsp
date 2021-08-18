@@ -13,11 +13,12 @@ import {
 	TransportKind } from 'vscode-languageclient';
 import { EEXIST } from 'constants';
 import {WolframNotebook, WolframNotebookSerializer} from './notebook';
+import {WolframController} from './notebookController';
 const fs = require('fs')
 
 let client:LanguageClient;
-let wolframClient:LanguageClient;
-let wolframKernelClient:LanguageClient;
+export let wolframClient:LanguageClient;
+export let wolframKernelClient:LanguageClient;
 let wolframStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 wolframStatusBar.command = "wolfram.restart";
 wolframStatusBar.text = "$(repo-sync~spin) Loading Wolfram...";
@@ -28,13 +29,15 @@ kernelStatusBar.text = "$(lightbulb)";
 kernelStatusBar.color = "foreground";
 kernelStatusBar.show();
 
-let wolframNotebookProvider:WolframNotebookSerializer;
 let PORT:any;
 let kernelPORT:any;
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let lspPath = '';
 let kernelPath = '';
 let theContext:vscode.ExtensionContext;
+let notebook:WolframNotebook;
+let serializer:vscode.NotebookSerializer;
+let controller:WolframController;
 
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
@@ -84,10 +87,16 @@ export function activate(context: vscode.ExtensionContext){
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
 
+    serializer = new WolframNotebookSerializer()
+    controller = new WolframController()
+
     connectKernel(outputChannel, context)
+
     context.subscriptions.push(
-        vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
+        vscode.workspace.registerNotebookSerializer('wolfram-notebook', serializer)
     );
+
+    context.subscriptions.push(controller);
 }
 
 function connectKernel(outputChannel:any, context:any) {
@@ -487,8 +496,8 @@ function restartKernel(){
     
 }
 
-let printResults:any[] = [];
-function runInWolfram(print=false){
+export let printResults:any[] = [];
+export function runInWolfram(print=false){
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel:vscode.Selection = e!.selection;
     let outputPosition:vscode.Position = new vscode.Position(sel.active.line+1, 0);
@@ -501,10 +510,12 @@ function runInWolfram(print=false){
     }
 
     if(e?.document.uri.scheme==='vscode-notebook-cell') {
-        // let n:WolframNotebook | undefined = wolframNotebookProvider._notebooks.get(e.document.uri.toString());
-        // if (n){
-        //     wolframNotebookProvider.executeCell(n, n.cells[0])
-        // }
+        e.selection = new vscode.Selection(0, 0, 1, 1)
+        try {
+            wolframKernelClient.sendNotification("runInWolfram", {range:sel, textDocument:e.document, print:false});
+        } catch (err) {
+            console.log(err);
+        }
         
     }
     else if (e?.document.uri.scheme === 'file' || e?.document.uri.scheme ==='untitled') {
@@ -527,7 +538,10 @@ function runInWolfram(print=false){
 function onRunInWolfram(result:any){
     let editors:vscode.TextEditor[] = vscode.window.visibleTextEditors;
     let e = editors.filter((e) => {return e.document.uri.path === result["document"]["path"]})[0];
-    if(e){
+    
+    if (e.document.uri.scheme == 'vscode-notebook-cell') {
+        vscode.notebooks
+    }else{
         updateResults(e, result, result["print"]);
     }
 }

@@ -118,8 +118,8 @@ If[SameQ[client2,{}],
 	Print["Connection failed. Restart extension."];
 	Close[KERNELSERVER];
 	Quit[1],
-	Print["Kernel client connected: "];
-	Print[client2];];
+	Print["Kernel client connected: " <> ToString@client2];
+];
 
 Print["1"];
 MemoryConstrained[

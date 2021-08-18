@@ -1,11 +1,12 @@
 
 import * as vscode from 'vscode';
+import {runInWolfram, wolframClient, wolframKernelClient} from './extension'
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(new Controller());
-  }
+    context.subscriptions.push(new WolframController());
+}
   
-class Controller {
+export class WolframController {
     readonly controllerId = 'wolfram-notebook';
     readonly notebookType = 'wolfram.notebook';
     readonly label = 'Wolfram Notebook';
@@ -42,13 +43,25 @@ class Controller {
         execution.start(Date.now()); // Keep track of elapsed time to execute cell.
 
         /* Do some execution here; not implemented */
+        try {
+            wolframKernelClient.sendRequest("runExpression", 
+                {
+                    expression: cell.document.getText(),
+                    line: 0,
+                    end: 0
+                }
+            ).then((result:any) => {
+                execution.replaceOutput([
+                    new vscode.NotebookCellOutput([
+                        vscode.NotebookCellOutputItem.text(result["output"])
+                    ])
+                ]);
+                execution.end(true, Date.now());
+            })
+            
+        } catch (err) {
 
-        execution.replaceOutput([
-        new vscode.NotebookCellOutput([
-            vscode.NotebookCellOutputItem.text('Dummy output text!')
-        ])
-        ]);
-        execution.end(true, Date.now());
+        }
     }
 
     dispose() {
