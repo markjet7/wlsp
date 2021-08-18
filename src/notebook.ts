@@ -7,17 +7,17 @@ import {
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
 
-export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(
-        vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
-    );
-}
+// export function activate(context: vscode.ExtensionContext) {
+//     context.subscriptions.push(
+//         vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
+//     );
+// }
 
 export interface RawNotebookCell {
     indentation?: string;
     metadata?:any;
-	language: string;
-	value: string;
+	  language: string;
+	  value: string;
     kind: vscode.NotebookCellKind;
 }
 
@@ -28,12 +28,14 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
     ): Promise<vscode.NotebookData> {
       var contents = new TextDecoder().decode(content);
   
-      let raw: RawNotebookCell[];
-      try {
-        raw = <RawNotebookCell[]>JSON.parse(contents);
-      } catch {
-        raw = [];
-      }
+      let raw: RawNotebookCell[] = [];
+      contents.split(/\r?\n\r?\n/).forEach(line => {
+        raw.push({
+          kind: vscode.NotebookCellKind.Code,
+          value: line,
+          language: "wolfram"
+        })
+      })
   
       const cells = raw.map(
         item => new vscode.NotebookCellData(item.kind, item.value, item.language)

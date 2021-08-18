@@ -1,3 +1,4 @@
+BeginPackage["wolframLSP`"]
 (* ::Package:: *)
 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
@@ -668,3 +669,4 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 	)
 ];
 *)
+EndPackage[];

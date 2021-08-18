@@ -1,3 +1,4 @@
+BeginPackage["WolframKernel`"]
 (* ::Package:: *)
  
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
@@ -42,7 +43,7 @@ handle["shutdown", json_]:=Module[{},
 	state = "Stop";
 	Print["Stopping Kernels"];
 	CloseKernels[];
-	Close[SERVER];
+	Close[KERNELSERVER];
 	Quit[1];
 	Abort[];
 	Exit[];
@@ -428,3 +429,4 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 	{headerBytes,jsonBytes}
 
 ];
+EndPackage[]

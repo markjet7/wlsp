@@ -1,4 +1,4 @@
-
+BeginPackage["WolframKernel`"]
 (* Kernel Start Section *)
 
 
@@ -20,7 +20,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 (* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
 
 
-If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
+If[Length[$ScriptCommandLine]>1,kernelport=ToExpression@Part[$ScriptCommandLine,2],port=6589];
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 Get[DirectoryName[path] <> "CodeFormatter.m"];
@@ -83,6 +83,7 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client2,
 		Replace[
+			Print["3"];
 		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 			handleMessageList[ReadMessages[client2], state],
 			{
@@ -97,15 +98,15 @@ socketHandler[state_]:=Module[{},
 	]
 ] // socketHandler;
 
-SERVER=SocketOpen[port,"TCP"];
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
-Print[SERVER];
-Print[port];
+KERNELSERVER=SocketOpen[kernelport,"TCP"];
+Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];
+Print[KERNELSERVER];
+Print[kernelport];
 
 Block[ {$IterationLimit=1*^6},
 	client2={};
 	While[SameQ[client2,{}],
-		client2=First[SERVER["ConnectedClients"], {}];
+		client2=First[KERNELSERVER["ConnectedClients"], {}];
 		Pause[0.001];
 
 		state="Continue";
@@ -115,11 +116,12 @@ Block[ {$IterationLimit=1*^6},
 
 If[SameQ[client2,{}],
 	Print["Connection failed. Restart extension."];
-	Close[SERVER];
+	Close[KERNELSERVER];
 	Quit[1],
-	Print["client2 connected: "];
+	Print["Kernel client connected: "];
 	Print[client2];];
 
+Print["1"];
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 			socketHandler[state]
@@ -127,16 +129,18 @@ MemoryConstrained[
 	8*1024^3
 ];
 
+
 listener = SocketListen[
-	port,
+	kernelport,
 	Function[{assoc},
 		With[{
 			data = assoc["Data"]
 		},
-			SERVER = assoc["SourceSocket"];
+			KERNELSERVER = assoc["SourceSocket"];
 			Check[
-		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-            readMessage[data], 
+				Print["3"];
+		    	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+            	readMessage[data], 
 				Print["Startup kernel server failed"];
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
 			];
@@ -145,3 +149,5 @@ listener = SocketListen[
 	CharacterEncoding -> "UTF8"
 ]; 
 CloseKernels[];
+
+EndPackage[];
