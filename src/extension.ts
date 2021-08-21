@@ -61,7 +61,7 @@ let theDisposible:vscode.Disposable;
 let theKernelDisposible:vscode.Disposable;
 
 function randomPort(){
-    return Math.round(Math.random()*(65535 - 49152)+49152);
+    return Math.round(Math.random()*(100)+8888);
 }
 
 function rejectDelay(reason:any) {
@@ -90,7 +90,7 @@ export function activate(context: vscode.ExtensionContext){
     serializer = new WolframNotebookSerializer()
     controller = new WolframController()
 
-    connectKernel(outputChannel, context)
+    connectKernel(outputChannel, context);
 
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', serializer)
@@ -134,8 +134,7 @@ function connectKernelClient(outputChannel:any, context:any) {
             console.log("Failed to find free port. Retrying");
         }
         console.log("Kernel Port: " + kernelPORT.toString());
-        loadwolframKernel((success:any) => {
-            console.log("Wolfram kernel loaded. Connecting...");
+        loadwolframKernel(() => {
             // await new Promise(resolve => setTimeout(resolve, 5000));
             loadWolframKernelClient(outputChannel, context, (theKernelDisposible:any) => {
                 if(theKernelDisposible != null) {
@@ -173,15 +172,16 @@ let loadwolframKernel = function(callback:any) {
                 console.log("Launching wolframkernel: pid unknown");
             }
 
-            wolframKernel.on('SIGPIPE', (data) => {
-                console.log("SIGPIPE");
+            wolframKernel.stdout?.on('data', (data) => {
+                console.log("WKernel: " + data.toString());
+                if (data.toString().includes("Kernel Ready")){
+                    console.log("Wolfram kernel loaded. Connecting...");
+                    callback();
+                }
             });
 
-            wolframKernel.stdout?.once('data', (data) => {
-                wolframKernel.stdout?.on('data', (data) => {
-                    console.log("WKernel: " + data.toString());
-                });
-                callback();
+            wolframKernel.on('SIGPIPE', (data) => {
+                console.log("SIGPIPE");
             });
 
             wolframKernel.stdout?.on('error', (data) => {
@@ -247,12 +247,12 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
             return new Promise((resolve, reject) => {
                 let client = new net.Socket();
                 client.connect(kernelPORT, "127.0.0.1", () => {
-                    client.setKeepAlive(true,0 ); 
+                    client.setKeepAlive(true,10); 
                     resolve({
                         reader: client,
                         writer: client
                     })
-                })
+                });
             })
         };
 
@@ -271,10 +271,11 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
             wolframKernelClient.onNotification("updateDecorations", updateDecorations);
             wolframKernelClient.onNotification("updateVarTable", updateVarTable);
             wolframKernelClient.onNotification("moveCursor", moveCursor);
+            console.log("Sending disposible");
             callback(disposible)
         });
 
-
+        console.log("Starting disposible");
         let disposible = wolframKernelClient.start();
 }
 
@@ -286,6 +287,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext, c
     //     debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     // };
     //logtime("start client");
+    console.log("server options");
     let serverOptions: ServerOptions = function() {
         return new Promise ((resolve, reject) => {
             let client = new net.Socket();
@@ -332,6 +334,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext, c
         
     });
     let disposible = wolframClient.start();
+
 }
 
 let wolframVersionText:string = "wolfram v.?";

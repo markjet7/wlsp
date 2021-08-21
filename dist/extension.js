@@ -60,7 +60,7 @@ vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
 let theDisposible;
 let theKernelDisposible;
 function randomPort() {
-    return Math.round(Math.random() * (65535 - 49152) + 49152);
+    return Math.round(Math.random() * (100) + 8888);
 }
 function rejectDelay(reason) {
     let t = 500;
@@ -123,8 +123,7 @@ function connectKernelClient(outputChannel, context) {
             console.log("Failed to find free port. Retrying");
         }
         console.log("Kernel Port: " + kernelPORT.toString());
-        loadwolframKernel((success) => {
-            console.log("Wolfram kernel loaded. Connecting...");
+        loadwolframKernel(() => {
             // await new Promise(resolve => setTimeout(resolve, 5000));
             loadWolframKernelClient(outputChannel, context, (theKernelDisposible) => {
                 if (theKernelDisposible != null) {
@@ -161,15 +160,15 @@ let loadwolframKernel = function (callback) {
             else {
                 console.log("Launching wolframkernel: pid unknown");
             }
+            (_a = wolframKernel.stdout) === null || _a === void 0 ? void 0 : _a.on('data', (data) => {
+                console.log("WKernel: " + data.toString());
+                if (data.toString().includes("Kernel Ready")) {
+                    console.log("Wolfram kernel loaded. Connecting...");
+                    callback();
+                }
+            });
             wolframKernel.on('SIGPIPE', (data) => {
                 console.log("SIGPIPE");
-            });
-            (_a = wolframKernel.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
-                var _a;
-                (_a = wolframKernel.stdout) === null || _a === void 0 ? void 0 : _a.on('data', (data) => {
-                    console.log("WKernel: " + data.toString());
-                });
-                callback();
             });
             (_b = wolframKernel.stdout) === null || _b === void 0 ? void 0 : _b.on('error', (data) => {
                 console.log("STDOUT Error" + data.toString());
@@ -226,7 +225,7 @@ function loadWolframKernelClient(outputChannel, context, callback) {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
             client.connect(kernelPORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 0);
+                client.setKeepAlive(true, 10);
                 resolve({
                     reader: client,
                     writer: client
@@ -248,8 +247,10 @@ function loadWolframKernelClient(outputChannel, context, callback) {
         exports.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         exports.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
         exports.wolframKernelClient.onNotification("moveCursor", moveCursor);
+        console.log("Sending disposible");
         callback(disposible);
     });
+    console.log("Starting disposible");
     let disposible = exports.wolframKernelClient.start();
 }
 function loadWolframServer(outputChannel, context, callback) {
@@ -258,6 +259,7 @@ function loadWolframServer(outputChannel, context, callback) {
     //     debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     // };
     //logtime("start client");
+    console.log("server options");
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();

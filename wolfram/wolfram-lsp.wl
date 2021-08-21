@@ -103,7 +103,7 @@ Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
 Print[SERVER];
 Print[port];
 
-Block[ {$IterationLimit=1*^6},
+TimeConstrained[
 	client={};
 	While[SameQ[client,{}],
 		client=First[SERVER["ConnectedClients"], {}];
@@ -111,7 +111,8 @@ Block[ {$IterationLimit=1*^6},
 
 		state="Continue";
 		
-	];
+	];,
+	60
 ];
 
 

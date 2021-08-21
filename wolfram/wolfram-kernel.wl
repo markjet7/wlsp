@@ -83,7 +83,6 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 socketHandler[state_]:=Module[{},
 	If[SocketReadyQ@client2,
 		Replace[
-			Print["3"];
 		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 			handleMessageList[ReadMessages[client2], state],
 			{
@@ -92,6 +91,8 @@ socketHandler[state_]:=Module[{},
 				{} :> state
 			}
 		],
+		(* Close[client2];
+		WaitForClient[]; *)
 		Pause[handlerWait];
 		 (* flush[client2];  *)
 		state
@@ -100,18 +101,26 @@ socketHandler[state_]:=Module[{},
 
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
 Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];
-Print[KERNELSERVER];
-Print[kernelport];
+(* Print[KERNELSERVER];
+Print[kernelport]; *)
+Print["Kernel Ready"];
 
-Block[ {$IterationLimit=1*^6},
+WaitForClient[]:=While[SameQ[client2,{}],
+		client2=First[KERNELSERVER["ConnectedClients"], {}];
+		Pause[0.1];
+
+		state="Continue";
+	];
+
+TimeConstrained[ 
 	client2={};
 	While[SameQ[client2,{}],
 		client2=First[KERNELSERVER["ConnectedClients"], {}];
-		Pause[0.001];
+		Pause[0.1];
 
 		state="Continue";
-		
-	];
+	];,
+	60
 ];
 
 If[SameQ[client2,{}],
@@ -121,7 +130,6 @@ If[SameQ[client2,{}],
 	Print["Kernel client connected: " <> ToString@client2];
 ];
 
-Print["1"];
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 			socketHandler[state]

@@ -35,7 +35,6 @@ ServerCapabilities=<|
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
 		
 handle["initialize",json_]:=Module[{response, response2},
-	Print["Initializing Wolfram"];
     CONTINUE = True;
 
 	labels = COMPLETIONS[[All, "label"]];
@@ -46,7 +45,6 @@ handle["initialize",json_]:=Module[{response, response2},
 	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	sendResponse[response];
 
-	Print["Sending version number"];
 	response2 = <|"method" -> "wolframVersion", "params"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
 	sendResponse[response2];
 ];

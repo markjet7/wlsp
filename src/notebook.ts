@@ -59,8 +59,16 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         });
       }
   
-      return new TextEncoder().encode(JSON.stringify(contents));
+      let stringoutput = contents.reduce(
+        (current, item) => current + item.value + "\n\n", ""
+      )
+
+      // return new TextEncoder().encode(JSON.stringify(contents));
+      return Buffer.from(stringoutput);
     }
+
+    
+
 }
 
 export class WolframNotebook {

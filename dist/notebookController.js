@@ -19,7 +19,7 @@ exports.activate = activate;
 class WolframController {
     constructor() {
         this.controllerId = 'wolfram-notebook';
-        this.notebookType = 'wolfram.notebook';
+        this.notebookType = 'wolfram-notebook';
         this.label = 'Wolfram Notebook';
         this.supportedLanguages = ['wolfram'];
         this._executionOrder = 0;
