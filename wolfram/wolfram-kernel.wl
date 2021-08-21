@@ -24,6 +24,7 @@ If[Length[$ScriptCommandLine]>1,kernelport=ToExpression@Part[$ScriptCommandLine,
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 Get[DirectoryName[path] <> "CodeFormatter.m"];
+Get[DirectoryName[path] <> "lsp-kernels.wl"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
@@ -49,10 +50,12 @@ handleMessage[msg_Association, state_]:=Module[{},
 			Check[
 				Get[DirectoryName[path] <> "transforms.wl"];
 				handle[msg["method"],msg], 
+				Print["error"];
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
 
 			Check[handle[msg["method"],msg],
+				Print["error2"];
 				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
 			]
 		]		
@@ -60,9 +63,9 @@ handleMessage[msg_Association, state_]:=Module[{},
 	If[state === "Continue", {"Continue",state}, {"Stop", state}]
 ];
 
-ReadMessages[client_SocketObject]:=ReadMessagesImpl[client2,{{0,{}},{}}];
+ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
-ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client2,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client2]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client2]]},{msgs}})}]])];
+ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
 
 
 getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
@@ -91,10 +94,9 @@ socketHandler[state_]:=Module[{},
 				{} :> state
 			}
 		],
-		(* Close[client2];
-		WaitForClient[]; *)
-		Pause[handlerWait];
-		 (* flush[client2];  *)
+		(* Close[client2]; *)
+		Pause[0.1];
+		(* flush[client2]; *)
 		state
 	]
 ] // socketHandler;
@@ -105,22 +107,14 @@ Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])
 Print[kernelport]; *)
 Print["Kernel Ready"];
 
-WaitForClient[]:=While[SameQ[client2,{}],
-		client2=First[KERNELSERVER["ConnectedClients"], {}];
-		Pause[0.1];
-
-		state="Continue";
-	];
-
 TimeConstrained[ 
 	client2={};
 	While[SameQ[client2,{}],
 		client2=First[KERNELSERVER["ConnectedClients"], {}];
-		Pause[0.1];
-
+		Pause[0.01];
 		state="Continue";
 	];,
-	60
+	120
 ];
 
 If[SameQ[client2,{}],
@@ -132,7 +126,7 @@ If[SameQ[client2,{}],
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
-			socketHandler[state]
+		socketHandler[state]
 	];,
 	8*1024^3
 ];
@@ -146,7 +140,6 @@ listener = SocketListen[
 		},
 			KERNELSERVER = assoc["SourceSocket"];
 			Check[
-				Print["3"];
 		    	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
             	readMessage[data], 
 				Print["Startup kernel server failed"];

@@ -107,15 +107,13 @@ TimeConstrained[
 	client={};
 	While[SameQ[client,{}],
 		client=First[SERVER["ConnectedClients"], {}];
-		Pause[0.001];
+		Pause[0.01];
 
 		state="Continue";
 		
 	];,
-	60
+	120
 ];
-
-
 
 If[SameQ[client,{}],
 	Print["Connection failed. Restart extension."];
@@ -140,6 +138,7 @@ listener = SocketListen[
 			(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
 			SERVER = assoc["SourceSocket"];
 			Check[readMessage[data], 
+				Print["Unhandled error"];
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
 			];
 		]

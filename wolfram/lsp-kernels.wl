@@ -40,13 +40,13 @@ handle["initialize",json_]:=Module[{response, response2},
 
 
 handle["shutdown", json_]:=Module[{},
-	state = "Stop";
 	Print["Stopping Kernels"];
+	(* state = "Stop";
 	CloseKernels[];
 	Close[KERNELSERVER];
 	Quit[1];
 	Abort[];
-	Exit[];
+	Exit[]; *)
 ];
 
 boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
@@ -95,7 +95,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
@@ -110,8 +110,19 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 			output = result;
 		];
 		
-		response = <|
-		 	(* "id" -> If[KeyMemberQ[json, "id"], json["id"], ""], *)
+		response = If[json["method"] === "runExpression",
+			<|
+			"id" -> json["id"],
+			"method"->"runExpression", 
+			"params"-><|
+				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
+				"output"-> ToString[output, TotalWidth->Infinity], 
+				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
+				"position"-> newPosition,
+				"print" -> False,
+				"document" ->  ""|>
+			|>,
+			<|
 			"method"->"onRunInWolfram", 
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
@@ -120,7 +131,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{decorationLine, decorati
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
-			|>;
+			|>;	
+		];
 		evalnumber = evalnumber + 1;
 		sendResponse[response];
 

@@ -76,6 +76,15 @@ function rejectDelay(reason) {
 //         return retry(fn, (retries - 1), err);
 //     });
 // }
+function check_pulse(wolframClient, wolframKernelClient) {
+    if (wolframClient !== undefined && wolframKernelClient !== undefined) {
+        console.log(wolframClient.needsStart());
+        console.log(wolframKernelClient.needsStart());
+        if (!wolframClient.isConnectionActive() || !wolframKernelClient.isConnectionActive()) {
+            restart();
+        }
+    }
+}
 function activate(context) {
     theContext = context;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
@@ -224,8 +233,19 @@ function loadWolframKernelClient(outputChannel, context, callback) {
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
+            client.setTimeout(10000);
+            client.on('timeout', () => {
+                client.destroy();
+                client.connect(kernelPORT, "127.0.0.1", () => {
+                    // client.setKeepAlive(true,20000);
+                    // resolve({
+                    //     reader: client,
+                    //     writer: client
+                    // });
+                });
+            });
             client.connect(kernelPORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 10);
+                // client.setKeepAlive(true,20000);
                 resolve({
                     reader: client,
                     writer: client
@@ -247,11 +267,12 @@ function loadWolframKernelClient(outputChannel, context, callback) {
         exports.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         exports.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
         exports.wolframKernelClient.onNotification("moveCursor", moveCursor);
-        console.log("Sending disposible");
+        console.log("Sending kernel disposible");
         callback(disposible);
     });
-    console.log("Starting disposible");
+    console.log("Starting kernel disposible");
     let disposible = exports.wolframKernelClient.start();
+    // setTimeout(() => {setInterval(check_pulse, 1000, wolframClient, wolframKernelClient)}, 3000)
 }
 function loadWolframServer(outputChannel, context, callback) {
     // let serverOptions = {
@@ -259,13 +280,25 @@ function loadWolframServer(outputChannel, context, callback) {
     //     debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     // };
     //logtime("start client");
-    console.log("server options");
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
+            client.on("data", (data) => {
+                //console.log("LSP Client: " + data.toString())
+            });
+            client.on('timeout', () => {
+                client.destroy();
+                client.connect(PORT, "127.0.0.1", () => {
+                    // client.setKeepAlive(true,20000);
+                    // resolve({
+                    //     reader: client,
+                    //     writer: client
+                    // });
+                });
+            });
             //setTimeout(() =>{
             client.connect(PORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 0);
+                // client.setKeepAlive(true, 20000)
                 resolve({
                     reader: client,
                     writer: client
@@ -455,13 +488,13 @@ function runInWolfram(print = false) {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-        try {
+        if (exports.wolframKernelClient.isConnectionActive()) {
             exports.wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: print });
         }
-        catch (err) {
-            console.log(err);
-            console.log("Kernel is not ready. Restarting...");
-            restart();
+        else {
+            console.log("Kernel is not ready. Please try again...");
+            stopWolfram(exports.wolframKernelClient, wolframKernel);
+            connectKernelClient(outputChannel, context);
         }
     }
 }
