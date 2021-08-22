@@ -45,6 +45,7 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
+	Print[msg];
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[

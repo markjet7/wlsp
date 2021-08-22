@@ -183,6 +183,7 @@ let loadwolframKernel = function(callback:any) {
 
             wolframKernel.stdout?.on('data', (data) => {
                 console.log("WKernel: " + data.toString());
+                outputChannel.appendLine("WKernel: " + data.toString());
                 if (data.toString().includes("Kernel Ready")){
                     console.log("Wolfram kernel loaded. Connecting...");
                     callback();
@@ -238,6 +239,7 @@ let loadwolfram = function(callback:any) {
 
             wolfram.stdout?.once('data', (data) => {
                 wolfram.stdout?.on('data', (data) => {
+                    outputChannel.appendLine("WLSP: " + data.toString())
                     console.log("WLSP: " + data.toString());
                 });
                 callback();
@@ -256,9 +258,13 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
             return new Promise((resolve, reject) => {
                 let client = new net.Socket();
 
-                client.setTimeout(5000);
+                client.on('error', function(err){
+                    console.log("WKernel Error: "+err.message);
+                })
+
+                client.setTimeout(10000);
                 client.on('timeout', () => {
-                    // client.end();
+                    client.destroy();
                     client.connect(kernelPORT, "127.0.0.1", () => {
                         // client.setKeepAlive(true,20000);
                         // resolve({
@@ -319,10 +325,14 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext, c
                 //console.log("LSP Client: " + data.toString())
             });
 
-            client.setTimeout(5000);
+            client.on('error', function(err){
+                console.log("WLSP Error: "+err.message);
+            })
+
+            client.setTimeout(10000);
             client.on('timeout', () => {
                 // client.destroy();
-                client.end();
+                client.destroy();
                 client.connect(PORT, "127.0.0.1", () => {
                     // client.setKeepAlive(true,20000);
                     // resolve({
@@ -333,7 +343,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext, c
             });
             //setTimeout(() =>{
             client.connect(PORT, "127.0.0.1", () => {
-                // client.setKeepAlive(true, 20000)
+                client.setKeepAlive(true, 20000)
                 resolve({
                     reader: client,
                     writer: client
