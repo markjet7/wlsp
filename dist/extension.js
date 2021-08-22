@@ -233,9 +233,9 @@ function loadWolframKernelClient(outputChannel, context, callback) {
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
-            client.setTimeout(10000);
+            client.setTimeout(5000);
             client.on('timeout', () => {
-                client.destroy();
+                // client.end();
                 client.connect(kernelPORT, "127.0.0.1", () => {
                     // client.setKeepAlive(true,20000);
                     // resolve({
@@ -286,8 +286,10 @@ function loadWolframServer(outputChannel, context, callback) {
             client.on("data", (data) => {
                 //console.log("LSP Client: " + data.toString())
             });
+            client.setTimeout(5000);
             client.on('timeout', () => {
-                client.destroy();
+                // client.destroy();
+                client.end();
                 client.connect(PORT, "127.0.0.1", () => {
                     // client.setKeepAlive(true,20000);
                     // resolve({

@@ -82,45 +82,33 @@ handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
-	If[SocketReadyQ@client,
-		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-		Replace[
-			handleMessageList[ReadMessages[client], state],
-			{
-				{"Continue", state2_} :> state2,
-				{stop_, state2_} :> {stop, state2},
-				{} :> state
-			}
+	If[Head@client === SocketObject,
+		If[SocketReadyQ@client,
+			Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+			Replace[
+				handleMessageList[ReadMessages[client], state],
+				{
+					{"Continue", state2_} :> state2,
+					{stop_, state2_} :> {stop, state2},
+					{} :> state
+				}
+			],
+		Pause[handlerWait];
+		(* flush[client]; *)
+		state
 		],
-	Pause[handlerWait];
-	(* flush[client]; *)
-	state
-	]
+		Pause[0.1];
+		client=First[SERVER["ConnectedClients"], {}];
+		If[Head[client] === SocketObject, 
+			Print["LSP client connected: " <> ToString@client];
+		];
+	];
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];
 Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
 Print[SERVER];
 Print[port];
-
-TimeConstrained[
-	client={};
-	While[SameQ[client,{}],
-		client=First[SERVER["ConnectedClients"], {}];
-		Pause[0.01];
-
-		state="Continue";
-		
-	];,
-	120
-];
-
-If[SameQ[client,{}],
-	Print["Connection failed. Restart extension."];
-	Close[SERVER];
-	Quit[1],
-	Print["Client connected: " <> ToString@client];
-];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
@@ -129,6 +117,7 @@ MemoryConstrained[
 	8*1024^3
 ];
 
+(*
 listener = SocketListen[
 	port,
 	Function[{assoc},
@@ -145,6 +134,7 @@ listener = SocketListen[
 	],
 	CharacterEncoding -> "UTF8"
 ];
+*)
 CloseKernels[];
 
 EndPackage[];

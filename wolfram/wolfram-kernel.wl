@@ -84,21 +84,28 @@ handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
-	If[SocketReadyQ@client2,
-		Replace[
-		    Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-			handleMessageList[ReadMessages[client2], state],
-			{
-				{"Continue", state2_} :> state2,
-				{stop_, state2_} :> {stop, state2},
-				{} :> state
-			}
+	If[Head@client2 === SocketObject,
+		If[SocketReadyQ@client2,
+			Replace[
+				Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+				handleMessageList[ReadMessages[client2], state],
+				{
+					{"Continue", state2_} :> state2,
+					{stop_, state2_} :> {stop, state2},
+					{} :> state
+				}
+			],
+			(* Close[client2]; *)
+			Pause[0.01];
+			(* flush[client2]; *)
+			state
 		],
-		(* Close[client2]; *)
 		Pause[0.1];
-		(* flush[client2]; *)
-		state
-	]
+		client2=First[KERNELSERVER["ConnectedClients"], {}];
+		If[Head[client2] === SocketObject, 
+			Print["Kernel client connected: " <> ToString@client2];
+		];
+	];
 ] // socketHandler;
 
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
@@ -107,23 +114,6 @@ Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])
 Print[kernelport]; *)
 Print["Kernel Ready"];
 
-TimeConstrained[ 
-	client2={};
-	While[SameQ[client2,{}],
-		client2=First[KERNELSERVER["ConnectedClients"], {}];
-		Pause[0.01];
-		state="Continue";
-	];,
-	120
-];
-
-If[SameQ[client2,{}],
-	Print["Connection failed. Restart extension."];
-	Close[KERNELSERVER];
-	Quit[1],
-	Print["Kernel client connected: " <> ToString@client2];
-];
-
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 		socketHandler[state]
@@ -131,7 +121,7 @@ MemoryConstrained[
 	8*1024^3
 ];
 
-
+(*
 listener = SocketListen[
 	kernelport,
 	Function[{assoc},
@@ -149,6 +139,7 @@ listener = SocketListen[
 	],
 	CharacterEncoding -> "UTF8"
 ]; 
+*)
 CloseKernels[];
 
 EndPackage[];
