@@ -235,27 +235,31 @@ function loadWolframKernelClient(outputChannel, context, callback) {
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
-            client.on('error', function (err) {
-                console.log("WKernel Error: " + err.message);
-            });
-            client.setTimeout(10000);
-            client.on('timeout', () => {
-                client.destroy();
+            setTimeout(() => {
+                client.on("data", (data) => {
+                    // console.log("LSP Client: " + data.toString())
+                });
+                client.on('error', function (err) {
+                    console.log("WLSP Kernel Error: " + err.message);
+                    // client.destroy();
+                    client.end();
+                    setTimeout(() => {
+                        client.connect(kernelPORT, "127.0.0.1", () => { });
+                    }, 5000);
+                });
+                client.on('timeout', () => {
+                    console.log("Kernel timed out");
+                    client.destroy();
+                    client.connect(kernelPORT, "127.0.0.1", () => { });
+                });
                 client.connect(kernelPORT, "127.0.0.1", () => {
-                    // client.setKeepAlive(true,20000);
-                    // resolve({
-                    //     reader: client,
-                    //     writer: client
-                    // });
+                    client.setKeepAlive(true, 20000);
+                    resolve({
+                        reader: client,
+                        writer: client
+                    });
                 });
-            });
-            client.connect(kernelPORT, "127.0.0.1", () => {
-                // client.setKeepAlive(true,20000);
-                resolve({
-                    reader: client,
-                    writer: client
-                });
-            });
+            }, 5000);
         });
     };
     let clientOptions = {
@@ -280,49 +284,34 @@ function loadWolframKernelClient(outputChannel, context, callback) {
     // setTimeout(() => {setInterval(check_pulse, 1000, wolframClient, wolframKernelClient)}, 3000)
 }
 function loadWolframServer(outputChannel, context, callback) {
-    // let serverOptions = {
-    //     run: { module: serverModule, transport: TransportKind.ipc },
-    //     debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
-    // };
-    //logtime("start client");
     let serverOptions = function () {
         return new Promise((resolve, reject) => {
             let client = new net.Socket();
-            client.on("data", (data) => {
-                //console.log("LSP Client: " + data.toString())
-            });
-            client.on('error', function (err) {
-                console.log("WLSP Error: " + err.message);
-            });
-            client.setTimeout(10000);
-            client.on('timeout', () => {
-                // client.destroy();
-                client.destroy();
+            setTimeout(() => {
+                client.on("data", (data) => {
+                    // console.log("LSP Client: " + data.toString())
+                });
+                client.on('error', function (err) {
+                    console.log("WLSP Kernel Error: " + err.message);
+                    // client.destroy();
+                    client.end();
+                    setTimeout(() => {
+                        client.connect(PORT, "127.0.0.1", () => { });
+                    }, 5000);
+                });
+                client.on('timeout', () => {
+                    console.log("LSP timed out");
+                    client.destroy();
+                    client.connect(PORT, "127.0.0.1", () => { });
+                });
                 client.connect(PORT, "127.0.0.1", () => {
-                    // client.setKeepAlive(true,20000);
-                    // resolve({
-                    //     reader: client,
-                    //     writer: client
-                    // });
+                    client.setKeepAlive(true, 20000);
+                    resolve({
+                        reader: client,
+                        writer: client
+                    });
                 });
-            });
-            //setTimeout(() =>{
-            client.connect(PORT, "127.0.0.1", () => {
-                client.setKeepAlive(true, 20000);
-                resolve({
-                    reader: client,
-                    writer: client
-                });
-            });
-            // client.on("error", (e) => { 
-            //     outputChannel.appendLine("Error:" + e.message);
-            //     // loadWolframServer(outputChannel, context);
-            //     setTimeout(() =>  loadWolframServer(outputChannel, context), 1000);
-            //     client.destroy();
-            // });
-            // client.on("timeout", () => { outputChannel.appendLine("Timeout"); reject();});
-            //logtime("connected");
-            //}, 10000);
+            }, 2000);
         });
     };
     let clientOptions = {
@@ -504,7 +493,7 @@ function runInWolfram(print = false) {
         else {
             console.log("Kernel is not ready. Please try again...");
             stopWolfram(exports.wolframKernelClient, wolframKernel);
-            connectKernelClient(outputChannel, context);
+            connectKernelClient(outputChannel, theContext);
         }
     }
 }
@@ -562,7 +551,7 @@ function runCell() {
 }
 function runExpression(expression, line, end) {
     let e = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
-    exports.wolframKernelClient.sendNotification("runExpression", { print: false, expression: expression, textDocument: e === null || e === void 0 ? void 0 : e.document, line: line, end: end });
+    exports.wolframKernelClient.sendRequest("runExpression", { print: false, expression: expression, textDocument: e === null || e === void 0 ? void 0 : e.document, line: line, end: end }).then((result) => { });
 }
 function printInWolfram() {
     let print = true;
@@ -611,7 +600,7 @@ function stopWolfram(client, client_process) {
         });
     }
     else {
-        kill(client.pid);
+        kill(client_process.pid);
     }
 }
 function restart() {

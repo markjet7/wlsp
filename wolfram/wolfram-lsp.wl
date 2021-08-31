@@ -44,7 +44,6 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
-	Print[msg];
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
@@ -53,7 +52,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 			],
 
 			Check[handle[msg["method"],msg],
-				Print[msg];
 				(* sendRespose@<|"id"->msg["id"], "result"-> "NA" |> *)
 			]
 		]		
@@ -74,7 +72,7 @@ wrapper[first_, fin_] := fin;
 wrapper[first_, rest__] := wrapper[rest];
 
 socketHandler[{stop_, state_}]:=Module[{},
-	Print["Closing socket connection..."];
+	Print["Closing socket connection..." <> ToString@state];
 	Quit[1];
 ];
 
@@ -96,14 +94,16 @@ socketHandler[state_]:=Module[{},
 			],
 		Pause[handlerWait];
 		(* flush[client]; *)
-		state
+		"Continue"
 		],
-		Pause[0.1];
 		client=First[SERVER["ConnectedClients"], {}];
 		If[Head[client] === SocketObject, 
-			Print["LSP client connected: " <> ToString@client];
+			Print["LSP client connected: " <> ToString@client];,
+			Print["Socket Clients " <> ToString@SERVER["ConnectedClients"]];
 		];
-	];
+		Pause[0.5];
+		"Continue"
+	]
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];
@@ -117,25 +117,6 @@ MemoryConstrained[
 	];,
 	8*1024^3
 ];
-
-(*
-listener = SocketListen[
-	port,
-	Function[{assoc},
-		With[{
-			data = assoc["Data"]
-		},
-			(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-			SERVER = assoc["SourceSocket"];
-			Check[readMessage[data], 
-				Print["Unhandled error"];
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
-			];
-		]
-	],
-	CharacterEncoding -> "UTF8"
-];
-*)
 CloseKernels[];
 
 EndPackage[];

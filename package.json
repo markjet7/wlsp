@@ -17,6 +17,7 @@
     "main": "./dist/extension",
     "activationEvents": [
         "onLanguage:wolfram",
+        "onNotebook:wolfram-notebook",
         "onCustomEditor:wolfram-notebook"
     ],
     "contributes": {

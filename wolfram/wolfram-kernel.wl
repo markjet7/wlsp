@@ -45,18 +45,15 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
-	Print[msg];
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
 				Get[DirectoryName[path] <> "transforms.wl"];
 				handle[msg["method"],msg], 
-				Print["error"];
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
 
 			Check[handle[msg["method"],msg],
-				Print["error2"];
 				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
 			]
 		]		
@@ -97,16 +94,17 @@ socketHandler[state_]:=Module[{},
 				}
 			],
 			(* Close[client2]; *)
-			Pause[0.01];
+			Pause[0.1];
 			(* flush[client2]; *)
-			state
+			"Continue"
 		],
-		Pause[0.1];
 		client2=First[KERNELSERVER["ConnectedClients"], {}];
 		If[Head[client2] === SocketObject, 
 			Print["Kernel client connected: " <> ToString@client2];
 		];
-	];
+		Pause[0.5];
+		"Continue"
+	]
 ] // socketHandler;
 
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
@@ -122,25 +120,6 @@ MemoryConstrained[
 	8*1024^3
 ];
 
-(*
-listener = SocketListen[
-	kernelport,
-	Function[{assoc},
-		With[{
-			data = assoc["Data"]
-		},
-			KERNELSERVER = assoc["SourceSocket"];
-			Check[
-		    	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-            	readMessage[data], 
-				Print["Startup kernel server failed"];
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Unhandled Error" |> |>];
-			];
-		]
-	],
-	CharacterEncoding -> "UTF8"
-]; 
-*)
 CloseKernels[];
 
 EndPackage[];

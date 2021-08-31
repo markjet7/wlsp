@@ -416,10 +416,10 @@ handle["windowFocused", json_]:=Module[{},
 	]
 ];
 
-handle["$/cancelRequest", json_]:=Module[{},
+handle["$/cancelRequest", json_]:=Module[{response},
 	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
-	(* response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; *)
-	(*sendResponse[response];*)
+	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
+	sendResponse[response];
 ];
 
 handle["abort", json_]:=Module[{},

@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WolframController = exports.activate = void 0;
 const vscode = require("vscode");
 const extension_1 = require("./extension");
+const fs = require('fs');
 function activate(context) {
     context.subscriptions.push(new WolframController());
 }
@@ -27,10 +28,30 @@ class WolframController {
         this._controller.supportedLanguages = this.supportedLanguages;
         this._controller.supportsExecutionOrder = true;
         this._controller.executeHandler = this._execute.bind(this);
+        this._controller.interruptHandler = this._interrupt.bind(this);
     }
     _execute(cells, _notebook, _controller) {
         for (let cell of cells) {
             this._doExecution(cell);
+        }
+    }
+    _interrupt(notebook) {
+        /* Do some interruption here; not implemented */
+        for (let cell of notebook.getCells()) {
+            this._doInterrupt(cell);
+        }
+    }
+    _doInterrupt(cell) {
+        if (cell.kind === vscode.NotebookCellKind.Code) {
+            const execution = this._controller.createNotebookCellExecution(cell);
+            if (execution) {
+                const executionId = execution.executionOrder;
+                if (executionId && executionId > 0) {
+                    extension_1.wolframKernelClient.sendRequest("$/cancelRequest", { id: executionId }).then(() => { });
+                }
+                execution.executionOrder = 0;
+                execution.end(false, Date.now());
+            }
         }
     }
     _doExecution(cell) {
@@ -47,13 +68,18 @@ class WolframController {
                 }).then((result) => {
                     execution.replaceOutput([
                         new vscode.NotebookCellOutput([
-                            vscode.NotebookCellOutputItem.text(result["output"])
+                            vscode.NotebookCellOutputItem.text(fs.readFileSync(result["output"], 'utf8'), 'text/html'),
+                            vscode.NotebookCellOutputItem.text(result["result"]),
+                            vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                         ])
                     ]);
-                    execution.end(true, Date.now());
+                    if (execution.executionOrder === this._executionOrder) {
+                        execution.end(true, Date.now());
+                    }
                 });
             }
             catch (err) {
+                vscode.NotebookCellOutputItem.error(err);
             }
         });
     }

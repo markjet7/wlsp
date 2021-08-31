@@ -67,6 +67,11 @@ handle["runCell", json_]:=Module[{},
 	|> |>, json, newPosition}];
 ];
 
+handle["$/cancelRequest", json_]:=Module[{response},
+	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
+	sendResponse[response];
+];
+
 handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
@@ -110,10 +115,15 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			output = result;
 		];
 		
-		response = If[json["method"] === "runExpression",
+		response = If[KeyMemberQ[json, "id"],
 			<|
 			"id" -> json["id"],
-			"method"->"runExpression", 
+			"result" -> <|
+				"output"-> ToString[output, TotalWidth->Infinity], 
+				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
+				"position"-> newPosition,
+				"print" -> False,
+				"document" ->  ""|>,
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
 				"output"-> ToString[output, TotalWidth->Infinity], 
@@ -131,9 +141,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
-			|>;	
+			|>
 		];
 		evalnumber = evalnumber + 1;
+		Print[response];
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];
