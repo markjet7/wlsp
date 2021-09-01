@@ -237,7 +237,7 @@ function loadWolframKernelClient(outputChannel, context, callback) {
             let client = new net.Socket();
             setTimeout(() => {
                 client.on("data", (data) => {
-                    // console.log("LSP Client: " + data.toString())
+                    // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
                 });
                 client.on('error', function (err) {
                     console.log("WLSP Kernel Error: " + err.message);
@@ -282,10 +282,10 @@ function loadWolframKernelClient(outputChannel, context, callback) {
         exports.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
         exports.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
         exports.wolframKernelClient.onNotification("moveCursor", moveCursor);
-        console.log("Sending kernel disposible");
+        // console.log("Sending kernel disposible");
         callback(disposible);
     });
-    console.log("Starting kernel disposible");
+    //console.log("Starting kernel disposible");
     let disposible = exports.wolframKernelClient.start();
     // setTimeout(() => {setInterval(check_pulse, 1000, wolframClient, wolframKernelClient)}, 3000)
 }
@@ -295,7 +295,7 @@ function loadWolframServer(outputChannel, context, callback) {
             let client = new net.Socket();
             setTimeout(() => {
                 client.on("data", (data) => {
-                    // console.log("LSP Client: " + data.toString())
+                    // console.log("LSP Client: " + data.toString().substr(0, 200))
                 });
                 client.on('error', function (err) {
                     console.log("WLSP Kernel Error: " + err.message);

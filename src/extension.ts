@@ -261,7 +261,7 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
 
                 setTimeout(() => {
                     client.on("data", (data) => {
-                        // console.log("LSP Client: " + data.toString())
+                        // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
                     });
     
                     client.on('error', function(err){
@@ -329,7 +329,7 @@ function loadWolframServer(outputChannel:any, context:vscode.ExtensionContext, c
 
             setTimeout(() => {
                 client.on("data", (data) => {
-                    // console.log("LSP Client: " + data.toString())
+                    // console.log("LSP Client: " + data.toString().substr(0, 200))
                 });
     
                 client.on('error', function(err){

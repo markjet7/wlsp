@@ -99,7 +99,6 @@ socketHandler[state_]:=Module[{},
 		client=First[SERVER["ConnectedClients"], {}];
 		If[Head[client] === SocketObject, 
 			Print["LSP client connected: " <> ToString@client];
-
 		];
 		Pause[0.5];
 		sendResponse@<|"method"->"window/logMessage", "params"-> <| "type"-> 2, "message" -> "Waiting to initialize language server" |> |> ;
@@ -115,7 +114,7 @@ Print[port];
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 			socketHandler[state]
-	];,
+	],
 	8*1024^3
 ];
 CloseKernels[];
