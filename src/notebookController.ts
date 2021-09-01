@@ -1,4 +1,6 @@
 
+import AbortController from 'abort-controller';
+import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import {runInWolfram, wolframClient, wolframKernelClient} from './extension'
 const fs = require('fs')
@@ -26,7 +28,7 @@ export class WolframController {
         this._controller.supportedLanguages = this.supportedLanguages;
         this._controller.supportsExecutionOrder = true;
         this._controller.executeHandler = this._execute.bind(this);
-        this._controller.interruptHandler = this._interrupt.bind(this);
+        // this._controller.interruptHandler = this._interrupt.bind(this);
     }
 
     private _execute(
@@ -41,54 +43,75 @@ export class WolframController {
 
     private _interrupt(notebook: vscode.NotebookDocument): void {
         /* Do some interruption here; not implemented */
-        for (let cell of notebook.getCells()) {
-            this._doInterrupt(cell);
-        }
+        // for (let cell of notebook.getCells()) {
+        //     this._doInterrupt(cell);
+        // }
     }
 
     private _doInterrupt(cell: vscode.NotebookCell): void {
         if (cell.kind === vscode.NotebookCellKind.Code) {
-            const execution = this._controller.createNotebookCellExecution(cell);
-            if (execution) {
-                const executionId = execution.executionOrder;
-                if (executionId && executionId > 0) {
+            let execution = cell.executionSummary
+            if (execution?.executionOrder) {
+                let executionId = execution.executionOrder;
+                if (executionId && executionId <= this._executionOrder) {
                     wolframKernelClient.sendRequest("$/cancelRequest", {id: executionId}).then(
                         () => {});
                 }
-                execution.executionOrder = 0;
-                execution.end(false, Date.now());
+            } else {
+
             }
         }
     }
 
     private async _doExecution(cell: vscode.NotebookCell): Promise<void> {
-        const execution = this._controller.createNotebookCellExecution(cell);
+        let execution: vscode.NotebookCellExecution = this._controller.createNotebookCellExecution(cell);
         execution.executionOrder = ++this._executionOrder;
         execution.start(Date.now()); // Keep track of elapsed time to execute cell.
         /* Do some execution here; not implemented */
         try {
-            wolframKernelClient.sendRequest("runExpression", 
-                {
-                    expression: cell.document.getText(),
-                    line: 0,
-                    end: 0
-                }
-            ).then((result:any) => {
-                execution.replaceOutput([
+            let abortCtl = new AbortController();
+            execution.token.onCancellationRequested(() => {
+                abortCtl.abort();
+                wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
+                    () => {});
+                execution.replaceOutput(
                     new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.text(
-                                fs.readFileSync(result["output"], 'utf8'),'text/html'),
-                        vscode.NotebookCellOutputItem.text(result["result"]),
-                        vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
-                    ])
-                ]);
-                if (execution.executionOrder === this._executionOrder) {
-                    execution.end(true, Date.now());
-                }
-            })
-            
-        } catch (err:any) {
-            vscode.NotebookCellOutputItem.error(err);
+                        vscode.NotebookCellOutputItem.error({
+                            name: 'error', 
+                            message: "aborted"})
+                    ]));
+                execution.end(false, Date.now());
+            });
+            while(!execution.token.isCancellationRequested){
+                wolframKernelClient.sendRequest("runExpression", 
+                    {
+                        expression: cell.document.getText(),
+                        line: 0,
+                        end: 0
+                    }
+                ).then((result:any) => {
+                    execution.replaceOutput([
+                        new vscode.NotebookCellOutput([
+                            vscode.NotebookCellOutputItem.text(
+                                    fs.readFileSync(result["output"], 'utf8'),'text/html'),
+                            vscode.NotebookCellOutputItem.text(result["result"]),
+                            vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
+                        ])
+                    ]);
+                    if (execution.executionOrder === this._executionOrder) {
+                        execution.end(true, Date.now());
+                    }
+                })
+                break;
+            }
+        } catch (e:any) {
+            execution.replaceOutput(
+                new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.error({
+                        name: e instanceof Error && e.name || 'error', 
+                        message: e instanceof Error && e.message || JSON.stringify(e, undefined, 4)})
+                ]));
+            execution.end(false, Date.now());
         }
     }
 

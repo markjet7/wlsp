@@ -269,7 +269,7 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
                         client.end();
                         setTimeout(() => {
                             client.connect(kernelPORT, "127.0.0.1", () => {});
-                        }, 5000);
+                        }, 10000);
                     })
     
                     client.on('timeout', () => {
@@ -284,7 +284,7 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
                             reader: client,
                             writer: client
                         });
-                    });}, 5000);
+                    });}, 10000);
             })
         };
 

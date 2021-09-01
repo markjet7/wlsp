@@ -245,7 +245,7 @@ function loadWolframKernelClient(outputChannel, context, callback) {
                     client.end();
                     setTimeout(() => {
                         client.connect(kernelPORT, "127.0.0.1", () => { });
-                    }, 5000);
+                    }, 10000);
                 });
                 client.on('timeout', () => {
                     console.log("Kernel timed out");
@@ -259,7 +259,7 @@ function loadWolframKernelClient(outputChannel, context, callback) {
                         writer: client
                     });
                 });
-            }, 5000);
+            }, 10000);
         });
     };
     let clientOptions = {

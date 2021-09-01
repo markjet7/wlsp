@@ -208,6 +208,7 @@
         "webpack-cli": "^4.7.0"
     },
     "dependencies": {
+        "abort-controller": "^3.0.0",
         "@shelacek/ubjson": "1.0.1",
         "@types/socket.io": "^2.1.11",
         "find-free-port": "^2.0.0",
