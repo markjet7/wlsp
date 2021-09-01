@@ -144,7 +144,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			|>
 		];
 		evalnumber = evalnumber + 1;
-		Print[response];
 		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];

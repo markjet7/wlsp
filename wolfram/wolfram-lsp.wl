@@ -92,16 +92,17 @@ socketHandler[state_]:=Module[{},
 					{} :> state
 				}
 			],
-		Pause[handlerWait];
-		(* flush[client]; *)
-		"Continue"
+			Pause[handlerWait];
+			(* flush[client]; *)
+			"Continue"
 		],
 		client=First[SERVER["ConnectedClients"], {}];
 		If[Head[client] === SocketObject, 
-			Print["LSP client connected: " <> ToString@client];,
-			Print["Socket Clients " <> ToString@SERVER["ConnectedClients"]];
+			Print["LSP client connected: " <> ToString@client];
+
 		];
 		Pause[0.5];
+		sendResponse@<|"method"->"window/logMessage", "params"-> <| "type"-> 2, "message" -> "Waiting to initialize language server" |> |> ;
 		"Continue"
 	]
 ] // socketHandler;

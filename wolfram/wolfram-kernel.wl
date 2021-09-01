@@ -103,6 +103,7 @@ socketHandler[state_]:=Module[{},
 			Print["Kernel client connected: " <> ToString@client2];
 		];
 		Pause[0.5];
+		sendResponse@<|"method"->"window/logMessage", "params"-> <| "type"-> 2, "message" -> "Waiting to initialize language server" |> |> ;
 		"Continue"
 	]
 ] // socketHandler;

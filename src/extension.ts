@@ -81,11 +81,11 @@ function rejectDelay(reason:any) {
 //     });
 // }
 
-function check_pulse(wolframClient:any, wolframKernelClient:any) {
-    if (wolframClient !== undefined && wolframKernelClient !== undefined){
-        console.log(wolframClient.needsStart())
-        console.log(wolframKernelClient.needsStart())
-        if (!wolframClient.isConnectionActive() || !wolframKernelClient.isConnectionActive()) {
+function check_pulse(client:LanguageClient) {
+    if (client !== undefined ){
+        console.log(client.needsStart())
+        if (!(client as any).isConnectionActive()) {
+            console.log("Connection is not active. Restarting client");
             restart()
         }
     }
@@ -106,6 +106,8 @@ export function activate(context: vscode.ExtensionContext){
     );
 
     context.subscriptions.push(controller);
+    
+
 }
 
 function connectKernel(outputChannel:any, context:any) {
@@ -164,7 +166,6 @@ function connectKernelClient(outputChannel:any, context:any) {
 
 let wolframKernel:cp.ChildProcess;
 let loadwolframKernel = function(callback:any) {
-   
         if (process.env.VSCODE_DEBUG_MODE === "true") {
             PORT = 6589;
         } else {
@@ -265,8 +266,8 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
     
                     client.on('error', function(err){
                         console.log("WLSP Kernel Error: "+ err.message);
-                        // client.destroy();
-                        client.end();
+                        client.destroy();
+                        // client.end();
                         setTimeout(() => {
                             client.connect(kernelPORT, "127.0.0.1", () => {});
                         }, 10000);
@@ -277,7 +278,15 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
                         client.destroy();
                         client.connect(kernelPORT, "127.0.0.1", () => {});
                     });
+
+                    client.on('ready', () => {
+                        console.log("Kernel is ready")   
+                    })
     
+                    client.on('drain', () => {
+                        console.log("Kernel is draining")
+                    })
+
                     client.connect(kernelPORT, "127.0.0.1", () => {
                         client.setKeepAlive(true,20000);
                         resolve({
@@ -303,11 +312,11 @@ function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionCont
             wolframKernelClient.onNotification("updateDecorations", updateDecorations);
             wolframKernelClient.onNotification("updateVarTable", updateVarTable);
             wolframKernelClient.onNotification("moveCursor", moveCursor);
-            console.log("Sending kernel disposible");
+            // console.log("Sending kernel disposible");
             callback(disposible)
         });
 
-        console.log("Starting kernel disposible");
+        //console.log("Starting kernel disposible");
         let disposible = wolframKernelClient.start();
         // setTimeout(() => {setInterval(check_pulse, 1000, wolframClient, wolframKernelClient)}, 3000)
 }
@@ -727,8 +736,8 @@ function restart() {
     stopWolfram(wolframClient, wolfram);
     stopWolfram(wolframKernelClient, wolframKernel);
 
-    wolframStatusBar.text = "Wolfram v.?";
-    wolframStatusBar.show();
+    // wolframStatusBar.text = "Wolfram v.?";
+    // wolframStatusBar.show();
     // retry(function(){return connectKernel(outputChannel, theContext)});
     connectKernel(outputChannel, theContext);
 }

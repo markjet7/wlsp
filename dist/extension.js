@@ -76,11 +76,11 @@ function rejectDelay(reason) {
 //         return retry(fn, (retries - 1), err);
 //     });
 // }
-function check_pulse(wolframClient, wolframKernelClient) {
-    if (wolframClient !== undefined && wolframKernelClient !== undefined) {
-        console.log(wolframClient.needsStart());
-        console.log(wolframKernelClient.needsStart());
-        if (!wolframClient.isConnectionActive() || !wolframKernelClient.isConnectionActive()) {
+function check_pulse(client) {
+    if (client !== undefined) {
+        console.log(client.needsStart());
+        if (!client.isConnectionActive()) {
+            console.log("Connection is not active. Restarting client");
             restart();
         }
     }
@@ -241,8 +241,8 @@ function loadWolframKernelClient(outputChannel, context, callback) {
                 });
                 client.on('error', function (err) {
                     console.log("WLSP Kernel Error: " + err.message);
-                    // client.destroy();
-                    client.end();
+                    client.destroy();
+                    // client.end();
                     setTimeout(() => {
                         client.connect(kernelPORT, "127.0.0.1", () => { });
                     }, 10000);
@@ -251,6 +251,12 @@ function loadWolframKernelClient(outputChannel, context, callback) {
                     console.log("Kernel timed out");
                     client.destroy();
                     client.connect(kernelPORT, "127.0.0.1", () => { });
+                });
+                client.on('ready', () => {
+                    console.log("Kernel is ready");
+                });
+                client.on('drain', () => {
+                    console.log("Kernel is draining");
                 });
                 client.connect(kernelPORT, "127.0.0.1", () => {
                     client.setKeepAlive(true, 20000);
@@ -610,8 +616,8 @@ function restart() {
     vscode.window.showInformationMessage("Wolfram is restarting.");
     stopWolfram(exports.wolframClient, wolfram);
     stopWolfram(exports.wolframKernelClient, wolframKernel);
-    wolframStatusBar.text = "Wolfram v.?";
-    wolframStatusBar.show();
+    // wolframStatusBar.text = "Wolfram v.?";
+    // wolframStatusBar.show();
     // retry(function(){return connectKernel(outputChannel, theContext)});
     connectKernel(outputChannel, theContext);
 }
