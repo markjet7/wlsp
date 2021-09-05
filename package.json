@@ -17,8 +17,7 @@
     "main": "./dist/extension",
     "activationEvents": [
         "onLanguage:wolfram",
-        "onNotebook:wolfram-notebook",
-        "onCustomEditor:wolfram-notebook"
+        "onNotebook:wolfram-notebook"
     ],
     "contributes": {
         "notebooks": [
@@ -34,18 +33,7 @@
                 ]
             }
         ],
-        "customEditors": [
-            {
-                "viewType": "wolfram.editor",
-                "displayName": "Wolfram Text Editor",
-                "selector": [
-                    {
-                        "filenamePattern": "*.wl"
-                    }
-                ],
-                "priority": "option"
-            }
-        ],
+        "customEditors": [],
         "languages": [
             {
                 "id": "wolfram",

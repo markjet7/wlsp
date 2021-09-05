@@ -104,7 +104,7 @@ export class WolframController {
                 })
                 break;
             }
-        } catch (e:any) {
+        } catch (e) {
             execution.replaceOutput(
                 new vscode.NotebookCellOutput([
                     vscode.NotebookCellOutputItem.error({
