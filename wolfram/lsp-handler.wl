@@ -606,7 +606,7 @@ lineRange[line_,start_,end_]:= {line, Which[
 
 constructRPCBytes[_Missing]:= Module[{}, ""];
 constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
-	jsonBytes=Check[ExportByteArray[msg,"RawJSON"], Print["Export Byte Array failed"]; Print[msg]; ExportByteArray[<||>,"RawJSON"]];
+	jsonBytes=Check[ExportByteArray[msg,"RawJSON"], Print["Export Byte Array failed"]; ExportByteArray[<||>,"RawJSON"]];
 	headerBytes=StringToByteArray["Content-Length: " <> ToString[Length[jsonBytes], CharacterEncoding->"ASCII"]<>"\r\n\r\n"];
 	{headerBytes,jsonBytes}
 
