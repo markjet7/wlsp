@@ -28,7 +28,7 @@ ServerCapabilities=<|
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"documentFormattingProvider" -> True,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {".", "\"}, "allCommitCharacters" -> {"["}|> ,
+	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {".", "\\"}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
