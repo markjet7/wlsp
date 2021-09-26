@@ -14,6 +14,7 @@ import {
 import { EEXIST } from 'constants';
 import {WolframNotebook, WolframNotebookSerializer} from './notebook';
 import {WolframController} from './notebookController';
+import { WolframEditorProvider } from './wolframeditor';
 const fs = require('fs')
 
 let client:LanguageClient;
@@ -98,11 +99,13 @@ export function activate(context: vscode.ExtensionContext){
 
     serializer = new WolframNotebookSerializer()
     controller = new WolframController()
+    editor = new WolframEditorProvider()
 
     connectKernel(outputChannel, context);
 
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', serializer)
+        vscode.workspace.registerTextDocumentContentProvider('wolfam-editor', )
     );
 
     context.subscriptions.push(controller);
