@@ -1,11 +1,13 @@
 import { throws } from 'assert';
 import { Runnable } from 'mocha';
+import { rawListeners } from 'process';
 import * as vscode from 'vscode';
 import { 
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
+import { wolframKernelClient } from './extension';
 
 
 
@@ -22,7 +24,88 @@ export interface RawNotebookCell {
 //       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
 //   );
 // }
+
 export class WolframNotebookSerializer implements vscode.NotebookSerializer {
+
+  async deserializeNotebook(
+    content: Uint8Array,
+    _token: vscode.CancellationToken
+  ): Promise<vscode.NotebookData> {
+    var contents = new TextDecoder().decode(content);
+
+    if (wolframKernelClient !== undefined) {
+      return wolframKernelClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+
+        this.raw = [];
+        result.map(
+          (item:any) => this.getCells(item)
+        );
+        this.cells = this.raw.map(
+          item => {
+           let i= new vscode.NotebookCellData(item.kind, item.value, item.language)
+           i.metadata = item.metadata;
+           return i
+          }
+        );
+        return new vscode.NotebookData(this.cells);
+      });
+    } else {					
+
+      vscode.window.showErrorMessage("Kernel is not ready. Please wait and try again.");
+      return new vscode.NotebookData(this.cells);
+    }
+    // contents.split(/\r?\n\r?\n/).forEach(line => {
+    //   raw.push({
+    //     kind: vscode.NotebookCellKind.Code,
+    //     value: line,
+    //     language: "wolfram"
+    //   })
+    // })
+
+  }
+
+  private raw: RawNotebookCell[] = [];
+  private cells: vscode.NotebookCellData[] = [];
+  getCells(item:any){
+    if(item.constructor.name === "Array"){
+      item.map(
+        (item:any) => this.getCells(item)
+      );
+    } else {
+      this.raw.push({
+        kind: item.kind,
+        language: item.language,
+        value: item.value,
+        metadata: item.metadata
+      })
+    }
+  } 
+
+
+  async serializeNotebook(
+    data: vscode.NotebookData,
+    _token: vscode.CancellationToken
+  ): Promise<Uint8Array> {
+    let contents: RawNotebookCell[] = [];
+
+    for (const cell of data.cells) {
+      contents.push({
+        kind: cell.kind,
+        language: cell.languageId,
+        value: cell.value,
+        metadata: Object.values(cell.metadata).join("")
+      });
+    }
+
+    return wolframKernelClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
+      return Buffer.from(result);
+    });
+  }
+
+  
+}
+
+export class WolframScriptSerializer implements vscode.NotebookSerializer {
     async deserializeNotebook(
       content: Uint8Array,
       _token: vscode.CancellationToken

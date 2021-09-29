@@ -16,11 +16,24 @@
     ],
     "main": "./dist/extension",
     "activationEvents": [
+        "onDebug",
         "onLanguage:wolfram",
-        "onNotebook:wolfram-notebook"
+        "onNotebook:wolfram-notebook",
+        "onCustomEditor:wolfram.editor"
     ],
     "contributes": {
         "notebooks": [
+            {
+                "id": "wolfram-script",
+                "type": "wolfram-script",
+                "displayName": "Wolfram Script",
+                "priority": "option",
+                "selector": [
+                    {
+                        "filenamePattern": "*.wl"
+                    }
+                ]
+            },
             {
                 "id": "wolfram-notebook",
                 "type": "wolfram-notebook",
@@ -28,12 +41,13 @@
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.wl"
+                        "filenamePattern": "*.nb"
                     }
                 ]
             }
         ],
-        "customEditors": [],
+        "customEditors": [
+        ],
         "languages": [
             {
                 "id": "wolfram",
@@ -41,6 +55,7 @@
                     "Wolfram"
                 ],
                 "extensions": [
+                    ".nb",
                     ".wl",
                     ".wls"
                 ],

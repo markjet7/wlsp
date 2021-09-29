@@ -12,9 +12,9 @@ import {
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
 import { EEXIST } from 'constants';
-import {WolframNotebook, WolframNotebookSerializer} from './notebook';
-import {WolframController} from './notebookController';
-import { WolframEditorProvider } from './wolframeditor';
+import {WolframNotebook, WolframScriptSerializer, WolframNotebookSerializer} from './notebook';
+import {WolframNotebookController} from './notebookController';
+import {WolframScriptController} from './scriptController';
 const fs = require('fs')
 
 let client:LanguageClient;
@@ -38,7 +38,9 @@ let kernelPath = '';
 let theContext:vscode.ExtensionContext;
 let notebook:WolframNotebook;
 let serializer:vscode.NotebookSerializer;
-let controller:WolframController;
+let notebookSerializer:WolframNotebookSerializer;
+let controller:WolframNotebookController;
+let scriptController:WolframScriptController;
 
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
@@ -97,20 +99,24 @@ export function activate(context: vscode.ExtensionContext){
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
 
-    serializer = new WolframNotebookSerializer()
-    controller = new WolframController()
-    editor = new WolframEditorProvider()
+    serializer = new WolframScriptSerializer()
+    notebookSerializer = new WolframNotebookSerializer()
+
+    controller = new WolframNotebookController()
+    scriptController = new WolframScriptController()
 
     connectKernel(outputChannel, context);
 
     context.subscriptions.push(
-        vscode.workspace.registerNotebookSerializer('wolfram-notebook', serializer)
-        vscode.workspace.registerTextDocumentContentProvider('wolfam-editor', )
+        vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
     );
 
-    context.subscriptions.push(controller);
-    
+    context.subscriptions.push(
+        vscode.workspace.registerNotebookSerializer('wolfram-script', serializer)
+    );
 
+
+    context.subscriptions.push(controller);
 }
 
 function connectKernel(outputChannel:any, context:any) {

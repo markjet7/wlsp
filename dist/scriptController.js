@@ -9,20 +9,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WolframNotebookController = exports.activate = void 0;
+exports.WolframScriptController = exports.activate = void 0;
 const abort_controller_1 = require("abort-controller");
 const vscode = require("vscode");
 const extension_1 = require("./extension");
 const fs = require('fs');
 function activate(context) {
-    context.subscriptions.push(new WolframNotebookController());
+    context.subscriptions.push(new WolframScriptController());
 }
 exports.activate = activate;
-class WolframNotebookController {
+class WolframScriptController {
     constructor() {
-        this.controllerId = 'wolfram-notebook';
-        this.notebookType = 'wolfram-notebook';
-        this.label = 'Wolfram Notebook';
+        this.controllerId = 'wolfram-script';
+        this.notebookType = 'wolfram-script';
+        this.label = 'Wolfram Script';
         this.supportedLanguages = ['wolfram'];
         this._executionOrder = 0;
         this._controller = vscode.notebooks.createNotebookController(this.controllerId, this.notebookType, this.label);
@@ -109,5 +109,5 @@ class WolframNotebookController {
         this._controller.dispose();
     }
 }
-exports.WolframNotebookController = WolframNotebookController;
-//# sourceMappingURL=notebookController.js.map
+exports.WolframScriptController = WolframScriptController;
+//# sourceMappingURL=scriptController.js.map

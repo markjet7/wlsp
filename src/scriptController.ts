@@ -6,13 +6,13 @@ import {runInWolfram, wolframClient, wolframKernelClient} from './extension'
 const fs = require('fs')
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(new WolframNotebookController());
+    context.subscriptions.push(new WolframScriptController());
 }
   
-export class WolframNotebookController {
-    readonly controllerId = 'wolfram-notebook';
-    readonly notebookType = 'wolfram-notebook';
-    readonly label = 'Wolfram Notebook';
+export class WolframScriptController {
+    readonly controllerId = 'wolfram-script';
+    readonly notebookType = 'wolfram-script';
+    readonly label = 'Wolfram Script';
     readonly supportedLanguages = ['wolfram'];
 
     private readonly _controller: vscode.NotebookController;

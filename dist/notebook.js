@@ -9,14 +9,79 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.WolframNotebook = exports.WolframNotebookSerializer = void 0;
+exports.deactivate = exports.WolframNotebook = exports.WolframScriptSerializer = exports.WolframNotebookSerializer = void 0;
 const vscode = require("vscode");
+const extension_1 = require("./extension");
 // export function activate(context: vscode.ExtensionContext) {
 //     context.subscriptions.push(
 //       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
 //   );
 // }
 class WolframNotebookSerializer {
+    constructor() {
+        this.raw = [];
+        this.cells = [];
+    }
+    deserializeNotebook(content, _token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var contents = new TextDecoder().decode(content);
+            if (extension_1.wolframKernelClient !== undefined) {
+                return extension_1.wolframKernelClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
+                    this.raw = [];
+                    result.map((item) => this.getCells(item));
+                    this.cells = this.raw.map(item => {
+                        let i = new vscode.NotebookCellData(item.kind, item.value, item.language);
+                        i.metadata = item.metadata;
+                        return i;
+                    });
+                    return new vscode.NotebookData(this.cells);
+                });
+            }
+            else {
+                vscode.window.showErrorMessage("Kernel is not ready. Please wait and try again.");
+                return new vscode.NotebookData(this.cells);
+            }
+            // contents.split(/\r?\n\r?\n/).forEach(line => {
+            //   raw.push({
+            //     kind: vscode.NotebookCellKind.Code,
+            //     value: line,
+            //     language: "wolfram"
+            //   })
+            // })
+        });
+    }
+    getCells(item) {
+        if (item.constructor.name === "Array") {
+            item.map((item) => this.getCells(item));
+        }
+        else {
+            this.raw.push({
+                kind: item.kind,
+                language: item.language,
+                value: item.value,
+                metadata: item.metadata
+            });
+        }
+    }
+    serializeNotebook(data, _token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let contents = [];
+            for (const cell of data.cells) {
+                contents.push({
+                    kind: cell.kind,
+                    language: cell.languageId,
+                    value: cell.value,
+                    metadata: Object.values(cell.metadata).join("")
+                });
+            }
+            return extension_1.wolframKernelClient.sendRequest("serializeNotebook", { contents: contents }).then((result) => {
+                return Buffer.from(result);
+            });
+        });
+    }
+}
+exports.WolframNotebookSerializer = WolframNotebookSerializer;
+class WolframScriptSerializer {
     deserializeNotebook(content, _token) {
         return __awaiter(this, void 0, void 0, function* () {
             var contents = new TextDecoder().decode(content);
@@ -42,13 +107,13 @@ class WolframNotebookSerializer {
                     value: cell.value
                 });
             }
-            let stringoutput = contents.reduce((current, item) => current + item.value + "\n\n", "");
+            let stringoutput = contents.reduce((current, item) => current + item.value + "\n\n", "").trimRight();
             // return new TextEncoder().encode(JSON.stringify(contents));
             return Buffer.from(stringoutput);
         });
     }
 }
-exports.WolframNotebookSerializer = WolframNotebookSerializer;
+exports.WolframScriptSerializer = WolframScriptSerializer;
 class WolframNotebook {
     constructor(uri, fileName, viewType, isDirty, isUntitled, cells, languages, 
     // public metadata: vscode.NotebookDocumentMetadata,
