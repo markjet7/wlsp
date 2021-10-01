@@ -7,7 +7,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
-import { wolframKernelClient } from './extension';
+import { wolframKernelClient } from './clients';
 
 
 
@@ -93,7 +93,7 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         kind: cell.kind,
         language: cell.languageId,
         value: cell.value,
-        metadata: Object.values(cell.metadata).join("")
+        metadata: Object.values((cell as any).metadata).join("")
       });
     }
 
