@@ -1,14 +1,19 @@
+<<<<<<< HEAD
 (* ::Package:: *)
 
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+=======
+>>>>>>> parent of 8a0a147 (moved clients)
 BeginPackage["wolframLSP`"];
 
-
-
 (* ::Package:: *)
+<<<<<<< HEAD
 (**)
 
 
+=======
+$MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+>>>>>>> parent of 8a0a147 (moved clients)
 
 sendResponse[res_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
@@ -133,6 +138,3 @@ MemoryConstrained[
 CloseKernels[];
 
 EndPackage[];
-
-
-

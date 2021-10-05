@@ -1,11 +1,5 @@
-(* ::Package:: *)
-
 BeginPackage["wolframLSP`"]
-
-
 (* ::Package:: *)
-(**)
-
 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
