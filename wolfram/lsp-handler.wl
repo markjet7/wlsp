@@ -41,7 +41,6 @@ ServerCapabilities=<|
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
 		
 handle["initialize",json_]:=Module[{response, response2},
-	Print["Initializing"];
     CONTINUE = True;
 
 	labels = COMPLETIONS[[All, "label"]];

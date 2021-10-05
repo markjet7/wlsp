@@ -7,7 +7,6 @@ const psTree = require('ps-tree');
 import {
     LanguageClient,
     LanguageClientOptions,
-    NodeModule,
     NotificationType,
     ServerOptions,
     TransportKind
@@ -16,6 +15,7 @@ import { resolve } from 'path';
 
 let PORT: any;
 let kernelPORT: any;
+let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 export let wolframClient: LanguageClient;
 export let wolframKernelClient: LanguageClient;
 
@@ -28,65 +28,46 @@ export class Client {
 
     async start(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel): Promise<void> {
         return new Promise((resolve) => {
-                fp(randomPort())
-                .then((freep:any) => {
-                    let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
-                    connect(context, outputChannel, freep[0], lspPath)
+            fp(randomPort())
+                .then((freep: any) => {
+                    let port = freep[0];
+                    if (port == undefined) {
+                        console.log("Failed to find free port. Retrying");
+                    } else {
+                        let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
+                        load(wolfram, lspPath, port, outputChannel)
+                            .then((result: Boolean) => {
+                                if (result) {
+                                    connect(context, outputChannel, port)
+                                        .then(([client, disposible]) => {
+                                            wolframClient = client;
+                                            context.subscriptions.push(disposible);
+                                            fp(randomPort())
+                                                .then((freep: any) => {
+                                                    let port = freep[0];
+                                                    if (port == undefined) {
+                                                        console.log("Failed to find kernel free port. Retrying");
+                                                    } else {
+                                                        let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+                                                        load(wolframKernel, kernelPath, port, outputChannel)
+                                                            .then((result: Boolean) => {
+                                                                if (result) {
+                                                                    connect( context, outputChannel, port)
+                                                                        .then(([client, disposible]) => {
+                                                                            wolframKernelClient = client;
+                                                                            context.subscriptions.push(disposible);
+                                                                            console.log("Resolving clients")
+                                                                            resolve()
+                                                                        })
+                                                                }
+                                                            })
+                                                    }
+                                                })
+                                        })
+                                }
+                            })
+                    }
                 })
-                .then((result:any) => {
-                    fp(randomPort())
-                    .then((freep:any) => {
-                        let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-                        connect(context, outputChannel, freep[0], kernelPath)                                                                 
-                    })
-                })
-
-
-
-            // fp(randomPort())
-            //     .then((freep: any) => {
-            //         let port = freep[0];
-            //         if (port == undefined) {
-            //             console.log("Failed to find free port. Retrying");
-            //         } else {
-            //             let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
-            //             load(lspPath, port, outputChannel)
-            //                 .then((result: cp.ChildProcess | undefined) => {
-            //                     if (result) {
-            //                         wolfram = result;
-            //                         connect(context, outputChannel, port)
-            //                             .then(([client, disposible]) => {
-            //                                 wolframClient = client;
-            //                                 console.log(disposible);
-            //                                 context.subscriptions.push(disposible);
-            //                                 fp(randomPort())
-            //                                     .then((freep: any) => {
-            //                                         let port = freep[0];
-            //                                         if (port == undefined) {
-            //                                             console.log("Failed to find kernel free port. Retrying");
-            //                                         } else {
-            //                                             let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-            //                                             load( kernelPath, port, outputChannel)
-            //                                                 .then((result: cp.ChildProcess | undefined) => {
-            //                                                     if (result) {
-            //                                                         wolframKernel = result;
-            //                                                         connect( context, outputChannel, port)
-            //                                                             .then(([client, disposible]) => {
-            //                                                                 wolframKernelClient = client;
-            //                                                                 console.log(disposible);
-            //                                                                 context.subscriptions.push(disposible);
-            //                                                                 console.log("Resolving clients")
-            //                                                                 resolve()
-            //                                                             })
-            //                                                     }
-            //                                                 })
-            //                                         }
-            //                                     })
-            //                             })
-            //                     }
-            //                 })
-            //         }
-            //     })
         })
     }
 
@@ -105,68 +86,54 @@ export class Client {
     }
 
     stop() {
-        console.log("Stopping");
         stopWolfram(wolframClient, wolfram);
         stopWolfram(wolframKernelClient, wolframKernel);
     }
 }
 
-async function connect(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel, port: number, path:string): Promise<(any)[]> {
-    // let serverOptions: ServerOptions = function () {
-    //     return new Promise((resolve, reject) => {
-    //         let socket = new net.Socket();
+async function connect(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel, port: number): Promise<(any)[]> {
+    let serverOptions: ServerOptions = function () {
+        return new Promise((resolve, reject) => {
+            let socket = new net.Socket();
 
-    //             socket.on("data", (data) => {
-    //                 console.log("WLSP Kernel Data: " + data.toString().substr(0, 20))
-    //             });
+            setTimeout(() => {
+                socket.on("data", (data) => {
+                    // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
+                });
 
-    //             socket.on('error', function (err) {
-    //                 console.log("WLSP Client Error: " + err.message);
-    //                 socket.destroy();
-    //                 // client.end();
-    //                 setTimeout(() => {
-    //                     socket.connect(port, "127.0.0.1", () => { });
-    //                 }, 10000);
-    //             })
+                socket.on('error', function (err) {
+                    console.log("WLSP Kernel Error: " + err.message);
+                    socket.destroy();
+                    // client.end();
+                    setTimeout(() => {
+                        socket.connect(port, "127.0.0.1", () => { });
+                    }, 10000);
+                })
 
-    //             socket.on('timeout', () => {
-    //                 console.log("Client timed out")
-    //                 socket.destroy();
-    //                 socket.connect(port, "127.0.0.1", () => { });
-    //             });
+                socket.on('timeout', () => {
+                    console.log("Kernel timed out")
+                    socket.destroy();
+                    socket.connect(port, "127.0.0.1", () => { });
+                });
 
-    //             socket.on('ready', () => {
-    //                 console.log("Client is ready");
-    //             })
+                socket.on('ready', () => {
+                    console.log("Kernel is ready")
+                })
 
-    //             socket.on('drain', () => {
-    //                 console.log("Client is draining")
-    //             })
+                socket.on('drain', () => {
+                    console.log("Kernel is draining")
+                })
 
-    //             socket.connect(port, "127.0.0.1", () => {
-    //                 socket.setKeepAlive(true, 10);
-    //                 resolve({
-    //                     reader: socket,
-    //                     writer: socket
-    //                 });
-    //             });
-    //     })
-    // };
-
-    let serverOptions: NodeModule = {
-        module: path,
-        runtime: "wolframscript",
-        transport: {
-            kind: TransportKind.socket,
-            port: port
-        },
-        options: {
-            execArgv: ["-file", path, port.toString(), path]
-
-        }
-    }
-
-    console.log(serverOptions)
+                socket.connect(port, "127.0.0.1", () => {
+                    socket.setKeepAlive(true, 20000);
+                    resolve({
+                        reader: socket,
+                        writer: socket
+                    });
+                });
+            }, 10000);
+        })
+    };
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
@@ -179,10 +146,10 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
     let disposible: vscode.Disposable;
     let client = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
     return new Promise((resolve) => {
+        disposible = client.start();
         client.onReady().then(() => {
             resolve([client, disposible])
         })
-        disposible = client.start();
     });
 
     //console.log("Starting kernel disposible");
@@ -199,9 +166,8 @@ function connectKernelClient(outputChannel: any, context: any) {
 
 }
 
-async function load( path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess | undefined> {
+async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<Boolean> {
     return new Promise((resolve) => {
-        let wolfram:cp.ChildProcess;
         try {
             if (process.platform === "win32") {
                 wolfram = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', path, port.toString(), path], { detached: false });
@@ -226,18 +192,18 @@ async function load( path: string, port: number, outputChannel: vscode.OutputCha
                 console.log("STDOUT Error" + data.toString());
             });
 
-            wolfram.stdout?.on('data', (data) => {
+            wolfram.stdout?.once('data', (data) => {
+                wolfram.stdout?.on('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString())
                     console.log("WLSP: " + data.toString());
-                    if (data.toString().includes("SocketObject")) {
-                        setTimeout(() => {resolve(wolfram)}, 2000)
-                    }
                 });
+                resolve(true)
+            });
 
         } catch (error) {
             console.log(error)
             vscode.window.showErrorMessage("Wolframscript failed to load.")
-            resolve(undefined)
+            resolve(false)
         }
     })
 }
@@ -245,6 +211,7 @@ async function load( path: string, port: number, outputChannel: vscode.OutputCha
 
 
 function stopWolfram(client: any, client_process: any) {
+    client.stop();
 
     let isWin = /^win/.test(process.platform);
     if (isWin) {
@@ -255,7 +222,6 @@ function stopWolfram(client: any, client_process: any) {
     } else {
         kill(client_process.pid);
     }
-    client.stop();
 }
 
 let kill = function (pid: any) {

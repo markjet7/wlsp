@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.runInWolfram = exports.printResults = exports.activate = void 0;
+exports.runInWolfram = exports.printResults = exports.activate = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const fp = require('find-free-port');
@@ -56,7 +56,7 @@ function check_pulse(client) {
 }
 function activate(context) {
     context = context;
-    client = new clients_1.Client();
+    let client = new clients_1.Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     serializer = new notebook_1.WolframScriptSerializer();
@@ -695,10 +695,4 @@ function restart() {
     // vscode.window.showInformationMessage("Wolfram Kernel is restarting.");
     // connectKernelClient(outputChannel, context);
 }
-function deactivate() {
-    console.log("Bye 2");
-    client.stop();
-    return undefined;
-}
-exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map
