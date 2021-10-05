@@ -71,7 +71,7 @@ function check_pulse(client:LanguageClient) {
 
 export function activate(context: vscode.ExtensionContext){
     context = context;
-    let client = new Client();
+    client = new Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
 
@@ -827,3 +827,8 @@ function restart(){
 
 }
 
+export function deactivate():Thenable<void> |undefined{
+    console.log("Bye 2");
+    client.stop()
+    return undefined;
+}
