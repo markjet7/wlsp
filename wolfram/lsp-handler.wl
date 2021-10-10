@@ -34,7 +34,7 @@ ServerCapabilities=<|
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"documentFormattingProvider" -> True,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {".", "\\"}, "allCommitCharacters" -> {"["}|> ,
+	"completionProvider"-> <|"resolveProvider"->0False, "triggerCharacters" -> {".", "\\"}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
@@ -51,8 +51,12 @@ handle["initialize",json_]:=Module[{response, response2},
 	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	sendResponse[response];
 
-	response2 = <|"method" -> "wolframVersion", "params"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
-	sendResponse[response2];
+
+];
+
+handle["wolframVersion", json_]:=Module[{response},
+	response = <|"id" -> json["id"], "result"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
+	sendResponse[response];
 ];
 
 
@@ -232,8 +236,8 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 						loc=node[[-1]][Source];
 						rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
 						If[Head@rhs ==CallNode,
-						kind = rhs[[1,2]],
-						kind = rhs[[2]]
+							kind = rhs[[1,2]],
+							kind = rhs[[2]]
 						];
 						definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
 						<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
@@ -261,14 +265,12 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 								"range"->toRange[s["loc"]]
 								|>
 						|>], {s, symbols[[1;;]]}];
-
-
 				response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 				sendResponse[response];  
 			),
 				response = <|"id"->json["id"],"result"->{}|>;
 				sendResponse[response];  
-				sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
 	]
 
 ];
@@ -596,12 +598,13 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	sLines = StringSplit[string, EndOfLine, All];
 	sRanges=getSourceRanges[range];
 
-	StringJoin@Table[StringTake[StringReplace[sLines[[l[[1]]]],"\n"->"\n"], l[[2]]],{l, sRanges}]
+	StringJoin@Table[Check[StringTake[sLines[[l[[1]]]], l[[2]]],""],{l, sRanges}]
 ];
 
 getSourceRanges[{start_, end_}]:=Table[
 	lineRange[l,start,end],
-	{l,start[[1]],end[[1]]}];
+	{l,start[[1]],end[[1]]}
+];
 
 lineRange[line_,start_,end_]:= {line, Which[
 	line == start[[1]] && line==end[[1]], {start[[2]], UpTo@end[[2]]},

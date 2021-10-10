@@ -19,6 +19,7 @@
         "onDebug",
         "onLanguage:wolfram",
         "onNotebook:wolfram-notebook",
+        "onNotebook:wolfram-script",
         "onCustomEditor:wolfram.editor"
     ],
     "contributes": {

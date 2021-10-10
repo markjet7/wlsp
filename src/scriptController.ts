@@ -2,7 +2,7 @@
 import AbortController from 'abort-controller';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
-import {runInWolfram, wolframClient, wolframKernelClient} from './extension'
+import {wolframClient, wolframKernelClient} from './clients'
 const fs = require('fs')
 
 export function activate(context: vscode.ExtensionContext) {
@@ -31,14 +31,18 @@ export class WolframScriptController {
         // this._controller.interruptHandler = this._interrupt.bind(this);
     }
 
-    private _execute(
+    private async _execute(
         cells: vscode.NotebookCell[],
         _notebook: vscode.NotebookDocument,
         _controller: vscode.NotebookController
-    ): void {
-        for (let cell of cells) {
-        this._doExecution(cell);
-        }
+    ): Promise<void> {
+        let promises = cells.map(async cell => {
+            await this._doExecution(cell)
+            return true
+        })
+
+        await Promise.all(promises)
+
     }
 
     private _interrupt(notebook: vscode.NotebookDocument): void {
@@ -98,9 +102,11 @@ export class WolframScriptController {
                             vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                         ])
                     ]);
-                    if (execution.executionOrder === this._executionOrder) {
-                        execution.end(true, Date.now());
-                    }
+                    if (execution.executionOrder !== undefined) {
+                        if (execution.executionOrder <= this._executionOrder) {
+                            execution.end(true, Date.now());
+                        }
+                    }        
                 })
                 break;
             }

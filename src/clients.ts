@@ -15,7 +15,6 @@ import { resolve } from 'path';
 
 let PORT: any;
 let kernelPORT: any;
-let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 export let wolframClient: LanguageClient;
 export let wolframKernelClient: LanguageClient;
 
@@ -96,7 +95,7 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
         return new Promise((resolve, reject) => {
             let socket = new net.Socket();
 
-            setTimeout(() => {
+
                 socket.on("data", (data) => {
                     // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
                 });
@@ -126,12 +125,13 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
 
                 socket.connect(port, "127.0.0.1", () => {
                     socket.setKeepAlive(true, 20000);
-                    resolve({
-                        reader: socket,
-                        writer: socket
-                    });
+                    setTimeout(() => {
+                        resolve({
+                            reader: socket,
+                            writer: socket
+                        })
+                    }, 1000)
                 });
-            }, 10000);
         })
     };
 

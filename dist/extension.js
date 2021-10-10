@@ -12,9 +12,9 @@ const fs = require('fs');
 const clients_1 = require("./clients");
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let context;
-let serializer;
+let scriptserializer;
 let notebookSerializer;
-let controller;
+let notebookcontroller;
 let scriptController;
 let kernelStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -59,15 +59,21 @@ function activate(context) {
     let client = new clients_1.Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-    serializer = new notebook_1.WolframScriptSerializer();
+    scriptserializer = new notebook_1.WolframScriptSerializer();
     notebookSerializer = new notebook_1.WolframNotebookSerializer();
-    controller = new notebookController_1.WolframNotebookController();
+    notebookcontroller = new notebookController_1.WolframNotebookController();
     scriptController = new scriptController_1.WolframScriptController();
+    wolframStatusBar.text = "$(repo-sync~spin) Wolfram v?";
+    wolframStatusBar.show();
+    context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer));
+    context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', scriptserializer));
+    context.subscriptions.push(notebookcontroller);
+    context.subscriptions.push(scriptController);
     client.start(context, outputChannel).then(() => {
-        console.log("Client started");
-        clients_1.wolframClient.onReady().then(() => {
-            clients_1.wolframClient.onNotification("wolframVersion", wolframVersion);
-        });
+        // wolframClient.onReady().then(() => {
+        //     wolframClient.onNotification("wolframVersion", wolframVersion);
+        // });
+        wolframVersion();
         clients_1.wolframKernelClient.onReady().then(() => {
             clients_1.wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
             clients_1.wolframKernelClient.onNotification("wolframBusy", wolframBusy);
@@ -75,9 +81,6 @@ function activate(context) {
             clients_1.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
             clients_1.wolframKernelClient.onNotification("moveCursor", moveCursor);
         });
-        context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer));
-        context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', serializer));
-        context.subscriptions.push(controller);
     });
 }
 exports.activate = activate;
@@ -365,10 +368,12 @@ function updateDecorations(decorations) {
         editor.setDecorations(variableDecorationType, editorDecorations);
     }
 }
-function wolframVersion(data) {
-    wolframVersionText = data["output"];
-    wolframStatusBar.text = wolframVersionText;
-    wolframStatusBar.show();
+function wolframVersion() {
+    clients_1.wolframClient.sendRequest("wolframVersion").then((data) => {
+        wolframVersionText = data["output"];
+        wolframStatusBar.text = wolframVersionText;
+        wolframStatusBar.show();
+    });
 }
 function wolframBusy(params) {
     if (params.busy === true) {

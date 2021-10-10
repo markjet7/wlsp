@@ -1,4 +1,4 @@
-import { throws } from 'assert';
+import { rejects, throws } from 'assert';
 import { Runnable } from 'mocha';
 import { rawListeners } from 'process';
 import * as vscode from 'vscode';
@@ -31,40 +31,17 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
     content: Uint8Array,
     _token: vscode.CancellationToken
   ): Promise<vscode.NotebookData> {
-    var contents = new TextDecoder().decode(content);
+    return new Promise((resolve, reject) => {
+      var contents = new TextDecoder().decode(content);
 
-    if (wolframKernelClient !== undefined) {
-      return wolframKernelClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
-        this.raw = [];
-        result.map(
-          (item:any) => this.getCells(item)
-        );
-        this.cells = this.raw.map(
-          item => {
-           let i= new vscode.NotebookCellData(item.kind, item.value, item.language)
-           i.metadata = item.metadata;
-           return i
-          }
-        );
-        return new vscode.NotebookData(this.cells);
-      });
-    } else {					
-
-      vscode.window.showErrorMessage("Kernel is not ready. Please wait and try again.");
-      return new vscode.NotebookData(this.cells);
-    }
-    // contents.split(/\r?\n\r?\n/).forEach(line => {
-    //   raw.push({
-    //     kind: vscode.NotebookCellKind.Code,
-    //     value: line,
-    //     language: "wolfram"
-    //   })
-    // })
-
+      let x = this.mretry(contents, 1, resolve)
+      console.log(x)
+    })
   }
 
-  private raw: RawNotebookCell[] = [];
+
+  private raw: vscode.NotebookCellData[] = [];
   private cells: vscode.NotebookCellData[] = [];
   getCells(item:any){
     if(item.constructor.name === "Array"){
@@ -74,26 +51,75 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
     } else {
       this.raw.push({
         kind: item.kind,
-        language: item.language,
+        languageId: item.languageId,
         value: item.value,
-        metadata: item.metadata
+        metadata: item.metadata,
+        outputs: item.outputs
       })
     }
   } 
 
+  mretry(contents:any, attempts:number, cb:any) {
+    setTimeout(() => {
+      if (attempts > 20) {
+        vscode.window.showErrorMessage("Failed to open notebook.")
+        cb(new vscode.NotebookData(this.cells));
+        return new vscode.NotebookData(this.cells);
+      } 
+      if (wolframKernelClient !== undefined) {
+        wolframKernelClient.onReady().then(() => {
+      
+          wolframKernelClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+
+            this.raw = [];
+            result.map(
+              (item:any) => this.getCells(item)
+            );
+            this.cells = this.raw.map(
+              (item:any) => {
+              let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId)
+
+              i.metadata = item.metadata;
+
+              let outs = item.outputs.reduce((o:any, c:any) => {
+                return {value: o.value?.toString() + "<br>" + c?.value?.toString()}
+              }, {value:""}).value
+
+              i.outputs = [
+                new vscode.NotebookCellOutput([
+                  vscode.NotebookCellOutputItem.text(outs, "text/html")
+                ])
+              ] 
+              
+              return i
+              }
+            );
+            cb(new vscode.NotebookData(this.cells));
+            return new vscode.NotebookData(this.cells);
+          }).then((result:any) => {
+            return result
+          })
+        })
+      } else {
+        console.log("Waiting for kernel")
+        this.mretry(contents, attempts++, cb)
+      }
+    }, 3000)
+  }
 
   async serializeNotebook(
     data: vscode.NotebookData,
     _token: vscode.CancellationToken
   ): Promise<Uint8Array> {
-    let contents: RawNotebookCell[] = [];
+    let contents: any[] = [];
 
     for (const cell of data.cells) {
       contents.push({
         kind: cell.kind,
         language: cell.languageId,
         value: cell.value,
-        metadata: Object.values((cell as any).metadata).join("")
+        metadata: Object.values((cell as any).metadata).join(""),
+        outputs: cell.outputs
       });
     }
 

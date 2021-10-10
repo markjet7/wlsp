@@ -24,30 +24,11 @@ class WolframNotebookSerializer {
     }
     deserializeNotebook(content, _token) {
         return __awaiter(this, void 0, void 0, function* () {
-            var contents = new TextDecoder().decode(content);
-            if (clients_1.wolframKernelClient !== undefined) {
-                return clients_1.wolframKernelClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
-                    this.raw = [];
-                    result.map((item) => this.getCells(item));
-                    this.cells = this.raw.map(item => {
-                        let i = new vscode.NotebookCellData(item.kind, item.value, item.language);
-                        i.metadata = item.metadata;
-                        return i;
-                    });
-                    return new vscode.NotebookData(this.cells);
-                });
-            }
-            else {
-                vscode.window.showErrorMessage("Kernel is not ready. Please wait and try again.");
-                return new vscode.NotebookData(this.cells);
-            }
-            // contents.split(/\r?\n\r?\n/).forEach(line => {
-            //   raw.push({
-            //     kind: vscode.NotebookCellKind.Code,
-            //     value: line,
-            //     language: "wolfram"
-            //   })
-            // })
+            return new Promise((resolve, reject) => {
+                var contents = new TextDecoder().decode(content);
+                let x = this.mretry(contents, 1, resolve);
+                console.log(x);
+            });
         });
     }
     getCells(item) {
@@ -57,11 +38,51 @@ class WolframNotebookSerializer {
         else {
             this.raw.push({
                 kind: item.kind,
-                language: item.language,
+                languageId: item.languageId,
                 value: item.value,
-                metadata: item.metadata
+                metadata: item.metadata,
+                outputs: item.outputs
             });
         }
+    }
+    mretry(contents, attempts, cb) {
+        setTimeout(() => {
+            if (attempts > 10) {
+                vscode.window.showErrorMessage("Failed to open notebook.");
+                cb(new vscode.NotebookData(this.cells));
+                return new vscode.NotebookData(this.cells);
+            }
+            if (clients_1.wolframKernelClient !== undefined) {
+                clients_1.wolframKernelClient.onReady().then(() => {
+                    clients_1.wolframKernelClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
+                        this.raw = [];
+                        result.map((item) => this.getCells(item));
+                        this.cells = this.raw.map((item) => {
+                            let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
+                            i.metadata = item.metadata;
+                            let outs = item.outputs.reduce((o, c) => {
+                                var _a, _b;
+                                return { value: ((_a = o.value) === null || _a === void 0 ? void 0 : _a.toString()) + "<br>" + ((_b = c === null || c === void 0 ? void 0 : c.value) === null || _b === void 0 ? void 0 : _b.toString()) };
+                            }, { value: "" }).value;
+                            i.outputs = [
+                                new vscode.NotebookCellOutput([
+                                    vscode.NotebookCellOutputItem.text(outs, "text/html")
+                                ])
+                            ];
+                            return i;
+                        });
+                        cb(new vscode.NotebookData(this.cells));
+                        return new vscode.NotebookData(this.cells);
+                    }).then((result) => {
+                        return result;
+                    });
+                });
+            }
+            else {
+                console.log("Waiting for kernel");
+                this.mretry(contents, attempts++, cb);
+            }
+        }, 3000);
     }
     serializeNotebook(data, _token) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -71,7 +92,8 @@ class WolframNotebookSerializer {
                     kind: cell.kind,
                     language: cell.languageId,
                     value: cell.value,
-                    metadata: Object.values(cell.metadata).join("")
+                    metadata: Object.values(cell.metadata).join(""),
+                    outputs: cell.outputs
                 });
             }
             return clients_1.wolframKernelClient.sendRequest("serializeNotebook", { contents: contents }).then((result) => {

@@ -19,7 +19,6 @@ const psTree = require('ps-tree');
 const vscode_languageclient_1 = require("vscode-languageclient");
 let PORT;
 let kernelPORT;
-let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let wolframVersionText = "wolfram v.?";
 let wolfram;
 let wolframKernel;
@@ -94,37 +93,37 @@ function connect(context, outputChannel, port) {
         let serverOptions = function () {
             return new Promise((resolve, reject) => {
                 let socket = new net.Socket();
-                setTimeout(() => {
-                    socket.on("data", (data) => {
-                        // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
-                    });
-                    socket.on('error', function (err) {
-                        console.log("WLSP Kernel Error: " + err.message);
-                        socket.destroy();
-                        // client.end();
-                        setTimeout(() => {
-                            socket.connect(port, "127.0.0.1", () => { });
-                        }, 10000);
-                    });
-                    socket.on('timeout', () => {
-                        console.log("Kernel timed out");
-                        socket.destroy();
+                socket.on("data", (data) => {
+                    // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
+                });
+                socket.on('error', function (err) {
+                    console.log("WLSP Kernel Error: " + err.message);
+                    socket.destroy();
+                    // client.end();
+                    setTimeout(() => {
                         socket.connect(port, "127.0.0.1", () => { });
-                    });
-                    socket.on('ready', () => {
-                        console.log("Kernel is ready");
-                    });
-                    socket.on('drain', () => {
-                        console.log("Kernel is draining");
-                    });
-                    socket.connect(port, "127.0.0.1", () => {
-                        socket.setKeepAlive(true, 20000);
+                    }, 10000);
+                });
+                socket.on('timeout', () => {
+                    console.log("Kernel timed out");
+                    socket.destroy();
+                    socket.connect(port, "127.0.0.1", () => { });
+                });
+                socket.on('ready', () => {
+                    console.log("Kernel is ready");
+                });
+                socket.on('drain', () => {
+                    console.log("Kernel is draining");
+                });
+                socket.connect(port, "127.0.0.1", () => {
+                    socket.setKeepAlive(true, 20000);
+                    setTimeout(() => {
                         resolve({
                             reader: socket,
                             writer: socket
                         });
-                    });
-                }, 10000);
+                    }, 1000);
+                });
             });
         };
         let clientOptions = {
@@ -191,63 +190,6 @@ function load(wolfram, path, port, outputChannel) {
         });
     });
 }
-// function loadWolframKernelClient(outputChannel:any, context:vscode.ExtensionContext, callback:any) {
-//     let serverOptions:ServerOptions = function () {
-//             return new Promise((resolve, reject) => {
-//                 let client = new net.Socket();
-//                 setTimeout(() => {
-//                     client.on("data", (data) => {
-//                         // console.log("WLSP Kernel Data: " + data.toString().substr(0, 200))
-//                     });
-//                     client.on('error', function(err){
-//                         console.log("WLSP Kernel Error: "+ err.message);
-//                         client.destroy();
-//                         // client.end();
-//                         setTimeout(() => {
-//                             client.connect(kernelPORT, "127.0.0.1", () => {});
-//                         }, 10000);
-//                     })
-//                     client.on('timeout', () => {
-//                         console.log("Kernel timed out")
-//                         client.destroy();
-//                         client.connect(kernelPORT, "127.0.0.1", () => {});
-//                     });
-//                     client.on('ready', () => {
-//                         console.log("Kernel is ready")   
-//                     })
-//                     client.on('drain', () => {
-//                         console.log("Kernel is draining")
-//                     })
-//                     client.connect(kernelPORT, "127.0.0.1", () => {
-//                         client.setKeepAlive(true,20000);
-//                         resolve({
-//                             reader: client,
-//                             writer: client
-//                         });
-//                     });}, 10000);
-//             })
-//         };
-//         let clientOptions: LanguageClientOptions = {
-//             documentSelector: [
-//                 "wolfram"
-//             ],
-//             diagnosticCollectionName: 'wolfram-lsp',
-//             outputChannel: outputChannel
-//         };
-//         wolframKernelClient = new LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions)
-//         wolframKernelClient.onReady().then(() => {
-//             // wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
-//             // wolframKernelClient.onNotification("wolframBusy", wolframBusy);
-//             // wolframKernelClient.onNotification("updateDecorations", updateDecorations);
-//             // wolframKernelClient.onNotification("updateVarTable", updateVarTable);
-//             // wolframKernelClient.onNotification("moveCursor", moveCursor);
-//             // console.log("Sending kernel disposible");
-//             callback(disposible)
-//         });
-//         //console.log("Starting kernel disposible");
-//         let disposible = wolframKernelClient.start();
-//         // setTimeout(() => {setInterval(check_pulse, 1000, wolframClient, wolframKernelClient)}, 3000)
-// }
 function stopWolfram(client, client_process) {
     client.stop();
     let isWin = /^win/.test(process.platform);

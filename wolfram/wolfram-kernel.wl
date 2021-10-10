@@ -86,6 +86,7 @@ socketHandler[state_]:=Module[{},
 		If[SocketReadyQ@client2,
 			Replace[
 				Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+				Get[DirectoryName[path] <> "file-transforms.wl"]; 
 				handleMessageList[ReadMessages[client2], state],
 				{
 					{"Continue", state2_} :> state2,
