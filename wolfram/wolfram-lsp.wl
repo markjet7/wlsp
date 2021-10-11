@@ -113,14 +113,14 @@ socketHandler[state_]:=Module[{},
 	]
 ] // socketHandler;
 
+Print[port];
 SERVER=SocketOpen[port,"TCP"];
 Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
 Print[SERVER];
-Print[port];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
-			socketHandler[state]
+		socketHandler[state]
 	],
 	8*1024^3
 ];

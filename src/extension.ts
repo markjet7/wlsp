@@ -26,7 +26,6 @@ let notebookSerializer:WolframNotebookSerializer;
 let notebookcontroller:WolframNotebookController;
 let scriptController:WolframScriptController;
 let kernelStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-let wolframStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let client:Client;
 let wolframVersionText = "";
 
@@ -81,10 +80,9 @@ export function activate(context: vscode.ExtensionContext){
     notebookcontroller = new WolframNotebookController()
     scriptController = new WolframScriptController()
 
-    wolframStatusBar.text = "$(repo-sync~spin) Wolfram v?"
-    wolframStatusBar.show()
 
     
+
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
     );
@@ -97,15 +95,11 @@ export function activate(context: vscode.ExtensionContext){
     context.subscriptions.push(scriptController);
 
     client.start(context, outputChannel).then(() => {
-        // wolframClient.onReady().then(() => {
-        //     wolframClient.onNotification("wolframVersion", wolframVersion);
-        // });
-
-        wolframVersion()
+        wolframClient.onReady().then(() => {
+        });
 
         wolframKernelClient.onReady().then(() => {
             wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
-            wolframKernelClient.onNotification("wolframBusy", wolframBusy);
             wolframKernelClient.onNotification("updateDecorations", updateDecorations);
             wolframKernelClient.onNotification("updateVarTable", updateVarTable);
             wolframKernelClient.onNotification("moveCursor", moveCursor);
@@ -114,7 +108,14 @@ export function activate(context: vscode.ExtensionContext){
     
     })
 
+    vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
 
+}
+
+function willsaveDocument(event:vscode.TextDocumentWillSaveEvent) {
+    if(event.document.fileName.endsWith(".nb")) {
+        
+    }
 }
 
 function didOpenTextDocument(document:vscode.TextDocument): void{
@@ -466,25 +467,7 @@ function updateDecorations(decorations:vscode.DecorationOptions[]) {
     }
 }
 
-function wolframVersion() {
-    wolframClient.sendRequest("wolframVersion").then((data:any) => {
-        wolframVersionText = data["output"];
-        wolframStatusBar.text = wolframVersionText;
-        wolframStatusBar.show();
-    });        
-}
 
-function wolframBusy(params:any) {
-    if(params.busy === true){
-        kernelStatusBar.color = "red";
-        wolframStatusBar.text = "$(repo-sync~spin) Wolfram Running";
-        wolframStatusBar.show();
-    } else {
-        kernelStatusBar.color = "yellow";
-        wolframStatusBar.text = wolframVersionText;
-        wolframStatusBar.show();
-    }
-}
 
 
 function startWolframTerminal() {

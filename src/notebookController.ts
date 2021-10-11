@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(new WolframNotebookController());
 }
   
-export class WolframNotebookController {
+export class WolframNotebookController  {
     readonly controllerId = 'wolfram-notebook';
     readonly notebookType = 'wolfram-notebook';
     readonly label = 'Wolfram Notebook';
@@ -20,9 +20,9 @@ export class WolframNotebookController {
 
     constructor() {
         this._controller = vscode.notebooks.createNotebookController(
-        this.controllerId,
-        this.notebookType,
-        this.label
+            this.controllerId,
+            this.notebookType,
+            this.label
         );
 
         this._controller.supportedLanguages = this.supportedLanguages;
@@ -124,4 +124,5 @@ export class WolframNotebookController {
     dispose() {
         this._controller.dispose()
     }
+
 }

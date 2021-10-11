@@ -4,7 +4,7 @@ rawBoxesToExpression[Cell[BoxData[b_], ___]] := rawBoxesToExpression[b];
 rawBoxesToExpression[a_] := ToExpression[a]; 
 rawBoxesToExpression[""]:= "";
 rawBoxesToExpression[a_, "Input"] := StringReplace[
-    StringRiffle[Flatten@List@(ToExpression[a,StandardForm,Function[dt,MakeBoxes[InputForm[dt]],HoldAll]] /. InterpretationBox[StyleBox[code_String,___],___]:>Echo@code), "\n"],
+    StringRiffle[Flatten@List@(ToExpression[a,StandardForm,Function[dt,MakeBoxes[InputForm[dt]],HoldAll]] /. InterpretationBox[StyleBox[code_String,___],___]:>code), "\n"],
     "Null\n"->""];
 rawBoxesToExpression["", "Input"] := "";
 
@@ -22,7 +22,7 @@ json2nb[js_Association, False]:=Which[
             List@Cell[BoxData[StringSplit[js["value"], "\r\n"]], "Input"],
             Map[
                 Function[{i}, Cell[ImportString[i, "HTML"], "Output"]], 
-                StringSplit[ByteArrayToString@ByteArray[First[js["outputs"]]["items"][[1]]["data"]["data"]], "<br>"]
+                StringSplit[ByteArrayToString@ByteArray[First[js["outputs"],<|"items"->{<|"data"-><|"data"->{}|>|>}|>]["items"][[1]]["data"]["data"]], "<br>"]
             ]
         ], 
         Open]],

@@ -47,7 +47,7 @@ class WolframNotebookSerializer {
     }
     mretry(contents, attempts, cb) {
         setTimeout(() => {
-            if (attempts > 10) {
+            if (attempts > 20) {
                 vscode.window.showErrorMessage("Failed to open notebook.");
                 cb(new vscode.NotebookData(this.cells));
                 return new vscode.NotebookData(this.cells);
