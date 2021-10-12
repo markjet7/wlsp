@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runInWolfram = exports.printResults = exports.activate = void 0;
 const vscode = require("vscode");
+const vscode_1 = require("vscode");
 const path = require("path");
 const fp = require('find-free-port');
 const psTree = require('ps-tree');
@@ -16,9 +17,10 @@ let scriptserializer;
 let notebookSerializer;
 let notebookcontroller;
 let scriptController;
-let kernelStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+// let kernelStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let client;
-let wolframVersionText = "";
+let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+let wolframVersionText = "$(repo-sync~spin) Wolfram";
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
 vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
@@ -53,8 +55,8 @@ function check_pulse(client) {
         }
     }
 }
-function activate(context) {
-    context = context;
+function activate(context0) {
+    context = context0;
     let client = new clients_1.Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
@@ -67,18 +69,34 @@ function activate(context) {
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
     client.start(context, outputChannel).then(() => {
-        clients_1.wolframClient.onReady().then(() => {
-        });
         clients_1.wolframKernelClient.onReady().then(() => {
             clients_1.wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+            clients_1.wolframKernelClient.onNotification("wolframBusy", wolframBusy);
             clients_1.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
             clients_1.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
             clients_1.wolframKernelClient.onNotification("moveCursor", moveCursor);
+        });
+        clients_1.wolframClient.onReady().then(() => {
+            clients_1.wolframClient.sendRequest("wolframVersion").then((result) => {
+                wolframStatusBar.text = wolframVersionText = result.output;
+            });
         });
     });
     vscode.workspace.onWillSaveTextDocument(willsaveDocument);
 }
 exports.activate = activate;
+function wolframBusy(params) {
+    if (params.busy === true) {
+        //kernelStatusBar.color = "red";
+        wolframStatusBar.text = "$(repo-sync~spin) Wolfram Running";
+        wolframStatusBar.show();
+    }
+    else {
+        //kernelStatusBar.color = "yellow";
+        wolframStatusBar.text = wolframVersionText;
+        wolframStatusBar.show();
+    }
+}
 function willsaveDocument(event) {
     if (event.document.fileName.endsWith(".nb")) {
     }
@@ -184,7 +202,6 @@ function onRunInWolfram(result) {
     let editors = vscode.window.visibleTextEditors;
     let e = editors.filter((e) => { return e.document.uri.path === result["document"]["path"]; })[0];
     if (e.document.uri.scheme == 'vscode-notebook-cell') {
-        vscode.notebooks;
     }
     else {
         updateResults(e, result, result["print"]);
@@ -205,7 +222,7 @@ function updateResults(e, result, print) {
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
             exports.printResults.push(result["output"].toString());
-            showOutput();
+            // showOutput();
             if (print) {
                 let sel = e.selection;
                 let outputPosition = new vscode.Position(sel.active.line + 1, 0);
@@ -440,11 +457,11 @@ function showOutput() {
     else {
         if (outputColumn) {
             outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Output", { viewColumn: outputColumn + 1, preserveFocus: true }, {
-                localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'wolfram'))],
+                // localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'wolfram'))],
                 enableScripts: true,
                 retainContextWhenHidden: true
             });
-            outputPanel.webview.html = getOutputContent(outputPanel.webview);
+            outputPanel.webview.html = getOutputContent(outputPanel.webview, context.extensionUri);
             outputPanel.webview.onDidReceiveMessage(message => {
                 runExpression(message.text, 0, 100);
                 return;
@@ -479,21 +496,48 @@ function updateOutputPanel() {
     let vars = "<tr><th>Var</th><th>Value</th></tr>\n";
     let i = 0;
     Object.keys(variableTable).forEach(k => {
-        if (i % 2 === 0) {
-            vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n";
-        }
-        else {
-            vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n";
-        }
+        // if (i % 2 === 0) {
+        //     vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n"
+        // } else {
+        //     vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n"
+        // }
+        vars += `<vscode-data-grid-row>
+		    <vscode-data-grid-cell grid-column="1">${k}</vscode-data-grid-cell>
+		    <vscode-data-grid-cell grid-column="2">${variableTable[k]}</vscode-data-grid-cell>
+        </vscode-data-grid-row>
+        `;
         i++;
     });
     outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: vars });
 }
-function getOutputContent(webview) {
+function getUri(webview, extensionUri, pathList) {
+    return webview.asWebviewUri(vscode_1.Uri.joinPath(extensionUri, ...pathList));
+}
+function getOutputContent(webview, extensionUri) {
     let timeNow = new Date().getTime();
+    const toolkitUri = getUri(webview, extensionUri, [
+        "node_modules",
+        "@vscode",
+        "webview-ui-toolkit",
+        "dist",
+        "toolkit.js",
+    ]);
+    const codiconsUri = getUri(webview, extensionUri, [
+        "node_modules",
+        "@vscode",
+        "codicons",
+        "dist",
+        "codicon.css",
+    ]);
+    const mainUri = getUri(webview, extensionUri, ["media", "main.js"]);
+    const styleUri = getUri(webview, extensionUri, ["media", "style.css"]);
     let result = `<!DOCTYPE html>
     <html lang="en">
     <head>
+        <script type="module" src="${toolkitUri}"></script>
+        <!-- <script type="module" src="${mainUri}"></script>
+        <link rel="stylesheet" href="${styleUri}"> 
+        <link rel="stylesheet" href="${codiconsUri}"> -->
         <style type="text/css">
 
             body{
@@ -589,15 +633,7 @@ function getOutputContent(webview) {
         </style>
         <meta charset="UTF-8">
 
-        <!--
-        Use a content security policy to only allow loading printResults from https or from our extension directory,
-        and only allow scripts that have a specific nonce.
-        
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none';">
-
-        <meta http-equiv="Content-Security-Policy" content="default-src 'all'; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource};"/>
-        -->
-        <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/>
+        <!-- <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/> -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Wolfram Output</title>
         <script>
@@ -648,15 +684,17 @@ function getOutputContent(webview) {
     <body onload="scrollToBottom()">
         <div class="outer">
             <div id="vars">
-                <table id="varTable">
-                    <th><td>Var</td><td>Value</td></th>
-                    <tr><td></td><td>No values defined yet</td></tr>
-                </table>
+            <vscode-data-grid generate-header="none" aria-label="Basic" id="varTable">
+                <vscode-data-grid-row row-type="header">
+                    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
+                    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
+                </vscode-data-grid-row>
+            </vscode-data-grid>
             </div>
             <div class="inner" id='outputs'>
             </div>
             <div id="scratch">
-                <textarea id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></textarea>
+                <vscode-text-area id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></vscode-text-area>
             </div> 
         </div>
     </body>
