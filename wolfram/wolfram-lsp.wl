@@ -51,6 +51,7 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
+	Print[msg["method"]];
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
@@ -63,11 +64,11 @@ handleMessage[msg_Association, state_]:=Module[{},
 			]
 		]		
 	];
-	If[state === "Continue", {"Continue",state}, {"Stop", state}]
+	If[state === "Continue", {"Continue", state}, {"Stop", state}]
 ];
 
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
-ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
+ReadMessagesImpl[client_SocketObject,{{0,{}}, msgs:{__Association}}]:=msgs;
 ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
 
 
@@ -84,39 +85,35 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.01;
+handlerWait = 0.5;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
 	If[Head@client === SocketObject,
-		If[SocketReadyQ@client,
-			Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-			Replace[
-				handleMessageList[ReadMessages[client], state],
-				{
-					{"Continue", state2_} :> state2,
-					{stop_, state2_} :> {stop, state2},
-					{} :> state
-				}
-			],
-			Pause[handlerWait];
-			(* flush[client]; *)
-			"Continue"
+		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+		Pause[handlerWait];
+		Replace[
+			handleMessageList[Echo@ReadMessages[client], state],
+			{
+				{"Continue", state2_} :> state2,
+				{stop_, state2_} :> {stop, state2},
+				{} :> state
+			}
 		],
 		client=First[SERVER["ConnectedClients"], {}];
 		If[Head[client] === SocketObject, 
 			Print["LSP client connected: " <> ToString@client];
+			"Continue"
 		];
 		Pause[0.5];
-		sendResponse@<|"method"->"window/logMessage", "params"-> <| "type"-> 2, "message" -> "Waiting to initialize language server" |> |> ;
 		"Continue"
 	]
 ] // socketHandler;
 
-Print[port];
 SERVER=SocketOpen[port,"TCP"];
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."];Quit[1])}];
+Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
 Print[SERVER];
+Print[port];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 

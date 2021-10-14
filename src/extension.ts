@@ -97,28 +97,43 @@ export function activate(context0: vscode.ExtensionContext){
     context.subscriptions.push(scriptController);
 
     client.start(context, outputChannel).then(() => {
-
-
-
-        wolframKernelClient.onReady().then(() => {
-            wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
-            wolframKernelClient.onNotification("wolframBusy", wolframBusy);
-            wolframKernelClient.onNotification("updateDecorations", updateDecorations);
-            wolframKernelClient.onNotification("updateVarTable", updateVarTable);
-            wolframKernelClient.onNotification("moveCursor", moveCursor);
-        });
-    
-        wolframClient.onReady().then(() => {
-            wolframClient.sendRequest("wolframVersion").then((result:any) => {
-                wolframStatusBar.text = wolframVersionText = result.output
-            })
-        })
+        onkernelReady();
     })
 
     vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
 
 }
 
+function onkernelReady() {
+    try {
+        if (wolframKernelClient == undefined || wolframClient == undefined) {
+            setTimeout(onkernelReady, 2000)
+            return
+        }
+
+
+        if(wolframKernelClient !== undefined) {
+            wolframKernelClient.onReady().then(() => {
+                wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+                wolframKernelClient.onNotification("wolframBusy", wolframBusy);
+                wolframKernelClient.onNotification("updateDecorations", updateDecorations);
+                wolframKernelClient.onNotification("updateVarTable", updateVarTable);
+                wolframKernelClient.onNotification("moveCursor", moveCursor);
+            });
+        } 
+        
+        if (wolframClient !== undefined) {
+            wolframClient.onReady().then(() => {
+                wolframClient.sendRequest("wolframVersion").then((result:any) => {
+                    wolframStatusBar.text = wolframVersionText = result.output
+                })
+            })
+        } 
+    } catch (error) {
+        setTimeout(onkernelReady, 2000)
+   }
+
+}
 
 function wolframBusy(params:any) {
     if(params.busy === true){

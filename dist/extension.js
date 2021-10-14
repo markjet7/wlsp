@@ -69,22 +69,38 @@ function activate(context0) {
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
     client.start(context, outputChannel).then(() => {
-        clients_1.wolframKernelClient.onReady().then(() => {
-            clients_1.wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
-            clients_1.wolframKernelClient.onNotification("wolframBusy", wolframBusy);
-            clients_1.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
-            clients_1.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
-            clients_1.wolframKernelClient.onNotification("moveCursor", moveCursor);
-        });
-        clients_1.wolframClient.onReady().then(() => {
-            clients_1.wolframClient.sendRequest("wolframVersion").then((result) => {
-                wolframStatusBar.text = wolframVersionText = result.output;
-            });
-        });
+        onkernelReady();
     });
     vscode.workspace.onWillSaveTextDocument(willsaveDocument);
 }
 exports.activate = activate;
+function onkernelReady() {
+    try {
+        if (clients_1.wolframKernelClient == undefined || clients_1.wolframClient == undefined) {
+            setTimeout(onkernelReady, 2000);
+            return;
+        }
+        if (clients_1.wolframKernelClient !== undefined) {
+            clients_1.wolframKernelClient.onReady().then(() => {
+                clients_1.wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
+                clients_1.wolframKernelClient.onNotification("wolframBusy", wolframBusy);
+                clients_1.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
+                clients_1.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
+                clients_1.wolframKernelClient.onNotification("moveCursor", moveCursor);
+            });
+        }
+        if (clients_1.wolframClient !== undefined) {
+            clients_1.wolframClient.onReady().then(() => {
+                clients_1.wolframClient.sendRequest("wolframVersion").then((result) => {
+                    wolframStatusBar.text = wolframVersionText = result.output;
+                });
+            });
+        }
+    }
+    catch (error) {
+        setTimeout(onkernelReady, 2000);
+    }
+}
 function wolframBusy(params) {
     if (params.busy === true) {
         //kernelStatusBar.color = "red";
