@@ -10,10 +10,12 @@ import {
     LanguageClientOptions,
     NotificationType,
     ServerOptions,
+    NodeModule,
     TransportKind
 } from 'vscode-languageclient';
 import { resolve } from 'path';
 import { deactivate } from './notebook';
+import { time } from 'console';
 
 let PORT: any;
 let kernelPORT: any;
@@ -61,6 +63,37 @@ export class Client {
         })
     }
 
+    async startModule(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel): Promise<void> {
+        return new Promise((resolve) => {
+            let clientPort:number;
+            let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
+            let rndport = randomPort();
+            fp(rndport, rndport+50).then((freep:any) => {
+                clientPort = freep[0]
+            }).then(() => {
+                connectModule(
+                    lspPath,
+                    "wolframscript",
+                    clientPort,
+                    outputChannel
+                )
+            })
+
+            let kernelPort:number;
+            let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+            return fp(rndport+51, rndport+100).then((freep:any) => {
+                kernelPort = freep[0]
+            }).then(() => {
+                connectModule(
+                    kernelPath,
+                    "wolframscript",
+                    kernelPort,
+                    outputChannel
+                )
+            })
+        })
+    }
+
     restart(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
         console.log("Restarting");
 
@@ -81,7 +114,42 @@ export class Client {
     }
 }
 
+async function connectModule(modulePath:string, runtimePath:string, port:number, outputChannel: vscode.OutputChannel): Promise<(unknown)[]> {
+    console.log("Connecting to module: " + modulePath);
+    console.log("Connecting to runtime: " + runtimePath);
+    let serverOptions: NodeModule = {
+        module: modulePath,
+        runtime: runtimePath, 
+        transport: {
+            kind: TransportKind.socket,
+            port: port
+        },
+        options:{
+            env: {
+                PATH: process.env.PATH
+            }
+        },
+        args: ['-file', runtimePath, port.toString(), runtimePath]
+    }
+
+    let clientOptions: LanguageClientOptions = {
+        documentSelector: [
+            "wolfram"
+        ],
+        diagnosticCollectionName: 'wolfram-lsp',
+        outputChannel: outputChannel
+    };
+
+    return new Promise(async (resolve) => {
+        let disposible: vscode.Disposable;
+        let client = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
+        disposible = client.start();
+        resolve([client, disposible]);
+    })
+}
+
 async function connect(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel, port: number): Promise<(any)[]> {
+    
     let serverOptions: ServerOptions = function () {
         return new Promise((resolve, reject) => {
             let socket = new net.Socket();
@@ -94,11 +162,11 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
 
                 socket.on('error', function (err) {
                     console.log("Socket Error: " + err.message);
-                    socket.destroy();
-                    // client.end();
-                    setTimeout(() => {
-                        socket.connect(port, "127.0.0.1", () => { socket.setKeepAlive(true) });
-                    }, 1000);
+                    // socket.destroy();
+                    // // client.end();
+                    // setTimeout(() => {
+                    //     socket.connect(port, "127.0.0.1", () => { socket.setKeepAlive(true) });
+                    // }, 1000);
                 })
 
                 socket.on('timeout', () => {
@@ -108,11 +176,7 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
                 });
 
                 socket.on('ready', () => {
-                    console.log("Socket ready")      
-                    resolve({
-                        reader: socket,
-                        writer: socket
-                    })
+                    console.log("Socket ready")     
                 })
 
                 socket.on('drain', () => {
@@ -124,7 +188,13 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
                 })
 
                 socket.connect(port, "127.0.0.1", () => {
-                    socket.setKeepAlive(true);
+                    socket.setKeepAlive(true, 2000); 
+                    setTimeout(() => {
+                        resolve({
+                            reader: socket,
+                            writer: socket
+                        })
+                    }, 4000)
                 });
 
 
@@ -143,30 +213,13 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
     return new Promise(async (resolve) => {
         let disposible: vscode.Disposable;
         let client = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
-        await delay(4000);
+        let start = new Date().getTime();
+        console.log("Wolfram Language Server Client Start: ");
+        await delay(5000);
+        let end = new Date().getTime();
+        console.log("Wolfram Language Server Client Start: "  + (end - start));
         disposible = client.start();
         resolve([client, disposible]);
-        // let attempt = 0;
-        // while (attempt < 10) {
-        //     try {
-        //         let disposible: vscode.Disposable;
-        //         let client = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
-        //         await delay(4000);
-        //         disposible = client.start();
-        //         console.log(client.initializeResult?.capabilities)
-        //         if (client.initializeResult) {
-        //             resolve([client, disposible]);
-        //             break;
-        //         } else {
-        //             attempt++;
-        //             await delay(2000);
-        //         }
-        //     } catch (err) {
-        //         console.log("Error starting client: " + err);
-        //         await delay(1000);
-        //         attempt++;
-        //     }
-        // }
     });
 
     //console.log("Starting kernel disposible");
