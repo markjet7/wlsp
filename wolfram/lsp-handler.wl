@@ -69,7 +69,7 @@ handle["shutdown", json_]:=Module[{},
 	Exit[];
 ];
 
-handle["codeLens/resolve", json_]:=Module[{json},
+handle["codeLens/resolve", json_]:=Module[{},
 	Print["resolve"];
 ];
 
@@ -77,8 +77,8 @@ handle["textDocument/codeLens", json_]:=Module[{src, lens, lines, sections, sect
 	Check[
 		src = documents[json["params","textDocument","uri"]];
 		sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
-		lines = StringCount[StringTake[src, {1, #[[2]]}], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
-		sections = BlockMap[StringTrim@StringTake[src, {#[[1,1]], #[[2,2]]}] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
+		lines = StringCount[Check[StringTake[src, {1, #[[2]]}], ""], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
+		sections = BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
 		If[sections != {},
 			lens = Table[
 				<|

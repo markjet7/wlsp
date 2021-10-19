@@ -70,9 +70,12 @@ function check_pulse(client:LanguageClient) {
     }
 }
 
+
+
+
 export function activate(context0: vscode.ExtensionContext){
     context = context0;
-    let client = new Client();
+    client = new Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
 
@@ -100,13 +103,23 @@ export function activate(context0: vscode.ExtensionContext){
         onkernelReady();
     })
 
-    vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
 
+    vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
+    wolframStatusBar.text = wolframVersionText;
+    wolframStatusBar.command = 'wolfram.restart';
+    wolframStatusBar.show();
+
+}
+
+function restart(){
+    client.restart(context, outputChannel).then(() => {
+        setTimeout(onkernelReady, 2000);
+    })
 }
 
 function onkernelReady() {
     try {
-        if (wolframKernelClient == undefined || wolframClient == undefined) {
+        if ((wolframKernelClient === undefined) || (wolframClient === undefined)) {
             setTimeout(onkernelReady, 2000)
             return
         }
@@ -114,6 +127,7 @@ function onkernelReady() {
 
         if(wolframKernelClient !== undefined) {
             wolframKernelClient.onReady().then(() => {
+                console.log("Listening to kernel")
                 wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
                 wolframKernelClient.onNotification("wolframBusy", wolframBusy);
                 wolframKernelClient.onNotification("updateDecorations", updateDecorations);
@@ -235,6 +249,11 @@ function moveCursor(params:any) {
 
 export let printResults:any[] = [];
 export function runInWolfram(print=false){
+    if (wolframKernelClient === undefined) {
+        vscode.window.showWarningMessage("Wolfram kernel is not running. Please wait or start the kernel first.");
+        return
+    }
+
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel:vscode.Selection = e!.selection;
     let outputPosition:vscode.Position = new vscode.Position(sel.active.line+1, 0);
@@ -640,7 +659,10 @@ function updateOutputPanel(){
     //     loadOutputPanel(myContext, 2);
     // }
 
-    let vars = "<tr><th>Var</th><th>Value</th></tr>\n";
+    let vars = `<vscode-data-grid-row row-type="header">
+    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
+    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
+</vscode-data-grid-row>`;
 
     let i = 0;
     Object.keys(variableTable).forEach(k => {
@@ -854,26 +876,4 @@ function getOutputContent(webview:any, extensionUri: Uri) {
 }
 
 
-function restart(){
-    client.restart(context, outputChannel)
-    // kernelStatusBar.color = "yellow";
-
-    // wolframKernelClient.stop();
-
-    // let isWin = /^win/.test(process.platform);
-    // if(isWin) {
-    //     let cp = require('child_process');
-    //     cp.exec('taskkill /PID ' + wolfram.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
-    //     }); 
-    //     cp.exec('taskkill /PID ' + wolframKernel.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
-    //     }); 
-
-    // } else {        
-    //     kill(wolframKernel.pid);
-    // }
-
-    // vscode.window.showInformationMessage("Wolfram Kernel is restarting.");
-    // connectKernelClient(outputChannel, context);
-
-}
 

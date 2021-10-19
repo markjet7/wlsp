@@ -108,12 +108,12 @@ socketHandler[state_]:=Module[{},
 	]
 ] // socketHandler;
 
-Print[kernelport];
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
 Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];
 (* Print[KERNELSERVER];
 Print[kernelport]; *)
 Print[KERNELSERVER];
+Print[kernelport];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 

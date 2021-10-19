@@ -51,7 +51,6 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
-	Print[msg["method"]];
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
@@ -93,7 +92,7 @@ socketHandler[state_]:=Module[{},
 		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 		Pause[handlerWait];
 		Replace[
-			handleMessageList[Echo@ReadMessages[client], state],
+			handleMessageList[ReadMessages[client], state],
 			{
 				{"Continue", state2_} :> state2,
 				{stop_, state2_} :> {stop, state2},

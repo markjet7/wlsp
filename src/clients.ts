@@ -36,7 +36,8 @@ export class Client {
             fp(rndport, rndport+50).then((freep:any) => {
                 clientPort = freep[0]
             }).then(() => {
-                load(wolfram, lspPath, clientPort, outputChannel).then(() => {
+                load(wolfram, lspPath, clientPort, outputChannel).then((result:cp.ChildProcess) => {
+                    wolfram = result;
                     connect(context, outputChannel, clientPort)
                     .then(([client, disposable]) => {
                         wolframClient = client;
@@ -51,7 +52,8 @@ export class Client {
             return fp(rndport+51, rndport+100).then((freep:any) => {
                 kernelPort = freep[0]
             }).then(() => {
-                load(wolframKernel, kernelPath, kernelPort, outputChannel).then(() => {
+                load(wolframKernel, kernelPath, kernelPort, outputChannel).then((result:cp.ChildProcess) => {
+                    wolframKernel = result;
                     connect(context, outputChannel, kernelPort)
                     .then(([client, disposable]) => {
                         wolframKernelClient = client;
@@ -94,10 +96,13 @@ export class Client {
         })
     }
 
-    restart(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
+    async restart(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel): Promise<void> {
         console.log("Restarting");
 
         vscode.window.showInformationMessage("Wolfram is restarting.");
+        context.subscriptions.forEach((subscription:any) => {
+            subscription.dispose();
+        })
 
         stopWolfram(wolframClient, wolfram);
         stopWolfram(wolframKernelClient, wolframKernel);
@@ -105,7 +110,8 @@ export class Client {
         // wolframStatusBar.text = "Wolfram v.?";
         // wolframStatusBar.show();
         // retry(function(){return connectKernel(outputChannel, theContext)});
-        this.start(context, outputChannel);
+        return this.start(context, outputChannel).then(() => {
+            resolve()});
     }
 
     stop() {
@@ -172,11 +178,10 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
                 socket.on('timeout', () => {
                     console.log("Kernel timed out")
                     socket.destroy();
-                    socket.connect(port, "127.0.0.1", () => { });
                 });
 
                 socket.on('ready', () => {
-                    console.log("Socket ready")     
+                    // console.log("Socket ready")     
                 })
 
                 socket.on('drain', () => {
@@ -184,7 +189,7 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
                 })
 
                 socket.on('connect', () => {
-                    console.log("Socket connected")
+                    // console.log("Socket connected")
                 })
 
                 socket.connect(port, "127.0.0.1", () => {
@@ -214,10 +219,8 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
         let disposible: vscode.Disposable;
         let client = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
         let start = new Date().getTime();
-        console.log("Wolfram Language Server Client Start: ");
         await delay(5000);
         let end = new Date().getTime();
-        console.log("Wolfram Language Server Client Start: "  + (end - start));
         disposible = client.start();
         resolve([client, disposible]);
     });
@@ -240,7 +243,7 @@ function connectKernelClient(outputChannel: any, context: any) {
 
 }
 
-async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<Boolean> {
+async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess> {
     return new Promise((resolve) => {
         try {
             if (process.platform === "win32") {
@@ -266,18 +269,18 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
                 console.log("STDOUT Error" + data.toString());
             });
 
-                wolfram.stdout?.on('data', (data) => {
-                    outputChannel.appendLine("WLSP: " + data.toString())
-                    console.log("WLSP: " + data.toString());
-                    if(data.toString().includes("TCPSERVER")){
-                        setTimeout(() => {resolve(true)}, 2000)
-                    }
-                });
+            wolfram.stdout?.on('data', (data) => {
+                outputChannel.appendLine("WLSP: " + data.toString())
+                console.log("WLSP: " + data.toString());
+                if(data.toString().includes("TCPSERVER")){
+                    setTimeout(() => {resolve(wolfram)}, 2000)
+                }
+            });
 
         } catch (error) {
             console.log(error)
             vscode.window.showErrorMessage("Wolframscript failed to load.")
-            resolve(false)
+            resolve(wolfram)
         }
     })
 }

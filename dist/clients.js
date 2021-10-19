@@ -17,6 +17,7 @@ const fp = require('find-free-port');
 const cp = require("child_process");
 const psTree = require('ps-tree');
 const vscode_languageclient_1 = require("vscode-languageclient");
+const path_1 = require("path");
 let PORT;
 let kernelPORT;
 let wolfram;
@@ -32,7 +33,8 @@ class Client {
                 fp(rndport, rndport + 50).then((freep) => {
                     clientPort = freep[0];
                 }).then(() => {
-                    load(wolfram, lspPath, clientPort, outputChannel).then(() => {
+                    load(wolfram, lspPath, clientPort, outputChannel).then((result) => {
+                        wolfram = result;
                         connect(context, outputChannel, clientPort)
                             .then(([client, disposable]) => {
                             exports.wolframClient = client;
@@ -45,7 +47,8 @@ class Client {
                 return fp(rndport + 51, rndport + 100).then((freep) => {
                     kernelPort = freep[0];
                 }).then(() => {
-                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then(() => {
+                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((result) => {
+                        wolframKernel = result;
                         connect(context, outputChannel, kernelPort)
                             .then(([client, disposable]) => {
                             exports.wolframKernelClient = client;
@@ -79,14 +82,21 @@ class Client {
         });
     }
     restart(context, outputChannel) {
-        console.log("Restarting");
-        vscode.window.showInformationMessage("Wolfram is restarting.");
-        stopWolfram(exports.wolframClient, wolfram);
-        stopWolfram(exports.wolframKernelClient, wolframKernel);
-        // wolframStatusBar.text = "Wolfram v.?";
-        // wolframStatusBar.show();
-        // retry(function(){return connectKernel(outputChannel, theContext)});
-        this.start(context, outputChannel);
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Restarting");
+            vscode.window.showInformationMessage("Wolfram is restarting.");
+            context.subscriptions.forEach((subscription) => {
+                subscription.dispose();
+            });
+            stopWolfram(exports.wolframClient, wolfram);
+            stopWolfram(exports.wolframKernelClient, wolframKernel);
+            // wolframStatusBar.text = "Wolfram v.?";
+            // wolframStatusBar.show();
+            // retry(function(){return connectKernel(outputChannel, theContext)});
+            return this.start(context, outputChannel).then(() => {
+                path_1.resolve();
+            });
+        });
     }
     stop() {
         stopWolfram(exports.wolframClient, wolfram);
@@ -138,25 +148,24 @@ function connect(context, outputChannel, port) {
                 });
                 socket.on('error', function (err) {
                     console.log("Socket Error: " + err.message);
-                    socket.destroy();
-                    // client.end();
-                    setTimeout(() => {
-                        socket.connect(port, "127.0.0.1", () => { socket.setKeepAlive(true); });
-                    }, 1000);
+                    // socket.destroy();
+                    // // client.end();
+                    // setTimeout(() => {
+                    //     socket.connect(port, "127.0.0.1", () => { socket.setKeepAlive(true) });
+                    // }, 1000);
                 });
                 socket.on('timeout', () => {
                     console.log("Kernel timed out");
                     socket.destroy();
-                    socket.connect(port, "127.0.0.1", () => { });
                 });
                 socket.on('ready', () => {
-                    console.log("Socket ready");
+                    // console.log("Socket ready")     
                 });
                 socket.on('drain', () => {
                     console.log("Socket is draining");
                 });
                 socket.on('connect', () => {
-                    console.log("Socket connected");
+                    // console.log("Socket connected")
                 });
                 socket.connect(port, "127.0.0.1", () => {
                     socket.setKeepAlive(true, 2000);
@@ -180,10 +189,8 @@ function connect(context, outputChannel, port) {
             let disposible;
             let client = new vscode_languageclient_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
             let start = new Date().getTime();
-            console.log("Wolfram Language Server Client Start: ");
             yield delay(5000);
             let end = new Date().getTime();
-            console.log("Wolfram Language Server Client Start: " + (end - start));
             disposible = client.start();
             resolve([client, disposible]);
         }));
@@ -228,14 +235,14 @@ function load(wolfram, path, port, outputChannel) {
                     outputChannel.appendLine("WLSP: " + data.toString());
                     console.log("WLSP: " + data.toString());
                     if (data.toString().includes("TCPSERVER")) {
-                        setTimeout(() => { resolve(true); }, 2000);
+                        setTimeout(() => { resolve(wolfram); }, 2000);
                     }
                 });
             }
             catch (error) {
                 console.log(error);
                 vscode.window.showErrorMessage("Wolframscript failed to load.");
-                resolve(false);
+                resolve(wolfram);
             }
         });
     });

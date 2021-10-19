@@ -57,7 +57,7 @@ function check_pulse(client) {
 }
 function activate(context0) {
     context = context0;
-    let client = new clients_1.Client();
+    client = new clients_1.Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     scriptserializer = new notebook_1.WolframScriptSerializer();
@@ -72,16 +72,25 @@ function activate(context0) {
         onkernelReady();
     });
     vscode.workspace.onWillSaveTextDocument(willsaveDocument);
+    wolframStatusBar.text = wolframVersionText;
+    wolframStatusBar.command = 'wolfram.restart';
+    wolframStatusBar.show();
 }
 exports.activate = activate;
+function restart() {
+    client.restart(context, outputChannel).then(() => {
+        setTimeout(onkernelReady, 2000);
+    });
+}
 function onkernelReady() {
     try {
-        if (clients_1.wolframKernelClient == undefined || clients_1.wolframClient == undefined) {
+        if ((clients_1.wolframKernelClient === undefined) || (clients_1.wolframClient === undefined)) {
             setTimeout(onkernelReady, 2000);
             return;
         }
         if (clients_1.wolframKernelClient !== undefined) {
             clients_1.wolframKernelClient.onReady().then(() => {
+                console.log("Listening to kernel");
                 clients_1.wolframKernelClient.onNotification("onRunInWolfram", onRunInWolfram);
                 clients_1.wolframKernelClient.onNotification("wolframBusy", wolframBusy);
                 clients_1.wolframKernelClient.onNotification("updateDecorations", updateDecorations);
@@ -509,7 +518,10 @@ function updateOutputPanel() {
     // if(typeof(outputPanel) === "undefined") {
     //     loadOutputPanel(myContext, 2);
     // }
-    let vars = "<tr><th>Var</th><th>Value</th></tr>\n";
+    let vars = `<vscode-data-grid-row row-type="header">
+    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
+    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
+</vscode-data-grid-row>`;
     let i = 0;
     Object.keys(variableTable).forEach(k => {
         // if (i % 2 === 0) {
@@ -716,22 +728,5 @@ function getOutputContent(webview, extensionUri) {
     </body>
     </html>`;
     return result;
-}
-function restart() {
-    client.restart(context, outputChannel);
-    // kernelStatusBar.color = "yellow";
-    // wolframKernelClient.stop();
-    // let isWin = /^win/.test(process.platform);
-    // if(isWin) {
-    //     let cp = require('child_process');
-    //     cp.exec('taskkill /PID ' + wolfram.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
-    //     }); 
-    //     cp.exec('taskkill /PID ' + wolframKernel.pid + ' /T /F', function (error:any, stdout:any, stderr:any) {
-    //     }); 
-    // } else {        
-    //     kill(wolframKernel.pid);
-    // }
-    // vscode.window.showInformationMessage("Wolfram Kernel is restarting.");
-    // connectKernelClient(outputChannel, context);
 }
 //# sourceMappingURL=extension.js.map
