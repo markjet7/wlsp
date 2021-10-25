@@ -34,13 +34,5 @@
         "increaseIndentPattern": "(\\[|\\{)",
         "decreaseIndentPattern": "(\\]\\})"
     },
-    "onEnterRules": [
-        {
-            "beforeText": ".*\\]\\s*",
-            "action": {
-                "indent": "none"
-            }
-        }
-    ],
     "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
 }
