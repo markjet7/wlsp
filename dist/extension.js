@@ -196,6 +196,10 @@ function moveCursor(params) {
 }
 exports.printResults = [];
 function runInWolfram(print = false) {
+    if (clients_1.wolframKernelClient === undefined) {
+        vscode.window.showWarningMessage("Wolfram kernel is not running. Please wait or start the kernel first.");
+        return;
+    }
     let e = vscode.window.activeTextEditor;
     let sel = e.selection;
     let outputPosition = new vscode.Position(sel.active.line + 1, 0);

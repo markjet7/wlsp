@@ -26,9 +26,21 @@
     ],
     "folding": {
         "markers": {
-            "start": "^\\(\\*\\s*?::\\w*::\\s*\\*\\)",
-            "end": "^\\(\\*\\s*?end\\s*\\*\\)"
+            "start": "^\\(\\*\\s*::\\w*::\\s*\\*\\)",
+            "end": "^\\(\\*\\s*::\\w*::\\s*\\*\\)"
         }
     },
+    "indentationRules": {
+        "increaseIndentPattern": "(\\[|\\{)",
+        "decreaseIndentPattern": "(\\]\\})"
+    },
+    "onEnterRules": [
+        {
+            "beforeText": ".*\\]\\s*",
+            "action": {
+                "indent": "none"
+            }
+        }
+    ],
     "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
 }

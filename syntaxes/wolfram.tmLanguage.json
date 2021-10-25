@@ -5,8 +5,8 @@
     "wl",
     "wls"
   ],
-  "foldingStartMarker": "\\[",
-  "foldingStopMarker": "\\[",
+  "foldingStartMarker": "(\\[|(\\(\\*)",
+  "foldingStopMarker": "(\\]|(\\*\\))",
   "keyEquivalent": "^~M",
   "name": "Wolfram",
   "patterns": [

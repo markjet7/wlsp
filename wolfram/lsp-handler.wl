@@ -33,6 +33,7 @@ ServerCapabilities=<|
 	"textDocumentSync"->1,
 	"hoverProvider"-><|"contentFormat"->"markdown"|>,
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
+	"foldingRangeProvider" -> True,
 	"documentFormattingProvider" -> True,
 	"completionProvider"-> <|"resolveProvider"->0False, "triggerCharacters" -> {".", "\\"}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
@@ -40,8 +41,9 @@ ServerCapabilities=<|
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
 	"renameProvider" -> <| "prepareProvider" -> True|>|>;
 		
-handle["initialize",json_]:=Module[{response, response2},
+handle["initialize",json_]:=Module[{response},
     CONTINUE = True;
+	Print["HELLO"];
 
 	labels = COMPLETIONS[[All, "label"]];
 	symbolDefinitions = <||>;
@@ -50,8 +52,6 @@ handle["initialize",json_]:=Module[{response, response2},
 	documents = <||>;
 	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	sendResponse[response];
-
-
 ];
 
 handle["wolframVersion", json_]:=Module[{response},
@@ -69,8 +69,61 @@ handle["shutdown", json_]:=Module[{},
 	Exit[];
 ];
 
+
+
+handle["textDocument/foldingRange", json_]:=Module[{response, document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
+
+	document = json["textDocument"]["uri"];
+	src = documents[json["params","textDocument","uri"]];
+
+	sectionPattern = (Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"]);
+	lines = StringCount[Check[StringTake[src, {1, #[[2]]}], ""], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
+	sections = getSections[src, sectionPattern];
+	If[Length@sections === Length@Most@lines,
+		ranges = MapThread[Function[{l, s}, <|"startLine" -> l, "endLine" -> l + StringCount[s, "\n"]-1 |>], {Most@lines, sections}];,
+		ranges = {};
+	];
+
+	functionSections = Select[
+		Map[
+			positionToLineChar[src, #] &,
+			StringPosition[src, RegularExpression["(\[(?:[^\[\]]+|(?1))*\])"]]],
+		#["startLine"] < #["endLine"] &
+	];
+
+	listSections = Select[
+		Map[
+			positionToLineChar[src, #] &,
+			StringPosition[src, RegularExpression["(\{(?:[^\{\}]+|(?1))*\})"]]],
+		#["startLine"] < #["endLine"] &
+	];
+
+	assocSections = Select[
+		Map[
+			positionToLineChar[src, #] &,
+			StringPosition[src, RegularExpression["(<(?:[^<\>]+|(?1))*\>)"]]],
+		#["startLine"] < #["endLine"] &
+	];
+
+
+
+	(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[response, InputForm, TotalWidth->100] |> |>]; *)
+
+	(* Print[ToString[src, InputForm, TotalWidth->100]];*)
+	(*sendResponse[response];*)
+	sendResponse[<| "id" -> json["id"], "result"->Join[ranges, functionSections, listSections, assocSections]|>];
+	
+
+
+];
+
+
 handle["codeLens/resolve", json_]:=Module[{},
 	Print["resolve"];
+];
+
+getSections[src_, sectionPattern_]:=Module[{},
+	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
 handle["textDocument/codeLens", json_]:=Module[{src, lens, lines, sections, sectionPattern},
@@ -276,30 +329,23 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 ];
 
 signatureQueue = {};
-handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol, activeParameter, activeSignature, value, params, opts, result, response},
+handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol, activeParameter, activeSignature, value, params, opts, result, response, functionWithParams, signatures},
 	Check[		
 		position = json["params"]["position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 		symbol = getFunctionAtPosition[src, position];
-
+		functionWithParams = Check[getFunctionAtPositionWithParams[src, position], ""];
 		activeParameter = 0;
 		activeSignature = 0;
 		If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
+			activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
 			activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"];
 		];
-
-		If[json["params"]["context"]["triggerCharacter"] === ",", 
-			If[
-				MemberQ[Keys[json["params"]["context"]], "activeSignatureHelp"] &&
-				MemberQ[Keys[json["params"]["context"]["activeSignatureHelp"]], "activeParameter"],
-				activeParameter = json["params"]["context"]["activeSignatureHelp"]["activeParameter"] + 1;
-			activeSignature = json["params"]["context"]["activeSignatureHelp"]["activeSignature"];
-			];
-		];
+		activeParameter = Check[Length[CodeParse[functionWithParams][[2, 1, 2]]]-1, 0];
 
 		value = Check[extractUsage[symbol], ""];
-		params = Flatten[StringCases[#,RegularExpression["(?:[^,{}]|\{[^{}]*\})+"]] &/@StringCases[StringSplit[value, "\n"], Longest["["~~i__~~"]"]:>i],1];
+		signatures = StringCases[value, Shortest[symbol ~~ x1__ /; balancedQ[x1]]];
 		opts = Information[symbol, "Options"] /. {
 			Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
 			RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]
@@ -307,23 +353,25 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 	
 		result = <|
 			"signatures" -> Table[
+				ast = CodeParse[v, SourceConvention -> "SourceCharacterIndex"];
 				<|
-					"label" -> StringRiffle[v, ", "], 
-					"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"],
-					"parameters" -> (<|"label" -> #|> & /@ v)
-				|>, {v, params}],
+					"label" -> ToString@v, 
+					"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"] ,
+					"parameters" -> (<|"label" -> #|> & /@ (StringTake[v, #] & /@ Cases[ast[[2, 1, 2]], KeyValuePattern[Source -> x_] :> x, {2}]))
+				|>, {v, signatures}],
 			"activeSignature" -> activeSignature,
 			"activeParameter" -> activeParameter
 		|>;
-		
 		response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 		sendResponse[response];,
 
 		
 		response = <|
-			"signatures" -> {},
-			"activeSignature" -> activeSignature,
-			"activeParameter" -> activeParameter
+			"id"->json["id"],
+			"result"-><|
+				"signatures"->{},
+				"activeSignature"->0,
+				"activeParameter"->0|>
 		|>;
 		sendResponse[response]; 
 	];
@@ -570,10 +618,42 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
+getFunctionAtPositionWithParams[src_, position_]:= Module[{functions, functionPositions, functionPositionsLineChar, thisFunctionPosition},
+	functions = StringCases[src,x1:Shortest[WordCharacter..~~"["~~___~~"]"]/;balancedQ[x1]];
+	functionPositions = Flatten[StringPosition[src, #] & /@ functions, 1];
+	functionPositionsLineChar =Check[positionToLineChar[src, #], Print@#] & /@ functionPositions;
+	thisFunctionPosition = First[Select[functionPositionsLineChar, #["startLine"] <= position["line"] && position["line"] <= #["endLine"] &], <|"startLine" -> 1, "endLine" -> 1, "startCharacter" -> 1, "endCharacter" -> 1|>];	
+	getStringAtLineChar[src, thisFunctionPosition]
+];
+
+getActiveParam[src_, functionPosition_, position_]:= Module[{params, paramPositions, paramPositionsLineChar, thisParamPosition},
+	function = getStringAtLineChar[src, functionPosition];
+	char = getStringAtLineChar[src, position];
+];
+
 getFunctionAtPosition[src_,position_]:=Module[{symbol,p,r,lbs,rbs, functions},
 	functions = Cases[CodeParse[src],CallNode[LeafNode[Symbol,f:Except["List"|"Association"],_],___,<|Source->loc_|>]:>{f, loc}, Infinity];
 	symbol=SelectFirst[functions,IntervalMemberQ[Interval[#[[2]][[ All, 1]]],position["line"]+1] && IntervalMemberQ[Interval[#[[2]][[ All, 2]]],position["character"]+1]&,{""}][[1]];
 	symbol
+];
+
+getStringAtLineChar[src_, position_]:=Module[{lines},
+	lines = StringSplit[src, EndOfLine, All][[position["startLine"]+1;;position["endLine"]+1]];
+	Which[
+		position["startLine"] == position["endLine"],
+		StringTake[lines[[1]], {position["startCharacter"], UpTo[position["endCharacter"]+1]}],
+		position["startLine"]+1 == position["endLine"],
+		StringJoin[
+			StringTake[lines[[1]], {position["startCharacter"], -1}],
+			StringTake[lines[[2]], {1, UpTo[position["endCharacter"]+1]}]
+		],
+		True,
+		StringJoin[
+			StringTake[lines[[1]], {position["startCharacter"], -1}],
+			StringJoin@lines[[2;;-2]]
+			StringTake[lines[[-1]], {1, UpTo[position["endCharacter"]+1]}]
+		]
+	]
 ];
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
@@ -619,6 +699,18 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 	headerBytes=StringToByteArray["Content-Length: " <> ToString[Length[jsonBytes], CharacterEncoding->"ASCII"]<>"\r\n\r\n"];
 	{headerBytes,jsonBytes}
 
+];
+
+positionToLineChar[text_,range_]:=Module[{beforeText, selectedText, afterText},
+	beforeText = StringTake[text,{1, range[[1]]}];
+	selectedText = StringTake[text,{range[[1]], range[[2]]}];
+	afterText = StringTake[text,{range[[2]], -1}];
+	<|
+		"startLine"->StringCount[beforeText,EndOfLine]-1,
+		"startCharacter"->StringLength[Last@StringSplit[beforeText,EndOfLine]]-1,
+		"endLine"->StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
+		"endCharacter" -> StringLength[Last@StringSplit[beforeText<>selectedText,EndOfLine]]-1
+	|>
 ];
 
 (*

@@ -402,7 +402,7 @@ getCode[src_, range_]:=Module[{},
 ]
 
 (* getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1}, *)
-getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2},
+getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
 		(* SetDirectory[$TemporaryDirectory];
 		Export["srcFile.wl", src, "Text"];
 		tree=CodeConcreteParse["srcFile.wl"];
@@ -420,8 +420,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2},
 				str = getStringAtRange[src, call[[-1]][Source]];
 			<|"code"->StringReplace[str, {
  				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
- 				StartOfLine ~~ "(*" -> "", 
-				"*)" ~~ EndOfLine  -> ""}], "range"->call[[-1]][Source]|>
+ 				Shortest["(*" ~~ ___ ~~ "*)"] -> ""}], "range"->call[[-1]][Source]|>
 			
 		];
 		
