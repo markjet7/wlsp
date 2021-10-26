@@ -27,7 +27,7 @@
             {
                 "id": "wolfram-script",
                 "type": "wolfram-script",
-                "displayName": "Wolfram Script",
+                "displayName": "Wolfram Script Notebook",
                 "priority": "option",
                 "selector": [
                     {
@@ -38,7 +38,7 @@
             {
                 "id": "wolfram-notebook",
                 "type": "wolfram-notebook",
-                "displayName": "Wolfram Notebook",
+                "displayName": "Wolfram Notebook (experimental)",
                 "priority": "option",
                 "selector": [
                     {

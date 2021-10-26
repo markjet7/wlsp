@@ -20,7 +20,7 @@ let scriptController;
 // let kernelStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let client;
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-let wolframVersionText = "$(repo-sync~spin) Wolfram";
+let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
 vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
@@ -113,7 +113,7 @@ function onkernelReady() {
 function wolframBusy(params) {
     if (params.busy === true) {
         //kernelStatusBar.color = "red";
-        wolframStatusBar.text = "$(repo-sync~spin) Wolfram Running";
+        wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
         wolframStatusBar.show();
     }
     else {

@@ -117,6 +117,24 @@ handle["deserializeNotebook", json_]:=Module[{id, inputs, json2, nb},
 	]
 ];
 
+handle["serializeScript", json_]:=Module[{id, inputs, json2, nb},
+	inputs = json["params", "contents"];
+	nb = json2wl[inputs, True];
+
+	sendResponse[<|"id"->json["id"], "result"->nb|>];
+];
+
+handle["deserializeScript", json_]:=Module[{id, inputs, json2, nb},
+	Check[
+		inputs = json["params", "contents"];
+		json2 = wl2json[inputs];
+		sendResponse[<|"id"->json["id"], "result"->json2|>];,
+
+		sendResponse[<|"id"->json["id"], "result"->""|>];
+		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
+	]
+];
+
 handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
 	id = json["id"];
 	html = ImportString[nb2html[ImportString[json["params", "document"], "Notebook"]], {"HTML", "XMLObject"}];

@@ -378,7 +378,6 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 ];
 
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
-
 	Check[
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
@@ -386,13 +385,14 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		symbol = ToString@getWordAtPosition[src, position];
 		value = Which[
 			symbol === "",
-			symbol,
+				"",
 			MemberQ[Keys@symbolDefinitions, symbol],
 				symbolDefinitions[symbol]["definition"],
 			True,
 				Check[
-					v = extractUsage[symbol];
-					If[v ==="", symbol, v], symbol]
+					v = extractUsage[symbol],
+					symbol					
+				]
 		];
 
 		result = <|"contents"-><|
@@ -416,7 +416,7 @@ ErrorBox[f_]:>{f}};
 
 convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
 
-extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
+extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
 extractUsage[a_Null]:="";
 

@@ -27,7 +27,6 @@ class WolframNotebookSerializer {
             return new Promise((resolve, reject) => {
                 var contents = new TextDecoder().decode(content);
                 let x = this.mretry(contents, 1, resolve);
-                console.log(x);
             });
         });
     }
@@ -104,19 +103,16 @@ class WolframNotebookSerializer {
 }
 exports.WolframNotebookSerializer = WolframNotebookSerializer;
 class WolframScriptSerializer {
+    constructor() {
+        this.raw = [];
+        this.cells = [];
+    }
     deserializeNotebook(content, _token) {
         return __awaiter(this, void 0, void 0, function* () {
-            var contents = new TextDecoder().decode(content);
-            let raw = [];
-            contents.split(/\r?\n\r?\n/).forEach(line => {
-                raw.push({
-                    kind: vscode.NotebookCellKind.Code,
-                    value: line,
-                    language: "wolfram"
-                });
+            return new Promise((resolve, reject) => {
+                var contents = new TextDecoder().decode(content);
+                let x = this.mretry(contents, 1, resolve);
             });
-            const cells = raw.map(item => new vscode.NotebookCellData(item.kind, item.value, item.language));
-            return new vscode.NotebookData(cells);
         });
     }
     serializeNotebook(data, _token) {
@@ -126,13 +122,59 @@ class WolframScriptSerializer {
                 contents.push({
                     kind: cell.kind,
                     language: cell.languageId,
-                    value: cell.value
+                    value: cell.value,
+                    metadata: Object.values(cell.metadata).join(""),
+                    outputs: cell.outputs
                 });
             }
-            let stringoutput = contents.reduce((current, item) => current + item.value + "\n\n", "").trimRight();
-            // return new TextEncoder().encode(JSON.stringify(contents));
-            return Buffer.from(stringoutput);
+            return clients_1.wolframKernelClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
+                return Buffer.from(result);
+            });
         });
+    }
+    getCells(item) {
+        if (item.constructor.name === "Array") {
+            item.map((item) => this.getCells(item));
+        }
+        else {
+            this.raw.push({
+                kind: item.kind,
+                languageId: item.languageId,
+                value: item.value,
+                metadata: item.metadata,
+                outputs: item.outputs
+            });
+        }
+    }
+    mretry(contents, attempts, cb) {
+        setTimeout(() => {
+            if (attempts > 20) {
+                vscode.window.showErrorMessage("Failed to open notebook.");
+                cb(new vscode.NotebookData(this.cells));
+                return new vscode.NotebookData(this.cells);
+            }
+            if (clients_1.wolframKernelClient !== undefined) {
+                clients_1.wolframKernelClient.onReady().then(() => {
+                    clients_1.wolframKernelClient.sendRequest("deserializeScript", { contents: contents }).then((result) => {
+                        this.raw = [];
+                        result.map((item) => this.getCells(item));
+                        this.cells = this.raw.map((item) => {
+                            let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
+                            i.metadata = item.metadata;
+                            return i;
+                        });
+                        cb(new vscode.NotebookData(this.cells));
+                        return new vscode.NotebookData(this.cells);
+                    }).then((result) => {
+                        return result;
+                    });
+                });
+            }
+            else {
+                console.log("Waiting for kernel to deserialize script");
+                this.mretry(contents, attempts++, cb);
+            }
+        }, 3000);
     }
 }
 exports.WolframScriptSerializer = WolframScriptSerializer;

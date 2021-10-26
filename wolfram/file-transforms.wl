@@ -29,6 +29,17 @@ json2nb[js_Association, False]:=Which[
     True, Cell[js["value"], {}, "Text"]
 ];
 
+json2wl =.;
+ClearAll@json2wl;
+json2wl[elements_List]:=Map[json2wl[#] &,elements];
+json2wl[js_Association]:=Which[
+    First[StringSplit[js["value"]],""] === "#", "(* ::Title:: *)\n(*" <> StringTake[js["value"], {3, -1}] <> "*)",
+    First[StringSplit[js["value"]],""] === "##", "(* ::Section:: *)\n(*" <> StringTake[js["value"], {4, -1}] <> "*)",
+    First[StringSplit[js["value"]],""] === "###", "(* ::Chapter:: *)\n(*" <> StringTake[js["value"], {5, -1}] <> "*)",
+    js["kind"] === 1, "(* ::Text:: *)\n" <> js["value"],
+    js["kind"] === 2, js["value"] <> "\n\n\n",
+    True, js["value"]];
+
 
 nb2json =.;
 ClearAll@nb2json;
@@ -50,6 +61,26 @@ nb2json[c:Cell[BoxData[content_],"Output",___,ExpressionUUID->id_]]:=jsonT[1, Ex
 nb2json[Notebook[cells_, ___]] := Map[nb2json, cells];
 
 jsonT[k_,v_:"",l_:"wolfram", m_:"Text", o_:{}]:=<|"kind"->k, "value"->v, "languageId"->l, "metadata"->m, "outputs"->o|>;
+
+wl2json=.;
+wl2mdjson=.;
+ClearAll@wl2json;
+ClearAll@wl2mdjson;
+
+wl2mdjson[str_]:=Sequence@@StringReplace[str,{
+    Shortest["(* ::Section:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"## "<>h,"markdown","Section"],
+    Shortest["(* ::SubSection:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","SubSection"],
+    Shortest["(* ::Chapter:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","Chapter"],
+    Shortest["(* ::Title:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"# "<>h,"markdown","Title"],
+    Shortest["(* ::"~~s___~~":: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown",s],
+    x__:>jsonT[2, x, "wolfram","Input"]
+}];
+
+wl2json[wl_]:=(
+    a =  StringSplit[wl,{x:Shortest["(* ::"~~___~~":: *)"~~Whitespace..~~"(*"~~___~~"*)"]:>x,"\n\n\n"}];
+    Print[Length@a];
+    wl2mdjson /@ a);
+
 
 nb2html=.;
 ClearAll@nb2html;
