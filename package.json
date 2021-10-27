@@ -81,6 +81,18 @@
                 "title": "Wolfram: Create notebook"
             },
             {
+                "command": "wolfram.createFile",
+                "title": "Wolfram: Create New File"
+            },
+            {
+                "command": "wolfram.createNotebook",
+                "title": "Wolfram: Create New Notebook (experimental)"
+            },
+            {
+                "command": "wolfram.createNotebookScript",
+                "title": "Wolfram: Create New Notebook Script"
+            },
+            {
                 "command": "wolfram.runCell",
                 "title": "Wolfram: Run cell"
             },
@@ -123,10 +135,6 @@
             {
                 "command": "wolfram.launchKernel",
                 "title": "Wolfram: Launch Kernel"
-            },
-            {
-                "command": "wolfram.new",
-                "title": "Wolfram: Create new Wolfram Document"
             },
             {
                 "command": "wolfram.textToSection",

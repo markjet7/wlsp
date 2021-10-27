@@ -39,7 +39,9 @@ ServerCapabilities=<|
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
-	"renameProvider" -> <| "prepareProvider" -> True|>|>;
+	"renameProvider" -> <| "prepareProvider" -> True|>,
+	"workspaceSymbolProvider" -> True,
+	"definitionProvider" -> True|>;
 		
 handle["initialize",json_]:=Module[{response},
     CONTINUE = True;
@@ -54,11 +56,35 @@ handle["initialize",json_]:=Module[{response},
 	sendResponse[response];
 ];
 
+handle["workspace/symbol", json_]:=Module[{response, symbols},
+	Print["workspace/symbol"];
+	symbols = Join@Map[getSymbols, documents];
+
+
+	response = <|"result"->symbolDefinitions|>;
+	sendResponse[response];
+];
+
+handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
+	src = documents[json["params"]["textDocument"]["uri"]];
+	position = json["params"]["position"];
+
+	str = getWordAtPosition[src, position];
+	definitions = Select[Flatten@KeyValueMap[getSymbols[#2, #1] &, documents], StringMatchQ[#["name"], str] &];
+	result = Table[<|
+		"uri" -> d["uri"], 
+		"range" -> <|
+			"start" -> <|"line" -> d["loc"][[1, 1]]-1, "character"->d["loc"][[1,2]]-1|>,
+			"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
+		|>|>, {d, definitions}];
+	
+	sendResponse[<|"id" -> json["id"], "result"-> result|>];
+];
+
 handle["wolframVersion", json_]:=Module[{response},
 	response = <|"id" -> json["id"], "result"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
 	sendResponse[response];
 ];
-
 
 handle["shutdown", json_]:=Module[{},
 	state = "Stop";
@@ -711,6 +737,25 @@ positionToLineChar[text_,range_]:=Module[{beforeText, selectedText, afterText},
 		"endLine"->StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
 		"endCharacter" -> StringLength[Last@StringSplit[beforeText<>selectedText,EndOfLine]]-1
 	|>
+];
+
+getSymbols[src_, uri_:""]:=Module[{ast, f, symbols},
+	ast = CodeParse[src];
+
+	f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
+		astStr=ToFullFormString[node[[2,1]]];
+		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
+		loc=node[[-1]][Source];
+		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
+		If[Head@rhs ==CallNode,
+			kind = rhs[[1,2]],
+			kind = rhs[[2]]
+		];
+		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
+		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind, "uri" -> uri|>];
+
+	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+	symbols
 ];
 
 (*

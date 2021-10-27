@@ -48,6 +48,9 @@ vscode.commands.registerCommand('wolfram.restart', restart);
 vscode.commands.registerCommand('wolfram.abort', abort); 
 vscode.commands.registerCommand('wolfram.textToSection', textToSection);
 vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
+vscode.commands.registerCommand('wolfram.createFile', createFile);
+vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
+vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
 
 
 
@@ -246,6 +249,23 @@ function moveCursor(params:any) {
     }
 }
 
+function createFile(){
+    vscode.workspace.openTextDocument(vscode.Uri.parse("untitled:.wl")).then((document:vscode.TextDocument) => {
+        vscode.window.showTextDocument(document);
+    });
+}
+
+function createNotebook(){
+    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.nb")).then((document:vscode.NotebookDocument) => {
+        vscode.window.showNotebookDocument(document);
+    });
+}
+
+function createNotebookScript(){
+    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document:vscode.NotebookDocument) => {
+        vscode.window.showNotebookDocument(document);
+    });
+}
 
 export let printResults:any[] = [];
 export function runInWolfram(print=false){
