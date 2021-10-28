@@ -16,12 +16,7 @@ DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[Di
 (* scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; *)
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
 
-imageToPNG[graphic_]:=Module[{}, 
-	(* Export[workingfolder <> ToString@responseID[] <> ".jpg", graphic]; *)
-	("<img alt='Output' src='data:image/png;base64," <> BaseEncode@ExportByteArray[graphic,"PNG"] <> "'>")];
-(* $DisplayFunction = imageToPNG; *)
-(* DefaultOptions-> {Graphics->{DisplayFunction->imageToPNG}}; *)
- 
+
 contentLengthPattern[] := "Content-Length: "~~length:NumberString~~"\r\n\r\n";
 contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~content1:Repeated[_,{length}]) | (content2:Repeated[_,{length}]~~"Content-Length: "~~ToString@length~~"\r\n\r\n"));
 
@@ -43,12 +38,11 @@ ServerCapabilities=<|
 	"workspaceSymbolProvider" -> True,
 	"definitionProvider" -> True,
 	"workspace" -><|
-		"workspaceFolders" -> <|"supported"->True|>
+		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>|>;
 		
 handle["initialize",json_]:=Module[{response},
     CONTINUE = True;
-	Print["HELLO"];
 
 	labels = COMPLETIONS[[All, "label"]];
 	symbolDefinitions = <||>;
@@ -68,21 +62,22 @@ workspaceFolders = {};
 
 handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
 
-	added = json["event"]["added"];
-	removed = json["event"]["removed"];
+	added = json["params"]["event"]["added"];
+	removed = json["params"]["event"]["removed"];
 
-	workspaceFolders = Echo@DeleteDuplicates@DeleteCases[Join[workspaceFolders, added], _?(MemberQ[removed, #] &)];
+	workspaceFolders = DeleteDuplicates@DeleteCases[Join[workspaceFolders, added], _?(MemberQ[removed, #] &)];
 ];
 
-handle["symbolList", json_]:=Module[{response, symbols, result},
+handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files},
 	Print["symbolList"];
 	
-	files = Echo@FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders];
+	files = Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], URLParse[URLDecode[#], "PathString"] & /@ Keys@documents];
 	sources = Import[#, "Text"] & /@ files;
 	
-	symbols = Flatten@MapThread[getSymbols[#2, URLBuild[#1]] &, {sources, files}];
+	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[#2]] &, {sources, files}], #1["name"] &];
+	builtins = COMPLETIONS[[102;;, "label"]];
 
-	result = Map[
+	result1 = Map[
 		Function[{symbol},
 			<|
 				"name" -> symbol["name"],
@@ -99,7 +94,21 @@ handle["symbolList", json_]:=Module[{response, symbols, result},
 		symbols
 	];
 
-	response = <|"id"->json["id"],"result"->result|>;
+	result2 = Map[
+		Function[{symbol},
+			<|
+				"name" -> symbol,
+				"kind" -> "Variable",
+				"location" -> <|
+					"uri" -> "https://reference.wolfram.com/language/ref/" <> symbol <> ".html"
+				|>
+			|>
+		],
+		builtins
+	];
+
+
+	response = <|"id"->json["id"],"result"-><|"workspace" -> result1, "builtins" -> result2|>|>;
 
 	sendResponse[response];
 ];

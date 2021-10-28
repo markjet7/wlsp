@@ -30,6 +30,7 @@ let scriptController:WolframScriptController;
 let client:Client;
 let wolframStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
+let treeDataProvider:workspaceSymbolProvider;
 
 vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
@@ -73,77 +74,103 @@ function check_pulse(client:LanguageClient) {
     }
 }
 
-class workspaceSymbolProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
-	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
+class TreeItem extends vscode.TreeItem {
+    children: TreeItem[]|undefined;
 
-    constructor(private workspaceRoot: string | undefined) {
-        this.workspaceRoot = workspaceRoot;
+    constructor(label:string, children:TreeItem[]) {
+        super(label, children === undefined ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
+        this.children = children;
+    }
+}
+
+class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | void> = new vscode.EventEmitter<TreeItem | undefined | void>();
+	readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | void> = this._onDidChangeTreeData.event;
+
+    data: TreeItem[] = [new TreeItem("Symbols", [])];
+
+    constructor() {
+        this.getSymbols();
 	}
 
-    refresh(): void {
-		this._onDidChangeTreeData.fire();
-	}
-
-	getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
-		return element;
-	}
-
-    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-    //    if (!this.workspaceRoot) {
-    //        return Promise.resolve([]);
-    //    }
-  
-        return new Promise(resolve => {
-            wolframClient.onReady().then(() => {
-                    wolframClient.sendRequest("symbolList").then((result:any) => {
-                    resolve(result.map((symbol:any) => 
-                    {
-                        let item = new vscode.TreeItem(symbol.name);
-                        item.tooltip = symbol.definition;
-                        let e = vscode.window.activeTextEditor;
+    getSymbols() {
+        wolframClient.onReady().then(() => {
+        wolframClient.sendRequest("symbolList").then((result:any) => {
+        
+            let workspace = new TreeItem("Workspace", 
+                result.workspace.map((symbol:any) => 
+                {
+                    let item = new vscode.TreeItem(symbol.name);
+                    item.tooltip = symbol.definition;
+                    let e = vscode.window.activeTextEditor;
+                    if ('range' in symbol.location) {
                         item.command = {command: 'editor.action.goToLocations', arguments: [
                             vscode.Uri.parse(symbol.location.uri), 
                             new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character), 
                             [], 
                             "peek", 
                             "NA"], title: 'Go to'};
-                        //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+                    } 
+                    //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
 
-                        vscode.commands.executeCommand('editor.action.goToLocations', vscode.Uri.parse(symbol.location.uri), new vscode.Position(3, 0), [], "peek", "NA").then((result:any) => {
-                            console.log("executed: ");
-                            
-                            console.log(result);
-                        
-                        })
+                    return item
 
-                        return item
-
-                    }));
                 })
-            });
-        });
+            );
+
+            let builtins = new TreeItem("Builtins",
+                result.builtins.map((symbol:any) => 
+                {
+                    let item = new vscode.TreeItem(symbol.name);
+                    item.tooltip = symbol.definition;
+                    let e = vscode.window.activeTextEditor;
+                    item.command = {command: 'vscode.open', arguments: [
+                        vscode.Uri.parse(symbol.location.uri)], title: 'Open'};
+                    
+                    //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+
+                    return item
+
+                }));
+        this.data = [new TreeItem("Symbols", [workspace, builtins])];
+		this._onDidChangeTreeData.fire();
+    })
+});
+}
+
+    refresh(): void {
+        this.getSymbols();
+	}
+
+	getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+		return element;
+	}
+
+    getChildren(element?: TreeItem): TreeItem[] |undefined {
+        if (element === undefined) {
+            return this.data;
+        }
+        return element.children;
+        
 
     }    
 }
 
+client = new Client();
+
+scriptserializer = new WolframScriptSerializer()
+notebookSerializer = new WolframNotebookSerializer()
+
+notebookcontroller = new WolframNotebookController()
+scriptController = new WolframScriptController()
+
+
+
 
 export function activate(context0: vscode.ExtensionContext){
     context = context0;
-    client = new Client();
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
-
-    scriptserializer = new WolframScriptSerializer()
-    notebookSerializer = new WolframNotebookSerializer()
-
-    notebookcontroller = new WolframNotebookController()
-    scriptController = new WolframScriptController()
-
-    let treeDataProvider = new workspaceSymbolProvider(context.workspaceState.get('workspaceRoot'));
-    vscode.window.registerTreeDataProvider('wolframSymbols', treeDataProvider);
-
-
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
     );
@@ -195,7 +222,9 @@ function onkernelReady() {
         if (wolframClient !== undefined) {
             wolframClient.onReady().then(() => {
                 wolframClient.sendRequest("wolframVersion").then((result:any) => {
-                    wolframStatusBar.text = wolframVersionText = result.output
+                    wolframStatusBar.text = wolframVersionText = result.output;
+                    treeDataProvider = new workspaceSymbolProvider();
+                    vscode.window.registerTreeDataProvider('wolframSymbols', treeDataProvider);
                 })
             })
         } 
@@ -272,6 +301,7 @@ function didChangeTextDocument(event:vscode.TextDocumentChangeEvent):void {
 
 
 function didSaveTextDocument(event:vscode.TextDocument):void {
+    treeDataProvider.refresh();
     didOpenTextDocument(event);
     return;
 }
