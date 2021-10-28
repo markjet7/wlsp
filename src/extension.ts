@@ -73,7 +73,59 @@ function check_pulse(client:LanguageClient) {
     }
 }
 
+class workspaceSymbolProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
+	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
+    constructor(private workspaceRoot: string | undefined) {
+        this.workspaceRoot = workspaceRoot;
+	}
+
+    refresh(): void {
+		this._onDidChangeTreeData.fire();
+	}
+
+	getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+		return element;
+	}
+
+    getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
+    //    if (!this.workspaceRoot) {
+    //        return Promise.resolve([]);
+    //    }
+  
+        return new Promise(resolve => {
+            wolframClient.onReady().then(() => {
+                    wolframClient.sendRequest("symbolList").then((result:any) => {
+                    resolve(result.map((symbol:any) => 
+                    {
+                        let item = new vscode.TreeItem(symbol.name);
+                        item.tooltip = symbol.definition;
+                        let e = vscode.window.activeTextEditor;
+                        item.command = {command: 'editor.action.goToLocations', arguments: [
+                            vscode.Uri.parse(symbol.location.uri), 
+                            new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character), 
+                            [], 
+                            "peek", 
+                            "NA"], title: 'Go to'};
+                        //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+
+                        vscode.commands.executeCommand('editor.action.goToLocations', vscode.Uri.parse(symbol.location.uri), new vscode.Position(3, 0), [], "peek", "NA").then((result:any) => {
+                            console.log("executed: ");
+                            
+                            console.log(result);
+                        
+                        })
+
+                        return item
+
+                    }));
+                })
+            });
+        });
+
+    }    
+}
 
 
 export function activate(context0: vscode.ExtensionContext){
@@ -88,8 +140,9 @@ export function activate(context0: vscode.ExtensionContext){
     notebookcontroller = new WolframNotebookController()
     scriptController = new WolframScriptController()
 
+    let treeDataProvider = new workspaceSymbolProvider(context.workspaceState.get('workspaceRoot'));
+    vscode.window.registerTreeDataProvider('wolframSymbols', treeDataProvider);
 
-    
 
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)

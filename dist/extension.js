@@ -58,6 +58,49 @@ function check_pulse(client) {
         }
     }
 }
+class workspaceSymbolProvider {
+    constructor(workspaceRoot) {
+        this.workspaceRoot = workspaceRoot;
+        this._onDidChangeTreeData = new vscode.EventEmitter();
+        this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+        this.workspaceRoot = workspaceRoot;
+    }
+    refresh() {
+        this._onDidChangeTreeData.fire();
+    }
+    getTreeItem(element) {
+        return element;
+    }
+    getChildren(element) {
+        //    if (!this.workspaceRoot) {
+        //        return Promise.resolve([]);
+        //    }
+        return new Promise(resolve => {
+            clients_1.wolframClient.onReady().then(() => {
+                clients_1.wolframClient.sendRequest("symbolList").then((result) => {
+                    resolve(result.map((symbol) => {
+                        let item = new vscode.TreeItem(symbol.name);
+                        item.tooltip = symbol.definition;
+                        let e = vscode.window.activeTextEditor;
+                        item.command = { command: 'editor.action.goToLocations', arguments: [
+                                vscode.Uri.parse(symbol.location.uri),
+                                new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character),
+                                [],
+                                "peek",
+                                "NA"
+                            ], title: 'Go to' };
+                        //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+                        vscode.commands.executeCommand('editor.action.goToLocations', vscode.Uri.parse(symbol.location.uri), new vscode.Position(3, 0), [], "peek", "NA").then((result) => {
+                            console.log("executed: ");
+                            console.log(result);
+                        });
+                        return item;
+                    }));
+                });
+            });
+        });
+    }
+}
 function activate(context0) {
     context = context0;
     client = new clients_1.Client();
@@ -67,6 +110,8 @@ function activate(context0) {
     notebookSerializer = new notebook_1.WolframNotebookSerializer();
     notebookcontroller = new notebookController_1.WolframNotebookController();
     scriptController = new scriptController_1.WolframScriptController();
+    let treeDataProvider = new workspaceSymbolProvider(context.workspaceState.get('workspaceRoot'));
+    vscode.window.registerTreeDataProvider('wolframSymbols', treeDataProvider);
     context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer));
     context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', scriptserializer));
     context.subscriptions.push(notebookcontroller);

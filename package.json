@@ -16,11 +16,7 @@
     ],
     "main": "./dist/extension",
     "activationEvents": [
-        "onDebug",
-        "onLanguage:wolfram",
-        "onNotebook:wolfram-notebook",
-        "onNotebook:wolfram-script",
-        "onCustomEditor:wolfram.editor"
+        "*"
     ],
     "contributes": {
         "notebooks": [
@@ -197,7 +193,26 @@
                 "key": "Ctrl+shift+Enter",
                 "when": "editorLangId == wolfram"
             }
-        ]
+        ],
+        "viewsContainers": {
+            "activitybar":[
+                {
+                    "id": "wolfram-workspace-explorer",
+                    "title": "Wolfram",
+                    "icon": "media/wolf-logo.svg"
+                }
+            ]
+        },
+        "views":{
+            "wolfram-workspace-explorer":[
+                {
+                    "id": "wolframSymbols",
+                    "name": "Symbols",
+                    "icon": "",
+					"contextualTitle": "Symbols"
+                }
+            ]
+        }
     },
     "typings": "vscode.d.ts",
     "devDependencies": {

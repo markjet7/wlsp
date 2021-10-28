@@ -41,7 +41,10 @@ ServerCapabilities=<|
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
 	"renameProvider" -> <| "prepareProvider" -> True|>,
 	"workspaceSymbolProvider" -> True,
-	"definitionProvider" -> True|>;
+	"definitionProvider" -> True,
+	"workspace" -><|
+		"workspaceFolders" -> <|"supported"->True|>
+	|>|>;
 		
 handle["initialize",json_]:=Module[{response},
     CONTINUE = True;
@@ -56,13 +59,71 @@ handle["initialize",json_]:=Module[{response},
 	sendResponse[response];
 ];
 
-handle["workspace/symbol", json_]:=Module[{response, symbols},
-	Print["workspace/symbol"];
-	symbols = Join@Map[getSymbols, documents];
-
-
-	response = <|"result"->symbolDefinitions|>;
+handle["workspace/symbol", json_]:=Module[{response},
+	response = <|"id" -> json["id"], "result"->{}|>;
 	sendResponse[response];
+];
+
+workspaceFolders = {};
+
+handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
+
+	added = json["event"]["added"];
+	removed = json["event"]["removed"];
+
+	workspaceFolders = Echo@DeleteDuplicates@DeleteCases[Join[workspaceFolders, added], _?(MemberQ[removed, #] &)];
+];
+
+handle["symbolList", json_]:=Module[{response, symbols, result},
+	Print["symbolList"];
+	
+	files = Echo@FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders];
+	sources = Import[#, "Text"] & /@ files;
+	
+	symbols = Flatten@MapThread[getSymbols[#2, URLBuild[#1]] &, {sources, files}];
+
+	result = Map[
+		Function[{symbol},
+			<|
+				"name" -> symbol["name"],
+				"kind" -> "Variable"(* symbol["kind"] *),
+				"location" -> <|
+					"uri" -> symbol["uri"],
+					"range" -> <|
+						"start" -> <|"line" -> symbol["loc"][[1, 1]]-1, "character"->symbol["loc"][[1,2]]-1|>,
+						"end" -> <|"line" -> symbol["loc"][[2, 1]]-1, "character"->symbol["loc"][[2,2]]-1|>
+					|>
+				|>
+			|>
+		],
+		symbols
+	];
+
+	response = <|"id"->json["id"],"result"->result|>;
+
+	sendResponse[response];
+];
+
+findReferences[symbol_]:=Module[{},
+	Print["findReferences"];
+];
+
+handle["textDocument/references", json_]:=Module[{},
+	src = documents[json["params"]["textDocument"]["uri"]];
+	position = json["params"]["position"];
+
+	str = getWordAtPosition[src, position];
+	
+
+	definitions = Select[Flatten@KeyValueMap[getSymbols[#2, #1] &, documents], StringMatchQ[#["name"], str] &];
+	result = Table[<|
+		"uri" -> d["uri"], 
+		"range" -> <|
+			"start" -> <|"line" -> d["loc"][[1, 1]]-1, "character"->d["loc"][[1,2]]-1|>,
+			"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
+		|>|>, {d, definitions}];
+
+	sendResponse[<|"id" -> json["id"], "result"-> result|>];
 ];
 
 handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
@@ -747,9 +808,9 @@ getSymbols[src_, uri_:""]:=Module[{ast, f, symbols},
 		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
 		loc=node[[-1]][Source];
 		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-		If[Head@rhs ==CallNode,
-			kind = rhs[[1,2]],
-			kind = rhs[[2]]
+		kind=If[Head@rhs == CallNode,
+			rhs[[1,2]],
+			rhs[[2]]
 		];
 		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
 		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind, "uri" -> uri|>];
