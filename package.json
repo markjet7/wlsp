@@ -109,6 +109,10 @@
                 "title": "Wolfram: Help"
             },
             {
+                "command": "wolfram.stringHelp",
+                "title": "Wolfram: Help"
+            },
+            {
                 "command": "wolfram.restart",
                 "title": "Wolfram: Restart"
             },

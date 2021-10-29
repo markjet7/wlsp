@@ -35,6 +35,7 @@ vscode.commands.registerCommand('wolfram.runInTerminal', runInTerminal);
 vscode.commands.registerCommand('wolfram.clearDecorations', clearDecorations);
 vscode.commands.registerCommand('wolfram.showOutput', showOutput);
 vscode.commands.registerCommand('wolfram.help', help);
+vscode.commands.registerCommand('wolfram.stringHelp', stringHelp);
 vscode.commands.registerCommand('wolfram.restart', restart);
 vscode.commands.registerCommand('wolfram.abort', abort);
 vscode.commands.registerCommand('wolfram.textToSection', textToSection);
@@ -63,6 +64,7 @@ class TreeItem extends vscode.TreeItem {
     constructor(label, children) {
         super(label, children === undefined ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
         this.children = children;
+        this.location = "";
     }
 }
 class workspaceSymbolProvider {
@@ -71,42 +73,61 @@ class workspaceSymbolProvider {
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.data = [new TreeItem("Symbols", [])];
         this.getSymbols();
+        this.builtins = new TreeItem("Builtins", []);
     }
     getSymbols() {
         clients_1.wolframClient.onReady().then(() => {
             clients_1.wolframClient.sendRequest("symbolList").then((result) => {
-                let workspace = new TreeItem("Workspace", result.workspace.map((symbol) => {
-                    let item = new vscode.TreeItem(symbol.name);
+                var _a;
+                let files = [];
+                let workspace_items = result.workspace.map((symbol) => {
+                    let item = new TreeItem(symbol.name);
                     item.tooltip = symbol.definition;
-                    let e = vscode.window.activeTextEditor;
                     if ('range' in symbol.location) {
+                        item.location = symbol.location.uri;
+                        if (!files.some(f => f === item.location)) {
+                            files.push(item.location);
+                        }
                         item.command = { command: 'editor.action.goToLocations', arguments: [
                                 vscode.Uri.parse(symbol.location.uri),
                                 new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character),
                                 [],
                                 "peek",
-                                "NA"
+                                symbol.name
                             ], title: 'Go to' };
                     }
                     //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
                     return item;
+                });
+                let workspace = new TreeItem("Workspace", files.map((file) => {
+                    return new TreeItem(file, workspace_items.filter((item) => item.location === file));
                 }));
-                let builtins = new TreeItem("Builtins", result.builtins.map((symbol) => {
+                // get all the letters in the alphabet
+                let letters = [];
+                for (let i = 65; i < 91; i++) {
+                    letters.push(String.fromCharCode(i));
+                }
+                let builtinsymbols = result.builtins.map((symbol) => {
                     let item = new vscode.TreeItem(symbol.name);
                     item.tooltip = symbol.definition;
                     let e = vscode.window.activeTextEditor;
-                    item.command = { command: 'vscode.open', arguments: [
-                            vscode.Uri.parse(symbol.location.uri)
+                    item.command = { command: 'wolfram.stringHelp', arguments: [
+                            symbol.name
                         ], title: 'Open' };
                     //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
                     return item;
-                }));
-                this.data = [new TreeItem("Symbols", [workspace, builtins])];
+                });
+                if (((_a = this.builtins.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
+                    this.builtins = new TreeItem("Builtins", letters.map((letter) => {
+                        return new TreeItem(letter, builtinsymbols.filter((item) => { var _a; return (_a = item.label) === null || _a === void 0 ? void 0 : _a.toString().startsWith(letter); }));
+                    }));
+                }
+                this.data = [new TreeItem("Symbols", [workspace, this.builtins])];
+                this._onDidChangeTreeData.fire();
             });
         });
     }
     refresh() {
-        this._onDidChangeTreeData.fire();
         this.getSymbols();
     }
     getTreeItem(element) {
@@ -543,6 +564,53 @@ function help() {
     
     </head>
     <body>
+        <span>
+            <input
+                action="action"
+                onclick="window.history.go(-1); return false;"
+                type="button"
+                value="Back"
+            />
+            <input
+                action="action"
+                onclick="window.history.forward(); return false;"
+                type="button"
+                value="Forward"
+            />
+        </span>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+    </body>
+    </html>
+    `;
+}
+function stringHelp(string) {
+    let url = "https://reference.wolfram.com/language/ref/" + string + ".html";
+    let helpPanel = vscode.window.createWebviewPanel("wolframHelp", "Wolfram Help", 2, {
+        enableScripts: true,
+        retainContextWhenHidden: true
+    });
+    helpPanel.webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://reference.wolfram.com 'unsafe-inline'">
+    
+    </head>
+    <body>
+        <span>
+            <input
+                action="action"
+                onclick="window.history.go(-1); return false;"
+                type="button"
+                value="Back"
+            />
+            <input
+                action="action"
+                onclick="window.history.forward(); return false;"
+                type="button"
+                value="Forward"
+            />
+        </span>
         <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
     </body>
     </html>

@@ -71,10 +71,10 @@ handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
 handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files},
 	Print["symbolList"];
 	
-	files = Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], URLParse[URLDecode[#], "PathString"] & /@ Keys@documents];
-	sources = Import[#, "Text"] & /@ files;
+	files = Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]] & /@ Keys@documents];
+	sources = Check[Import[#, "Text"], ""] & /@ files;
 	
-	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[#2]] &, {sources, files}], #1["name"] &];
+	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[<|"Scheme" -> "file", "Path" -> Join[{""}, FileNameSplit[#2]]|>]] &, {sources, files}], #1["name"] &];
 	builtins = COMPLETIONS[[102;;, "label"]];
 
 	result1 = Map[

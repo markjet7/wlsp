@@ -45,6 +45,7 @@ vscode.commands.registerCommand('wolfram.runInTerminal', runInTerminal);
 vscode.commands.registerCommand('wolfram.clearDecorations', clearDecorations);
 vscode.commands.registerCommand('wolfram.showOutput', showOutput);
 vscode.commands.registerCommand('wolfram.help', help);    
+vscode.commands.registerCommand('wolfram.stringHelp', stringHelp);    
 vscode.commands.registerCommand('wolfram.restart', restart);   
 vscode.commands.registerCommand('wolfram.abort', abort); 
 vscode.commands.registerCommand('wolfram.textToSection', textToSection);
@@ -76,63 +77,89 @@ function check_pulse(client:LanguageClient) {
 
 class TreeItem extends vscode.TreeItem {
     children: TreeItem[]|undefined;
+    location: string;
 
-    constructor(label:string, children:TreeItem[]) {
+    constructor(label:string, children?:TreeItem[]) {
         super(label, children === undefined ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
         this.children = children;
+        this.location = "";
     }
 }
 
 class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | void> = new vscode.EventEmitter<TreeItem | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | void> = this._onDidChangeTreeData.event;
+    private builtins: TreeItem;
 
     data: TreeItem[] = [new TreeItem("Symbols", [])];
 
     constructor() {
         this.getSymbols();
+        this.builtins = new TreeItem("Builtins", []);
 	}
 
     getSymbols() {
         wolframClient.onReady().then(() => {
         wolframClient.sendRequest("symbolList").then((result:any) => {
         
+            let files:string[] = [];
+            let workspace_items:TreeItem[] =  result.workspace.map((symbol:any) => {
+                let item = new TreeItem(symbol.name);
+                item.tooltip = symbol.definition;
+                if ('range' in symbol.location) {
+
+
+                    item.location = symbol.location.uri;
+                    if (!files.some(f => f === item.location)) {
+                        files.push(item.location);
+                    }
+                    
+                    item.command = {command: 'editor.action.goToLocations', arguments: [
+                        vscode.Uri.parse(symbol.location.uri), 
+                        new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character), 
+                        [], 
+                        "peek", 
+                        symbol.name], title: 'Go to'};
+                } 
+                //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+
+                return item
+            });
+
+
             let workspace = new TreeItem("Workspace", 
-                result.workspace.map((symbol:any) => 
-                {
-                    let item = new vscode.TreeItem(symbol.name);
-                    item.tooltip = symbol.definition;
-                    let e = vscode.window.activeTextEditor;
-                    if ('range' in symbol.location) {
-                        item.command = {command: 'editor.action.goToLocations', arguments: [
-                            vscode.Uri.parse(symbol.location.uri), 
-                            new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character), 
-                            [], 
-                            "peek", 
-                            "NA"], title: 'Go to'};
-                    } 
-                    //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
-
-                    return item
-
+                files.map((file:string) => {
+                    return new TreeItem(file, workspace_items.filter((item:TreeItem) => item.location === file));
                 })
             );
 
-            let builtins = new TreeItem("Builtins",
-                result.builtins.map((symbol:any) => 
-                {
-                    let item = new vscode.TreeItem(symbol.name);
-                    item.tooltip = symbol.definition;
-                    let e = vscode.window.activeTextEditor;
-                    item.command = {command: 'vscode.open', arguments: [
-                        vscode.Uri.parse(symbol.location.uri)], title: 'Open'};
-                    
-                    //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+            // get all the letters in the alphabet
+            let letters:string[] = [];
+            for (let i = 65; i < 91; i++) {
+                letters.push(String.fromCharCode(i));
+            }
 
-                    return item
+            let builtinsymbols = result.builtins.map((symbol:any) => 
+            {
+                let item = new vscode.TreeItem(symbol.name);
+                item.tooltip = symbol.definition;
+                let e = vscode.window.activeTextEditor;
+                item.command = {command: 'wolfram.stringHelp', arguments: [
+                    symbol.name], title: 'Open'};
+                
+                //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
 
-                }));
-        this.data = [new TreeItem("Symbols", [workspace, builtins])];
+                return item
+
+            })
+        
+        if (this.builtins.children?.length === 0){
+            this.builtins = new TreeItem("Builtins",
+                letters.map((letter:string) => {
+                    return new TreeItem(letter, builtinsymbols.filter((item:TreeItem) => item.label?.toString().startsWith(letter)));})
+                );
+            }
+        this.data = [new TreeItem("Symbols", [workspace, this.builtins])];
 		this._onDidChangeTreeData.fire();
     })
 });
@@ -683,6 +710,60 @@ function help() {
     
     </head>
     <body>
+        <span>
+            <input
+                action="action"
+                onclick="window.history.go(-1); return false;"
+                type="button"
+                value="Back"
+            />
+            <input
+                action="action"
+                onclick="window.history.forward(); return false;"
+                type="button"
+                value="Forward"
+            />
+        </span>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+    </body>
+    </html>
+    `
+}
+
+function stringHelp(string:string) {
+    let url = "https://reference.wolfram.com/language/ref/" + string + ".html";
+    let helpPanel = vscode.window.createWebviewPanel(
+        "wolframHelp",
+        "Wolfram Help",
+        2,
+        {
+            enableScripts: true,
+            retainContextWhenHidden: true
+        }
+    );
+
+    helpPanel.webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://reference.wolfram.com 'unsafe-inline'">
+    
+    </head>
+    <body>
+        <span>
+            <input
+                action="action"
+                onclick="window.history.go(-1); return false;"
+                type="button"
+                value="Back"
+            />
+            <input
+                action="action"
+                onclick="window.history.forward(); return false;"
+                type="button"
+                value="Forward"
+            />
+        </span>
         <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
     </body>
     </html>
