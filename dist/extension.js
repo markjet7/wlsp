@@ -146,16 +146,19 @@ notebookSerializer = new notebook_1.WolframNotebookSerializer();
 notebookcontroller = new notebookController_1.WolframNotebookController();
 scriptController = new scriptController_1.WolframScriptController();
 function activate(context0) {
+    console.log("activating");
     context = context0;
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+    console.log("starting client");
+    client.start(context, outputChannel).then(() => {
+        console.log("on kernel ready");
+        onkernelReady();
+    });
     context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer));
     context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', scriptserializer));
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
-    client.start(context, outputChannel).then(() => {
-        onkernelReady();
-    });
     vscode.workspace.onWillSaveTextDocument(willsaveDocument);
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.command = 'wolfram.restart';
@@ -169,7 +172,9 @@ function restart() {
 }
 function onkernelReady() {
     try {
+        console.log("waiting for server...");
         if ((clients_1.wolframKernelClient === undefined) || (clients_1.wolframClient === undefined)) {
+            console.log("clients are undefined. waiting...");
             setTimeout(onkernelReady, 2000);
             return;
         }
@@ -471,12 +476,12 @@ function runToLine() {
 function didChangeWindowState(state) {
     if (clients_1.wolframClient !== null || clients_1.wolframClient !== undefined) {
         if (state.focused === true) {
-            clients_1.wolframClient.onReady().then(ready => {
+            clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.onReady().then(ready => {
                 clients_1.wolframClient.sendNotification("windowFocused", true);
             });
         }
         else {
-            clients_1.wolframClient.onReady().then(ready => {
+            clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.onReady().then(ready => {
                 clients_1.wolframClient.sendNotification("windowFocused", false);
             });
         }

@@ -198,6 +198,11 @@ export function activate(context0: vscode.ExtensionContext){
     context = context0;
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+
+    client.start(context, outputChannel).then(() => {
+        onkernelReady();
+    })
+
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
     );
@@ -208,10 +213,6 @@ export function activate(context0: vscode.ExtensionContext){
 
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
-
-    client.start(context, outputChannel).then(() => {
-        onkernelReady();
-    })
 
 
     vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
@@ -596,11 +597,12 @@ function runToLine() {
 function didChangeWindowState(state:vscode.WindowState) {
     if (wolframClient !== null || wolframClient !== undefined) {
         if(state.focused === true){
-            wolframClient.onReady().then(ready  => {
+            wolframClient?.onReady().then(ready  => {
                 wolframClient.sendNotification("windowFocused", true);
             });
         } else {
-            wolframClient.onReady().then(ready  => {
+
+            wolframClient?.onReady().then(ready  => {
                 wolframClient.sendNotification("windowFocused", false);
             });
         }
