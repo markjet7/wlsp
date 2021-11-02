@@ -119,12 +119,13 @@ handle["deserializeNotebook", json_]:=Module[{id, inputs, json2, nb},
 
 handle["serializeScript", json_]:=Module[{id, inputs, json2, nb},
 	inputs = json["params", "contents"];
-	nb = json2wl[inputs, True];
+	nb = StringJoin@json2wl[inputs];
 
 	sendResponse[<|"id"->json["id"], "result"->nb|>];
 ];
 
 handle["deserializeScript", json_]:=Module[{id, inputs, json2, nb},
+	Print["deserializeScript"];
 	Check[
 		inputs = json["params", "contents"];
 		json2 = wl2json[inputs];
@@ -193,14 +194,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			"id" -> json["id"],
 			"result" -> <|
 				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
 				"position"-> newPosition,
 				"print" -> False,
 				"document" ->  ""|>,
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
 				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
 				"position"-> newPosition,
 				"print" -> False,
 				"document" ->  ""|>
@@ -210,14 +211,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
 				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result, InputForm, TotalWidth -> 100000], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
 			|>
 		];
 		evalnumber = evalnumber + 1;
-		sendResponse[response];
+		Echo@sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];
 		decorationChar = code2["range"][[2, 2]];

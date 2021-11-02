@@ -31,7 +31,6 @@ json2nb[js_Association, False]:=Which[
 
 json2wl =.;
 ClearAll@json2wl;
-json2wl[elements_List]:=Map[json2wl[#] &,elements];
 json2wl[js_Association]:=Which[
     First[StringSplit[js["value"]],""] === "#", "(* ::Title:: *)\n(*" <> StringTake[js["value"], {3, -1}] <> "*)",
     First[StringSplit[js["value"]],""] === "##", "(* ::Section:: *)\n(*" <> StringTake[js["value"], {4, -1}] <> "*)",
@@ -39,6 +38,8 @@ json2wl[js_Association]:=Which[
     js["kind"] === 1, "(* ::Text:: *)\n" <> js["value"],
     js["kind"] === 2, js["value"] <> "\n\n\n",
     True, js["value"]];
+json2wl[elements_List]:=Map[json2wl[#] &,elements];
+json2wl[a_] := ToString@a;
 
 
 nb2json =.;

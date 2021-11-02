@@ -128,7 +128,7 @@ class WolframScriptSerializer {
                 });
             }
             return clients_1.wolframKernelClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
-                return Buffer.from(result);
+                return Buffer.from(result[0]);
             });
         });
     }
