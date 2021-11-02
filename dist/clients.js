@@ -234,7 +234,7 @@ function load(wolfram, path, port, outputChannel) {
                 (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString());
                     console.log("WLSP: " + data.toString());
-                    if (data.toString().includes("TCPSERVER")) {
+                    if (data.toString().includes("SocketObject")) {
                         setTimeout(() => { resolve(wolfram); }, 2000);
                     }
                 });
@@ -248,7 +248,7 @@ function load(wolfram, path, port, outputChannel) {
     });
 }
 function stopWolfram(client, client_process) {
-    client.stop();
+    client === null || client === void 0 ? void 0 : client.stop();
     let isWin = /^win/.test(process.platform);
     if (isWin) {
         let cp = require('child_process');

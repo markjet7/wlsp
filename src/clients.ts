@@ -272,7 +272,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
             wolfram.stdout?.on('data', (data) => {
                 outputChannel.appendLine("WLSP: " + data.toString())
                 console.log("WLSP: " + data.toString());
-                if(data.toString().includes("TCPSERVER")){
+                if(data.toString().includes("SocketObject")){
                     setTimeout(() => {resolve(wolfram)}, 2000)
                 }
             });
@@ -288,7 +288,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 
 
 function stopWolfram(client: any, client_process: any) {
-    client.stop();
+    client?.stop();
 
     let isWin = /^win/.test(process.platform);
     if (isWin) {
