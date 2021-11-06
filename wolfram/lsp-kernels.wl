@@ -125,7 +125,6 @@ handle["serializeScript", json_]:=Module[{id, inputs, json2, nb},
 ];
 
 handle["deserializeScript", json_]:=Module[{id, inputs, json2, nb},
-	Print["deserializeScript"];
 	Check[
 		inputs = json["params", "contents"];
 		json2 = wl2json[inputs];
@@ -140,7 +139,6 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 	id = json["id"];
 	html = ImportString[nb2html[ImportString[json["params", "document"], "Notebook"]], {"HTML", "XMLObject"}];
 	inputID = json["params", "input"];
-	Print["running nb"];
 	
 	inputs = First[Cases[html,XMLElement["textarea", {___, "id"->inputID, ___}, content_]:>content,Infinity],{""}];
 
@@ -218,7 +216,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			|>
 		];
 		evalnumber = evalnumber + 1;
-		Echo@sendResponse[response];
+		sendResponse[response];
 
 		decorationLine = code2["range"][[2, 1]];
 		decorationChar = code2["range"][[2, 2]];
@@ -341,7 +339,11 @@ evaluateString[string_, width_:10000]:= Module[{res, r, r2, f},
 			res["Success"], 
 			(
 				(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Success: " <> ToString[res["Result"], InputForm, TotalWidth->1000] |> |>]; *)
-				{res["Result"], True}
+				r = {res["Result"], True};
+				If[Length@r > 2,
+					r = {Most[r], True}
+				];
+				r
 			),
 
 			(
@@ -354,7 +356,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r, r2, f},
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
 								 
 				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
-				{res["Result"], True}
+				{StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], List@res["Result"]], "\n"], True}
 			)
 		]
 ];

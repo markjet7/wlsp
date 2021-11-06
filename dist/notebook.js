@@ -128,7 +128,7 @@ class WolframScriptSerializer {
                 });
             }
             return clients_1.wolframKernelClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
-                return Buffer.from(result[0]);
+                return Buffer.from(result);
             });
         });
     }
@@ -159,9 +159,15 @@ class WolframScriptSerializer {
                         this.raw = [];
                         result.map((item) => this.getCells(item));
                         this.cells = this.raw.map((item) => {
-                            let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
-                            i.metadata = item.metadata;
-                            return i;
+                            var _a;
+                            try {
+                                let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
+                                i.metadata = item.metadata;
+                                return i;
+                            }
+                            catch (e) {
+                                return new vscode.NotebookCellData(1, item ? "" : (_a = item.value) === null || _a === void 0 ? void 0 : _a.toString(), "markdown");
+                            }
                         });
                         cb(new vscode.NotebookData(this.cells));
                         return new vscode.NotebookData(this.cells);

@@ -201,11 +201,15 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
             );
             this.cells = this.raw.map(
               (item:any) => {
-              let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId)
-
-              i.metadata = item.metadata;
-              
-              return i
+              try{
+                let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId)
+  
+                i.metadata = item.metadata;
+                
+                return i
+              } catch(e){
+                return new vscode.NotebookCellData(1, item ? "" : item.value?.toString() , "markdown")  
+              }
               }
             );
             cb(new vscode.NotebookData(this.cells));
