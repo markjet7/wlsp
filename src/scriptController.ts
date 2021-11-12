@@ -97,7 +97,9 @@ export class WolframScriptController {
                     execution.replaceOutput([
                         new vscode.NotebookCellOutput([
                             vscode.NotebookCellOutputItem.text(
-                                    fs.readFileSync(result["output"], 'utf8'),'text/html'),
+                                    // result["output"],
+                                    fs.readFileSync(result["output"], 'utf8'),
+                                    'text/html'),
                             vscode.NotebookCellOutputItem.text(result["result"]),
                             vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                         ])

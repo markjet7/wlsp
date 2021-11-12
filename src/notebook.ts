@@ -7,7 +7,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
-import { wolframKernelClient } from './clients';
+import { wolframKernelClient, wolframClient } from './clients';
 
 
 
@@ -65,10 +65,10 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (wolframKernelClient !== undefined) {
-        wolframKernelClient.onReady().then(() => {
+      if (wolframClient !== undefined) {
+        wolframClient.onReady().then(() => {
       
-          wolframKernelClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+          wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(
@@ -122,7 +122,7 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
       });
     }
 
-    return wolframKernelClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
+    return wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
       return Buffer.from(result);
     });
   }
@@ -162,7 +162,7 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
       });
     }
 
-    return wolframKernelClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
+    return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
       return Buffer.from(result);
     });
   }
@@ -190,10 +190,10 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (wolframKernelClient !== undefined) {
-        wolframKernelClient.onReady().then(() => {
+      if (wolframClient !== undefined) {
+        wolframClient.onReady().then(() => {
       
-          wolframKernelClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
+          wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(

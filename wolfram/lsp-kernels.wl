@@ -68,6 +68,8 @@ handle["runCell", json_]:=Module[{},
 ];
 
 handle["$/cancelRequest", json_]:=Module[{response},
+	Print["Aborting Kernel"];
+	AbortKernels[];
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response];
 ];
@@ -80,59 +82,6 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	code = getcode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
-];
-
-handle["nb2html", json_]:=Module[{id, inputs, html},
-	id = json["id"];
-	inputs = Import[json["params", "document", "uri", "fsPath"], "Notebook"];
-	html = nb2html[inputs];
-	sendResponse[<|"id"->id, "result"->html|>];
-];
-
-handle["html2nb", json_]:=Module[{id, inputs, html, nb},
-	id = json["id"];
-	html = json["params", "html"];
-	nb = html2nb[html];
-
-	NotebookSave[nb, json["params", "document", "uri", "fsPath"]];
-	NotebookClose[nb];
-	sendResponse[<|"id"->id, "result"->True|>];
-];
-
-handle["serializeNotebook", json_]:=Module[{id, inputs, json2, nb},
-	inputs = json["params", "contents"];
-	nb = json2nb[inputs, True];
-
-	sendResponse[<|"id"->json["id"], "result"->ExportString[nb, "Text"]|>];
-];
-
-handle["deserializeNotebook", json_]:=Module[{id, inputs, json2, nb},
-	Check[
-		inputs = Check[ImportString[json["params", "contents"], "Notebook"], ""];
-		json2 = nb2json[inputs];
-		sendResponse[<|"id"->json["id"], "result"->json2|>];,
-
-		sendResponse[<|"id"->json["id"], "result"->""|>];
-		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
-	]
-];
-
-handle["serializeScript", json_]:=Module[{id, inputs, json2, nb},
-	inputs = json["params", "contents"];
-	nb = StringJoin@json2wl[inputs];
-
-	sendResponse[<|"id"->json["id"], "result"->nb|>];
-];
-
-handle["deserializeScript", json_]:=Module[{id, inputs, json2, nb},
-	Check[
-		inputs = json["params", "contents"];
-		json2 = wl2json[inputs];
-		sendResponse[<|"id"->json["id"], "result"->json2|>];,
-
-		sendResponse[<|"id"->json["id"], "result"->""|>];
-		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
-	]
 ];
 
 handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
@@ -169,16 +118,19 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	sendResponse[<|"method" -> "moveCursor", "params" -> <|"position" -> newPosition |>|>];
 
 	(* Add the evaluation to the evaluation queue *)
-	evaluateFromQueue[code, json, newPosition]
+
+	WaitAll@ParallelSubmit[
+		evaluateFromQueue[code, json, newPosition]
+	]
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f, maxWidth},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
 		If[string=="", 
 			{result, successQ} = {"", True},
-			{result, successQ} = evaluateString[string];	
+			{result, successQ} = evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->1000]};	
 		];
 
 		If[
@@ -187,19 +139,20 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			output = result;
 		];
 		
+		maxWidth = 2000;
 		response = If[KeyMemberQ[json, "id"],
 			<|
 			"id" -> json["id"],
 			"result" -> <|
-				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
+				"output"-> ToString[output], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
 				"print" -> False,
 				"document" ->  ""|>,
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
-				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
+				"output"-> ToString[output], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
 				"print" -> False,
 				"document" ->  ""|>
@@ -208,8 +161,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 			"method"->"onRunInWolfram", 
 			"params"-><|
 				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
-				"output"-> ToString[output, TotalWidth->Infinity], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> 100000], 
+				"output"-> ToString[output], 
+				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
@@ -356,7 +309,9 @@ evaluateString[string_, width_:10000]:= Module[{res, r, r2, f},
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
 								 
 				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
-				{StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], List@res["Result"]], "\n"], True}
+				{
+					Check[StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], 
+					List@res["Result"]], "\n"], "Errors"], True}
 			)
 		]
 ];

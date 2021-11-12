@@ -6,10 +6,14 @@ BeginPackage["WolframKernel`"]
 $MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
+	Check[
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
 		If[Head[client2] === SocketObject, 
 			BinaryWrite[client2, # , "Character32"] &/@ byteResponse;
-		]
+		],
+		Print["Send Response Failed: "];
+		Print[res];
+	]
 
 ];
 
@@ -78,32 +82,35 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.01;
+handlerWait = 0.2;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
-	If[Head@client2 === SocketObject,
-		If[SocketReadyQ@client2,
-			Replace[
-				Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-				Get[DirectoryName[path] <> "file-transforms.wl"]; 
-				handleMessageList[ReadMessages[client2], state],
-				{
-					{"Continue", state2_} :> state2,
-					{stop_, state2_} :> {stop, state2},
-					{} :> state
-				}
+	Check[
+		If[Head@client2 === SocketObject,
+			If[SocketReadyQ@client2,
+				Replace[
+					Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+					handleMessageList[ReadMessages[client2], state],
+					{
+						{"Continue", state2_} :> state2,
+						{stop_, state2_} :> {stop, state2},
+						{} :> state
+					}
+				],
+				(* Close[client2]; *)
+				Pause[handlerWait];
+				(* flush[client2]; *)
+				"Continue"
 			],
-			(* Close[client2]; *)
-			Pause[0.1];
-			(* flush[client2]; *)
+			client2=First[KERNELSERVER["ConnectedClients"], {}];
+			If[Head[client2] === SocketObject, 
+				Print["Kernel client connected: " <> ToString@client2];
+			];
+			Pause[0.5];
 			"Continue"
 		],
-		client2=First[KERNELSERVER["ConnectedClients"], {}];
-		If[Head[client2] === SocketObject, 
-			Print["Kernel client connected: " <> ToString@client2];
-		];
-		Pause[0.5];
+
 		"Continue"
 	]
 ] // socketHandler;

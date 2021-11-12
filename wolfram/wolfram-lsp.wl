@@ -84,29 +84,32 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.5;
+handlerWait = 0.1;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 socketHandler[state_]:=Module[{},
-	If[Head@client === SocketObject,
-		Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-		Pause[handlerWait];
-		Replace[
-			handleMessageList[ReadMessages[client], state],
-			{
-				{"Continue", state2_} :> state2,
-				{stop_, state2_} :> {stop, state2},
-				{} :> state
-			}
-		],
-		client=First[SERVER["ConnectedClients"], {}];
-		If[Head[client] === SocketObject, 
-			Print["LSP client connected: " <> ToString@client];
+	Check[
+		If[Head@client === SocketObject,
+			Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+			Get[DirectoryName[path] <> "file-transforms.wl"]; 
+			Pause[handlerWait];
+			Replace[
+				handleMessageList[ReadMessages[client], state],
+				{
+					{"Continue", state2_} :> state2,
+					{stop_, state2_} :> {stop, state2},
+					{} :> state
+				}
+			],
+			client=First[SERVER["ConnectedClients"], {}];
+			If[Head[client] === SocketObject, 
+				Print["LSP client connected: " <> ToString@client];
+				"Continue"
+			];
+			Pause[0.5];
 			"Continue"
-		];
-		Pause[0.5];
-		"Continue"
-	]
+		],
+	"Continue"]
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];

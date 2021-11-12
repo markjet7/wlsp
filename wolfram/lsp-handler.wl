@@ -167,7 +167,7 @@ handle["shutdown", json_]:=Module[{},
 
 
 handle["textDocument/foldingRange", json_]:=Module[{response, document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
-
+	Print["foldingRange"];
 	document = json["textDocument"]["uri"];
 	src = documents[json["params","textDocument","uri"]];
 
@@ -354,7 +354,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
-handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind, f, ast},
+handle["textDocument/documentSymbol", json_]:=Module[{uri, text, tree, symbols, funcs, defs, result, response, kind, f, ast},
 	Check[
 				(
 
@@ -366,6 +366,8 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 								"Complex", 16,
 								"Rational", 16,
 								"List", 18,
+								"Map", 18,
+								"Table", 18,
 								"Association", 23,
 								"Function", 12, 
 								"String", 15, 
@@ -373,47 +375,34 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 								_, 19];
 
 					uri = json["params"]["textDocument"]["uri"];
-					src = documents[json["params", "textDocument", "uri"]];
+					text = documents[json["params", "textDocument", "uri"]];
 					(*ast = AST`ParseFile@Export[FileNameJoin[{$TemporaryDirectory, "wolf-lsp"<> ToString@RandomReal[] <> ".txt"}], src];*)
-					ast = CodeParse[src];
+					ast = CodeParse[text, SourceConvention -> "SourceCharacterIndex"];
+
+					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
+						"name"->StringTake[text,x[Source]],
+						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+						"detail"->StringTake[text,src[Source]],
+						"location"-><|
+						"uri"->uri,
+						"range"->positionToRange[text,src[Source]]|>
+						|>,Infinity];
+
+					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:><|
+						"name"->StringTake[text,x[Source]],
+						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+						"detail"->StringTake[text,src[Source]],
+						"location"-><|
+						"uri"->uri,
+						"range"->positionToRange[text,src[Source]]|>
+						|>,Infinity];
 
 
-					f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
-						astStr=ToFullFormString[node[[2,1]]];
-						name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
-						loc=node[[-1]][Source];
-						rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-						If[Head@rhs ==CallNode,
-							kind = rhs[[1,2]],
-							kind = rhs[[2]]
-						];
-						definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-						<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>];
+					result = Join[funcs, defs];
 
-					symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 
-					result = Table[
-						symbolDefinitions[s["name"]] = s;
-						TimeConstrained[
-						<|
-							"name" -> s["name"] /. ""->"-",
-							"kind" -> kind[s["kind"]],
-							"detail"-> (StringReplace[If[StringQ[s["definition"]], s["definition"], ""] , "$"->""]) ,
-							"location"-><|
-								"uri"-> uri,
-								"range"->toRange[s["loc"]]
-								|>
-						|>, 0.05, 
-						<|
-							"name" -> s["name"] ,
-							"kind" -> 19,
-							"detail"-> "",
-							"location"-><|
-								"uri"->uri,
-								"range"->toRange[s["loc"]]
-								|>
-						|>], {s, symbols[[1;;]]}];
-				response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
+				response = <|"id"->json["id"],"result"->result|>;
 				sendResponse[response];  
 			),
 				response = <|"id"->json["id"],"result"->{}|>;
@@ -429,7 +418,8 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		position = json["params"]["position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
-		symbol = getFunctionAtPosition[src, position];
+		symbol = (If[MissingQ[#], "", #] &)@getFunctionAtPosition[src, position];
+		
 		functionWithParams = Check[getFunctionAtPositionWithParams[src, position], ""];
 		activeParameter = 0;
 		activeSignature = 0;
@@ -482,17 +472,17 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			symbol === "",
 				"",
 			MemberQ[Keys@symbolDefinitions, symbol],
-				symbolDefinitions[symbol]["definition"],
+				Check[symbolDefinitions[symbol]["detail"], ""],
 			True,
 				Check[
-					v = extractUsage[symbol],
+					extractUsage[symbol],
 					symbol					
 				]
 		];
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",
-				"value" -> "```wolfram\n" <> value <> "\n```"
+				"value" -> Check["```wolfram\n" <> value <> "\n```", ""]
 			|>
 		|>;
 
@@ -564,6 +554,61 @@ handle["windowFocused", json_]:=Module[{},
 	If[json["params"],
 		handlerWait = 0.01,
 		handlerWait = 0.1
+	]
+];
+
+
+
+handle["nb2html", json_]:=Module[{id, inputs, html},
+	id = json["id"];
+	inputs = Import[json["params", "document", "uri", "fsPath"], "Notebook"];
+	html = nb2html[inputs];
+	sendResponse[<|"id"->id, "result"->html|>];
+];
+
+handle["html2nb", json_]:=Module[{id, inputs, html, nb},
+	id = json["id"];
+	html = json["params", "html"];
+	nb = html2nb[html];
+
+	NotebookSave[nb, json["params", "document", "uri", "fsPath"]];
+	NotebookClose[nb];
+	sendResponse[<|"id"->id, "result"->True|>];
+];
+
+handle["serializeNotebook", json_]:=Module[{id, inputs, json2, nb},
+	inputs = json["params", "contents"];
+	nb = json2nb[inputs, True];
+
+	sendResponse[<|"id"->json["id"], "result"->ExportString[nb, "Text"]|>];
+];
+
+handle["deserializeNotebook", json_]:=Module[{id, inputs, json2, nb},
+	Check[
+		inputs = Check[ImportString[json["params", "contents"], "Notebook"], ""];
+		json2 = nb2json[inputs];
+		sendResponse[<|"id"->json["id"], "result"->json2|>];,
+
+		sendResponse[<|"id"->json["id"], "result"->""|>];
+		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
+	]
+];
+
+handle["serializeScript", json_]:=Module[{id, inputs, json2, nb},
+	inputs = json["params", "contents"];
+	nb = StringJoin@json2wl[inputs];
+
+	sendResponse[<|"id"->json["id"], "result"->nb|>];
+];
+
+handle["deserializeScript", json_]:=Module[{id, inputs, json2, nb},
+	Check[
+		inputs = json["params", "contents"];
+		json2 = wl2json[inputs];
+		sendResponse[<|"id"->json["id"], "result"->json2|>];,
+
+		sendResponse[<|"id"->json["id"], "result"->""|>];
+		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
 	]
 ];
 
@@ -805,6 +850,22 @@ positionToLineChar[text_,range_]:=Module[{beforeText, selectedText, afterText},
 		"startCharacter"->StringLength[Last@StringSplit[beforeText,EndOfLine]]-1,
 		"endLine"->StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
 		"endCharacter" -> StringLength[Last@StringSplit[beforeText<>selectedText,EndOfLine]]-1
+	|>
+];
+
+positionToRange[text_,range_]:=Module[{beforeText, selectedText, afterText},
+	beforeText = StringTake[text,{1, range[[1]]}];
+	selectedText = StringTake[text,{range[[1]], range[[2]]}];
+	afterText = StringTake[text,{range[[2]], -1}];
+	<|
+		"start"-><|
+			"line" -> StringCount[beforeText,EndOfLine]-1, 
+			"character"->StringLength[Last@StringSplit[beforeText,EndOfLine]]-1
+		|>,
+		"end"-><|
+			"line" -> StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
+			"character" -> StringLength[Last@StringSplit[beforeText<>selectedText,EndOfLine]]-1 
+		|>
 	|>
 ];
 

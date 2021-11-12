@@ -3,7 +3,7 @@
     "displayName": "wlsp",
     "description": "wolfram-language-server",
     "publisher": "markmba",
-    "enableProposedApi": true,
+    "enableProposedApi": false,
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
@@ -199,7 +199,7 @@
             }
         ],
         "viewsContainers": {
-            "activitybar":[
+            "activitybar": [
                 {
                     "id": "wolfram-workspace-explorer",
                     "title": "Wolfram",
@@ -207,13 +207,13 @@
                 }
             ]
         },
-        "views":{
-            "wolfram-workspace-explorer":[
+        "views": {
+            "wolfram-workspace-explorer": [
                 {
                     "id": "wolframSymbols",
                     "name": "Symbols",
                     "icon": "",
-					"contextualTitle": "Symbols"
+                    "contextualTitle": "Symbols"
                 }
             ]
         }

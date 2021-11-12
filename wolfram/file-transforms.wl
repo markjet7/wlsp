@@ -29,79 +29,50 @@ json2nb[js_Association, False]:=Which[
     True, Cell[js["value"], {}, "Text"]
 ];
 
-mdReplacements = {
-    "### " ~~ s__ :> "(* ::Subsection :: *)\n(*" <> s <> "*)\n",
-    "## " ~~ s__ :> "(* ::Section :: *)\n(*" <> s <> "*)\n",
-    "# " ~~ s__ :> "(* ::Title :: *)\n(*" <> s <> "*)\n"
-};
+(*
+mdReplacements={Shortest["### "~~s__~~EndOfLine]:>"(* ::Subsection:: *)\n"<>StringJoin[Map["(*"<>#<>"*)\n"&,StringSplit[s,"\n"]]],
+Shortest["## "~~s__~~EndOfLine]:>"(* ::Section:: *)\n"<>StringJoin[Map["(*"<>#<>"*)\n"&,StringSplit[s,"\n"]]],Shortest["# "~~s__~~EndOfLine]:>"(* ::Title:: *)\n"<>StringJoin[Map["(*"<>#<>"*)\n"&,StringSplit[s,"\n"]]],s:Except["#"]..:>"(* ::Text:: *)\n"<>StringJoin[Map["(*"<>#<>"*)\n"&,StringSplit[s,"\n"]]]};
 
-mdReplacements2 = {
-    "#".. ~~ " " ~~ s__ :> s
-};
+mdReplacements2={"#"..~~" "~~s__:>s};
 
-wlLines[wl_] := StringJoin["(*" <> # <> "*)\n" &/@StringSplit[wl, "\n"]];
+wlLines[wl_]:=StringJoin["(*"<>#<>"*)\n"&/@StringSplit[wl,"\n"]];
 
-json2wl =.;
+json2wl=.;
 ClearAll@json2wl;
-json2wl[js_Association]:=(Which[
-        And[Check[js["kind"], 1] === 1, Check[js["metadata"], ""] ===  ""],  "(* ::Text:: *)\n" <> wlLines@StringReplace[js["value"], mdReplacements] <> "\n\n",
-        Check[js["metadata"], ""] === "Code", js["value"] <> "\n\n\n",
-        Check[js["metadata"], ""] === "Input", "(* ::Input:: *)\n" <> wlLines@js["value"] <> "\n\n",
-        Check[js["metadata"], False] === "", wlLines[StringReplace[js["value"], mdReplacements]] <> "\n\n",
-        Check[js["metadata"], ""] === "Package", "(* ::Package:: *)\n\n\n\n",
-        True, "(* ::" <> Check[js["metadata"], "Text"] <> ":: *)\n" <> wlLines[StringReplace[js["value"], mdReplacements2]] <> "\n\n"
-    ]);
-json2wl[elements_List]:=Map[json2wl[#] &,elements];
-json2wl[a_] := ToString@a;
+json2wl[js_Association]:=(Which[Check[js["kind"],2]===1,StringReplace[js["value"],mdReplacements]<>"\n\n",Check[js["metadata"],""]==="Code",js["value"]<>"\n\n\n",Check[js["metadata"],""]==="Input","(* ::Input:: *)\n"<>wlLines@js["value"]<>"\n\n",Check[js["metadata"],False]==="",js["value"]<>"\n\n",Check[js["metadata"],""]==="Package","(* ::Package:: *)\n\n\n\n",True,js["value"]<>"\n\n"]);
+json2wl[elements_List]:=Map[json2wl[#]&,elements];
+json2wl[a_]:=ToString@a;
 
 wl2json=.;
 wl2mdjson=.;
 ClearAll@wl2json;
 ClearAll@wl2mdjson;
 
-wl2mdjson[str_]:=Sequence@@StringReplace[str,{
-    Shortest["(* ::Section:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"## "<>h,"markdown","Section"],
-    Shortest["(* ::SubSection:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","SubSection"],
-    Shortest["(* ::Chapter:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","Chapter"],
-    Shortest["(* ::Title:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"# "<>h,"markdown","Title"],
-    Shortest["(* ::Text:: *)"~~___~~"(* ::"~~h___~~":: *)"]:>jsonT[1,"# "<>h,"markdown","Text"],
-    Shortest["(* ::"~~s___~~":: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown",s],
-    x__:>jsonT[2, x, "wolfram","Input"]
-}];
+wl2mdjson[str_]:=Sequence@@StringReplace[str,{Shortest["(* ::Section:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"## "<>h,"markdown","Section"],Shortest["(* ::SubSection:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","SubSection"],Shortest["(* ::Chapter:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown","Chapter"],Shortest["(* ::Title:: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"# "<>h,"markdown","Title"],Shortest["(* ::Text:: *)"~~___~~"(* ::"~~h___~~":: *)"]:>jsonT[1,"# "<>h,"markdown","Text"],Shortest["(* ::"~~s___~~":: *)"~~Whitespace..~~"(*"~~h___~~"*)"]:>jsonT[1,"### "<>h,"markdown",s],x__:>jsonT[2,x,"wolfram","Code"]}];
 
-wl2json[wl_]:=Module[{a},(
-    StringCases[wl, {
-        packagePattern,
-        inputPatterns,
-        sectionPatterns,
-        codePattern,
-        x__:>jsonT[2, x, "wolfram","Input"]
-    }])]; 
 
-packagePattern =("(* ::Package:: *)" ~~ Whitespace..):>jsonT@@{1, "", "markdown", "Package"};
-inputPatterns = x:Shortest["(* ::Input:: *)" ~~Whitespace..~~content__~~"\n\n\n"]/;StringCount[x,"\n\n\n"]==1:>jsonT@@{
-    2,
-    StringJoin@StringReplace[content,{StartOfLine~~"(*"->"","*)"~~EndOfLine ->""}],
-    "wolfram",
-    "Input"
-    };
-sectionPatterns = x:Shortest["(* ::"~~ type__ ~~":: *)" ~~Whitespace..~~content__~~"\n\n\n"]/;StringCount[x,"\n\n\n"]==1:>jsonT@@{
-    1,
-    StringJoin@StringReplace[content,{StartOfLine~~"(*"->wl2md[type],"*)"~~EndOfLine ->""}],
-    "markdown",
-    type
-    };
-codePattern =Shortest[StartOfLine~~content:Except[Characters["(*"]]..~~"\n\n\n"]:>jsonT@@{
-    2, content, "wolfram", "Code"};
+packagePattern=("(* ::Package:: *)"~~Whitespace..):>jsonT@@{1,"","markdown","Package"};
+inputPatterns=x:("(* ::Input:: *)"~~Whitespace..~~content__~~"\n\n\n")/;StringCount[x,"\n\n\n"]==1:>jsonT@@{2,StringJoin@StringReplace[content,{StartOfLine~~"(*"->"","*)"~~EndOfLine->""}],"wolfram","Input"};
+sectionPatterns=x:("(* ::"~~type__~~":: *)"~~Whitespace..~~content__~~"\n\n\n")/;StringCount[x,"\n\n\n"]<=1:>jsonT@@{1,StringJoin@StringReplace[content,{StartOfLine~~"(*"->wl2md[type],"*)"~~EndOfLine->""}],"markdown",type};
+codePattern=x:Shortest@(content__~~"\n\n\n")/;StringCount[x,"\n\n\n"]<=1:>jsonT@@{2,content,"wolfram","Code"};
 
-wl2md[type_]:=Switch[type, 
-    "Title", "# ",
-    "Section", "## ",
-    "SubSection", "### ",
-    "Chapter", "### ",
-    "Text", "",
-    _, ""];
+wl2json[wl_]:=Module[{a},(StringCases[wl,{packagePattern,inputPatterns,sectionPatterns,codePattern,x__:>jsonT[2,x,"wolfram","Code"]}])];
 
+wl2md[type_]:=Switch[type,"Title","# ","Section","## ","SubSection","### ","Chapter","### ","Text","",_,""];
+
+jsonT[k_,v_:"",l_:"wolfram",m_:"Text",o_:{}]:=<|"kind"->k,"value"->v,"languageId"->l,"metadata"->m,"outputs"->o|>;
+*)
+
+jsonT[k_,v_:"",l_:"wolfram",m_:"Code",o_:{}]:=<|
+    "kind"->k,
+    "value"->v,
+    "languageId"->l,
+    "metadata"->m,
+    "outputs"->o|>;
+
+json2wl[js_List]:=StringJoin[StringRiffle[js[[All,"value"]],"\n\n\n"]];
+
+wl2json[wl_]:=Map[Function[{s}, jsonT[2,s]],StringSplit[wl,"\n\n\n"]];
 
 nb2json =.;
 ClearAll@nb2json;
@@ -121,8 +92,6 @@ nb2json[c : Cell[content_, "Text", ___]] := jsonT[1, ""<>content, "markdown", "T
 nb2json[c : Cell[content_, "Output", ___]] := jsonT[1, ExportString[rawBoxesToExpression@content,"HTMLFragment"], "text/html", "Output"];
 nb2json[c:Cell[BoxData[content_],"Output",___,ExpressionUUID->id_]]:=jsonT[1, ExportString[rawBoxesToExpression@content,"HTMLFragment"], "text/html", "Output"];
 nb2json[Notebook[cells_, ___]] := Map[nb2json, cells];
-
-jsonT[k_,v_:"",l_:"wolfram", m_:"Text", o_:{}]:=<|"kind"->k, "value"->v, "languageId"->l, "metadata"->m, "outputs"->o|>;
 
 nb2html=.;
 ClearAll@nb2html;
