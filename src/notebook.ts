@@ -158,14 +158,25 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
         language: cell.languageId,
         value: cell.value,
         metadata: Object.values((cell as any).metadata).join(""),
-        outputs: cell.outputs
+        outputs: "" //cell.outputs
       });
     }
 
-    return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
-      return Buffer.from(result);
-    });
-  }
+    return new Promise((resolve, reject) => {
+      if (wolframClient !== undefined) {
+      wolframClient.onReady().then(() => {
+        return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
+          resolve(Buffer.from(result));
+        });
+      });
+    } else {
+      let string = "";
+      for (const cell of contents) {
+        string += cell.value + "\n\n\n";
+      }
+      resolve(Buffer.from(string));
+    }
+  })}
 
   getCells(item:any){
     if(item.constructor.name === "Array"){

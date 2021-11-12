@@ -124,11 +124,24 @@ class WolframScriptSerializer {
                     language: cell.languageId,
                     value: cell.value,
                     metadata: Object.values(cell.metadata).join(""),
-                    outputs: cell.outputs
+                    outputs: "" //cell.outputs
                 });
             }
-            return clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
-                return Buffer.from(result);
+            return new Promise((resolve, reject) => {
+                if (clients_1.wolframClient !== undefined) {
+                    clients_1.wolframClient.onReady().then(() => {
+                        return clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
+                            resolve(Buffer.from(result));
+                        });
+                    });
+                }
+                else {
+                    let string = "";
+                    for (const cell of contents) {
+                        string += cell.value + "\n\n\n";
+                    }
+                    resolve(Buffer.from(string));
+                }
             });
         });
     }
