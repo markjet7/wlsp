@@ -11,11 +11,14 @@ BeginPackage["wolframLSP`"];
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
+	Check[
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
 		If[Head[client] === SocketObject, 
 			BinaryWrite[client, # , "Character32"] &/@ byteResponse;
-		]
-
+		],
+		Print["response error"];
+		Print[res];
+	]
 ];
 
 (* Off[General::stop]; *)

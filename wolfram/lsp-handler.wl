@@ -71,7 +71,7 @@ handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
 handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files},
 	
 	files = Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]] & /@ Keys@documents];
-	sources = Check[Import[#, "Text"], ""] & /@ files;
+	sources = Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
 	
 	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[<|"Scheme" -> "file", "Path" -> Join[{""}, FileNameSplit[#2]]|>]] &, {sources, files}], #1["name"] &];
 	builtins = COMPLETIONS[[102;;, "label"]];
@@ -167,7 +167,6 @@ handle["shutdown", json_]:=Module[{},
 
 
 handle["textDocument/foldingRange", json_]:=Module[{response, document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
-	Print["foldingRange"];
 	document = json["textDocument"]["uri"];
 	src = documents[json["params","textDocument","uri"]];
 
@@ -441,7 +440,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 				ast = CodeParse[v, SourceConvention -> "SourceCharacterIndex"];
 				<|
 					"label" -> ToString@v, 
-					"documentation" -> value <> "\n" <> StringRiffle[opts /. None -> {}, "\n"] ,
+					"documentation" -> Check[value <> "\n" <> StringRiffle[opts /. {None -> {}, Null->""}, "\n"], ""] ,
 					"parameters" -> (<|"label" -> #|> & /@ (StringTake[v, #] & /@ Cases[ast[[2, 1, 2]], KeyValuePattern[Source -> x_] :> x, {2}]))
 				|>, {v, signatures}],
 			"activeSignature" -> activeSignature,
@@ -891,7 +890,7 @@ getSymbols[src_, uri_:""]:=Module[{ast, f, symbols},
 (*
 handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind},
 		(
-
+			Print["documentSymbol"];
 			kind[s_]:= Switch[
 						ToExpression@s[[1]], 
 						Symbol, 13, 
