@@ -69,7 +69,7 @@ handle["runCell", json_]:=Module[{},
 
 handle["$/cancelRequest", json_]:=Module[{response},
 	Print["Aborting Kernel"];
-	AbortKernels[];
+	TaskRemove[Tasks[]];
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response];
 ];
@@ -119,9 +119,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 	(* Add the evaluation to the evaluation queue *)
 
-	WaitAll@ParallelSubmit[
-		CheckAbort[evaluateFromQueue[code, json, newPosition], ""]
-	];
+	evaluateFromQueue[code, json, newPosition]
 ];
 
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f, maxWidth},
@@ -252,6 +250,7 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 		|>
 	|>;
 	(* Add the evaluation to the evaluation queue *)
+	
 	evaluateFromQueue[code, json, position];
 	
 ];
