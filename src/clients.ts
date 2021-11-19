@@ -26,19 +26,28 @@ let wolfram: cp.ChildProcess;
 let wolframKernel: cp.ChildProcess;
 
 export class Client {
-    constructor() { }
+    constructor() {
+        this.clientPort = 0;
+        this.kernelPort = 0;
+        this.lspPath = "";
+        this.kernelPath = "";
+     }
+
+    private clientPort: number;
+    private kernelPort: number;
+    private lspPath: string;
+    private kernelPath: string;
 
     async start(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel): Promise<void> {
         return new Promise((resolve) => {
-            let clientPort:number;
-            let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
+            this.lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
             let rndport = randomPort();
             fp(rndport, rndport+50).then((freep:any) => {
-                clientPort = freep[0]
+                this.clientPort = freep[0]
             }).then(() => {
-                load(wolfram, lspPath, clientPort, outputChannel).then((result:cp.ChildProcess) => {
+                load(wolfram, this.lspPath, this.clientPort, outputChannel).then((result:cp.ChildProcess) => {
                     wolfram = result;
-                    connect(context, outputChannel, clientPort)
+                    connect(context, outputChannel, this.clientPort)
                     .then(([client, disposable]) => {
                         wolframClient = client;
                         context.subscriptions.push(disposable);
@@ -47,14 +56,13 @@ export class Client {
                 }) 
             })
 
-            let kernelPort:number;
-            let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+            this.kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
             return fp(rndport+51, rndport+100).then((freep:any) => {
-                kernelPort = freep[0]
+                this.kernelPort = freep[0]
             }).then(() => {
-                load(wolframKernel, kernelPath, kernelPort, outputChannel).then((result:cp.ChildProcess) => {
+                load(wolframKernel, this.kernelPath, this.kernelPort, outputChannel).then((result:cp.ChildProcess) => {
                     wolframKernel = result;
-                    connect(context, outputChannel, kernelPort)
+                    connect(context, outputChannel, this.kernelPort)
                     .then(([client, disposable]) => {
                         wolframKernelClient = client;
                         context.subscriptions.push(disposable);
@@ -100,18 +108,36 @@ export class Client {
         console.log("Restarting");
 
         vscode.window.showInformationMessage("Wolfram is restarting.");
-        context.subscriptions.forEach((subscription:any) => {
-            subscription.dispose();
-        })
+        // context.subscriptions.forEach((subscription:any) => {
+        //     subscription.dispose();
+        // })
 
-        stopWolfram(wolframClient, wolfram);
-        stopWolfram(wolframKernelClient, wolframKernel);
+        // stopWolfram(wolframClient, wolfram);
 
         // wolframStatusBar.text = "Wolfram v.?";
         // wolframStatusBar.show();
         // retry(function(){return connectKernel(outputChannel, theContext)});
-        return this.start(context, outputChannel).then(() => {
-            resolve()});
+        // return this.start(context, outputChannel).then(() => {
+        //     resolve()});
+        // load(wolfram, this.lspPath, this.clientPort, outputChannel).then((result:cp.ChildProcess) => {
+        //     wolfram = result;
+        //     connect(context, outputChannel, this.clientPort)
+        //     .then(([client, disposable]) => {
+        //         wolframClient = client;
+        //         context.subscriptions.push(disposable);
+        //     })  
+        // }) 
+
+        stopWolfram(wolframKernelClient, wolframKernel);
+        load(wolframKernel, this.kernelPath, this.kernelPort, outputChannel).then((result:cp.ChildProcess) => {
+            wolframKernel = result;
+            connect(context, outputChannel, this.kernelPort)
+            .then(([client, disposable]) => {
+                wolframKernelClient = client;
+                context.subscriptions.push(disposable);
+                resolve();
+            }) 
+        }) 
     }
 
     stop() {
@@ -288,7 +314,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 
 
 function stopWolfram(client: any, client_process: any) {
-    client?.stop();
+    // client?.stop();
 
     let isWin = /^win/.test(process.platform);
     if (isWin) {

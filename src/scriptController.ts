@@ -78,6 +78,7 @@ export class WolframScriptController {
                 abortCtl.abort();
                 wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
                     () => {});
+
                 execution.replaceOutput(
                     new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.error({
