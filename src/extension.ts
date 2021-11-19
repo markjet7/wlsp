@@ -368,13 +368,13 @@ function createFile(){
 
 function createNotebook(){
     vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.nb")).then((document:vscode.NotebookDocument) => {
-        vscode.window.showNotebookDocument(document);
+        // vscode.window.showNotebookDocument(document);
     });
 }
 
 function createNotebookScript(){
     vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document:vscode.NotebookDocument) => {
-        vscode.window.showNotebookDocument(document);
+        // vscode.window.showNotebookDocument(document);
     });
 }
 

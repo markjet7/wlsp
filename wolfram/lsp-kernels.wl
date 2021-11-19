@@ -120,7 +120,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	(* Add the evaluation to the evaluation queue *)
 
 	WaitAll@ParallelSubmit[
-		CheckAbort[evaluateFromQueue[code, json, newPosition]]
+		CheckAbort[evaluateFromQueue[code, json, newPosition], ""]
 	];
 ];
 
