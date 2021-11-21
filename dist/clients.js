@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Client = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.Client = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
@@ -20,8 +20,10 @@ const vscode_languageclient_1 = require("vscode-languageclient");
 const path_1 = require("path");
 let PORT;
 let kernelPORT;
-let wolfram;
-let wolframKernel;
+// export let wolframClient: LanguageClient;
+// export let wolframKernelClient: LanguageClient;
+// let wolfram: cp.ChildProcess;
+// let wolframKernel: cp.ChildProcess;
 class Client {
     constructor() {
         this.clientPort = 0;
@@ -31,17 +33,19 @@ class Client {
     }
     start(context, outputChannel) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.context = context;
+            this.outputChannel = outputChannel;
             return new Promise((resolve) => {
                 this.lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
                 let rndport = randomPort();
                 fp(rndport, rndport + 50).then((freep) => {
                     this.clientPort = freep[0];
                 }).then(() => {
-                    load(wolfram, this.lspPath, this.clientPort, outputChannel).then((result) => {
-                        wolfram = result;
+                    load(this.wolfram, this.lspPath, this.clientPort, outputChannel).then((result) => {
+                        this.wolfram = result;
                         connect(context, outputChannel, this.clientPort)
                             .then(([client, disposable]) => {
-                            exports.wolframClient = client;
+                            this.wolframClient = client;
                             context.subscriptions.push(disposable);
                         });
                     });
@@ -50,11 +54,11 @@ class Client {
                 return fp(rndport + 51, rndport + 100).then((freep) => {
                     this.kernelPort = freep[0];
                 }).then(() => {
-                    load(wolframKernel, this.kernelPath, this.kernelPort, outputChannel).then((result) => {
-                        wolframKernel = result;
+                    load(this.wolframKernel, this.kernelPath, this.kernelPort, outputChannel).then((result) => {
+                        this.wolframKernel = result;
                         connect(context, outputChannel, this.kernelPort)
                             .then(([client, disposable]) => {
-                            exports.wolframKernelClient = client;
+                            this.wolframKernelClient = client;
                             context.subscriptions.push(disposable);
                             resolve();
                         });
@@ -84,7 +88,7 @@ class Client {
             });
         });
     }
-    restart(context, outputChannel) {
+    restart() {
         return __awaiter(this, void 0, void 0, function* () {
             console.log("Restarting");
             vscode.window.showInformationMessage("Wolfram is restarting.");
@@ -105,21 +109,21 @@ class Client {
             //         context.subscriptions.push(disposable);
             //     })  
             // }) 
-            stopWolfram(exports.wolframKernelClient, wolframKernel);
-            load(wolframKernel, this.kernelPath, this.kernelPort, outputChannel).then((result) => {
-                wolframKernel = result;
-                connect(context, outputChannel, this.kernelPort)
+            stopWolfram(this.wolframKernelClient, this.wolframKernel);
+            load(this.wolframKernel, this.kernelPath, this.kernelPort, this.outputChannel).then((result) => {
+                this.wolframKernel = result;
+                connect(this.context, this.outputChannel, this.kernelPort)
                     .then(([client, disposable]) => {
-                    exports.wolframKernelClient = client;
-                    context.subscriptions.push(disposable);
+                    this.wolframKernelClient = client;
+                    this.context.subscriptions.push(disposable);
                     path_1.resolve();
                 });
             });
         });
     }
     stop() {
-        stopWolfram(exports.wolframClient, wolfram);
-        stopWolfram(exports.wolframKernelClient, wolframKernel);
+        stopWolfram(this.wolframClient, this.wolfram);
+        stopWolfram(this.wolframKernelClient, this.wolframKernel);
     }
 }
 exports.Client = Client;

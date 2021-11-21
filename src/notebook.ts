@@ -7,7 +7,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
-import { wolframKernelClient, wolframClient } from './clients';
+import { client } from './extension';
 
 
 
@@ -39,7 +39,6 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
     })
   }
 
-
   private raw: vscode.NotebookCellData[] = [];
   private cells: vscode.NotebookCellData[] = [];
   getCells(item:any){
@@ -65,10 +64,10 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (wolframClient !== undefined) {
-        wolframClient.onReady().then(() => {
+      if (client.wolframClient !== undefined) {
+        client.wolframClient.onReady().then(() => {
       
-          wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+          client.wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(
@@ -122,7 +121,7 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
       });
     }
 
-    return wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
+    return client.wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
       return Buffer.from(result);
     });
   }
@@ -163,9 +162,9 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
     }
 
     return new Promise((resolve, reject) => {
-      if (wolframClient !== undefined) {
-      wolframClient.onReady().then(() => {
-        return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
+      if (client.wolframClient !== undefined) {
+        client.wolframClient.onReady().then(() => {
+        return client.wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
           resolve(Buffer.from(result));
         });
       });
@@ -201,10 +200,10 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (wolframClient !== undefined) {
-        wolframClient.onReady().then(() => {
+      if (client.wolframClient !== undefined) {
+        client.wolframClient.onReady().then(() => {
       
-          wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
+          client.wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(
