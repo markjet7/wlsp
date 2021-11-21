@@ -43,8 +43,20 @@ class WolframScriptController {
     }
     _interrupt(notebook) {
         /* Do some interruption here; not implemented */
-        this.executions.map(execution => {
-            execution.end(false, Date.now());
+        console.log(this.executions);
+        this.executions.map((execution) => {
+            try {
+                execution.end(false, Date.now());
+                execution.replaceOutput(new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.error({
+                        name: 'error',
+                        message: "aborted"
+                    })
+                ]));
+            }
+            catch (e) {
+                console.log(e);
+            }
         });
         this.executions = [];
         extension_1.restartKernel();
