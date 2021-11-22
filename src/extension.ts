@@ -234,7 +234,7 @@ export function restartKernel(){
     })
 }
 
-function onkernelReady(){
+export function onkernelReady(){
     if(client.wolframKernelClient !== undefined) {
         client.wolframKernelClient.onReady().then(() => {
             console.log("Listening to kernel")
