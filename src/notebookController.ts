@@ -2,7 +2,7 @@
 import AbortController from 'abort-controller';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
-import {wolframClient, wolframKernelClient} from './clients'
+import {client} from './extension'
 const fs = require('fs')
 
 export function activate(context: vscode.ExtensionContext) {
@@ -58,7 +58,7 @@ export class WolframNotebookController  {
             if (execution?.executionOrder) {
                 let executionId = execution.executionOrder;
                 if (executionId && executionId <= this._executionOrder) {
-                    wolframKernelClient.sendRequest("$/cancelRequest", {id: executionId}).then(
+                    client.wolframKernelClient.sendRequest("$/cancelRequest", {id: executionId}).then(
                         () => {});
                 }
             } else {
@@ -76,7 +76,7 @@ export class WolframNotebookController  {
             let abortCtl = new AbortController();
             execution.token.onCancellationRequested(() => {
                 abortCtl.abort();
-                wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
+                client.wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
                     () => {});
                 execution.replaceOutput(
                     new vscode.NotebookCellOutput([
@@ -87,7 +87,7 @@ export class WolframNotebookController  {
                 execution.end(false, Date.now());
             });
             while(!execution.token.isCancellationRequested){
-                wolframKernelClient.sendRequest("runExpression", 
+                client.wolframKernelClient.sendRequest("runExpression", 
                     {
                         expression: cell.document.getText(),
                         line: 0,
