@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runInWolfram = exports.printResults = exports.restartKernel = exports.activate = exports.client = void 0;
+exports.runInWolfram = exports.printResults = exports.onkernelReady = exports.restartKernel = exports.activate = exports.client = void 0;
 const vscode = require("vscode");
 const vscode_1 = require("vscode");
 const path = require("path");
@@ -188,6 +188,7 @@ function onkernelReady() {
         setTimeout(onkernelReady, 2000);
     }
 }
+exports.onkernelReady = onkernelReady;
 function onclientsReady() {
     try {
         if ((exports.client.wolframKernelClient === undefined) || (exports.client.wolframClient === undefined)) {

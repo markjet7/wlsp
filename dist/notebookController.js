@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WolframNotebookController = exports.activate = void 0;
 const abort_controller_1 = require("abort-controller");
 const vscode = require("vscode");
-const clients_1 = require("./clients");
+const extension_1 = require("./extension");
 const fs = require('fs');
 function activate(context) {
     context.subscriptions.push(new WolframNotebookController());
@@ -52,7 +52,7 @@ class WolframNotebookController {
             if (execution === null || execution === void 0 ? void 0 : execution.executionOrder) {
                 let executionId = execution.executionOrder;
                 if (executionId && executionId <= this._executionOrder) {
-                    clients_1.wolframKernelClient.sendRequest("$/cancelRequest", { id: executionId }).then(() => { });
+                    extension_1.client.wolframKernelClient.sendRequest("$/cancelRequest", { id: executionId }).then(() => { });
                 }
             }
             else {
@@ -69,7 +69,7 @@ class WolframNotebookController {
                 let abortCtl = new abort_controller_1.default();
                 execution.token.onCancellationRequested(() => {
                     abortCtl.abort();
-                    clients_1.wolframKernelClient.sendRequest("$/cancelRequest", { id: execution.executionOrder }).then(() => { });
+                    extension_1.client.wolframKernelClient.sendRequest("$/cancelRequest", { id: execution.executionOrder }).then(() => { });
                     execution.replaceOutput(new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.error({
                             name: 'error',
@@ -79,7 +79,7 @@ class WolframNotebookController {
                     execution.end(false, Date.now());
                 });
                 while (!execution.token.isCancellationRequested) {
-                    clients_1.wolframKernelClient.sendRequest("runExpression", {
+                    extension_1.client.wolframKernelClient.sendRequest("runExpression", {
                         expression: cell.document.getText(),
                         line: 0,
                         end: 0

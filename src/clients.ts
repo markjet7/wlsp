@@ -147,6 +147,17 @@ export class Client {
                 resolve();
             }) 
         }) 
+
+        stopWolfram(this.wolframClient, this.wolfram);
+        load(this.wolfram, this.lspPath, this.clientPort, this.outputChannel).then((result:cp.ChildProcess) => {
+            this.wolfram = result;
+            connect(this.context, this.outputChannel, this.clientPort)
+            .then(([client, disposable]) => {
+                this.wolframClient = client;
+                this.context.subscriptions.push(disposable);
+                resolve();
+            }) 
+        }) 
     }
 
     stop() {

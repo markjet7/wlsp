@@ -119,6 +119,16 @@ class Client {
                     path_1.resolve();
                 });
             });
+            stopWolfram(this.wolframClient, this.wolfram);
+            load(this.wolfram, this.lspPath, this.clientPort, this.outputChannel).then((result) => {
+                this.wolfram = result;
+                connect(this.context, this.outputChannel, this.clientPort)
+                    .then(([client, disposable]) => {
+                    this.wolframClient = client;
+                    this.context.subscriptions.push(disposable);
+                    path_1.resolve();
+                });
+            });
         });
     }
     stop() {
