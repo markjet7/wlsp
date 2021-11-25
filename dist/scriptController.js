@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WolframScriptController = exports.activate = void 0;
 const abort_controller_1 = require("abort-controller");
 const vscode = require("vscode");
-const extension_1 = require("./extension");
+const clients_1 = require("./clients");
 const fs = require('fs');
 function activate(context) {
     context.subscriptions.push(new WolframScriptController());
@@ -59,35 +59,12 @@ class WolframScriptController {
             }
         });
         this.executions = [];
-        extension_1.restartKernel();
+        clients_1.restartKernel();
         // for (let cell of notebook.getCells()) {
         //     this._doInterrupt(cell);
         // }
     }
     _doInterrupt(cell) {
-        // if (cell.kind === vscode.NotebookCellKind.Code) {
-        //     let execution = cell.executionSummary
-        //     if (execution?.executionOrder) {
-        //         let executionId = execution.executionOrder;
-        //         if (executionId && executionId <= this._executionOrder) {
-        //             // client.wolframKernelClient.sendRequest("$/cancelRequest", {id: executionId}).then(
-        //             //     () => {});
-        //             // cancel cell execution
-        //             // let execution:vscode.NotebookCellExecution = this._controller.createNotebookCellExecution(cell);
-        //             // let abortCtl = new AbortController();
-        //             // abortCtl.abort();
-        //             // execution.replaceOutput(
-        //             //     new vscode.NotebookCellOutput([
-        //             //         vscode.NotebookCellOutputItem.error({
-        //             //             name: 'error', 
-        //             //             message: "aborted"})
-        //             //     ]));
-        //             // execution.end(false, Date.now());
-        //             // cell.
-        //         }
-        //     } else {
-        //     }
-        // }
     }
     _doExecution(cell) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -100,8 +77,6 @@ class WolframScriptController {
                 let abortCtl = new abort_controller_1.default();
                 execution.token.onCancellationRequested(() => {
                     abortCtl.abort();
-                    // client.wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
-                    //     () => {});
                     execution.replaceOutput(new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.error({
                             name: 'error',
@@ -111,7 +86,7 @@ class WolframScriptController {
                     execution.end(false, Date.now());
                 });
                 while (!execution.token.isCancellationRequested) {
-                    extension_1.client.wolframKernelClient.sendRequest("runExpression", {
+                    clients_1.wolframKernelClient.sendRequest("runExpression", {
                         expression: cell.document.getText(),
                         line: 0,
                         end: 0

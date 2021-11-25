@@ -7,7 +7,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind } from 'vscode-languageclient';
-import { client } from './extension';
+import { wolframClient } from './clients';
 
 
 
@@ -64,10 +64,10 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (client.wolframClient !== undefined) {
-        client.wolframClient.onReady().then(() => {
+      if (wolframClient !== undefined) {
+        wolframClient.onReady().then(() => {
       
-          client.wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+          wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(
@@ -121,7 +121,7 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
       });
     }
 
-    return client.wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
+    return wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
       return Buffer.from(result);
     });
   }
@@ -162,9 +162,9 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
     }
 
     return new Promise((resolve, reject) => {
-      if (client.wolframClient !== undefined) {
-        client.wolframClient.onReady().then(() => {
-        return client.wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
+      if (wolframClient !== undefined) {
+        wolframClient.onReady().then(() => {
+        return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
           resolve(Buffer.from(result));
         });
       });
@@ -200,10 +200,10 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
         cb(new vscode.NotebookData(this.cells));
         return new vscode.NotebookData(this.cells);
       } 
-      if (client.wolframClient !== undefined) {
-        client.wolframClient.onReady().then(() => {
+      if (wolframClient !== undefined) {
+        wolframClient.onReady().then(() => {
       
-          client.wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
+          wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(

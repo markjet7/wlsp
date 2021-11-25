@@ -12,8 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WolframNotebookController = exports.activate = void 0;
 const abort_controller_1 = require("abort-controller");
 const vscode = require("vscode");
-const clients_1 = require("./clients");
 const fs = require('fs');
+const clients_1 = require("./clients");
 function activate(context) {
     context.subscriptions.push(new WolframNotebookController());
 }

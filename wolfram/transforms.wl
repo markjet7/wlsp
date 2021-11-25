@@ -54,7 +54,7 @@ transforms =.;
 transforms[output_]:=Module[{f}, 
 	f = CreateFile[];
 	If[
-		ByteCount[output] < 1000000,
+		ByteCount[output] < 10000000,
 		WriteString[f, ExportString[output, "HTMLFragment", "GraphicsOutput"->"PNG"]];,
 		WriteString[f, ExportString["Output is too large", "HTMLFragment", "GraphicsOutput"->"PNG"]];
 	];

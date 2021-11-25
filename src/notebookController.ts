@@ -2,8 +2,8 @@
 import AbortController from 'abort-controller';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
-import {wolframClient, wolframKernelClient} from './clients'
 const fs = require('fs')
+import { wolframKernelClient } from './clients';
 
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(new WolframNotebookController());
