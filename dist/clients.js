@@ -9,14 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restartKernel = exports.startLanguageServer = exports.treeDataProvider = exports.scriptController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.stop = exports.restartKernel = exports.startLanguageServer = exports.treeDataProvider = exports.scriptController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = exports.wolframKernel = exports.wolfram = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
 const fp = require('find-free-port');
 const cp = require("child_process");
 const psTree = require('ps-tree');
-const vscode_1 = require("vscode");
 const vscode_languageclient_1 = require("vscode-languageclient");
 const path_1 = require("path");
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -25,6 +24,7 @@ const fs = require('fs');
 const notebook_1 = require("./notebook");
 const notebookController_1 = require("./notebookController");
 const scriptController_1 = require("./scriptController");
+const dataPanel_1 = require("./dataPanel");
 let PORT;
 let kernelPORT;
 // export let wolframClient: LanguageClient;
@@ -37,8 +37,6 @@ let lspPath;
 let kernelPath;
 let context;
 let outputChannel;
-let wolfram;
-let wolframKernel;
 function startLanguageServer(context0, outputChannel0) {
     return __awaiter(this, void 0, void 0, function* () {
         onkernelReady();
@@ -59,8 +57,8 @@ function startLanguageServer(context0, outputChannel0) {
             fp(rndport, rndport + 50).then((freep) => {
                 clientPort = freep[0];
             }).then(() => {
-                load(wolfram, lspPath, clientPort, outputChannel).then((result) => {
-                    wolfram = result;
+                load(exports.wolfram, lspPath, clientPort, outputChannel).then((result) => {
+                    exports.wolfram = result;
                     connect(context, outputChannel, clientPort)
                         .then(([client, disposable]) => {
                         exports.wolframClient = client;
@@ -72,8 +70,8 @@ function startLanguageServer(context0, outputChannel0) {
             return fp(rndport + 51, rndport + 100).then((freep) => {
                 kernelPort = freep[0];
             }).then(() => {
-                load(wolframKernel, kernelPath, kernelPort, outputChannel).then((result) => {
-                    wolframKernel = result;
+                load(exports.wolframKernel, kernelPath, kernelPort, outputChannel).then((result) => {
+                    exports.wolframKernel = result;
                     connect(context, outputChannel, kernelPort)
                         .then(([client, disposable]) => {
                         exports.wolframKernelClient = client;
@@ -111,9 +109,9 @@ function restartKernel() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log("Restarting");
         vscode.window.showInformationMessage("Wolfram is restarting.");
-        stopWolfram(exports.wolframKernelClient, wolframKernel);
-        load(wolframKernel, kernelPath, kernelPort, outputChannel).then((result) => {
-            wolframKernel = result;
+        stopWolfram(exports.wolframKernelClient, exports.wolframKernel);
+        load(exports.wolframKernel, kernelPath, kernelPort, outputChannel).then((result) => {
+            exports.wolframKernel = result;
             connect(context, outputChannel, kernelPort)
                 .then(([client, disposable]) => {
                 exports.wolframKernelClient = client;
@@ -125,9 +123,10 @@ function restartKernel() {
 }
 exports.restartKernel = restartKernel;
 function stop() {
-    stopWolfram(exports.wolframClient, wolfram);
-    stopWolfram(exports.wolframKernelClient, wolframKernel);
+    stopWolfram(exports.wolframClient, exports.wolfram);
+    stopWolfram(exports.wolframKernelClient, exports.wolframKernel);
 }
+exports.stop = stop;
 function onclientReady() {
     if (exports.wolframClient !== undefined) {
         exports.wolframClient.onReady().then(() => {
@@ -166,6 +165,7 @@ function onkernelReady() {
             vscode.commands.registerCommand('wolfram.createFile', createFile);
             vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
             vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
+            vscode.commands.registerCommand('wolfram.showOutput', showOutput);
             context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', exports.notebookSerializer));
             context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', exports.scriptserializer));
             context.subscriptions.push(exports.notebookcontroller);
@@ -257,7 +257,7 @@ function updateResults(e, result, print) {
     updateOutputPanel();
 }
 let outputPanel;
-function showOutput(context) {
+function showOutput() {
     var _a;
     let outputColumn = (_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.viewColumn;
     //let out = "<table id='outputs'>";
@@ -280,7 +280,7 @@ function showOutput(context) {
                 enableScripts: true,
                 retainContextWhenHidden: true
             });
-            outputPanel.webview.html = getOutputContent(outputPanel.webview, context.extensionUri);
+            outputPanel.webview.html = dataPanel_1.getOutputContent(outputPanel.webview, context.extensionUri);
             outputPanel.webview.onDidReceiveMessage(message => {
                 runExpression(message.text, 0, 100);
                 return;
@@ -562,197 +562,6 @@ let kill = function (pid) {
         callback();
     }
 };
-function getOutputContent(webview, extensionUri) {
-    let timeNow = new Date().getTime();
-    const toolkitUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js",
-    ]);
-    const codiconsUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "codicons",
-        "dist",
-        "codicon.css",
-    ]);
-    const mainUri = getUri(webview, extensionUri, ["media", "main.js"]);
-    const styleUri = getUri(webview, extensionUri, ["media", "style.css"]);
-    let result = `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <script type="module" src="${toolkitUri}"></script>
-        <!-- <script type="module" src="${mainUri}"></script>
-        <link rel="stylesheet" href="${styleUri}"> 
-        <link rel="stylesheet" href="${codiconsUri}"> -->
-        <style type="text/css">
-
-            body{
-                overflow:scroll;
-                height:100%;
-            }
-
-            body.vscode-light {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            body.vscode-dark {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            body.vscode-high-contrast {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            #expression {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-                width: 100%;
-            }
-
-            #vars {
-                height:38vh;
-                position:relative;
-                top:0;
-                border-bottom: solid white 1px;
-                overflow-y:scroll;
-                width:93vw;
-            }
-
-            .outer {
-                height:100vh;
-                display:block;
-                position:relative;
-                top:0;
-            }
-            #scratch {
-                position:fixed;
-                width:95vw;
-                bottom:0px;
-                height: 8vh;
-            }
-
-            #scratch textarea {
-                border-radius:2px;
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            #outputs {
-                display: block;
-                height: 50vh;
-                position: fixed;
-                top: 40vh;
-                overflow-y: scroll;
-            }
-
-            #result {
-                border-bottom: var(--vscode-editor-foreground) 2px solid;
-                margin-top: 5px;
-                padding: 5px;
-                display: block;
-                margin:0px;
-                width:93vw;
-                /* height:48vh; */
-                overflow:scroll;
-            }
-
-            #result img{
-                max-width: 100%;
-                max-height: 90%;
-                /* margin: 0; */
-                /* min-height: 200px; */
-                width: auto;
-                margin-left: auto;
-                margin-right: auto;
-                display: block;
-                height: auto;
-            }
-
-
-        </style>
-        <meta charset="UTF-8">
-
-        <!-- <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/> -->
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Wolfram Output</title>
-        <script>
-            const vscode = acquireVsCodeApi();
-            function scrollToBottom() {
-                // window.scrollTo(0,document.body.scrollHeight);
-
-                var color = '';
-                var fontFamily = '';
-                var fontSize = '';
-                var theme = '';
-                var fontWeight = '';
-                try {
-                    computedStyle = window.getComputedStyle(document.body);
-                    color = computedStyle.color + '';
-                    backgroundColor = computedStyle.backgroundColor + '';
-                    fontFamily = computedStyle.fontFamily;
-                    fontSize = computedStyle.fontSize;
-                    fontWeight = computedStyle.fontWeight;
-                    theme = document.body.className;
-                } catch(ex) { }
-            }
-
-        function run(input) {
-            if(event.key === 'Enter') {
-                if(event.shiftKey) {
-                    vscode.postMessage({
-                        text: input.value
-                    });
-                    input.value = ""
-                }
-            }
-        }
-
-        window.addEventListener('message', event => {
-            const message = event.data;
-
-            const outputDiv = document.getElementById('outputs');
-            outputDiv.innerHTML = message.text;
-
-            outputDiv.scrollTop = outputDiv.scrollHeight;
-
-            const varT = document.getElementById('varTable');
-            varT.innerHTML = message.vars;
-        })
-        </script>
-    </head>
-    <body onload="scrollToBottom()">
-        <div class="outer">
-            <div id="vars">
-            <vscode-data-grid generate-header="none" aria-label="Basic" id="varTable">
-                <vscode-data-grid-row row-type="header">
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
-                </vscode-data-grid-row>
-            </vscode-data-grid>
-            </div>
-            <div class="inner" id='outputs'>
-            </div>
-            <div id="scratch">
-                <vscode-text-area id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></vscode-text-area>
-            </div> 
-        </div>
-    </body>
-    </html>`;
-    return result;
-}
-function getUri(webview, extensionUri, pathList) {
-    return webview.asWebviewUri(vscode_1.Uri.joinPath(extensionUri, ...pathList));
-}
 function runInWolfram(print = false) {
     if (exports.wolframKernelClient === undefined) {
         vscode.window.showWarningMessage("Wolfram kernel is not running. Please wait or start the kernel first.");

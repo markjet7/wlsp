@@ -17,7 +17,8 @@ const fs = require('fs')
 let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let context:vscode.ExtensionContext;
 
-import {startLanguageServer, } from './clients'
+import {startLanguageServer, stop} from './clients'
+import { kill } from 'process';
 // let kernelStatusBar:vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 
 // function retry(fn:any, retries=5, err=null) {
@@ -46,8 +47,10 @@ function willsaveDocument(event:vscode.TextDocumentWillSaveEvent) {
     }
 }
 
-
-
+export function deactivate() {
+    console.log("deactivate");
+    stop()// if (kernelStatusBar) {
+}
 
 
 

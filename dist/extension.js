@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activate = void 0;
+exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const fp = require('find-free-port');
@@ -30,4 +30,9 @@ function willsaveDocument(event) {
     if (event.document.fileName.endsWith(".nb")) {
     }
 }
+function deactivate() {
+    console.log("deactivate");
+    clients_1.stop(); // if (kernelStatusBar) {
+}
+exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map
