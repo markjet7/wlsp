@@ -251,6 +251,7 @@ function updateVarTable(vars: any) {
     updateOutputPanel();
 }
 
+let runningLines:any[] = []
 function moveCursor(params: any) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let outputPosition = new vscode.Position(params["position"]["line"], params["position"]["character"]);
@@ -267,18 +268,58 @@ function moveCursor(params: any) {
             "range": range,
             "renderOptions": {
                 "after": {
-                    "contentText": "...",
+                    "contentText": ".",
                     "color": "foreground",
                     "margin": "20px"
                 }
             }
         }
-        updateDecorations([d]);
+
+        runningLines.push(d);
+        // updateDecorations([d]);
+        setTimeout(updateRunningLines, 500);
     }
 }
+
+function updateRunningLines() {
+    let editor = vscode.window.activeTextEditor;
+    if (wolframBusyQ === true) {
+        runningLines.forEach((d:vscode.DecorationOptions) => {
+            let r = d["renderOptions"];
+            let a = r?["after"] : {"contentText": ""};
+            let c = a?["contentText"] : "";
+            if (d["renderOptions"]!["after"]!["contentText"] == ".") {
+                d["renderOptions"]!["after"]!["contentText"] = ".."
+            } else 
+            if (d["renderOptions"]!["after"]!["contentText"] == "..") {
+                d["renderOptions"]!["after"]!["contentText"] = "..."
+            } else 
+            if (d["renderOptions"]!["after"]!["contentText"] == "...") {
+                d["renderOptions"]!["after"]!["contentText"] = "...."
+            } else 
+            if (d["renderOptions"]!["after"]!["contentText"] == "....") {
+                d["renderOptions"]!["after"]!["contentText"] = "....."
+            } else 
+            if (d["renderOptions"]!["after"]!["contentText"] == ".....") {
+                d["renderOptions"]!["after"]!["contentText"] = "."
+            }
+        })
+        editor?.setDecorations(runningDecorationType, runningLines)
+
+        setTimeout(updateRunningLines, 500)
+    } else {
+        editor?.setDecorations(runningDecorationType, [])
+    }
+}
+
+
 function onRunInWolfram(result: any) {
     let editors: vscode.TextEditor[] = vscode.window.visibleTextEditors;
     let e = editors.filter((e) => { return e.document.uri.path === result["document"]["path"] })[0];
+
+    if (runningLines.length > 0) {
+        runningLines.pop()
+    }
 
     if (e.document.uri.scheme == 'vscode-notebook-cell') {
 
@@ -366,19 +407,33 @@ function runExpression(expression: string, line: 0, end: 100) {
     wolframKernelClient.sendRequest("runExpression", { print: false, expression: expression, textDocument: e?.document, line: line, end: end }).then((result: any) => { });
 }
 
+let wolframBusyQ:boolean = false;
 function wolframBusy(params: any) {
     if (params.busy === true) {
         //kernelStatusBar.color = "red";
+        wolframBusyQ = true;
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
         wolframStatusBar.show();
     } else {
         //kernelStatusBar.color = "yellow";
+        wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
     }
 }
 
 let workspaceDecorations: { [index: string]: vscode.DecorationOptions[]; } = {};
+function clearDecorations() {
+    let editor = vscode.window.activeTextEditor;
+    let uri = editor?.document.uri.toString();
+
+    if (uri && uri in workspaceDecorations) {
+        workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
+
+        editor?.setDecorations(variableDecorationType,{ } as vscode.DecorationOptions[])
+    }
+}
+
 function updateDecorations(decorations: vscode.DecorationOptions[]) {
     let editor = vscode.window.activeTextEditor;
     if (editor?.document.uri.scheme === 'file' || editor?.document.uri.scheme === 'untitled') {
@@ -389,7 +444,9 @@ function updateDecorations(decorations: vscode.DecorationOptions[]) {
         }
         let uri = editor.document.uri.toString();
 
-        workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
+        if (!(uri in workspaceDecorations)) {
+            workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
+        }
         decorations.forEach(d => {
             workspaceDecorations[uri][d.range.start.line] = d;
         });
@@ -416,13 +473,17 @@ let variableDecorationType: vscode.TextEditorDecorationType = vscode.window.crea
     }
 );
 
-function clearDecorations() {
-    let e = vscode.window.activeTextEditor;
-
-    workspaceDecorations = {};
-    e?.setDecorations(variableDecorationType, []);
-}
-
+let runningDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
+    {
+        backgroundColor: 'none',
+        light: {
+            color: new vscode.ThemeColor("foreground")
+        },
+        dark: {
+            color: new vscode.ThemeColor("foreground")
+        }
+    }
+);
 
 function updateOutputPanel() {
     let out = "";
@@ -596,7 +657,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
             if (process.platform === "win32") {
                 wolfram = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', path, port.toString(), path], { detached: false });
             } else {
-                wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: true });
+                wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: false });
             }
 
 
@@ -609,11 +670,13 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 
             wolfram.on('SIGPIPE', (data) => {
                 console.log("SIGPIPE");
+                stopWolfram([], wolfram)
             });
 
 
             wolfram.stdout?.on('error', (data) => {
                 console.log("STDOUT Error" + data.toString());
+                stopWolfram([], wolfram)
             });
 
             wolfram.stdout?.on('data', (data) => {
@@ -769,6 +832,7 @@ function didOpenTextDocument(document: vscode.TextDocument): void {
 
 function didSaveTextDocument(event: vscode.TextDocument): void {
     treeDataProvider.refresh();
+    clearDecorations();
     didOpenTextDocument(event);
     return;
 }

@@ -173,7 +173,7 @@ function getOutputContent(webview, extensionUri) {
     <body onload="scrollToBottom()">
         <div class="outer">
             <div id="vars">
-            <vscode-data-grid generate-header="none" aria-label="Basic" id="varTable">
+            <vscode-data-grid generate-header="sticky" aria-label="With Sticky Header" id="varTable">
                 <vscode-data-grid-row row-type="header">
                     <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
                     <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>

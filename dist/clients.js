@@ -204,6 +204,7 @@ function updateVarTable(vars) {
     }
     updateOutputPanel();
 }
+let runningLines = [];
 function moveCursor(params) {
     let e = vscode.window.activeTextEditor;
     let outputPosition = new vscode.Position(params["position"]["line"], params["position"]["character"]);
@@ -224,12 +225,47 @@ function moveCursor(params) {
                 }
             }
         };
-        updateDecorations([d]);
+        runningLines.push(d);
+        // updateDecorations([d]);
+        setTimeout(updateRunningLines, 500);
+    }
+}
+function updateRunningLines() {
+    let editor = vscode.window.activeTextEditor;
+    if (wolframBusyQ === true) {
+        runningLines.forEach((d) => {
+            let r = d["renderOptions"];
+            let a = r ? ["after"] : { "contentText": "" };
+            let c = a ? ["contentText"] : "";
+            if (d["renderOptions"]["after"]["contentText"] == ".") {
+                d["renderOptions"]["after"]["contentText"] = "..";
+            }
+            else if (d["renderOptions"]["after"]["contentText"] == "..") {
+                d["renderOptions"]["after"]["contentText"] = "...";
+            }
+            else if (d["renderOptions"]["after"]["contentText"] == "...") {
+                d["renderOptions"]["after"]["contentText"] = "....";
+            }
+            else if (d["renderOptions"]["after"]["contentText"] == "....") {
+                d["renderOptions"]["after"]["contentText"] = ".....";
+            }
+            else if (d["renderOptions"]["after"]["contentText"] == ".....") {
+                d["renderOptions"]["after"]["contentText"] = ".";
+            }
+        });
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, runningLines);
+        setTimeout(updateRunningLines, 500);
+    }
+    else {
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, []);
     }
 }
 function onRunInWolfram(result) {
     let editors = vscode.window.visibleTextEditors;
     let e = editors.filter((e) => { return e.document.uri.path === result["document"]["path"]; })[0];
+    if (runningLines.length > 0) {
+        runningLines.pop();
+    }
     if (e.document.uri.scheme == 'vscode-notebook-cell') {
     }
     else {
@@ -296,19 +332,30 @@ function runExpression(expression, line, end) {
     let e = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
     exports.wolframKernelClient.sendRequest("runExpression", { print: false, expression: expression, textDocument: e === null || e === void 0 ? void 0 : e.document, line: line, end: end }).then((result) => { });
 }
+let wolframBusyQ = false;
 function wolframBusy(params) {
     if (params.busy === true) {
         //kernelStatusBar.color = "red";
+        wolframBusyQ = true;
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
         wolframStatusBar.show();
     }
     else {
         //kernelStatusBar.color = "yellow";
+        wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
     }
 }
 let workspaceDecorations = {};
+function clearDecorations() {
+    let editor = vscode.window.activeTextEditor;
+    let uri = editor === null || editor === void 0 ? void 0 : editor.document.uri.toString();
+    if (uri && uri in workspaceDecorations) {
+        workspaceDecorations[uri] = {};
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, {});
+    }
+}
 function updateDecorations(decorations) {
     let editor = vscode.window.activeTextEditor;
     if ((editor === null || editor === void 0 ? void 0 : editor.document.uri.scheme) === 'file' || (editor === null || editor === void 0 ? void 0 : editor.document.uri.scheme) === 'untitled') {
@@ -317,7 +364,9 @@ function updateDecorations(decorations) {
             return;
         }
         let uri = editor.document.uri.toString();
-        workspaceDecorations[uri] = {};
+        if (!(uri in workspaceDecorations)) {
+            workspaceDecorations[uri] = {};
+        }
         decorations.forEach(d => {
             workspaceDecorations[uri][d.range.start.line] = d;
         });
@@ -337,11 +386,15 @@ let variableDecorationType = vscode.window.createTextEditorDecorationType({
         color: new vscode.ThemeColor("foreground")
     }
 });
-function clearDecorations() {
-    let e = vscode.window.activeTextEditor;
-    workspaceDecorations = {};
-    e === null || e === void 0 ? void 0 : e.setDecorations(variableDecorationType, []);
-}
+let runningDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'none',
+    light: {
+        color: new vscode.ThemeColor("foreground")
+    },
+    dark: {
+        color: new vscode.ThemeColor("foreground")
+    }
+});
 function updateOutputPanel() {
     let out = "";
     for (let i = 0; i < printResults.length; i++) {
@@ -491,7 +544,7 @@ function load(wolfram, path, port, outputChannel) {
                     wolfram = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', path, port.toString(), path], { detached: false });
                 }
                 else {
-                    wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: true });
+                    wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: false });
                 }
                 if (wolfram.pid != undefined) {
                     console.log("Launching wolframscript: " + wolfram.pid.toString());
@@ -501,9 +554,11 @@ function load(wolfram, path, port, outputChannel) {
                 }
                 wolfram.on('SIGPIPE', (data) => {
                     console.log("SIGPIPE");
+                    stopWolfram([], wolfram);
                 });
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.on('error', (data) => {
                     console.log("STDOUT Error" + data.toString());
+                    stopWolfram([], wolfram);
                 });
                 (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString());
@@ -639,6 +694,7 @@ function didOpenTextDocument(document) {
 }
 function didSaveTextDocument(event) {
     exports.treeDataProvider.refresh();
+    clearDecorations();
     didOpenTextDocument(event);
     return;
 }
