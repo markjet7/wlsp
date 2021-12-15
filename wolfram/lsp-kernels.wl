@@ -81,7 +81,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	end = range["end"];
 	code = getcode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-	sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>];
+	(* sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>]; *)
 ];
 
 handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
@@ -115,7 +115,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-	sendResponse[<|"method" -> "moveCursor", "params" -> <|"position" -> newPosition |>|>];
+	(* sendResponse[<|"method" -> "moveCursor", "params" -> <|"position" -> newPosition |>|>]; *)
 
 	(* Add the evaluation to the evaluation queue *)
 
@@ -127,7 +127,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
 		If[string=="", 
-			{result, successQ} = {"", True},
+			{result, successQ} = {"-", True},
 			{result, successQ} = evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->1000]};	
 		];
 

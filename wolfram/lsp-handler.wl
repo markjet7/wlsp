@@ -400,8 +400,14 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 
-				response = <|"id"->json["id"],"result"->result|>;
-				sendResponse[response];  
+					response = <|"id"->json["id"],"result"->result|>;
+					sendResponse[response];  
+
+
+
+					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
+					sendResponse[response];
+
 			),
 				response = <|"id"->json["id"],"result"->{}|>;
 				sendResponse[response];  

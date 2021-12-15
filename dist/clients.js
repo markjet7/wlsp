@@ -130,6 +130,7 @@ exports.stop = stop;
 function onclientReady() {
     if (exports.wolframClient !== undefined) {
         exports.wolframClient.onReady().then(() => {
+            exports.wolframClient.onNotification("updatePositions", updatePositions);
             exports.wolframClient.sendRequest("wolframVersion").then((result) => {
                 wolframVersionText = result["output"];
                 wolframStatusBar.text = result["output"];
@@ -176,6 +177,15 @@ function onkernelReady() {
         setTimeout(onkernelReady, 2000);
     }
 }
+let movePositions = {};
+function updatePositions(params) {
+    params["result"].forEach((e) => {
+        if (!(e["location"]["uri"] in movePositions)) {
+            movePositions[e["location"]["uri"]] = {};
+        }
+        movePositions[e["location"]["uri"]][e["name"]] = e;
+    });
+}
 function runToLine() {
     let e = vscode.window.activeTextEditor;
     let sel = e === null || e === void 0 ? void 0 : e.selection.active;
@@ -205,12 +215,43 @@ function updateVarTable(vars) {
     updateOutputPanel();
 }
 let runningLines = [];
+function moveCursor2(position) {
+    let e = vscode.window.activeTextEditor;
+    let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
+    if (!(uri === undefined)) {
+        let newPos = Object.values(movePositions[uri]).filter((p) => {
+            let r = p["location"]["range"];
+            return ((r.start.line <= position.line) && (r.end.line >= position.line));
+        });
+        if (newPos.length > 0) {
+            let outputPosition = new vscode.Position(newPos[0]["location"]["range"]["end"]["line"], newPos[0]["location"]["range"]["end"]["character"]);
+            if (e) {
+                e.selection = new vscode.Selection(outputPosition, outputPosition);
+                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            }
+            decorateRunningLine(outputPosition);
+        }
+        else {
+            if (e) {
+                let outputPosition = new vscode.Position(position["line"] + 1, 0);
+                e.selection = new vscode.Selection(position, outputPosition);
+                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            }
+        }
+    }
+}
 function moveCursor(params) {
     let e = vscode.window.activeTextEditor;
     let outputPosition = new vscode.Position(params["position"]["line"], params["position"]["character"]);
     if (e) {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+    }
+    decorateRunningLine(outputPosition);
+}
+function decorateRunningLine(outputPosition) {
+    let e = vscode.window.activeTextEditor;
+    if (e) {
         let decorationLine = e.document.lineAt(outputPosition.line - 1);
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character);
         let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character);
@@ -219,7 +260,7 @@ function moveCursor(params) {
             "range": range,
             "renderOptions": {
                 "after": {
-                    "contentText": "...",
+                    "contentText": ".",
                     "color": "foreground",
                     "margin": "20px"
                 }
@@ -227,7 +268,6 @@ function moveCursor(params) {
         };
         runningLines.push(d);
         // updateDecorations([d]);
-        setTimeout(updateRunningLines, 500);
     }
 }
 function updateRunningLines() {
@@ -645,6 +685,8 @@ function runInWolfram(print = false) {
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         exports.wolframKernelClient.onReady().then(ready => {
             exports.wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: print });
+            moveCursor2(sel.end);
+            setTimeout(updateRunningLines, 750);
         });
     }
 }

@@ -158,11 +158,14 @@ export function stop() {
 function onclientReady() {
     if (wolframClient !== undefined) {
         wolframClient.onReady().then(() => {
+            wolframClient.onNotification("updatePositions", updatePositions);
+
             wolframClient.sendRequest("wolframVersion").then((result:any) => {
                 wolframVersionText = result["output"];
                 wolframStatusBar.text = result["output"];
             })
         })
+
     } else {
         setTimeout(onclientReady, 2000);
     }
@@ -213,6 +216,16 @@ function onkernelReady() {
     }
 }
 
+let movePositions:{[index:string]: any} = {};
+function updatePositions(params:any) {
+    params["result"].forEach((e:any) => {
+        if (!(e["location"]["uri"] in movePositions)) {
+            movePositions[e["location"]["uri"]] = {}
+        } 
+        movePositions[e["location"]["uri"]][e["name"]] = e;
+    });
+}
+
 function runToLine() {
     let e: any = vscode.window.activeTextEditor;
     let sel: vscode.Position = e?.selection.active;
@@ -252,12 +265,45 @@ function updateVarTable(vars: any) {
 }
 
 let runningLines:any[] = []
+function moveCursor2(position:vscode.Position) {
+    let e = vscode.window.activeTextEditor;
+    let uri = e?.document.uri.toString();
+    if (!(uri === undefined)){
+        let newPos:any[] = Object.values(movePositions[uri]).filter((p:any) => {
+            let r = p["location"]["range"] as vscode.Range;
+            return ((r.start.line <= position.line) && (r.end.line >= position.line))
+        })
+
+        if (newPos.length > 0) {
+            let outputPosition = new vscode.Position(newPos[0]["location"]["range"]["end"]["line"]+1, 0) ;
+            if (e) {
+                e.selection = new vscode.Selection(outputPosition, outputPosition);
+                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            }
+            decorateRunningLine(outputPosition);
+        } else {
+            if (e) {
+                let outputPosition = new vscode.Position(position["line"]+1, 0);
+                e.selection = new vscode.Selection(position, outputPosition);
+                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            }
+        }
+    }
+}
+
 function moveCursor(params: any) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let outputPosition = new vscode.Position(params["position"]["line"], params["position"]["character"]);
     if (e) {
         e.selection = new vscode.Selection(outputPosition, outputPosition);
         e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+    }
+    decorateRunningLine(outputPosition);
+}
+
+function decorateRunningLine(outputPosition:vscode.Position) {
+    let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+    if (e) {
 
         let decorationLine = e.document.lineAt(outputPosition.line - 1)
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
@@ -277,7 +323,6 @@ function moveCursor(params: any) {
 
         runningLines.push(d);
         // updateDecorations([d]);
-        setTimeout(updateRunningLines, 500);
     }
 }
 
@@ -773,6 +818,9 @@ function runInWolfram(print = false) {
 
         wolframKernelClient.onReady().then(ready => {
             wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e?.document, print: print })
+
+            moveCursor2(sel.end)
+            setTimeout(updateRunningLines, 750);
         });
     }
 }
