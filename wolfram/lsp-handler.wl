@@ -214,31 +214,36 @@ getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
-handle["textDocument/codeLens", json_]:=Module[{src, lens, lines, sections, sectionPattern},
+handle["textDocument/codeLens", json_]:=Module[{src, breaks, lens, lines, sections, sectionPattern},
 	If[
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];,
 
 		Check[
-			src = documents[json["params","textDocument","uri"]];
-			sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
+			(* sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
 			lines = StringCount[Check[StringTake[src, {1, #[[2]]}], ""], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
-			sections = BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1];
+			sections = BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]; 
+			sections = StringPosition[src, "\n\n\n", Overlaps -> False];*)
+
+			src = ImportString[documents[json["params","textDocument","uri"]],"Lines"];
+			breaks=BlockMap[Identity,Join[{1},SequencePosition[src,{"","","", Except[""]}][[All,2]], {Length@src}+1],2,1];
+			sections =Map[StringRiffle[src[[#[[1]];;#[[2]]-1]],"\n"]&,breaks];
 			If[sections != {},
 				lens = Table[
 					<|
 						"range" -> 
 							<|
-								"start" -><|"line"->l[[1]], "character"->0|>,
-								"end" -><|"line"->l[[1]], "character"->20|>
+								"start" -><|"line"->l[[1, 1]]-1, "character"->0|>,
+								"end" -><|"line"->l[[1, 1]]-1, "character"->20|>
 							|>,
 						"command" -> <|
-							"title" -> "Run " <> ToString@StringCount[StringTrim[l[[2]], WhitespaceCharacter...~~sectionPattern], "\n"] <> " lines",
+							"title" -> "Run " <> ToString[StringCount[StringTrim@l[[2]], "\n"] +1] <> " line(s)",
 							"command" -> "wolfram.runExpression",
-							"arguments" -> {StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]}
+							"arguments" -> {l[[2]], l[[1, 1]]+StringCount[StringTrim@l[[2]], "\n"], l[[1, 2]]}
+							(*{StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]} *)
 						|>
 					|>,
-					{l, Transpose[{Most@lines, sections}]}
+					{l, Transpose[{breaks, sections}]}
 				];,
 				lens = {}
 			];
@@ -510,7 +515,7 @@ extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usa
 extractUsage[a_Null]:="";
 
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
-	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( x:ToString@symbol):>"\n"<>x]
+	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( n:ToString@symbol):>"\n"<>n]
 ];
 
 handle["clearTasks", json_]:=Module[{},

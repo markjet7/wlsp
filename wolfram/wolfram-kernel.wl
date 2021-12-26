@@ -85,32 +85,36 @@ socketHandler[{stop_, state_}]:=Module[{},
 handlerWait = 0.2;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
+connected2 = False;
 socketHandler[state_]:=Module[{},
 	Check[
+		If[And[connected2 === True, Head@client2 != SocketObject],
+			Quit[]
+		];
+
 		If[Head@client2 === SocketObject,
-			If[SocketReadyQ@client2,
+			Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+			Pause[handlerWait];
+			TimeConstrained[
 				Replace[
-					Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 					handleMessageList[ReadMessages[client2], state],
 					{
 						{"Continue", state2_} :> state2,
 						{stop_, state2_} :> {stop, state2},
 						{} :> state
 					}
-				],
-				(* Close[client2]; *)
-				Pause[handlerWait];
-				(* flush[client2]; *)
-				"Continue"
+				], 60*15,
+				Quit[]
 			],
 			client2=First[KERNELSERVER["ConnectedClients"], {}];
 			If[Head[client2] === SocketObject, 
 				Print["Kernel client connected: " <> ToString@client2];
+				connected2 = True;
+				"Continue"
 			];
 			Pause[0.5];
 			"Continue"
 		],
-
 		"Continue"
 	]
 ] // socketHandler;

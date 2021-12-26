@@ -142,6 +142,10 @@
                 "title": "Wolfram: Convert text to section"
             },
             {
+                "command": "wolfram.listKernels",
+                "title": "Wolfram: List kernels"
+            },
+            {
                 "command": "wolfram.textFromSection",
                 "title": "Wolfram: Convert section to text"
             }
