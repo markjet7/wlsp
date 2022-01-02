@@ -24,6 +24,7 @@ const fs = require('fs');
 const notebook_1 = require("./notebook");
 const notebookController_1 = require("./notebookController");
 const scriptController_1 = require("./scriptController");
+const treeDataProvider_1 = require("./treeDataProvider");
 const dataPanel_1 = require("./dataPanel");
 let PORT;
 let kernelPORT;
@@ -74,6 +75,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.window.onDidChangeWindowState(didChangeWindowState);
+        vscode.workspace.onDidChangeConfiguration(updateConfiguration);
         return new Promise((resolve) => {
             lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
             fp(rndport, rndport + 50).then((freep) => {
@@ -102,6 +104,10 @@ function add_subscriptions(context) {
         console.log(exports.wolframKernel);
     });
     context.subscriptions.push(disposable);
+}
+function updateConfiguration() {
+    if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
+    }
 }
 function startModule(context, outputChannel) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -170,6 +176,8 @@ function onclientReady() {
             exports.wolframClient.sendRequest("wolframVersion").then((result) => {
                 wolframVersionText = result["output"];
                 wolframStatusBar.text = result["output"];
+            }).then(() => {
+                exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();
             });
         });
     }
@@ -297,6 +305,7 @@ function decorateRunningLine(outputPosition) {
     }
 }
 function updateRunningLines() {
+    return;
     let editor = vscode.window.activeTextEditor;
     if (wolframBusyQ === true) {
         runningLines.forEach((d) => {
@@ -421,7 +430,7 @@ function clearDecorations() {
     let uri = editor === null || editor === void 0 ? void 0 : editor.document.uri.toString();
     if (uri && uri in workspaceDecorations) {
         workspaceDecorations[uri] = {};
-        editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, {});
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
     }
 }
 function updateDecorations(decorations) {
@@ -435,6 +444,7 @@ function updateDecorations(decorations) {
         if (!(uri in workspaceDecorations)) {
             workspaceDecorations[uri] = {};
         }
+        workspaceDecorations[uri] = {};
         decorations.forEach(d => {
             workspaceDecorations[uri][d.range.start.line] = d;
         });
@@ -747,29 +757,42 @@ function printInWolfram(print = true) {
 function didChangeTextDocument(event) {
     // didOpenTextDocument(event.document);
     // remove old decorations
+    console.log(event.document.uri.toString());
     let editor = vscode.window.activeTextEditor;
-    let decorations = [];
-    if (editor == null) {
+    if (event.document.uri.toString() !== (editor === null || editor === void 0 ? void 0 : editor.document.uri.toString())) {
         return;
     }
-    else {
-        let position = editor === null || editor === void 0 ? void 0 : editor.selection.active;
-        let uri = editor.document.uri.toString();
-        if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
-            workspaceDecorations = {};
-        }
-        if (workspaceDecorations[uri] !== undefined) {
-            Object.keys(workspaceDecorations[uri]).forEach((line) => {
-                if (parseInt(line, 10) < position.line) {
-                    decorations.push(workspaceDecorations[uri][line]);
-                }
-                else {
-                    delete workspaceDecorations[uri][line];
-                }
+    clearDecorations();
+    if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
+        let doc = editor === null || editor === void 0 ? void 0 : editor.document;
+        if (exports.wolframKernelClient) {
+            exports.wolframKernelClient.onReady().then(() => {
+                exports.wolframKernelClient.sendNotification("runDocumentLive", doc === null || doc === void 0 ? void 0 : doc.uri);
             });
         }
-        editor.setDecorations(variableDecorationType, decorations);
+        return;
     }
+    // let decorations: vscode.DecorationOptions[] = [];
+    // if (editor == null) {
+    //     return
+    // } else {
+    //     let position = editor?.selection.active;
+    //     let uri = editor.document.uri.toString();
+    //     if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
+    //         workspaceDecorations = {};
+    //     }
+    //     if (workspaceDecorations[uri] !== undefined) {
+    //         Object.keys(workspaceDecorations[uri]).forEach((line: any) => {
+    //             if (parseInt(line, 10) < position.line) {
+    //                 decorations.push(workspaceDecorations[uri][line]);
+    //             } else {
+    //                 delete workspaceDecorations[uri][line];
+    //             }
+    //         });
+    //     }
+    //     // live document
+    //     editor.setDecorations(variableDecorationType, decorations);
+    // }
     return;
 }
 function didOpenTextDocument(document) {

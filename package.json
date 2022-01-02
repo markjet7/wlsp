@@ -3,7 +3,7 @@
     "displayName": "wlsp",
     "description": "wolfram-language-server",
     "publisher": "markmba",
-    "enableProposedApi": false,
+    "enabledProposedApi": false,
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
@@ -20,6 +20,16 @@
         "onStartupFinished"
     ],
     "contributes": {
+        "configuration": {
+            "title": "WLSP",
+            "properties": {
+                "wlsp.liveDocument": {
+                    "type": "boolean",
+                    "description": "Enable live document",
+                    "default": false
+                }
+            }  
+        },
         "notebooks": [
             {
                 "id": "wolfram-script",

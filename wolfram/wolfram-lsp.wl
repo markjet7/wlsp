@@ -4,10 +4,6 @@ BeginPackage["wolframLSP`"];
 
 
 
-(* ::Package:: *)
-(**)
-
-
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},

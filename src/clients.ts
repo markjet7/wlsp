@@ -99,7 +99,8 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
     vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
     vscode.window.onDidChangeWindowState(didChangeWindowState);
-
+    vscode.workspace.onDidChangeConfiguration(updateConfiguration);
+    
     return new Promise((resolve) => {
         lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
         fp(rndport, rndport + 50).then((freep: any) => {
@@ -130,6 +131,11 @@ function add_subscriptions(context:vscode.ExtensionContext) {
     })
 
     context.subscriptions.push(disposable)
+}
+
+function updateConfiguration(){
+    if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
+    } 
 }
 
 async function startModule(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel): Promise<void> {
@@ -206,11 +212,14 @@ export function stop() {
 function onclientReady() {
     if (wolframClient !== undefined) {
         wolframClient.onReady().then(() => {
+
             wolframClient.onNotification("updatePositions", updatePositions);
 
             wolframClient.sendRequest("wolframVersion").then((result:any) => {
                 wolframVersionText = result["output"];
                 wolframStatusBar.text = result["output"];
+            }).then(() => {
+                treeDataProvider = new workspaceSymbolProvider()
             })
         })
 
@@ -358,6 +367,7 @@ function decorateRunningLine(outputPosition:vscode.Position) {
 }
 
 function updateRunningLines() {
+    return
     let editor = vscode.window.activeTextEditor;
     if (wolframBusyQ === true) {
         runningLines.forEach((d:vscode.DecorationOptions) => {
@@ -509,7 +519,7 @@ function clearDecorations() {
     if (uri && uri in workspaceDecorations) {
         workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
 
-        editor?.setDecorations(variableDecorationType,{ } as vscode.DecorationOptions[])
+        editor?.setDecorations(variableDecorationType,[] )
     }
 }
 
@@ -525,7 +535,9 @@ function updateDecorations(decorations: vscode.DecorationOptions[]) {
 
         if (!(uri in workspaceDecorations)) {
             workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
-        }
+        } 
+        workspaceDecorations[uri] = {} as vscode.DecorationOptions[];
+
         decorations.forEach(d => {
             workspaceDecorations[uri][d.range.start.line] = d;
         });
@@ -891,31 +903,52 @@ function printInWolfram(print = true) {
 function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
     // didOpenTextDocument(event.document);
     // remove old decorations
+    console.log(event.document.uri.toString())
+
     let editor = vscode.window.activeTextEditor;
-    let decorations: vscode.DecorationOptions[] = [];
-    if (editor == null) {
+
+    if (event.document.uri.toString() !== editor?.document.uri.toString()) {
         return
-    } else {
-        let position = editor?.selection.active;
-
-        let uri = editor.document.uri.toString();
-
-        if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
-            workspaceDecorations = {};
-        }
-
-        if (workspaceDecorations[uri] !== undefined) {
-            Object.keys(workspaceDecorations[uri]).forEach((line: any) => {
-                if (parseInt(line, 10) < position.line) {
-                    decorations.push(workspaceDecorations[uri][line]);
-                } else {
-                    delete workspaceDecorations[uri][line];
-                }
-            });
-        }
-
-        editor.setDecorations(variableDecorationType, decorations);
     }
+
+    clearDecorations();
+    if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
+        let doc = editor?.document;
+
+        if (wolframKernelClient) {        
+            wolframKernelClient.onReady().then(() => {
+                wolframKernelClient.sendNotification("runDocumentLive", doc?.uri)
+            })
+        } 
+        return
+    }  
+
+    // let decorations: vscode.DecorationOptions[] = [];
+    // if (editor == null) {
+    //     return
+    // } else {
+    //     let position = editor?.selection.active;
+
+    //     let uri = editor.document.uri.toString();
+
+    //     if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
+    //         workspaceDecorations = {};
+    //     }
+
+    //     if (workspaceDecorations[uri] !== undefined) {
+    //         Object.keys(workspaceDecorations[uri]).forEach((line: any) => {
+    //             if (parseInt(line, 10) < position.line) {
+    //                 decorations.push(workspaceDecorations[uri][line]);
+    //             } else {
+    //                 delete workspaceDecorations[uri][line];
+    //             }
+    //         });
+    //     }
+
+    //     // live document
+    //     editor.setDecorations(variableDecorationType, decorations);
+       
+    // }
     return;
 }
 

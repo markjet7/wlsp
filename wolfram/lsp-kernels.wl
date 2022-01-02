@@ -122,7 +122,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	evaluateFromQueue[code, json, newPosition]
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f, maxWidth},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f, maxWidth},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
 		string = StringTrim[code2["code"]];
@@ -236,6 +236,61 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id, decorationLine, deco
 		sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>];
 ];
 
+handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
+	uri = json["params", "external"];
+	ast = CodeParse[documents[uri]];
+
+	functions = Cases[ast,CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___,<|Source->s_,"Definitions"->{_}|>]:>s,{1,4}];
+
+	locations = (#-1)&/@functions;
+	sendResponse[<|"id"-> json["id"], "result" -> <| "ranges" -> locations |>|>]
+];
+
+handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
+	uri = json["params", "external"];
+	ast = CodeParse[documents[uri], SourceConvention -> "LineColumn"];
+
+	lineColumns = Cases[ast,
+		CallNode[_,___,<|Source->s_, ___|>]:>s,
+		{1,3}];
+
+	ast = CodeParse[documents[uri], SourceConvention -> "SourceCharacterIndex"];
+
+	charIndeces = Cases[ast,
+		CallNode[_,___,<|Source->s_, ___|>]:>s,
+		{1,3}];
+
+	locations = (#-1)&/@charIndeces;
+
+	functions = (StringTake[documents[uri], #]&/@charIndeces);
+
+	evaluations = (EvaluationData[ToExpression@#])&/@functions;
+
+	decorations = Table[<|
+					e = values[[1]];
+					r = values[[2]];
+					"range" -> 	<|
+						"start"-><|"line"->r[[2,1]]-1,"character"->r[[2,2]]+10|>,
+						"end"-><|"line"->r[[2,1]]-1,"character"->r[[2,2]]+110|>
+					|>,
+					"renderOptions"-><|
+						"after" -> <|
+							"contentText" -> ToString[(ToString[e["Result"] /. Null -> "-"]) <> " (" <> ToString[e["AbsoluteTiming"]] <> " s)", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
+							(*"backgroundColor" -> "background",*)
+							"borderRadius" -> "5px",
+							"borderSpacing" -> "20px",
+							"border" -> "foreground",
+							"color" -> "foreground",
+							"margin"-> "20px",
+							"rangeBehavior" -> 4
+						|>,
+						"rangeBehavior" -> 4
+					|>
+				|>, {values, Transpose@{evaluations, lineColumns}}];
+	sendResponse[<|
+		"method" -> "updateDecorations", "params"-> {decorations}
+	|>]
+];
 
 handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code, response},
 	expr = json["params", "expression"];
@@ -284,18 +339,18 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{res, r, r2, f}, 
+evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f}, 
 			
 		res = EvaluationData[ToExpression[string]];
 		If[
 			res["Success"], 
 			(
 				(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Success: " <> ToString[res["Result"], InputForm, TotalWidth->1000] |> |>]; *)
-				r = {res["Result"], True};
+				r1 = {res["Result"], True};
 				If[Length@r > 2,
-					r = {Most[r], True}
+					r1 = {Most[r1], True}
 				];
-				r
+				r1
 			),
 
 			(
@@ -420,7 +475,7 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
-getFunctionAtPosition[src_, position_]:=Module[{symbol, p, r},
+getFunctionAtPosition[src_, position_]:=Module[{symbol, p},
 	p = position;
 	symbol = "";
 	NestWhile[
