@@ -128,7 +128,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 		string = StringTrim[code2["code"]];
 		If[string=="", 
 			{result, successQ} = {"-", True},
-			{result, successQ} = evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->1000]};	
+			{result, successQ} = evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->8192]};	
 		];
 
 		If[
@@ -137,7 +137,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 			output = result;
 		];
 		
-		maxWidth = 2000;
+		maxWidth = 8192;
 		response = If[KeyMemberQ[json, "id"],
 			<|
 			"id" -> json["id"],
@@ -181,7 +181,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 					|>,
 					"renderOptions"-><|
 						"after" -> <|
-							"contentText" -> ToString[result /. Null ->"-", InputForm, TotalWidth->120, CharacterEncoding -> "ASCII"],
+							"contentText" -> ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
 							(*"backgroundColor" -> "background",*)
 							"borderRadius" -> "5px",
 							"borderSpacing" -> "20px",
@@ -226,7 +226,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 		
 		symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
 
-		values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->500]}, {v, symbols}];
+		values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->8192]}, {v, symbols}];
 		result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
 		sendResponse[
 			result
@@ -359,7 +359,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 				f[msg_,val__]:=StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, General]]][val];
 				Table[
 					r2 = ToString@ReleaseHold[r //. Message :> f];
-					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->500, CharacterEncoding->"ASCII"] |> |>];,
+					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->8192, CharacterEncoding->"ASCII"] |> |>];,
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
 								 
 				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
