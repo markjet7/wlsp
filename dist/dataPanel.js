@@ -60,7 +60,7 @@ function getOutputContent(webview, extensionUri) {
             }
 
             #vars {
-                height:38vh;
+                height:98vh;
                 position:relative;
                 top:0;
                 border-bottom: solid white 1px;
@@ -86,38 +86,6 @@ function getOutputContent(webview, extensionUri) {
                 color: var(--vscode-editor-foreground);
                 font: var(--vscode-editor-font-family);
             }
-
-            #outputs {
-                display: block;
-                height: 50vh;
-                position: fixed;
-                top: 40vh;
-                overflow-y: scroll;
-            }
-
-            #result {
-                border-bottom: var(--vscode-editor-foreground) 2px solid;
-                margin-top: 5px;
-                padding: 5px;
-                display: block;
-                margin:0px;
-                width:93vw;
-                /* height:48vh; */
-                overflow:scroll;
-            }
-
-            #result img{
-                max-width: 100%;
-                max-height: 90%;
-                /* margin: 0; */
-                /* min-height: 200px; */
-                width: auto;
-                margin-left: auto;
-                margin-right: auto;
-                display: block;
-                height: auto;
-            }
-
 
         </style>
         <meta charset="UTF-8">
@@ -160,11 +128,6 @@ function getOutputContent(webview, extensionUri) {
         window.addEventListener('message', event => {
             const message = event.data;
 
-            const outputDiv = document.getElementById('outputs');
-            outputDiv.innerHTML = message.text;
-
-            outputDiv.scrollTop = outputDiv.scrollHeight;
-
             const varT = document.getElementById('varTable');
             varT.innerHTML = message.vars;
         })
@@ -180,11 +143,9 @@ function getOutputContent(webview, extensionUri) {
                 </vscode-data-grid-row>
             </vscode-data-grid>
             </div>
-            <div class="inner" id='outputs'>
-            </div>
-            <div id="scratch">
+            <!--- <div id="scratch">
                 <vscode-text-area id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></vscode-text-area>
-            </div> 
+            </div> -->
         </div>
     </body>
     </html>`;

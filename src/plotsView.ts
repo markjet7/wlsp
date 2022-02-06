@@ -2,7 +2,7 @@
 
 import { Uri, Webview } from "vscode";
 
-export function getOutputContent(webview: any, extensionUri: Uri) {
+export function showPlotPanel(webview: any, extensionUri: Uri) {
     let timeNow = new Date().getTime();
     const toolkitUri = getUri(webview, extensionUri, [
         "node_modules",
@@ -61,33 +61,36 @@ export function getOutputContent(webview: any, extensionUri: Uri) {
                 width: 100%;
             }
 
-            #vars {
-                height:98vh;
-                position:relative;
-                top:0;
-                border-bottom: solid white 1px;
-                overflow-y:scroll;
-                width:93vw;
-            }
-
             .outer {
                 height:100vh;
                 display:block;
                 position:relative;
                 top:0;
             }
-            #scratch {
-                position:fixed;
+
+            #result {
+                border-bottom: var(--vscode-editor-foreground) 2px solid;
+                margin-top: 5px;
+                padding: 5px;
+                display: block;
+                margin:0px;
                 width:95vw;
-                bottom:0px;
-                height: 8vh;
+                max-height:98vh; 
+                overflow:scroll;
             }
 
-            #scratch textarea {
-                border-radius:2px;
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
+            #result img{
+                max-width: 100%;
+                max-height:98vh; 
+                /* margin: 0; */
+                /* min-height: 200px; */
+                width: auto;
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+                height: auto;
             }
+
 
         </style>
         <meta charset="UTF-8">
@@ -130,24 +133,18 @@ export function getOutputContent(webview: any, extensionUri: Uri) {
         window.addEventListener('message', event => {
             const message = event.data;
 
-            const varT = document.getElementById('varTable');
-            varT.innerHTML = message.vars;
+            const outputDiv = document.getElementById('outputs');
+            outputDiv.innerHTML = message.text;
+
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+
         })
         </script>
     </head>
     <body onload="scrollToBottom()">
         <div class="outer">
-            <div id="vars">
-            <vscode-data-grid generate-header="sticky" aria-label="With Sticky Header" id="varTable">
-                <vscode-data-grid-row row-type="header">
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
-                </vscode-data-grid-row>
-            </vscode-data-grid>
+            <div class="inner" id='outputs'>
             </div>
-            <!--- <div id="scratch">
-                <vscode-text-area id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></vscode-text-area>
-            </div> -->
         </div>
     </body>
     </html>`;

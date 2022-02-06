@@ -89,9 +89,9 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 connected = False;
 socketHandler[state_]:=Module[{},
 	Check[
-		If[And[connected === True, Head@client != SocketObject],
+		(*If[And[connected === True, Head@client != SocketObject],
 			Quit[]
-		];
+		];*)
 
 		If[Head@client === SocketObject,
 			Get[DirectoryName[path] <> "lsp-handler.wl"]; 

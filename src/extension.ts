@@ -30,7 +30,6 @@ import { kill } from 'process';
 //     });
 // }
 
-
 export function activate(context0: vscode.ExtensionContext){
     context = context0;
     let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));

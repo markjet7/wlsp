@@ -2,7 +2,7 @@
 import AbortController from 'abort-controller';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
-import {wolframKernelClient, restartKernel, onkernelReady} from './clients'
+import {wolframKernelClient, restart, onkernelReady} from './clients'
 const fs = require('fs')
 
 export function activate(context: vscode.ExtensionContext) {
@@ -66,7 +66,7 @@ export class WolframScriptController {
             }
         })
         this.executions = [];
-        restartKernel(this._context);
+        restart();
         // for (let cell of notebook.getCells()) {
         //     this._doInterrupt(cell);
         // }
@@ -81,10 +81,9 @@ export class WolframScriptController {
     private async _doExecution(cell: vscode.NotebookCell): Promise<void> {
 
         if(!wolframKernelClient) {
-            restartKernel(this._context).then(() => {
-                onkernelReady().then(() => {
-                    this._doExecution(cell)
-                })
+            restart()
+            onkernelReady().then(() => {
+                this._doExecution(cell)
             })
         } else {
             let execution: vscode.NotebookCellExecution = this._controller.createNotebookCellExecution(cell);
@@ -110,14 +109,15 @@ export class WolframScriptController {
                             {
                                 expression: cell.document.getText(),
                                 line: 0,
-                                end: 0
+                                end: 0,
+                                textDocument: cell.document
                             }
                         ).then((result:any) => {
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
                                     vscode.NotebookCellOutputItem.text(
                                             // result["output"],
-                                            fs.readFileSync(result["output"], 'utf8'),
+                                            fs.readFileSync(result["output"].toString().substring(1,result["output"].toString().length-1), 'utf8'),
                                             'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"]),
                                     vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')

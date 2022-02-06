@@ -88,9 +88,9 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 connected2 = False;
 socketHandler[state_]:=Module[{},
 	Check[
-		If[And[connected2 === True, Head@client2 != SocketObject],
+		(*If[And[connected2 === True, Head@client2 != SocketObject],
 			Quit[]
-		];
+		];*)
 
 		If[Head@client2 === SocketObject,
 			Get[DirectoryName[path] <> "lsp-kernels.wl"]; 

@@ -27,14 +27,18 @@ ServerCapabilities=<|
 
 handle["initialize",json_]:=Module[{response, response2},
 	Print["Initializing Kernel"];
-	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
-	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
+	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
+	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
     CONTINUE = True;
     
 	documents = <||>;
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
-	Print["Installing Java"];
-	InstallJava[];
+	Print["Starting Java"];
+	Needs["JLink`"];
+	(* 
+	<<JavaGraphics`;
+	ReinstallJava[CommandLine -> "java", JVMArguments -> "-Xmx4096m"];
+	 *)
 	evalnumber = 1;
 ];
 
@@ -122,9 +126,12 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	evaluateFromQueue[code, json, newPosition]
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, decorationChar, string, output, successQ, decoration, response4, result, values, f, maxWidth},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth},
 		$busy = True;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
+		Unprotect[NotebookDirectory];
+		NotebookDirectory[] = FileNameJoin[
+			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
 		string = StringTrim[code2["code"]];
 		If[string=="", 
 			{result, successQ} = {"-", True},
@@ -142,13 +149,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 			<|
 			"id" -> json["id"],
 			"result" -> <|
-				"output"-> ToString[output], 
+				"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
 				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
 				"print" -> False,
 				"document" ->  ""|>,
 			"params"-><|
-				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
+				"input" -> string,
 				"output"-> ToString[output], 
 				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
@@ -158,7 +165,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 			<|
 			"method"->"onRunInWolfram", 
 			"params"-><|
-				"input" -> StringReplace["In[" <> ToString@evalnumber <> "]: " <> string, WhitespaceCharacter.. -> ""],
+				"input" -> string,
 				"output"-> ToString[output], 
 				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
@@ -347,7 +354,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 			(
 				(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Success: " <> ToString[res["Result"], InputForm, TotalWidth->1000] |> |>]; *)
 				r1 = {res["Result"], True};
-				If[Length@r > 2,
+				If[Length@r1 > 2,
 					r1 = {Most[r1], True}
 				];
 				r1
@@ -364,8 +371,13 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 								 
 				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
 				{
-					Check[StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], 
-					List@res["Result"]], "\n"], "Errors"], True}
+					(* Check[
+						StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], 
+						List@res["Result"]], "\n"], 
+					"Errors"],  *)
+					res["Result"],
+					True
+				}
 			)
 		]
 ];

@@ -60,7 +60,7 @@ class WolframScriptController {
             }
         });
         this.executions = [];
-        clients_1.restartKernel(this._context);
+        clients_1.restart();
         // for (let cell of notebook.getCells()) {
         //     this._doInterrupt(cell);
         // }
@@ -70,10 +70,9 @@ class WolframScriptController {
     _doExecution(cell) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!clients_1.wolframKernelClient) {
-                clients_1.restartKernel(this._context).then(() => {
-                    clients_1.onkernelReady().then(() => {
-                        this._doExecution(cell);
-                    });
+                clients_1.restart();
+                clients_1.onkernelReady().then(() => {
+                    this._doExecution(cell);
                 });
             }
             else {
@@ -98,13 +97,14 @@ class WolframScriptController {
                         clients_1.wolframKernelClient.sendRequest("runExpression", {
                             expression: cell.document.getText(),
                             line: 0,
-                            end: 0
+                            end: 0,
+                            textDocument: cell.document
                         }).then((result) => {
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
                                     vscode.NotebookCellOutputItem.text(
                                     // result["output"],
-                                    fs.readFileSync(result["output"], 'utf8'), 'text/html'),
+                                    fs.readFileSync(result["output"].toString().substring(1, result["output"].toString().length - 1), 'utf8'), 'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"]),
                                     vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                                 ])
