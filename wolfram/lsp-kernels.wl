@@ -40,6 +40,9 @@ handle["initialize",json_]:=Module[{response, response2},
 	ReinstallJava[CommandLine -> "java", JVMArguments -> "-Xmx4096m"];
 	 *)
 	evalnumber = 1;
+
+	workspaceDecorations = Check[Import[DirectoryName[path]<>"/decorations.json","RawJSON"], <||>];
+	workspaceDecorations = <||>;
 ];
 
 
@@ -180,7 +183,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 		decorationChar = code2["range"][[2, 2]];
 
 		If[!json["params", "print"],
-			decoration = List[
+			decoration = 
 				<|
 					"range" -> 	<|
 						"start"-><|"line"->decorationLine-1,"character"->decorationChar+10|>,
@@ -199,10 +202,19 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 						|>,
 						"rangeBehavior" -> 4
 					|>
-				|>
-			];
+				|>;
 
-			response4 = <| "method" -> "updateDecorations", "params"-> {decoration}|>;
+			workspaceDecorations[
+				json["params", "textDocument", "uri", "external"]
+			] = If[
+				KeyMemberQ[workspaceDecorations, json["params", "textDocument", "uri", "external"]],
+				Append[workspaceDecorations[json["params", "textDocument", "uri", "external"]], <|ToString@decoration["range"]-> decoration|>],
+				<|ToString@decoration["range"]-> decoration|>
+			];
+			
+			Export[DirectoryName[path]<>"/decorations.json", workspaceDecorations];
+
+			response4 = <| "method" -> "updateDecorations", "params"-> {}|>;
 			sendResponse[response4];	
 		];
 
@@ -323,11 +335,33 @@ handle["textDocument/didOpen", json_]:=Module[{},
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 ];
 
-handle["textDocument/didChange", json_]:=Module[{},
+handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition},
 	(* oldLength = StringLength[documents[json["params","textDocument","uri"]]];
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
+	
+	oldtext = documents[json["params","textDocument","uri"]];
+
+	newtext = FoldWhile[StringJoin, 
+		StringSplit[json["params","contentChanges"][[1]]["text"], "\n"->"\n", All],
+		StringContainsQ[oldtext, #1]&];
+
+	changedPosition = Length@StringSplit[newtext, "\n"];
+
+	If[KeyMemberQ[workspaceDecorations, json["params","textDocument"]["uri"]],
+
+		oldKeys = Select[
+			Keys@workspaceDecorations[json["params","textDocument"]["uri"]], 
+			ToExpression[#][start][line] >= changedPosition-1 &];
+
+		workspaceDecorations[json["params","textDocument"]["uri"]] = KeyDrop[
+			workspaceDecorations[json["params","textDocument"]["uri"]],
+			oldKeys
+		];
+		Export[DirectoryName[path]<>"/decorations.json", workspaceDecorations];
+	];
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
+	sendResponse[<|"method"->"updateDecorations", "params" -> {}|>];
 ];
 
 handle["textDocument/didSave", json_]:=Module[{},

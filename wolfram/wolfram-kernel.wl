@@ -1,7 +1,7 @@
 BeginPackage["WolframKernel`"]
 (* Kernel Start Section *)
 
-
+$HistoryLength = 100;
 (* ::Package:: *)
 $MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
