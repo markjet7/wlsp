@@ -33,7 +33,6 @@ handle["initialize",json_]:=Module[{response, response2},
     
 	documents = <||>;
 	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
-	Print["Starting Java"];
 	Needs["JLink`"];
 	(* 
 	<<JavaGraphics`;
@@ -41,8 +40,9 @@ handle["initialize",json_]:=Module[{response, response2},
 	 *)
 	evalnumber = 1;
 
-	workspaceDecorations = Check[Import[DirectoryName[path]<>"/decorations.json","RawJSON"], <||>];
-	workspaceDecorations = <||>;
+	decorationFile = CreateFile[];
+	symbolListFile = CreateFile[];
+	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
 ];
 
 
@@ -114,6 +114,8 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 ];
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3},
+	start = Now;
+	Print["Running: " <> ToString@start];
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
 	src = documents[json["params","textDocument","uri", "external"]];
@@ -125,20 +127,19 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 	(* sendResponse[<|"method" -> "moveCursor", "params" -> <|"position" -> newPosition |>|>]; *)
 
 	(* Add the evaluation to the evaluation queue *)
-
 	evaluateFromQueue[code, json, newPosition]
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth, time},
 		$busy = True;
-		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>];
+		(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 		Unprotect[NotebookDirectory];
 		NotebookDirectory[] = FileNameJoin[
 			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
 		string = StringTrim[code2["code"]];
 		If[string=="", 
-			{result, successQ} = {"-", True},
-			{result, successQ} = evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->8192]};	
+			{0.0, {result, successQ}} = {"-", True},
+			{time, {result, successQ}} = AbsoluteTiming[evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->8192]}];	
 		];
 
 		If[
@@ -165,19 +166,30 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 				"print" -> False,
 				"document" ->  ""|>
 			|>,
+
 			<|
 			"method"->"onRunInWolfram", 
 			"params"-><|
 				"input" -> string,
 				"output"-> ToString[output], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+				"result"-> ToString[result, InputForm, TotalWidth -> maxWidth], 
 				"position"-> newPosition,
 				"print" -> json["params", "print"],
 				"document" ->  json["params", "textDocument"]["uri"]|>
 			|>
 		];
 		evalnumber = evalnumber + 1;
-		sendResponse[response];
+
+		file = CreateFile[];
+		WriteString[file, ExportString[response, "JSON"]];
+		If[KeyMemberQ[json, "id"],
+			sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>];,
+			sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>];
+		];
+		Close[file];
+
+
+		Print["Done: " <> ToString[Now-start]];
 
 		decorationLine = code2["range"][[2, 1]];
 		decorationChar = code2["range"][[2, 2]];
@@ -191,7 +203,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 					|>,
 					"renderOptions"-><|
 						"after" -> <|
-							"contentText" -> ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
+							"contentText" -> ToString@time <> "s: " <> ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
 							(*"backgroundColor" -> "background",*)
 							"borderRadius" -> "5px",
 							"borderSpacing" -> "20px",
@@ -212,13 +224,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 				<|ToString@decoration["range"]-> decoration|>
 			];
 			
-			Export[DirectoryName[path]<>"/decorations.json", workspaceDecorations];
+			Export[decorationFile, workspaceDecorations, "JSON"];
 
-			response4 = <| "method" -> "updateDecorations", "params"-> {}|>;
+			response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 			sendResponse[response4];	
 		];
 
-		src = string; (* documents[json["params", "textDocument", "uri", "external"]]; *)
+		(* documents[json["params", "textDocument", "uri", "external"]]; *)
 		ast = CodeConcreteParse[string];
 
 
@@ -252,7 +264,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{id,  decorationLine, dec
 		]; 
 
 		$busy = False;
-		sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>];
+		(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
 ];
 
 handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
@@ -335,7 +347,7 @@ handle["textDocument/didOpen", json_]:=Module[{},
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 ];
 
-handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition},
+handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition, newLength},
 	(* oldLength = StringLength[documents[json["params","textDocument","uri"]]];
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
@@ -358,7 +370,7 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 			workspaceDecorations[json["params","textDocument"]["uri"]],
 			oldKeys
 		];
-		Export[DirectoryName[path]<>"/decorations.json", workspaceDecorations];
+		Export[decorationFile, workspaceDecorations, "JSON"];
 	];
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
 	sendResponse[<|"method"->"updateDecorations", "params" -> {}|>];
@@ -366,6 +378,73 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 
 handle["textDocument/didSave", json_]:=Module[{},
 	validate[];
+];
+
+
+
+symbolToTreeItem[symbol_]:=Module[{},
+	<|
+		"name" -> ToString[symbol, InputForm, TotalWidth -> 150],
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> ToString[symbol, InputForm, TotalWidth -> 550],
+		"children" -> {}
+	|>
+];
+
+symbolToTreeItem[symbol_List]:=Module[{},
+	Map[<|
+		"name" -> ToString[#, InputForm, TotalWidth -> 150],
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> ToString[#, InputForm, TotalWidth -> 550],
+		"children" -> symbolToTreeItem@#
+	|> &, Take[symbol, UpTo@10]]
+];
+
+symbolToTreeItem[symbol_Association]:=Module[{},
+	KeyValueMap[
+	<|
+		"name" -> ToString[#1, InputForm, TotalWidth -> 150] <> " -> " <> ToString[#2, InputForm, TotalWidth -> 150],
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> ToString[#1, InputForm, TotalWidth -> 150] <> " -> " <> ToString[#2, InputForm, TotalWidth -> 150],
+		"children" -> symbolToTreeItem@#2
+	|> &, Take[symbol, UpTo@10]]
+];
+
+handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file, name},
+	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
+	sources = Quiet@Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
+	
+	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[<|"Scheme" -> "file", "Path" -> Join[{""}, FileNameSplit[#2]]|>]] &, {sources, files}], #1["name"] &];
+	
+	result1 =Map[
+		Function[{symbol},
+			name = ToString@ToExpression[symbol["name"]];
+			<|
+				"name" -> symbol["name"] <> ": " <> If[symbol["name"] === name, symbol["definition"], StringTake[name, UpTo@150]],
+				"kind" -> "Variable"(* symbol["kind"] *),
+				"definition" -> symbol["definition"],
+				"location" -> <|
+					"uri" -> symbol["uri"],
+					"range" -> <|
+						"start" -> <|"line" -> symbol["loc"][[1, 1]]-1, "character"->symbol["loc"][[1,2]]-1|>,
+						"end" -> <|"line" -> symbol["loc"][[2, 1]]-1, "character"->symbol["loc"][[2,2]]-1|>
+					|>
+				|>,
+				"children" -> If[MemberQ[{List, Association}, Head[ToExpression[symbol["name"]]]], symbolToTreeItem@ToExpression[symbol["name"]], {}]
+			|>
+		],
+		symbols
+	];
+
+	(*
+
+	*)
+
+	Export[symbolListFile, <|"workspace" -> result1|>, "JSON"];
+
+	response = <|"id"->json["id"],"result"-> ToString@symbolListFile|>;
+	
+	sendResponse[response];
 ];
 
 handle["abort", json_]:=Module[{},
@@ -583,4 +662,25 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 	{headerBytes,jsonBytes}
 
 ];
+
+getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
+	ast = CodeParse[src];
+
+	f[node_]:=Module[{astStr,name,loc,kind,rhs},
+		astStr=ToFullFormString[node[[2,1]]];
+		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
+		loc=node[[-1]][Source];
+		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
+		kind=If[Head@rhs == CallNode,
+			rhs[[1,2]],
+			rhs[[2]]
+		];
+		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
+		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind, "uri" -> uri|>];
+
+	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+	symbols
+];
+
+
 EndPackage[]

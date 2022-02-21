@@ -130,7 +130,7 @@ MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 		socketHandler[state]
 	];,
-	8*1024^3
+	16*1024^3
 ];
 
 CloseKernels[];

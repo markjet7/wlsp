@@ -70,6 +70,57 @@ handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
 	workspaceFolders = DeleteDuplicates@DeleteCases[Join[workspaceFolders, added], _?(MemberQ[removed, #] &)];
 ];
 
+handle["builtInList", json_]:=Module[{},
+	If[builtinSymbols === {},
+		builtins = COMPLETIONS[[102;;-2, "label"]];
+		builtinSymbols = Map[
+			Function[{symbol},
+				<|
+					"name" -> symbol,
+					"kind" -> "Variable",
+					"location" -> <|
+						"uri" -> "https://reference.wolfram.com/language/ref/" <> symbol <> ".html"
+					|>
+				|>
+			],
+			builtins
+		]; 
+	];
+
+	file = CreateFile[];
+	WriteString[file, ExportString[<|"builtins" -> builtinSymbols|>, "JSON"]];
+
+	response = <|"id"->json["id"],"result"->ToString@file|>;
+
+	sendResponse[response];
+	Close[file];
+];
+
+symbolToTreeItem[symbol_]:=Module[{},
+	<|
+		"name" -> ToString[symbol, InputForm, TotalWidth -> 150],
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> ToString[symbol, InputForm, TotalWidth -> 550]
+	|>
+];
+
+symbolToTreeItem[symbol_List]:=Module[{},
+	<|
+		"name" -> "List",
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> "{}",
+		"children" -> Map[symbolToTreeItem, symbol]
+	|>
+];
+
+symbolToTreeItem[symbol_Association]:=Module[{},
+	<|
+		"name" -> "Association",
+		"kind" -> "Variable"(* symbol["kind"] *),
+		"definition" -> "<||>",
+		"children" -> Map[symbolToTreeItem, Values@symbol]
+	|>
+];
 
 handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file},
 	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
@@ -90,7 +141,8 @@ handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, resul
 						"start" -> <|"line" -> symbol["loc"][[1, 1]]-1, "character"->symbol["loc"][[1,2]]-1|>,
 						"end" -> <|"line" -> symbol["loc"][[2, 1]]-1, "character"->symbol["loc"][[2,2]]-1|>
 					|>
-				|>
+				|>,
+				"children" -> If[Length[ToExpression[symbol["name"]]] > 1, Map[symbolToTreeItem, ToExpression[symbol["name"]]], {}]
 			|>
 		],
 		symbols
@@ -113,7 +165,7 @@ handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, resul
 	];
 
 	file = CreateFile[];
-	WriteString[file, ExportString[<|"workspace" -> result1, "builtins" -> builtinSymbols|>, "JSON"]];
+	WriteString[file, ExportString[<|"workspace" -> result1|>, "JSON"]];
 
 	response = <|"id"->json["id"],"result"->ToString@file|>;
 
