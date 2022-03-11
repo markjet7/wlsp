@@ -37,11 +37,13 @@ ServerCapabilities=<|
 	"renameProvider" -> <| "prepareProvider" -> True|>,
 	"workspaceSymbolProvider" -> True,
 	"definitionProvider" -> True,
+	"colorProvider" -> True,
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>|>;
 
 handle["initialize",json_]:=Module[{response, builtins},
+	Print["Initializing WLSP"];
     CONTINUE = True;
 
 	labels = COMPLETIONS[[All, "label"]];
@@ -191,6 +193,44 @@ handle["textDocument/references", json_]:=Module[{src, position, str, definition
 	sendResponse[<|"id" -> json["id"], "result"-> result|>];
 ];
 
+handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, result},
+	src = documents[json["params"]["textDocument"]["uri"]];
+	rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
+	colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
+	result = Map[
+		<|
+		"range"-><|
+		"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
+		"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
+		|>,
+		"color"-><|
+		"red"->#[[3,1,1]],
+		"green"->#[[3,1,2]],
+		"blue"->#[[3,1,3]],
+		"alpha"->If[Length@#[[3,1]] >3, #[[3,1,4]] ,1]
+		|>
+		|>&,
+	colors
+	];
+	sendResponse[<|"id"->json["id"], "result" -> result |>];
+];
+
+handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, result},
+	src = documents[json["params"]["textDocument"]["uri"]];
+	color = json["params"]["color"];
+	range = json["params"]["range"];
+
+	result = {<|
+		"label"-> ToString@{color["red"], color["green"], color["blue"], color["alpha"]},
+		"textEdit" -> <|
+			"range" -> range,
+			"newText" -> ToString@RGBColor[color["red"], color["green"], color["blue"], color["alpha"]]
+		|>
+	|>};
+
+	sendResponse[<|"id"->json["id"], "result" -> result |>];
+];
+
 handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
 	src = documents[json["params"]["textDocument"]["uri"]];
 	position = json["params"]["position"];
@@ -213,10 +253,11 @@ handle["wolframVersion", json_]:=Module[{response},
 ];
 
 handle["shutdown", json_]:=(
+	Print["LSP Goodbye"];
 	state = "Stop";
+	sendResponse[<|"id" -> json["id"], "result" -> Null|>];
 	Close[SERVER];
 	Quit[];
-	Abort[];
 	Exit[];
 );
 

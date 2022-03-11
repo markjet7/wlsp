@@ -29,8 +29,8 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
 	}
 
     async getBuiltins() {
-        wolframClient.onReady().then(() => {
-            wolframClient.sendRequest("builtInList").then((file:any) => {
+        wolframClient?.onReady().then(() => {
+            wolframClient?.sendRequest("builtInList").then((file:any) => {
         
             fs.readFile(file, 'utf8', (err:any, data:string) => {
                 let result  = JSON.parse(data.toString());
@@ -69,8 +69,8 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
     }
 
     async getSymbols() {
-        wolframKernelClient.onReady().then(() => {
-            wolframKernelClient.sendRequest("symbolList").then((file:any) => {
+        wolframKernelClient?.onReady().then(() => {
+            wolframKernelClient?.sendRequest("symbolList").then((file:any) => {
         
             fs.readFile(file, 'utf8', (err:any, data:string) => {
                 let result  = JSON.parse(data.toString());

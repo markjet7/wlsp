@@ -53,7 +53,7 @@ class WolframNotebookSerializer {
             }
             if (clients_1.wolframClient !== undefined) {
                 clients_1.wolframClient.onReady().then(() => {
-                    clients_1.wolframClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
+                    clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
                         this.raw = [];
                         result.map((item) => this.getCells(item));
                         this.cells = this.raw.map((item) => {
@@ -95,9 +95,14 @@ class WolframNotebookSerializer {
                     outputs: cell.outputs
                 });
             }
-            return clients_1.wolframClient.sendRequest("serializeNotebook", { contents: contents }).then((result) => {
-                return Buffer.from(result);
-            });
+            if (clients_1.wolframClient) {
+                return clients_1.wolframClient.sendRequest("serializeNotebook", { contents: contents }).then((result) => {
+                    return Buffer.from(result);
+                });
+            }
+            else {
+                return Buffer.from(JSON.stringify(contents));
+            }
         });
     }
 }
@@ -130,7 +135,7 @@ class WolframScriptSerializer {
             return new Promise((resolve, reject) => {
                 if (clients_1.wolframClient !== undefined) {
                     clients_1.wolframClient.onReady().then(() => {
-                        return clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
+                        return clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
                             resolve(Buffer.from(result));
                         });
                     });
@@ -168,7 +173,7 @@ class WolframScriptSerializer {
             }
             if (clients_1.wolframClient !== undefined) {
                 clients_1.wolframClient.onReady().then(() => {
-                    clients_1.wolframClient.sendRequest("deserializeScript", { contents: contents }).then((result) => {
+                    clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeScript", { contents: contents }).then((result) => {
                         this.raw = [];
                         result.map((item) => this.getCells(item));
                         this.cells = this.raw.map((item) => {

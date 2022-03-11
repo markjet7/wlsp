@@ -58,7 +58,7 @@ export class WolframNotebookController  {
             if (execution?.executionOrder) {
                 let executionId = execution.executionOrder;
                 if (executionId && executionId <= this._executionOrder) {
-                    wolframKernelClient.sendRequest("$/cancelRequest", {id: executionId}).then(
+                    wolframKernelClient?.sendRequest("$/cancelRequest", {id: executionId}).then(
                         () => {});
                 }
             } else {
@@ -76,7 +76,7 @@ export class WolframNotebookController  {
             let abortCtl = new AbortController();
             execution.token.onCancellationRequested(() => {
                 abortCtl.abort();
-                wolframKernelClient.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
+                wolframKernelClient?.sendRequest("$/cancelRequest", {id: execution.executionOrder}).then(
                     () => {});
                 execution.replaceOutput(
                     new vscode.NotebookCellOutput([
@@ -87,7 +87,7 @@ export class WolframNotebookController  {
                 execution.end(false, Date.now());
             });
             while(!execution.token.isCancellationRequested){
-                wolframKernelClient.sendRequest("runExpression", 
+                wolframKernelClient?.sendRequest("runExpression", 
                     {
                         expression: cell.document.getText(),
                         line: 0,

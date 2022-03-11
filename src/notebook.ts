@@ -67,7 +67,7 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
       if (wolframClient !== undefined) {
         wolframClient.onReady().then(() => {
       
-          wolframClient.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
+          wolframClient?.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(
@@ -121,9 +121,13 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
       });
     }
 
-    return wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
-      return Buffer.from(result);
-    });
+    if (wolframClient) {
+      return wolframClient.sendRequest("serializeNotebook", {contents: contents}).then((result:any)=>{
+         return Buffer.from(result);
+      });
+    } else {
+      return Buffer.from(JSON.stringify(contents));
+    }
   }
 
   
@@ -164,7 +168,7 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
     return new Promise((resolve, reject) => {
       if (wolframClient !== undefined) {
         wolframClient.onReady().then(() => {
-        return wolframClient.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
+        return wolframClient?.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
           resolve(Buffer.from(result));
         });
       });
@@ -203,7 +207,7 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
       if (wolframClient !== undefined) {
         wolframClient.onReady().then(() => {
       
-          wolframClient.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
+          wolframClient?.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
 
             this.raw = [];
             result.map(

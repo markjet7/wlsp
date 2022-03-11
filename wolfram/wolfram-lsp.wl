@@ -9,9 +9,23 @@ $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, Charact
 sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
-		If[Head[client] === SocketObject, 
-			BinaryWrite[client, # , "Character32"] &/@ byteResponse;
+		Map[
+			Function[{client},
+				If[Head[client] === SocketObject, 
+					BinaryWrite[client, # , "Character32"] &/@ byteResponse;
+				]
+			],
+			SERVER["ConnectedClients"]
 		],
+		Print["response error"];
+		Print[res];
+	]
+];
+
+sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
+	Check[
+		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		BinaryWrite[client, # , "Character32"] &/@ byteResponse;
 		Print["response error"];
 		Print[res];
 	]
@@ -50,25 +64,25 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
-	If[KeyMemberQ[msg, "method"],
-		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			Check[
-				handle[msg["method"],msg], 
-				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
-			],
-
-			Check[handle[msg["method"],msg],
-				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
-			]
-		]		
+	Check[
+		handle[msg["method"],msg],
+		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
 	];
-	If[state === "Continue", {"Continue", state}, {"Stop", state}]
+	{"Continue", state}
 ];
 
+handleMessage[msg_Association, state_, client_]:=Module[{},
+	Check[
+		handle[msg["method"],msg, client],
+		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>, client]
+	];
+	{"Continue", state}
+];
+
+ReadMessages[x_]:={"Continue", "Continue"};
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,{}}, msgs:{__Association}}]:=msgs;
 ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
-
 
 getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
 getContentLength[header_String]:=(header//StringCases[RPCPatterns["ContentLengthRule"]]//Replace[{{len_String}:>ToExpression[len],_:>(Quit[1])}])
@@ -83,49 +97,32 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.1;
+handlerWait = 0.001;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
 socketHandler[state_]:=Module[{},
-	Check[
-		(*If[And[connected === True, Head@client != SocketObject],
-			Quit[]
-		];*)
-
-		If[Head@client === SocketObject,
-			Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-			Get[DirectoryName[path] <> "file-transforms.wl"]; 
-			Pause[handlerWait];
-			Replace[
-				handleMessageList[ReadMessages[client], state],
-				{
-					{"Continue", state2_} :> state2,
-					{stop_, state2_} :> {stop, state2},
-					{} :> state
-				}
-			],
-			client=First[SERVER["ConnectedClients"], {}];
-			If[Head[client] === SocketObject, 
-				Print["LSP client connected: " <> ToString@client];
-				connected = True;
-				"Continue"
-			];
-			Pause[0.5];
-			"Continue"
-		],
-		"Continue"
-	]
+	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+	Get[DirectoryName[path] <> "file-transforms.wl"]; 
+	Pause[handlerWait];
+	(Replace[
+		handleMessageList[ReadMessages[#], state],
+		{
+			{"Continue", state2_} :> state2,
+			{stop_, state2_} :> {stop, state2},
+			{} :> state
+		}
+	] & /@ SERVER["ConnectedClients"])[[-1]]
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];
 Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
-Print[SERVER];
-Print[port];
+Print["LSP ", SERVER, ": ", port];
+Print[Now];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
-		socketHandler[state]
+		socketHandler["Continue"]
 	],
 	8*1024^3
 ];

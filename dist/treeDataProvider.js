@@ -31,8 +31,8 @@ class workspaceSymbolProvider {
     }
     getBuiltins() {
         return __awaiter(this, void 0, void 0, function* () {
-            clients_1.wolframClient.onReady().then(() => {
-                clients_1.wolframClient.sendRequest("builtInList").then((file) => {
+            clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.onReady().then(() => {
+                clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("builtInList").then((file) => {
                     fs.readFile(file, 'utf8', (err, data) => {
                         var _a;
                         let result = JSON.parse(data.toString());
@@ -66,8 +66,8 @@ class workspaceSymbolProvider {
     }
     getSymbols() {
         return __awaiter(this, void 0, void 0, function* () {
-            clients_1.wolframKernelClient.onReady().then(() => {
-                clients_1.wolframKernelClient.sendRequest("symbolList").then((file) => {
+            clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.onReady().then(() => {
+                clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("symbolList").then((file) => {
                     fs.readFile(file, 'utf8', (err, data) => {
                         let result = JSON.parse(data.toString());
                         let files = [];
