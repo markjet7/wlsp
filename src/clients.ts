@@ -115,6 +115,7 @@ export async function restart(): Promise<void> {
     wolframBusyQ = false;
     evaluationQueue = [];    
     
+    wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
     if (wolframClient) {
         stopWolfram(wolframClient, wolfram).then(() => {
             startWLSP()
@@ -131,15 +132,13 @@ export async function restart(): Promise<void> {
         startWLSPKernel()
     }
 
-    // while (context.subscriptions.pop()){}
+    while (context.subscriptions.pop()){}
 
 
     return new Promise((resolve) => {
-        wolframStatusBar.text = "Wolfram ?";
-        wolframStatusBar.show();
-
+        context.subscriptions.push(wolframStatusBar)
         wolframBusyQ = false;
-        wolframStatusBar.text = "Starting Wolfram..."
+        wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram";
         wolframStatusBar.show();
 
         // startWLSP()
@@ -773,11 +772,6 @@ async function startWLSP(): Promise<void> {
 
             socket.setMaxListeners(5);
 
-            // socket.on("data", (data) => {
-                // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
-                // console_outputs.push(data.toString());
-            // });
-
             socket.on('connect', () => {
                 outputChannel.appendLine("Client Socket connected: " )
                 outputChannel.appendLine(new Date().toLocaleTimeString())
@@ -866,7 +860,6 @@ async function startWLSP(): Promise<void> {
     });
 }
 
-
 async function startWLSPKernel(): Promise<void> {
     let timeout: any;
     
@@ -874,7 +867,6 @@ async function startWLSPKernel(): Promise<void> {
         return new Promise(async (resolve, reject) => {
             let socket = new net.Socket();
             
-
             socket.setMaxListeners(5);
 
             // socket.on("data", (data) => {
@@ -934,7 +926,6 @@ async function startWLSPKernel(): Promise<void> {
                 outputChannel.appendLine("Kernel Socket is draining")
             })
 
-
             socket.on("end", () => {
                 outputChannel.appendLine("Kernel Socket end");
             })
@@ -960,7 +951,6 @@ async function startWLSPKernel(): Promise<void> {
             onkernelReady();
         })
 
-
         setTimeout(() => {
             let disposible: vscode.Disposable |undefined;
             disposible = wolframKernelClient?.start();
@@ -981,11 +971,6 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
 
             socket.setMaxListeners(100);
 
-            // socket.on("data", (data) => {
-                // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
-                // console_outputs.push(data.toString());
-            // });
-
             let timeout: any;
             socket.on('connect', () => {
                 console.log("Socket connected: " )
@@ -997,7 +982,6 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
             })
 
             socket.on('error', function (err) {
-                // console.log("Socket Error: " + err.message);
                 timeout = setTimeout(() => {            
                     socket.connect(port, "127.0.0.1", () => {
                         socket.setKeepAlive(false);
@@ -1033,8 +1017,6 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
             socket.connect(port, "127.0.0.1", () => {
                 socket.setKeepAlive(false);
             });
-
-
         })
     };
 
@@ -1055,6 +1037,7 @@ async function connect(context: vscode.ExtensionContext, outputChannel: vscode.O
             disposible = client.start();
             delay(1000);
         }
+
         client.onReady().then(() => {
             console.log("Client ready");
             resolve([client, disposible]);
@@ -1087,21 +1070,19 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
                 resolve(wolfram);
             });
 
-
             if (wolfram.pid != undefined) {
-                console.log("Launching wolframscript: " + wolfram.pid.toString());
+                outputChannel.appendLine("Launching wolframscript: " + wolfram.pid.toString());
             } else {
-                console.log("Launching wolframscript: pid unknown");
+                outputChannel.appendLine("Launching wolframscript: pid unknown");
             }
 
-
             wolfram.on('SIGPIPE', (data) => {
-                console.log("SIGPIPE");
+                outputChannel.appendLine("SIGPIPE");
             });
 
 
             wolfram.stdout?.on('error', (data) => {
-                console.log("STDOUT Error" + data.toString());
+                outputChannel.appendLine("STDOUT Error" + data.toString());
             });
 
             wolfram.stdout?.on('data', (data) => {
@@ -1137,11 +1118,7 @@ function stopWolfram(client: LanguageClient|undefined, client_process: any): Pro
                 console.log("Killing process: " + client_process.pid);
                 cp.exec('kill -9 ' + client_process.pid, function (error: any, stdout: any, stderr: any) {});
                 resolve()
-                // process.kill(-client_process.pid, 'SIGKILL');
-
-                // cp.exec('kill -9 ' + client_process.pid , function (error: any, stdout: any, stderr: any) {})
-                // client_process.kill();
-                // kill(client_process.pid);
+ 
             }
         } catch (e) {
             console.log((e as Error).message)
@@ -1177,11 +1154,6 @@ let kill = function (pid: any) {
         callback();
     }
 };
-
-
-
-
-
 
 function runTextCell(location:vscode.Range) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;

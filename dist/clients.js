@@ -88,6 +88,7 @@ function restart() {
     return __awaiter(this, void 0, void 0, function* () {
         wolframBusyQ = false;
         evaluationQueue = [];
+        wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
         if (exports.wolframClient) {
             stopWolfram(exports.wolframClient, exports.wolfram).then(() => {
                 startWLSP();
@@ -104,12 +105,11 @@ function restart() {
         else {
             startWLSPKernel();
         }
-        // while (context.subscriptions.pop()){}
+        while (context.subscriptions.pop()) { }
         return new Promise((resolve) => {
-            wolframStatusBar.text = "Wolfram ?";
-            wolframStatusBar.show();
+            context.subscriptions.push(wolframStatusBar);
             wolframBusyQ = false;
-            wolframStatusBar.text = "Starting Wolfram...";
+            wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram";
             wolframStatusBar.show();
             // startWLSP()
             // startWLSPKernel()
@@ -649,10 +649,6 @@ function startWLSP() {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 let socket = new net.Socket();
                 socket.setMaxListeners(5);
-                // socket.on("data", (data) => {
-                // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
-                // console_outputs.push(data.toString());
-                // });
                 socket.on('connect', () => {
                     outputChannel.appendLine("Client Socket connected: ");
                     outputChannel.appendLine(new Date().toLocaleTimeString());
@@ -826,10 +822,6 @@ function connect(context, outputChannel, port, type) {
             return new Promise((resolve, reject) => {
                 let socket = new net.Socket();
                 socket.setMaxListeners(100);
-                // socket.on("data", (data) => {
-                // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
-                // console_outputs.push(data.toString());
-                // });
                 let timeout;
                 socket.on('connect', () => {
                     console.log("Socket connected: ");
@@ -840,7 +832,6 @@ function connect(context, outputChannel, port, type) {
                     });
                 });
                 socket.on('error', function (err) {
-                    // console.log("Socket Error: " + err.message);
                     timeout = setTimeout(() => {
                         socket.connect(port, "127.0.0.1", () => {
                             socket.setKeepAlive(false);
@@ -918,16 +909,16 @@ function load(wolfram, path, port, outputChannel) {
                     resolve(wolfram);
                 });
                 if (wolfram.pid != undefined) {
-                    console.log("Launching wolframscript: " + wolfram.pid.toString());
+                    outputChannel.appendLine("Launching wolframscript: " + wolfram.pid.toString());
                 }
                 else {
-                    console.log("Launching wolframscript: pid unknown");
+                    outputChannel.appendLine("Launching wolframscript: pid unknown");
                 }
                 wolfram.on('SIGPIPE', (data) => {
-                    console.log("SIGPIPE");
+                    outputChannel.appendLine("SIGPIPE");
                 });
                 (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('error', (data) => {
-                    console.log("STDOUT Error" + data.toString());
+                    outputChannel.appendLine("STDOUT Error" + data.toString());
                 });
                 (_c = wolfram.stdout) === null || _c === void 0 ? void 0 : _c.on('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString());
@@ -959,10 +950,6 @@ function stopWolfram(client, client_process) {
                 console.log("Killing process: " + client_process.pid);
                 cp.exec('kill -9 ' + client_process.pid, function (error, stdout, stderr) { });
                 resolve();
-                // process.kill(-client_process.pid, 'SIGKILL');
-                // cp.exec('kill -9 ' + client_process.pid , function (error: any, stdout: any, stderr: any) {})
-                // client_process.kill();
-                // kill(client_process.pid);
             }
         }
         catch (e) {

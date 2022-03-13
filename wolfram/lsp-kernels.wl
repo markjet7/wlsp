@@ -25,14 +25,14 @@ ServerCapabilities=<|
 	|>;
 
 
-handle["initialize",json_]:=Module[{response, response2},
+handle["initialize",json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{response, response2},
 	Print["Initializing Kernel"];
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
 	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
     CONTINUE = True;
     
 	documents = <||>;
-	sendResponse@<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
+	sendResponse[<|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>, client];
 	Needs["JLink`"];
 	(* 
 	<<JavaGraphics`;
@@ -46,7 +46,7 @@ handle["initialize",json_]:=Module[{response, response2},
 ];
 
 
-handle["shutdown", json_]:=Module[{},
+handle["shutdown", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{},
 	Print["Stopping Kernels"];
 	state = "Stop";
 	sendResponse[<|"id" -> json["id"], "result" -> Null|>];
@@ -63,7 +63,7 @@ convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[M
 convertBoxExpressionToHTML[Information[BarChart]];
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
-handle["runCell", json_]:=Module[{},
+handle["runCell", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{},
 	uri = json["params", "textDocument"];
 	src = json["params", "source"];
 
@@ -74,14 +74,14 @@ handle["runCell", json_]:=Module[{},
 	|> |>, json, newPosition}];
 ];
 
-handle["$/cancelRequest", json_]:=Module[{response},
+handle["$/cancelRequest", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{response},
 	Print["Aborting Kernel"];
 	TaskRemove[Tasks[]];
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
-handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
+handle["moveCursor", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{range, uri, src, end, code, newPosition},
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
 	src = documents[json["params","textDocument","uri", "external"]];
@@ -91,7 +91,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	(* sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>]; *)
 ];
 
-handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
+handle["runNB", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
 	id = json["id"];
 	html = ImportString[nb2html[ImportString[json["params", "document"], "Notebook"]], {"HTML", "XMLObject"}];
 	inputID = json["params", "input"];
@@ -110,10 +110,10 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 		|>
 	|>;
 
-	evaluateFromQueue[code, json, position];
+	evaluateFromQueue[code, json, position, client];
 ];
 
-handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
+handle["runInWolfram", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
 	Check[
 		start = Now;
 		(*Print["Running: " <> ToString@start];*)
@@ -156,17 +156,17 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 		Export[decorationFile, workspaceDecorations, "JSON"];
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
-		sendResponse[response4];	
+		sendResponse[response4, client];	
 
 		(* Add the evaluation to the evaluation queue *)
-		evaluateFromQueue[code, json, newPosition];
+		evaluateFromQueue[code, json, newPosition, client];
 		,
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
-		sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> "Failed evaluation please try again"|>|>]
+		sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> "Failed evaluation please try again"|>|>, client]
 	];
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth, time},
+evaluateFromQueue[code2_, json_, newPosition_,  client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth, time},
 		$busy = True;
 		(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 		Unprotect[NotebookDirectory];
@@ -219,8 +219,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		file = CreateFile[];
 		WriteString[file, ExportString[response, "JSON"]];
 		If[KeyMemberQ[json, "id"],
-			sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>];,
-			sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>];
+			sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>, client];,
+			sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>, client];
 		];
 		Close[file];
 
@@ -266,7 +266,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			Export[decorationFile, workspaceDecorations, "JSON"];
 
 			response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
-			sendResponse[response4];	
+			sendResponse[response4, client];	
 		];
 
 		(* documents[json["params", "textDocument", "uri", "external"]]; *)
@@ -299,24 +299,24 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->8192]}, {v, symbols}];
 		result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
 		sendResponse[
-			result
+			result, client
 		]; 
 
 		$busy = False;
 		(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
 ];
 
-handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
+handle["getFunctionRanges", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{uri, functions, locations},
 	uri = json["params", "external"];
 	ast = CodeParse[documents[uri]];
 
 	functions = Cases[ast,CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___,<|Source->s_,"Definitions"->{_}|>]:>s,{1,4}];
 
 	locations = (#-1)&/@functions;
-	sendResponse[<|"id"-> json["id"], "result" -> <| "ranges" -> locations |>|>]
+	sendResponse[<|"id"-> json["id"], "result" -> <| "ranges" -> locations |>|>, client]
 ];
 
-handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
+handle["runDocumentLive", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
 	uri = json["params", "external"];
 	ast = CodeParse[documents[uri], SourceConvention -> "LineColumn"];
 
@@ -358,11 +358,12 @@ handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineC
 					|>
 				|>, {values, Transpose@{evaluations, lineColumns}}];
 	sendResponse[<|
-		"method" -> "updateDecorations", "params"-> {decorations}
+		"method" -> "updateDecorations", "params"-> {decorations},
+		client
 	|>]
 ];
 
-handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code, response},
+handle["runExpression", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{expr, range, position, newPosition, code, response},
 	expr = json["params", "expression"];
 	line = json["params", "line"];
 	end = json["params", "end"];
@@ -376,17 +377,17 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	|>;
 	(* Add the evaluation to the evaluation queue *)
 	
-	evaluateFromQueue[code, json, position];
+	evaluateFromQueue[code, json, position, client];
 	
 ];
 
 
-handle["textDocument/didOpen", json_]:=Module[{},
+handle["textDocument/didOpen", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 ];
 
-handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition, newLength},
+handle["textDocument/didChange", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition, newLength},
 	(* oldLength = StringLength[documents[json["params","textDocument","uri"]]];
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
@@ -412,10 +413,10 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 		Export[decorationFile, workspaceDecorations, "JSON"];
 	];
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
-	sendResponse[<|"method"->"updateDecorations", "params" -> ToString@decorationFile|>];
+	sendResponse[<|"method"->"updateDecorations", "params" -> ToString@decorationFile|>, client];
 ];
 
-handle["textDocument/didSave", json_]:=Module[{},
+handle["textDocument/didSave", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{},
 	validate[];
 ];
 
@@ -459,7 +460,7 @@ symbolToTreeItem[symbol_Association]:=Module[{result},
 	result
 ];
 
-handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file, name},
+handle["symbolList", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{response, symbols, builtins, result1, result2, files, file, name},
 	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
 	sources = Quiet@Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
 	
@@ -493,11 +494,11 @@ handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, resul
 	response = <|"id"->json["id"],"result"-> ToString@symbolListFile|>;
 	Export[symbolListFile, <|"workspace" -> result1|>, "JSON"];
 	
-	sendResponse[response];
+	sendResponse[response, client];
 
 ];
 
-handle["abort", json_]:=Module[{},
+handle["abort", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Module[{},
 	(* TaskRemove /@ Tasks[];
 	AbortKernels[];
 	startEvaluators[];

@@ -42,7 +42,7 @@ ServerCapabilities=<|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>|>;
 
-handle["initialize",json_]:=Module[{response, builtins},
+handle["initialize", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{response, builtins},
 	Print["Initializing WLSP"];
     CONTINUE = True;
 
@@ -52,19 +52,20 @@ handle["initialize",json_]:=Module[{response, builtins},
     
 	documents = <||>;
 	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
-	sendResponse[response];	
+	
+	sendResponse[response, client];
 	
 	builtinSymbols = {};
 ];
 
-handle["workspace/symbol", json_]:=Module[{response},
+handle["workspace/symbol", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{response},
 	response = <|"id" -> json["id"], "result"->{}|>;
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
 workspaceFolders = {};
 
-handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
+handle["workspace/didChangeWorkspaceFolders", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{added, removed},
 
 	added = json["params"]["event"]["added"];
 	removed = json["params"]["event"]["removed"];
@@ -72,7 +73,7 @@ handle["workspace/didChangeWorkspaceFolders", json_]:=Module[{added, removed},
 	workspaceFolders = DeleteDuplicates@DeleteCases[Join[workspaceFolders, added], _?(MemberQ[removed, #] &)];
 ];
 
-handle["builtInList", json_]:=Module[{},
+handle["builtInList", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	If[builtinSymbols === {},
 		builtins = COMPLETIONS[[102;;-2, "label"]];
 		builtinSymbols = Map[
@@ -94,7 +95,7 @@ handle["builtInList", json_]:=Module[{},
 
 	response = <|"id"->json["id"],"result"->ToString@file|>;
 
-	sendResponse[response];
+	sendResponse[response, client];
 	Close[file];
 ];
 
@@ -124,7 +125,7 @@ symbolToTreeItem[symbol_Association]:=Module[{},
 	|>
 ];
 
-handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file},
+handle["symbolList", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{response, symbols, builtins, result1, result2, files, file},
 	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
 	sources = Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
 	
@@ -171,11 +172,11 @@ handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, resul
 
 	response = <|"id"->json["id"],"result"->ToString@file|>;
 
-	sendResponse[response];
+	sendResponse[response, client];
 	Close[file];
 ];
 
-handle["textDocument/references", json_]:=Module[{src, position, str, definitions, result},
+handle["textDocument/references", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, position, str, definitions, result},
 	src = documents[json["params"]["textDocument"]["uri"]];
 	position = json["params"]["position"];
 
@@ -190,10 +191,10 @@ handle["textDocument/references", json_]:=Module[{src, position, str, definition
 			"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
 		|>|>, {d, definitions}];
 
-	sendResponse[<|"id" -> json["id"], "result"-> result|>];
+	sendResponse[<|"id" -> json["id"], "result"-> result|>, client];
 ];
 
-handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, result},
+handle["textDocument/documentColor", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, rgbPattern, colors, result},
 	src = documents[json["params"]["textDocument"]["uri"]];
 	rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
 	colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
@@ -212,10 +213,10 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 		|>&,
 	colors
 	];
-	sendResponse[<|"id"->json["id"], "result" -> result |>];
+	sendResponse[<|"id"->json["id"], "result" -> result |>, client];
 ];
 
-handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, result},
+handle["textDocument/colorPresentation", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, color, range, result},
 	src = documents[json["params"]["textDocument"]["uri"]];
 	color = json["params"]["color"];
 	range = json["params"]["range"];
@@ -228,10 +229,10 @@ handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, resu
 		|>
 	|>};
 
-	sendResponse[<|"id"->json["id"], "result" -> result |>];
+	sendResponse[<|"id"->json["id"], "result" -> result |>, client];
 ];
 
-handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
+handle["textDocument/definition", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, position, str, definitions, result},
 	src = documents[json["params"]["textDocument"]["uri"]];
 	position = json["params"]["position"];
 
@@ -244,38 +245,38 @@ handle["textDocument/definition", json_]:=Module[{src, position, str, definition
 			"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
 		|>|>, {d, definitions}];
 	
-	sendResponse[<|"id" -> json["id"], "result"-> result|>];
+	sendResponse[<|"id" -> json["id"], "result"-> result|>, client];
 ];
 
-handle["wolframVersion", json_]:=Module[{response},
+handle["wolframVersion", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{response},
 	response = <|"id" -> json["id"], "result"-> <| "output" -> "$(check) Wolfram " <> ToString[$VersionNumber] |> |>;
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
-handle["shutdown", json_]:=(
+handle["shutdown", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=(
 	Print["LSP Goodbye"];
 	state = "Stop";
-	sendResponse[<|"id" -> json["id"], "result" -> Null|>];
+	sendResponse[<|"id" -> json["id"], "result" -> Null|>, client];
 	Close[SERVER];
 	Quit[];
 	Exit[];
 );
 
 
-handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
+handle["moveCursor", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{range, uri, src, end, code, newPosition},
 	range = json["params", "range"];
 	uri = json["params", "textDocument"]["uri", "external"];
 	src = documents[json["params","textDocument","uri", "external"]];
 	end = range["end"];
 	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition|>|>]; 
+	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition|>|>, client]; 
 ];
 
-handle["textDocument/foldingRange", json_]:=Module[{document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
+handle["textDocument/foldingRange", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
 	If[
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
-		sendResponse[<|"id"->json["id"], "result"->{}|>];,
+		sendResponse[<|"id"->json["id"], "result"->{}|>, client];,
 
 		document = json["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -311,25 +312,25 @@ handle["textDocument/foldingRange", json_]:=Module[{document, src, lines, sectio
 
 
 
-		(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[response, InputForm, TotalWidth->100] |> |>]; *)
+		(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[response, InputForm, TotalWidth->100] |> |>, client]; *)
 
 		(* Print[ToString[src, InputForm, TotalWidth->100]];*)
-		(*sendResponse[response];*)
-		sendResponse[<| "id" -> json["id"], "result"->Join[ranges, functionSections, listSections, assocSections]|>];
+		(*sendResponse[response, client];*)
+		sendResponse[<| "id" -> json["id"], "result"->Join[ranges, functionSections, listSections, assocSections]|>, client];
 	]
 ];
 
 
-handle["codeLens/resolve", json_]:=Print["resolve"]; 
+handle["codeLens/resolve", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Print["resolve"]; 
 
 getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
-handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Module[{src, breaks, lens, lines, sections, sectionPattern},
+handle["textDocument/codeLens", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=handle["textDocument/codeLens", json]=Module[{src, breaks, lens, lines, sections, sectionPattern},
 	If[
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
-		sendResponse[<|"id"->json["id"], "result"->{}|>];,
+		sendResponse[<|"id"->json["id"], "result"->{}|>, client];,
 
 		Check[
 			(* sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
@@ -361,23 +362,23 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 				];,
 				lens = {}
 			];
-			
-			sendResponse[<|"id"->json["id"], "result"->lens|>];,
-		sendResponse[<|"id"->json["id"], "result"->{}|>];]
+			sendResponse[<|"id"->json["id"], "result"->lens|>, client];,
+			sendResponse[<|"id"->json["id"], "result"->{}|>, client]
+		];
 	];
 ];
 
-handle["textDocument/prepareRename", json_]:=Module[{pos, src, str, renames, result, response},
+handle["textDocument/prepareRename", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{pos, src, str, renames, result, response},
 	pos = posFromVSCode@json["params", "position"];
 	src = documents[json["params","textDocument","uri"]];
 	str = getWordAtPosition[src, pos];
 	renames = getWordsPosition[str, src];
 	result = <|"range"-> renames[[1,2]]|>;
 	response = <|"id"->json["id"],"result"->result |>;
-	sendResponse[response]; 
+	sendResponse[response, client]; 
 ]; 
 
-handle["textDocument/rename", json_]:=Module[{pos, src, newName, str, renames, edits, result, response, response3},
+handle["textDocument/rename", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{pos, src, newName, str, renames, edits, result, response, response3},
 	pos = json["params", "position"];
 	src = documents[json["params","textDocument","uri"]];
 	newName = json["params", "newName"];
@@ -389,13 +390,13 @@ handle["textDocument/rename", json_]:=Module[{pos, src, newName, str, renames, e
 	edits = Table[<|"range" -> r[[2]], "newText" -> newName|>, {r, renames}];
 	result = <|"changes" -> <|json["params","textDocument","uri"] -> edits |>|>;
 	response = <|"id"->json["id"],"result"->result |>;
-	sendResponse[response];
+	sendResponse[response, client];
 
 	response3 = <| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[result, InputForm, TotalWidth->100] |> |>;
-	sendResponse[response3];
+	sendResponse[response3, client];
 ];
 
-handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, response}, 
+handle["textDocument/formatting", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, prn, out, lines, result, response}, 
 	src = documents[json["params","textDocument","uri"]];
     prn = Cell[BoxData[#], "Input"] &;
     out = UsingFrontEnd[First[FrontEndExecute[FrontEnd`ExportPacket[prn@CodeFormatter`FullCodeFormat@src, "InputText"]]]];
@@ -410,22 +411,22 @@ handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, 
 	|>};
 
 	response = <|"id"->json["id"],"result"->(result /. Null -> "NA") |>;
-	sendResponse[response];
+	sendResponse[response, client];
 
 ];
 
-handle["textDocument/didOpen",json_]:=Module[{file},
+handle["textDocument/didOpen",json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{file},
 	file = json["params"]["textDocument"]["uri"];
 	(* Import[URLDecode@StringReplace[file, "file://"->""],"Text"] *)
 ];
 
-handle["textDocument/codeAction", json_]:=Module[{},
+handle["textDocument/codeAction", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	src = documents[json["params","textDocument","uri"]];
 	range = json["params","range"];
 
 ];
 
-handle["completionItem/resolve", json_] := Module[{item, documentation, result, response}, 
+handle["completionItem/resolve", json_, client_:(First[SERVER["ConnectedClients"],{}])] := Module[{item, documentation, result, response}, 
 	item = json["params"];
 	(* If[
 		MemberQ[COMPLETIONS[[All, "label"]], item["label"]],
@@ -441,10 +442,10 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 		"documentation" -> documentation
 	|>;
 	response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
-handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
+handle["textDocument/completion", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, pos, symbol, names, items, result, response},
 		src = documents[json["params","textDocument","uri"]];
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
@@ -467,11 +468,11 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 			result = <| "isIncomplete" -> True, "items" -> {}|>;
 		];
 		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-		sendResponse[response];
+		sendResponse[response, client];
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
-handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
+handle["textDocument/documentSymbol", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
 	Check[
 				(
 					kind[s_]:= Switch[
@@ -519,21 +520,21 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 
 					response = <|"id"->json["id"],"result"->result|>;
-					sendResponse[response];  
+					sendResponse[response, client];  
 
 					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
-					sendResponse[response]; 
+					sendResponse[response, client]; 
 
 			),
 				response = <|"id"->json["id"],"result"->{}|>;
-				sendResponse[response];  
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
+				sendResponse[response, client];  
+				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>, client];
 	]
 
 ];
 
 signatureQueue = {};
-handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol, activeParameter, activeSignature, value, opts, result, response, functionWithParams, signatures, function},
+handle["textDocument/signatureHelp", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{position, uri, src, symbol, activeParameter, activeSignature, value, opts, result, response, functionWithParams, signatures, function},
 	Check[		
 		position = json["params"]["position"];
 		uri = json["params"]["textDocument"]["uri"];
@@ -543,7 +544,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 
 		If[symbol == "",
 			response = <|"id"->json["id"], "result"->""|>;
-			sendResponse[response];
+			sendResponse[response, client];
 			Return[]
 		];
 		
@@ -575,7 +576,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 			"activeParameter" -> activeParameter
 		|>;
 		response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
-		sendResponse[response];,
+		sendResponse[response, client];,
 
 		
 		response = <|
@@ -585,11 +586,11 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 				"activeSignature"->0,
 				"activeParameter"->0|>
 		|>;
-		sendResponse[response]; 
+		sendResponse[response, client]; 
 	];
 ];
 
-handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
+handle["textDocument/hover", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
@@ -614,12 +615,12 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		|>;
 
 		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
-		sendResponse[response];,
+		sendResponse[response, client];,
 
 		response = <|"id"->json["id"], "result"->""|>;
-		sendResponse[response];
+		sendResponse[response, client];
 		
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>];
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>, client];
 	];
 ];
 
@@ -636,14 +637,14 @@ printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
 	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( n:ToString@symbol):>"\n"<>n]
 ];
 
-handle["clearTasks", json_]:=Module[{},
+handle["clearTasks", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	TaskRemove[Tasks[]];
 	response = <|"id"->json["id"],"result"-><|"output"->"Tasks Cleared"|>|>;
-	sendResponse[response];
+	sendResponse[response, client];
 	startEvaluators[];
 ];
 
-handle["runCell", json_]:=Module[{},
+handle["runCell", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	uri = json["params", "textDocument"];
 	src = json["params", "source"];
 
@@ -654,30 +655,30 @@ handle["runCell", json_]:=Module[{},
 	|> |>, json, newPosition];
 ];
 
-handle["textDocument/didOpen", json_]:=Module[{},
+handle["textDocument/didOpen", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 	(* validate[]; *)
 ];
 
-handle["textDocument/didChange", json_]:=Module[{},
+handle["textDocument/didChange", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	(* oldLength = StringLength[documents[json["params","textDocument","uri"]]];
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
 ];
 
-handle["textDocument/didSave", json_]:=Module[{},
-	validate[json];
+handle["textDocument/didSave", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
+	validate[json, client];
 ];
 
-handle["openNotebook", json_]:=Module[{jupyterfile, response},
+handle["openNotebook", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{jupyterfile, response},
 	jupyterfile = First[Notebook2Jupyter[json["params"]["path"]["path"]]];
 	response = <|"id"->json["id"],"result"-><|"output"->jupyterfile|>|>;
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
-handle["windowFocused", json_]:=Module[{},
+handle["windowFocused", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	If[json["params"],
 		handlerWait = 0.01,
 		handlerWait = 0.1
@@ -686,66 +687,66 @@ handle["windowFocused", json_]:=Module[{},
 
 
 
-handle["nb2html", json_]:=Module[{id, inputs, html},
+handle["nb2html", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{id, inputs, html},
 	id = json["id"];
 	inputs = Import[json["params", "document", "uri", "fsPath"], "Notebook"];
 	html = nb2html[inputs];
-	sendResponse[<|"id"->id, "result"->html|>];
+	sendResponse[<|"id"->id, "result"->html|>, client];
 ];
 
-handle["html2nb", json_]:=Module[{id, inputs, html, nb},
+handle["html2nb", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{id, inputs, html, nb},
 	id = json["id"];
 	html = json["params", "html"];
 	nb = html2nb[html];
 
 	NotebookSave[nb, json["params", "document", "uri", "fsPath"]];
 	NotebookClose[nb];
-	sendResponse[<|"id"->id, "result"->True|>];
+	sendResponse[<|"id"->id, "result"->True|>, client];
 ];
 
-handle["serializeNotebook", json_]:=Module[{id, inputs, json2, nb},
+handle["serializeNotebook", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{id, inputs, json2, nb},
 	inputs = json["params", "contents"];
 	nb = json2nb[inputs, True];
 
-	sendResponse[<|"id"->json["id"], "result"->ExportString[nb, "Text"]|>];
+	sendResponse[<|"id"->json["id"], "result"->ExportString[nb, "Text"]|>, client];
 ];
 
-handle["deserializeNotebook", json_]:=Module[{id, inputs, json2, nb},
+handle["deserializeNotebook", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{id, inputs, json2, nb},
 	Check[
 		inputs = Check[ImportString[json["params", "contents"], "Notebook"], ""];
 		json2 = nb2json[inputs];
-		sendResponse[<|"id"->json["id"], "result"->json2|>];,
+		sendResponse[<|"id"->json["id"], "result"->json2|>, client];,
 
-		sendResponse[<|"id"->json["id"], "result"->""|>];
-		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
+		sendResponse[<|"id"->json["id"], "result"->""|>, client];
+		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>, client]
 	]
 ];
 
-handle["serializeScript", json_]:=Module[{inputs, nb},
+handle["serializeScript", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{inputs, nb},
 	inputs = json["params", "contents"];
 	nb = StringJoin@json2wl[inputs];
 
-	sendResponse[<|"id"->json["id"], "result"->nb|>];
+	sendResponse[<|"id"->json["id"], "result"->nb|>, client];
 ];
 
-handle["deserializeScript", json_]:=Module[{inputs, json2},
+handle["deserializeScript", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{inputs, json2},
 	Check[
 		inputs = json["params", "contents"];
 		json2 = wl2json[inputs];
-		sendResponse[<|"id"->json["id"], "result"->json2|>];,
+		sendResponse[<|"id"->json["id"], "result"->json2|>, client];,
 
-		sendResponse[<|"id"->json["id"], "result"->""|>];
-		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>]
+		sendResponse[<|"id"->json["id"], "result"->""|>, client];
+		sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> "Failed to open file." |> |>, client]
 	]
 ];
 
-handle["$/cancelRequest", json_]:=Module[{response},
+handle["$/cancelRequest", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{response},
 	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
-	sendResponse[response];
+	sendResponse[response, client];
 ];
 
-handle["abort", json_]:=Module[{},
+handle["abort", json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{},
 	(* TaskRemove /@ Tasks[];
 	AbortKernels[];
 	startEvaluators[];
@@ -755,7 +756,7 @@ handle["abort", json_]:=Module[{},
 	AbortKernels[];
 ];
 
-validate[json_]:=Module[{src, lints, severities, msgs, response},
+validate[json_, client_:(First[SERVER["ConnectedClients"],{}])]:=Module[{src, lints, severities, msgs, response},
 	Check[
 		uri = json["params", "textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -771,8 +772,8 @@ validate[json_]:=Module[{src, lints, severities, msgs, response},
 		
 		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
 		
-		sendResponse[response];,
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>]
+		sendResponse[response, client];,
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>, client]
 	]
 ];
 
