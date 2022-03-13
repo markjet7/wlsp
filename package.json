@@ -228,15 +228,6 @@
                     "icon": "",
                     "contextualTitle": "Symbols"
                 }
-            ],
-
-            "wolfram-help": [
-                {
-                    "id": "wolfram-help-search",
-                    "name": "Help",
-                    "icon": "",
-                    "contextualTitle": "Search"
-                }
             ]
         }
     },

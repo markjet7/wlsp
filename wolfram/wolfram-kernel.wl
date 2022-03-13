@@ -21,27 +21,6 @@ sendResponse[res_Association]:=Module[{byteResponse},
 	]
 ];
 
-sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
-	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
-		BinaryWrite[client, # , "Character32"] &/@ byteResponse;,
-		Print["response error"];
-		Print[res];
-	]
-];
-
-sendResponse[res_Association, client_]:=Module[{byteResponse},
-	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
-		If[
-			Length@KERNELSERVER["ConnectedClients"] > 0,
-			BinaryWrite[First@KERNELSERVER["ConnectedClients"], # , "Character32"] &/@ byteResponse;
-		],
-		Print["response error"];
-		Print[res];
-	]
-];
-
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
 
@@ -67,7 +46,6 @@ FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,
 Protect[FoldWhile];
 
 handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
-handleMessageList[msgs:{___Association}, state_, client_]:=(FoldWhile[(handleMessage[#2, Last[#1], client])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
 
 lastChange = Now;
 
@@ -85,23 +63,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 
 			Check[handle[msg["method"], msg],
 				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
-			]
-		]		
-	];
-	If[state === "Continue", {"Continue",state}, {"Continue", state}]
-];
-
-handleMessage[msg_Association, state_, client_]:=Module[{},
-	If[KeyMemberQ[msg, "method"],
-		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			Check[
-				Get[DirectoryName[path] <> "transforms.wl"];
-				handle[msg["method"],msg], 
-				sendRespose[<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>, client];
-			],
-
-			Check[handle[msg["method"], msg],
-				sendRespose[<|"id"->msg["id"], "result"-> "NA" |>, client]
 			]
 		]		
 	];
@@ -130,7 +91,7 @@ handlerWait = 0.002;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
-(*socketHandler[state_]:=Module[{},
+socketHandler[state_]:=Module[{},
 	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	(Replace[
@@ -141,19 +102,6 @@ connected2 = False;
 			{} :> state
 		}
 	] & /@ KERNELSERVER["ConnectedClients"])[[-1]]
-] // socketHandler;*)
-
-socketHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
-	Pause[handlerWait];
-	Last[(Replace[
-		handleMessageList[ReadMessages[#], state, #],
-		{
-			{"Continue", state2_} :> state2,
-			{stop_, state2_} :> {stop, state2},
-			{} :> state
-		}
-	] & /@ KERNELSERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
