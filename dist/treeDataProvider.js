@@ -18,16 +18,19 @@ class TreeItem extends vscode.TreeItem {
         super(label, children === undefined ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
         this.children = children;
         this.location = "";
+        this.lazyload = "";
     }
 }
 class workspaceSymbolProvider {
     constructor() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+        this.workspace_items = {};
         this.data = [new TreeItem("Symbols", [])];
+        this.cancelChildrenToken = undefined;
         this.getBuiltins();
-        this.getSymbols();
         this.builtins = new TreeItem("Builtins", []);
+        this.cancelChildrenToken = undefined;
     }
     getBuiltins() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -64,85 +67,100 @@ class workspaceSymbolProvider {
             });
         });
     }
-    getSymbols() {
+    getSymbols(file) {
         return __awaiter(this, void 0, void 0, function* () {
-            clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.onReady().then(() => {
-                clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("symbolList").then((file) => {
-                    fs.readFile(file, 'utf8', (err, data) => {
-                        let result = JSON.parse(data.toString());
-                        let files = [];
-                        let workspace_items = result.workspace.map((symbol) => {
-                            let item;
-                            if (symbol.children && symbol.children.length > 0) {
-                                item = new TreeItem(symbol.name, []);
-                            }
-                            else {
-                                item = new TreeItem(symbol.name);
-                            }
-                            item.tooltip = symbol.definition;
-                            if ('range' in symbol.location) {
-                                item.location = symbol.location.uri.split("/").pop().split("%")[0];
-                                if (!files.some(f => f === item.location)) {
-                                    files.push(item.location);
-                                }
-                                item.command = { command: 'editor.action.goToLocations', arguments: [
-                                        vscode.Uri.parse(symbol.location.uri),
-                                        new vscode.Position(symbol.location.range.start.line, symbol.location.range.start.character),
-                                        [],
-                                        "peek",
-                                        symbol.name
-                                    ], title: 'Go to' };
-                            }
-                            //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
-                            function symbolToTreeItem(symbol) {
-                                if (symbol.children && symbol.children.length > 0) {
-                                    return symbol.children.map((child) => {
-                                        return new TreeItem(child.name, symbolToTreeItem(child));
-                                    });
-                                }
-                                else {
-                                    return undefined;
-                                }
-                            }
-                            item.children = symbolToTreeItem(symbol);
-                            // if (symbol.children && symbol.children.length > 0) {
-                            //     symbol.children.forEach((child:any) => {
-                            //         let leaf:TreeItem = new TreeItem(child.name)
-                            //         leaf.tooltip = child.definition;
-                            //         leaf.children = symbolToTreeItem(child)
-                            //         item.children?.push(leaf);
-                            //     })
-                            // }
-                            return item;
-                        });
-                        let workspace = new TreeItem("Workspace", files.map((file) => {
-                            return new TreeItem(file, workspace_items.filter((item) => item.location === file));
-                        }));
-                        workspace.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-                        if (this.data.length === 1) {
-                            this.data.push(workspace);
-                        }
-                        else {
-                            this.data.pop();
-                            this.data.push(workspace);
-                        }
-                        this._onDidChangeTreeData.fire();
-                    });
+            fs.readFile(file, 'utf8', (err, data) => {
+                function symbolToTreeItem(symbol) {
+                    var _a, _b;
+                    let item = new TreeItem((_a = symbol.name) === null || _a === void 0 ? void 0 : _a.slice(0, 8192), []);
+                    item.tooltip = (_b = symbol.definition) === null || _b === void 0 ? void 0 : _b.slice(0, 8192);
+                    item.children = symbol.children;
+                    item.lazyload = symbol.lazyload;
+                    item.location = symbol.location;
+                    item.iconPath = new vscode.ThemeIcon(symbol.icon);
+                    return item;
+                    // if (symbol.children && symbol.children.length > 0) {
+                    //     item.children = symbol.children.map((child:any) => {
+                    //         return symbolToTreeItem(child);
+                    //     })
+                    //     return item 
+                    // } else {
+                    //     item.collapsibleState = vscode.TreeItemCollapsibleState.None;
+                    //     return item
+                    // }
+                }
+                let result = JSON.parse(data.toString());
+                this.workspace_items = {};
+                result.forEach((symbol) => {
+                    let item = symbolToTreeItem(symbol);
+                    this.workspace_items[symbol.name] = item;
                 });
+                let newItems = new TreeItem("Symbols", []);
+                newItems.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+                Object.keys(this.workspace_items).forEach((key) => {
+                    var _a;
+                    (_a = newItems.children) === null || _a === void 0 ? void 0 : _a.push(this.workspace_items[key]);
+                });
+                this.data = [this.builtins, newItems];
+                this._onDidChangeTreeData.fire();
             });
         });
     }
     refresh() {
-        this.getSymbols();
     }
     getTreeItem(element) {
         return element;
     }
     getChildren(element) {
-        if (element === undefined) {
-            return this.data;
-        }
-        return element.children;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (element === undefined) {
+                return this.data;
+            }
+            if (element.lazyload === "") {
+                return element.children;
+            }
+            else {
+                return new Promise((resolve, reject) => {
+                    let tokenSource = new vscode.CancellationTokenSource();
+                    this.cancelChildrenToken = tokenSource.token;
+                    setTimeout(() => {
+                        var _a;
+                        if (!((_a = this.cancelChildrenToken) === null || _a === void 0 ? void 0 : _a.isCancellationRequested)) {
+                            tokenSource.cancel();
+                            resolve([]);
+                            return;
+                        }
+                    }, 10000);
+                    clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("getChildren", element.lazyload).then((file) => {
+                        var _a;
+                        if ((_a = this.cancelChildrenToken) === null || _a === void 0 ? void 0 : _a.isCancellationRequested) {
+                            return [];
+                        }
+                        else {
+                            let children = [];
+                            let result = JSON.parse(fs.readFileSync(file, 'utf8'));
+                            children = result.map((item) => {
+                                let newItem = new TreeItem(item.name, []);
+                                newItem.tooltip = item.definition;
+                                newItem.lazyload = item.lazyload;
+                                newItem.iconPath = new vscode.ThemeIcon(item.icon);
+                                newItem.collapsibleState = item.collapsibleState;
+                                // if(newItem.children?.length == 0 && newItem.lazyload === "") {
+                                //     newItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+                                // }
+                                // newItem.collapsibleState = 0;
+                                return newItem;
+                            });
+                            tokenSource.dispose();
+                            element.children = children;
+                            // return [new TreeItem("Testing", [])]; 
+                            resolve(children);
+                            // return children
+                        }
+                    });
+                });
+            }
+        });
     }
 }
 exports.workspaceSymbolProvider = workspaceSymbolProvider;

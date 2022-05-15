@@ -27,8 +27,13 @@
                     "type": "boolean",
                     "description": "Enable live document",
                     "default": false
+                },
+                "editor.wordSeparators":{
+                    "type": "string",
+                    "default": "`~!@#$%^&*()-=+[{]}\\|;:'\",<.>/?_",
+                    "description": "Word separators"
                 }
-            }  
+            }
         },
         "notebooks": [
             {
@@ -112,6 +117,10 @@
                 "title": "Wolfram: Run"
             },
             {
+                "command": "wolfram.showTrace",
+                "title": "Wolfram: Trace"
+            },
+            {
                 "command": "wolfram.printInWolfram",
                 "title": "Wolfram: Print"
             },
@@ -138,6 +147,10 @@
             {
                 "command": "wolfram.showPlots",
                 "title": "Wolfram: Show Plots Panel"
+            },
+            {
+                "command": "wolfram.clearResults",
+                "title": "Wolfram: Clear Results"
             },
             {
                 "command": "wolfram.wolframTerminal",

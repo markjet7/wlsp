@@ -58,6 +58,7 @@ handle["initialize",json_]:=Module[{response, builtins},
 ];
 
 handle["workspace/symbol", json_]:=Module[{response},
+	Print["workspace symbol"];
 	response = <|"id" -> json["id"], "result"->{}|>;
 	sendResponse[response];
 ];
@@ -125,6 +126,7 @@ symbolToTreeItem[symbol_Association]:=Module[{},
 ];
 
 handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file},
+	Print["symbol list"];
 	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
 	sources = Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
 	
@@ -326,7 +328,7 @@ getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
-handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Module[{src, breaks, lens, lines, sections, sectionPattern},
+handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
 	If[
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];,
@@ -338,26 +340,64 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 			sections = StringPosition[src, "\n\n\n", Overlaps -> False];*)
 			src = ImportString[documents[json["params","textDocument","uri"]],"Lines"];
 			breaks=BlockMap[Identity,Join[{1},SequencePosition[src,{"","","", Except[""]}][[All,2]], {Length@src}+1],2,1];
-			sections =Map[StringRiffle[src[[#[[1]];;#[[2]]-1]],"\n"]&,breaks];
+			sections = Map[StringRiffle[src[[#[[1]];;#[[2]]-1]],"\n"]&,breaks];
+			starts = Map[<|"line" -> #[[1]]-1, "character" -> 0|> &, breaks];
+			ends = MapThread[<|
+				"line" -> #1[[1]]-1 + StringCount[StringTrim@#2, "\n"],
+				"character" -> StringLength@Last[StringSplit[#2, "\n"] /. {} -> {""}]+1|> &, 
+				{breaks, sections}];
+
 			If[sections != {},
-				lens = Table[
-					<|
-						"range" -> 
-							<|
-								"start" -><|"line"->l[[1, 1]]-1, "character"->0|>,
-								"end" -><|"line"->l[[1, 1]]-1, "character"->0|>
-							|>,
-						"command" -> <|
-							"title" -> "Run " <> ToString[StringCount[StringTrim@l[[2]], "\n"] +1] <> " line(s)",
-							"command" -> "wolfram.runTextCell",
-							"arguments" -> {<|
-								"start" -><|"line"->l[[1, 1]]-1, "character"->0|>,
-								"end" -><|"line"->l[[1, 1]]+StringCount[StringTrim@l[[2]], "\n"]-1, "character"->StringLength@Last[StringSplit[l[[2]], "\n"] /. {} -> {""}]+1|>
-							|>}
-							(*{StringReplace[l[[2]], sectionPattern ->""] , l[[1]] + StringCount[l[[2]], "\n"]-1, StringLength@l[[2]]} *)
+				lens = Flatten@Table[
+					{
+						<|
+							"range" -> 
+								<|
+									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
+									"end" -><|"line"->ends[[i, "line"]], "character"->0|>
+								|>,
+							"command" -> <|
+								"title" -> "Run cell (" <> ToString[ends[[i, "line"]] - starts[[i, "line"]]+1] <> " line(s))",
+								"command" -> "wolfram.runTextCell",
+								"arguments" -> {<|
+									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
+									"end" -><|"line"->ends[[i, "line"]], "character"->ends[[i, "character"]]|>
+								|>}
+							|>
+						|>,
+						<|
+							"range" -> 
+								<|
+									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
+									"end" -><|"line"->ends[[i, "line"]], "character"->0|>
+								|>,
+							"command" -> <|
+								"title" -> "Run above (" <> ToString[starts[[i, "line"]]] <> " line(s))",
+								"command" -> "wolfram.runTextCell",
+								"arguments" -> {<|
+									"start" -><|"line"->0, "character"->0|>,
+									"end" -><|"line"->starts[[i, "line"]], "character"->starts[[i, "character"]]|>
+								|>}
+							|>
+						|>,
+						<|
+							"range" -> 
+								<|
+									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
+									"end" -><|"line"->ends[[i, "line"]], "character"->0|>
+								|>,
+							"command" -> <|
+								"title" -> "Run below (" <> ToString[Length[src] - starts[[i, "line"]]] <> " line(s))",
+								"command" -> "wolfram.runTextCell",
+								"arguments" -> {<|
+									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
+									"end" -><|"line"->Length[src], "character"-> ends[[-1, "character"]]|>
+								|>}
+							|>
 						|>
-					|>,
-					{l, Transpose[{breaks, sections}]}
+
+					},
+					{i, Length@starts-1}
 				];,
 				lens = {}
 			];
@@ -448,6 +488,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 		src = documents[json["params","textDocument","uri"]];
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
+		Print["Completion"];
 		If[StringLength@symbol >= 2, 
 			names = Select[labels, SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
 			items = Table[
@@ -546,8 +587,9 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 			sendResponse[response];
 			Return[]
 		];
-		
+
 		functionWithParams = Check[getFunctionAtPositionWithParams[src, position], ""];
+
 		activeParameter = 0;
 		activeSignature = 0;
 		If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
@@ -558,6 +600,11 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 
 		value = Check[extractUsage[symbol], ""];
 		signatures = StringCases[value, Shortest[symbol ~~ x1__ /; balancedQ[x1]]];
+
+		If[Length@signatures == 0,
+			signatures = getFunctionSignature[src, function]
+		];
+
 		opts = Information[symbol, "Options"] /. {
 			Rule[x_, y_] :> ToString[x, InputForm] <> "->" <> ToString[y, InputForm], 
 			RuleDelayed[x_, y_] :> ToString[x, InputForm] <> ":>" <> ToString[y, InputForm]
@@ -577,7 +624,6 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		response = <|"id"->json["id"], "result"->(result /. Null -> symbol)|>;
 		sendResponse[response];,
 
-		
 		response = <|
 			"id"->json["id"],
 			"result"-><|
@@ -854,7 +900,6 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 		tree = CodeParse[src]; 
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 		
-
 		call = First[Cases[tree, 
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
@@ -885,8 +930,27 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
+getFunctionSignature[src_, function_]:=Module[{ast, functions},
+	ast = CodeParse[src];
+	functions = Cases[ast,CallNode[
+					LeafNode[Symbol,"SetDelayed",_],
+					{
+						CallNode[
+							LeafNode[Symbol,name_,_],
+							params:{___},
+							_],
+						___
+					},
+					_]:>{name, Cases[params, LeafNode[Symbol, l_/;!MemberQ[{"Pattern", "Blank", "Optional"},l],_]:>l,Infinity]},Infinity];
+	Map[
+		StringJoin[#[[1]], StringRiffle[#[[2]], {"[", "_, ", "]"}]]&,
+		Select[functions, #[[1]] == function &]]
+];
+
+
 getFunctionAtPositionWithParams[src_, position_]:= Module[{functions, functionPositions, functionPositionsLineChar, thisFunctionPosition},
-	functions = StringCases[src,x1:Shortest[WordCharacter..~~"["~~___~~"]"]/;balancedQ[x1]];
+
+	functions = StringCases[src,Shortest[(x1:Shortest[WordCharacter..~~"["~~__~~"]"]/;balancedQ[x1]) ~~ ":="]];
 	functionPositions = Flatten[StringPosition[src, #] & /@ functions, 1];
 	functionPositionsLineChar =Check[positionToLineChar[src, #], Print@#] & /@ functionPositions;
 	thisFunctionPosition = First[Select[functionPositionsLineChar, #["startLine"] <= position["line"] && position["line"] <= #["endLine"] &], <|"startLine" -> 1, "endLine" -> 1, "startCharacter" -> 1, "endCharacter" -> 1|>];	

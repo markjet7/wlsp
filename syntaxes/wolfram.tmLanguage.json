@@ -204,6 +204,10 @@
           "name": "keyword.operator.wolfram.string_expression"
         },
         {
+          "match": "_",
+          "name": "keyword.operator.wolfram.pattern"
+        },
+        {
           "match": "\\+",
           "name": "keyword.operator.arithmetic.plus"
         },
@@ -393,15 +397,15 @@
     "pattern": {
       "patterns": [
         {
-          "match": "(___)([a-zA-Z$][a-zA-Z0-9$]*)",
+          "match": "([a-zA-Z$][a-zA-Z0-9$]*)*(___)([a-zA-Z$][a-zA-Z0-9$]*)",
           "name": "entity.name.type.class.wolfram.blank_null_sequence_pattern"
         },
         {
-          "match": "(__)([a-zA-Z$][a-zA-Z0-9$]*)",
+          "match": "([a-zA-Z$][a-zA-Z0-9$]*)*(__)([a-zA-Z$][a-zA-Z0-9$]*)",
           "name": "entity.name.type.class.wolfram.blank_sequence_pattern"
         },
         {
-          "match": "(_)([a-zA-Z$][a-zA-Z0-9$]*)",
+          "match": "([a-zA-Z$][a-zA-Z0-9$]*)*(_)([a-zA-Z$][a-zA-Z0-9$]*)",
           "name": "entity.name.type.class.wolfram.blank_pattern"
         },
         {

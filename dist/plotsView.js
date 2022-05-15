@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.showPlotPanel = void 0;
 const vscode_1 = require("vscode");
+function invalidator() {
+    // VSCode tries to be smart and only does something if the webview HTML changed.
+    // That means that our onload events aren't fired and you won't get a thumbnail
+    // for repeated plots. Attaching a meaningless and random script snippet fixes that.
+    return `<script>(function(){${Math.random()}})()</script>`;
+}
 function showPlotPanel(webview, extensionUri) {
     let timeNow = new Date().getTime();
     const toolkitUri = getUri(webview, extensionUri, [
@@ -30,7 +36,8 @@ function showPlotPanel(webview, extensionUri) {
         <style type="text/css">
 
             body{
-                overflow:scroll;
+                overflow-y:scroll;
+                overflow-x:hidden;
                 height:100%;
             }
 
@@ -63,7 +70,7 @@ function showPlotPanel(webview, extensionUri) {
                 height:100vh;
                 display:block;
                 position:relative;
-                top:0;
+                top:5vh;
             }
 
             #result {
@@ -73,20 +80,18 @@ function showPlotPanel(webview, extensionUri) {
                 display: block;
                 margin:0px;
                 width:95vw;
-                max-height:42vh; 
-                overflow:scroll;
+                image-rendering:auto;
             }
 
             #result img{
-                max-width: 100%;
-                max-height:40vh; 
+                max-width: 92vw;
+                max-height: 95vh; 
                 /* margin: 0; */
                 /* min-height: 200px; */
                 width: auto;
                 margin-left: auto;
                 margin-right: auto;
                 display: block;
-                height: auto;
             }
 
 
@@ -99,7 +104,7 @@ function showPlotPanel(webview, extensionUri) {
         <script>
             const vscode = acquireVsCodeApi();
             function scrollToBottom() {
-                // window.scrollTo(0,document.body.scrollHeight);
+                window.scrollTo(0,document.body.scrollHeight);
 
                 var color = '';
                 var fontFamily = '';
@@ -145,7 +150,7 @@ function showPlotPanel(webview, extensionUri) {
             </div>
         </div>
     </body>
-    </html>`;
+    </html>` + invalidator();
     return result;
 }
 exports.showPlotPanel = showPlotPanel;

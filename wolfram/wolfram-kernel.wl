@@ -87,7 +87,7 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.002;
+handlerWait = 0.02;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
@@ -110,11 +110,8 @@ Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])
 Print[kernelport]; *)
 Print["Kernel ", KERNELSERVER, ": ", kernelport];
 
-MemoryConstrained[
-	Block[{$IterationLimit = Infinity}, 
-		socketHandler[state]
-	];,
-	16*1024^3
+Block[{$IterationLimit = Infinity}, 
+	socketHandler[state]
 ];
 
 CloseKernels[];

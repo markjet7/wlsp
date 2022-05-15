@@ -125,8 +125,8 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		
 		decoration = <|
 					"range" -> 	<|
-						"start"-><|"line"->range["start"]["line"],"character"->range["start"]["character"]+10|>,
-						"end"-><|"line"->range["start"]["line"],"character"->range["start"]["character"]+110|>
+						"start"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+10|>,
+						"end"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+110|>
 					|>,
 					"renderOptions"-><|
 						"after" -> <|
@@ -162,148 +162,161 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		evaluateFromQueue[code, json, newPosition];
 		,
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
-		sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> "Failed evaluation please try again"|>|>]
 	];
 ];
 
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, result, values, f, maxWidth, time},
-		$busy = True;
-		(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
-		Unprotect[NotebookDirectory];
-		NotebookDirectory[] = FileNameJoin[
-			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
-		string = StringTrim[code2["code"]];
-		If[string=="", 
-			{time, {result, successQ}} = {0.0, {"-", True}},
-			{time, {result, successQ}} = AbsoluteTiming[evaluateString[string] //. {Short[x_]:> ToString[x, InputForm, TotalWidth->8192]}];	
-		];
+resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
-		If[
-			successQ,  
-			output = transforms[result] /. {Null ->"", "Null" -> ""},
-			output = result;
-		];
-		
-		maxWidth = 8192;
-		response = If[KeyMemberQ[json, "id"],
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time},
+	$busy = True;
+	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
+	Unprotect[NotebookDirectory];
+	NotebookDirectory[] = FileNameJoin[
+		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
+	string = Echo@StringTrim[code2["code"]];
+
+	start= Now;
+	Which[
+		string == "",
+		r = <|
+			"AbsoluteTiming" -> "0",
+			"Result" -> "",
+			"Success" -> True
+		|>,
+		SyntaxQ[string],
+		If[json["params"]["trace"], 
+			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
+
+			r = evaluateString[Echo[string, "Evaluating: "]]
+		],
+		True,
+		r = <|
+			"AbsoluteTiming" -> "NA",
+			"Result" -> "Syntax error",
+			"Success" -> False
+		|>
+	];
+
+	{time, {result, successQ}} = {r["AbsoluteTiming"], {r["Result"], r["Success"]}};
+
+	output = transforms[result];
+	
+	maxWidth = 8192;
+	response = If[KeyMemberQ[json, "id"],
+		<|
+		"id" -> json["id"],
+		"result" -> <|
+			"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
+			"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"position"-> newPosition,
+			"print" -> False,
+			"document" ->  ""|>,
+		"params"-><|
+			"input" -> string,
+			"output"-> ExportString[output, "JSON"], 
+			"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"position"-> newPosition,
+			"print" -> False,
+			"document" ->  ""|>
+		|>,
+
+		<|
+		"method"->"onRunInWolfram", 
+		"params"-><|
+			"input" -> string,
+			"output"-> ToString[output], 
+			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth], 
+			"position"-> newPosition,
+			"print" -> json["params", "print"],
+			"document" ->  json["params", "textDocument"]["uri"]|>
+		|>
+	];
+	evalnumber = evalnumber + 1;
+
+	file = CreateFile[];
+	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
+	If[KeyMemberQ[json, "id"],
+		sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>];,
+		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>];
+	];
+	Close[file];
+
+	getWorkspaceSymbols[];
+
+	decorationLine = code2["range"][[2, 1]];
+	decorationChar = code2["range"][[2, 2]];
+
+	If[!json["params", "print"],
+		decoration = 
 			<|
-			"id" -> json["id"],
-			"result" -> <|
-				"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
-				"position"-> newPosition,
-				"print" -> False,
-				"document" ->  ""|>,
-			"params"-><|
-				"input" -> string,
-				"output"-> ToString[output], 
-				"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
-				"position"-> newPosition,
-				"print" -> False,
-				"document" ->  ""|>
-			|>,
-
-			<|
-			"method"->"onRunInWolfram", 
-			"params"-><|
-				"input" -> string,
-				"output"-> ToString[output], 
-				"result"-> ToString[result, InputForm, TotalWidth -> maxWidth], 
-				"position"-> newPosition,
-				"print" -> json["params", "print"],
-				"document" ->  json["params", "textDocument"]["uri"]|>
-			|>
-		];
-		evalnumber = evalnumber + 1;
-
-		file = CreateFile[];
-		WriteString[file, ExportString[response, "JSON"]];
-		If[KeyMemberQ[json, "id"],
-			sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>];,
-			sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>];
-		];
-		Close[file];
-
-
-		(*Print["Done: " <> ToString[Now-start]];*)
-
-		decorationLine = code2["range"][[2, 1]];
-		decorationChar = code2["range"][[2, 2]];
-
-		If[!json["params", "print"],
-			decoration = 
-				<|
-					"range" -> 	<|
-						"start"-><|"line"->decorationLine-1,"character"->decorationChar+10|>,
-						"end"-><|"line"->decorationLine-1,"character"->decorationChar+110|>
+				"range" -> 	<|
+					"start"-><|"line"->decorationLine-1,"character"->decorationChar+10|>,
+					"end"-><|"line"->decorationLine-1,"character"->decorationChar+110|>
+				|>,
+				"renderOptions"-><|
+					"after" -> <|
+						"contentText" -> "> " <> 
+							ToString@time <> 
+							"s: " <> 
+							ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
+						"backgroundColor" -> "editor.background",
+						"foregroundColor" -> "editor.foreground",
+						"margin" -> "0 0 0 10px",
+						"borderRadius" -> "2px",
+						"border" -> If[Length[r["Messages"]] == 0, "2px solid blue", "2px solid red"],
+						"color" -> "foreground",
+						"rangeBehavior" -> 4,
+						"textDecoration" -> "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
 					|>,
-					"renderOptions"-><|
-						"after" -> <|
-							"contentText" -> "> " <> ToString@time <> "s: " <> ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
-							"backgroundColor" -> "editor.background",
-							"foregroundColor" -> "editor.foreground",
-							"margin" -> "0 0 0 10px",
-							"borderRadius" -> "2px",
-							"border" -> "2px solid blue",
-							"color" -> "foreground",
-							"rangeBehavior" -> 4,
-							"textDecoration" -> "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
-						|>,
-						"rangeBehavior" -> 4
-					|>
-				|>;
+					"rangeBehavior" -> 4
+				|>
+			|>;
 
-			workspaceDecorations[
-				json["params", "textDocument", "uri", "external"]
-			] = If[
-				KeyMemberQ[workspaceDecorations, json["params", "textDocument", "uri", "external"]],
-				Append[
-					workspaceDecorations[json["params", "textDocument", "uri", "external"]], 
-					<|ToString@decoration["range"]["start"]["line"]-> decoration|>],
-				<|ToString@decoration["range"]["start"]["line"]-> decoration|>
-			];
-			
-			Export[decorationFile, workspaceDecorations, "JSON"];
-
-			response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
-			sendResponse[response4];	
-		];
-
-		(* documents[json["params", "textDocument", "uri", "external"]]; *)
-		ast = CodeConcreteParse[string];
-
-
-		(* f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
-			astStr=ToFullFormString[node[[2,1]]];
-			name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
-			loc=node[[-1]][Source];
-			rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-			If[Head@rhs ==CallNode,
-			kind = rhs[[1,2]],
-			kind = rhs[[2]]
-			];
-			definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-			<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind|>]; *)
-		f[node_]:=Module[{},
-			symbol = FirstCase[node, LeafNode[Symbol, name_, _] :> name, "var", Infinity, Heads->True];
-			(* sourcestart = FirstCase[node, {___, LeafNode[Token`Equal, ___], start_, ___} :> start[[3]][Source][[1]], Infinity]+{0, 1};
-			sourceend = node[[3]][Source][[2]];
-			definition = getStringAtRange[src, {sourcestart, sourceend}]; *)
-			definition = ToExpression[symbol];
-			kind = Head@value;
-			<|"name" -> symbol, "definition" -> definition, "kind" -> kind|>
+		workspaceDecorations[
+			json["params", "textDocument", "uri", "external"]
+		] = If[
+			KeyMemberQ[workspaceDecorations, json["params", "textDocument", "uri", "external"]],
+			Append[
+				workspaceDecorations[json["params", "textDocument", "uri", "external"]], 
+				<|ToString@decoration["range"]["start"]["line"]-> decoration|>],
+			<|ToString@decoration["range"]["start"]["line"]-> decoration|>
 		];
 		
-		symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
+		Export[decorationFile, workspaceDecorations, "JSON"];
 
-		values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->8192]}, {v, symbols}];
-		result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
-		sendResponse[
-			result
-		]; 
+		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
+		sendResponse[response4];	
+	];
 
-		$busy = False;
-		(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
+	ast = CodeConcreteParse[string];
+
+	f[node_]:=Module[{},
+		symbol = FirstCase[node, LeafNode[Symbol, name_, _] :> name, "var", Infinity, Heads->True];
+		(* sourcestart = FirstCase[node, {___, LeafNode[Token`Equal, ___], start_, ___} :> start[[3]][Source][[1]], Infinity]+{0, 1};
+		sourceend = node[[3]][Source][[2]];
+		definition = getStringAtRange[src, {sourcestart, sourceend}]; *)
+		definition = ToExpression[symbol];
+		kind = Head@value;
+		<|"name" -> symbol, "definition" -> definition, "kind" -> kind|>
+	];
+	
+	symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
+
+	values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->8192]}, {v, symbols}];
+	result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
+	sendResponse[
+		result
+	]; 
+
+	$busy = False;
+	(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
+];
+
+storageUri = "";
+handle["storageUri", json_]:=Module[{},
+	sendResponse[
+		<|"id" -> json["id"], "result" -> DirectoryName[CreateFile[]] |>
+	]
 ];
 
 handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
@@ -314,6 +327,18 @@ handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
 
 	locations = (#-1)&/@functions;
 	sendResponse[<|"id"-> json["id"], "result" -> <| "ranges" -> locations |>|>]
+];
+
+handle["getChildren", json_]:=Module[{function, result, file},
+	SessionSubmit[
+		(function = json["params"];
+		result = ToExpression@function;
+		file = CreateFile[];
+		OpenWrite[file];
+		WriteString[file, Check[ExportString[result, "JSON"], "[]"]];
+		Close[file];
+		sendResponse[<|"id" -> json["id"], "result" -> file|>];)
+	]
 ];
 
 handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
@@ -380,6 +405,13 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	
 ];
 
+handle["didChangeWorkspaceFolders", json_]:=Module[{dir, files},
+	files = json["params"];
+	Table[
+		documents[f["external"]] = Import[f["path"], "Text"],
+		{f, files}
+	];
+];
 
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
@@ -421,80 +453,152 @@ handle["textDocument/didSave", json_]:=Module[{},
 
 
 
-symbolToTreeItem[symbol_]:=Module[{},
-	<|
-		"name" -> ToString[symbol, InputForm, TotalWidth -> 150],
-		"kind" -> "Variable"(* symbol["kind"] *),
-		"definition" -> ToString[symbol, InputForm, TotalWidth -> 550],
-		"children" -> {}
-	|>
+
+getChildren[symbol_]:=Echo[{}, "Heelo"];
+
+symbolToTreeItem2[symbol_List]:=Table[
+     <|
+      "name" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
+	  "definition" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
+      "kind" -> "List",
+      "children" -> {},
+	  "lazyload" -> "Map[symbolToTreeItem2," <> ToString[Take[symbol, {rows, UpTo[rows+9]}], InputForm] <> "]",
+	  "icon" -> "symbol-array",
+	  "collapsibleState" -> 1
+      |>
+     , {rows, Range[1, Length@symbol, 10]}];
+
+getChildren[symbol_Association]:= KeyValueMap[<|
+      "name" -> ToString[#1, InputForm, TotalWidth -> 50] <> " -> " <> ToString[#2, InputForm, TotalWidth->50],
+	  "definition" -> ToString[#2, InputForm, TotalWidth -> 50],
+      "kind" -> "Association",
+      "children" -> {},
+      "lazyload" ->  "getChildren[" <> ToString[#2, InputForm] <> "]",
+	  "icon" -> "symbol-struct"
+      |> &, symbol];
+
+symbolToTreeItem2[symbol_Association]:= ({<|
+	"name" -> ToString[symbol, InputForm, TotalWidth -> 250],
+	"kind" -> ToString[Head@symbol, InputForm],
+	"definition" -> ToString[symbol, InputForm, TotalWidth -> 50] <> ": " <> ToString[symbol, InputForm, TotalWidth -> 300],
+	"children" -> {},
+    "lazyload" ->  ToString[KeyValueMap[symbolToTreeItem2, symbol], InputForm],
+    "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-struct"],
+	"collapsibleState" -> 1
+|>});
+
+symbolToTreeItem2[key_, value_]:=(Print["key values"];<|
+	"name" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 150],
+	"kind" -> ToString[Head@value, InputForm],
+	"definition" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 150],
+	"children" -> {},
+    "lazyload" ->  "symbolToTreeItem2[" <> ToString[value, InputForm] <> "]",
+    "icon" -> If[KeyExistsQ[symbolIcons, Head@value], symbolIcons[Head@value], "symbol-variable"],
+	"collapsibleState" -> 1
+|>);
+
+symbolToTreeItem2[symbol_String]:=<|
+	"name" -> ToString[symbol, InputForm, TotalWidth ->150],
+	"kind" -> ToString[Head@symbol, InputForm, TotalWidth -> 150],
+	"definition" -> ToString[symbol, InputForm, TotalWidth -> 300],
+	"children" -> {},
+    "lazyload" -> "",
+    "icon" -> "symbol-string",
+	"collapsibleState" -> 0
+|>;
+
+symbolToTreeItem2[(symbol_Real| symbol_Integer)]:=<|
+	"name" -> ToString@symbol,
+	"kind" -> ToString@Head@symbol,
+	"definition" -> ToString@Short[symbol],
+	"children" -> {},
+    "lazyload" ->  "",
+    "icon" -> "symbol-numeric",
+	"collapsibleState" -> 0
+|>;
+
+symbolToTreeItem2[symbol_Failure]:=<|
+	"name" -> ToString[SymbolName@symbol],
+	"kind" -> ToString@Head@symbol,
+	"definition" -> ToString@Short[symbol],
+	"children" -> {},
+    "lazyload" ->  "",
+    "icon" -> "warning",
+	"collapsibleState" -> 0
+|>;
+(*
+symbolToTreeItem2[symbol_String]:=<|
+	"name" -> ToString[SymbolName@symbol],
+	"kind" -> ToString@Head@symbol,
+	"definition" -> ToString[symbol, InputForm, TotalWidth ->150],
+	"children" -> {},
+    "lazyload" ->  "symbolToTreeItem2[" <> ToString[SymbolName@symbol] <> "]",
+   "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-variable"]
+|>;
+*)
+symbolToTreeItem2[symbol_]:=<|
+	"name" -> ToString[symbol, InputForm, TotalWidth -> 300],
+	"kind" -> ToString[Head@symbol, InputForm],
+	"definition" -> ToString[symbol, InputForm, TotalWidth -> 500],
+	"children" -> {},
+	"lazyload" -> "",
+    "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-variable"],
+	"collapsibleState" -> 0
+|>;
+
+symbolToTreeItem2[symbol : Association[Rule["name", _], ___]] := Module[{expr},
+  expr = Symbol@symbol["name"];
+  <|"name" -> 
+    symbol["name"],
+   "kind" -> ToString[Head@expr],
+   "definition" -> Check[symbol["definition"], ToString@Short[expr]],
+   "location" -> <|"uri" -> symbol["uri"], 
+     "range" -> <|
+       "start" -> <|"line" -> symbol["loc"][[1, 1]] - 1, 
+         "character" -> symbol["loc"][[1, 2]] - 1|>, 
+       "end" -> <|"line" -> symbol["loc"][[2, 1]] - 1, 
+         "character" -> symbol["loc"][[2, 2]] - 1|>|>|>, 
+   "children" -> {},
+   "lazyload" -> "symbolToTreeItem2[" <> symbol["name"] <> "]",
+   "icon" -> If[KeyExistsQ[symbolIcons, Head@expr], symbolIcons[Head@expr], "symbol-variable"],
+	"collapsibleState" -> 1
+   |>
 ];
 
-symbolToTreeItem[symbol_List]:=Module[{result},
-	result = {};
-	TimeConstrained[
-		Scan[AppendTo[result, <|
-			"name" -> ToString[#, InputForm, TotalWidth -> 150],
-			"kind" -> "Variable"(* symbol["kind"] *),
-			"definition" -> ToString[#, InputForm, TotalWidth -> 550],
-			"children" -> symbolToTreeItem@#
-		|>] &, Take[symbol, UpTo@500]],
-		Quantity[0.05, "Seconds"]
-	];
-	result
-];
+symbolIcons = <|
+	List -> "symbol-array",
+	Symbol -> "symbol-variable",
+	Real -> "symbol-numeric",
+	Integer -> "symbol-numeric",
+	Complex -> "symbol-numeric",
+	String -> "symbol-string"
+|>;
 
-symbolToTreeItem[symbol_Association]:=Module[{result},
-	result = {};
-	TimeConstrained[
-		KeyValueMap[
-			AppendTo[result,<|
-				"name" -> ToString[#1, InputForm, TotalWidth -> 150] <> " -> " <> ToString[#2, InputForm, TotalWidth -> 150],
-				"kind" -> "Variable"(* symbol["kind"] *),
-				"definition" -> ToString[#1, InputForm, TotalWidth -> 150] <> " -> " <> ToString[#2, InputForm, TotalWidth -> 150],
-				"children" -> symbolToTreeItem@#2
-			|>] &, Take[symbol, UpTo@500]];,
-		Quantity[0.05, "Seconds"]
-	];
-	result
-];
-
-handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file, name},
-	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
-	sources = Quiet@Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
-	
-	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[<|"Scheme" -> "file", "Path" -> Join[{""}, FileNameSplit[#2]]|>]] &, {sources, files}], #1["name"] &];
-	
-	result1 =Map[
-		Function[{symbol},
-			name = TimeConstrained[ToString@ToExpression[symbol["name"]], Quantity[0.01, "Seconds"],  symbol["name"]];
-			<|
-				"name" -> symbol["name"] <> ": " <> If[symbol["name"] === name, symbol["definition"], StringTake[name, UpTo@150]],
-				"kind" -> "Variable"(* symbol["kind"] *),
-				"definition" -> symbol["definition"],
-				"location" -> <|
-					"uri" -> symbol["uri"],
-					"range" -> <|
-						"start" -> <|"line" -> symbol["loc"][[1, 1]]-1, "character"->symbol["loc"][[1,2]]-1|>,
-						"end" -> <|"line" -> symbol["loc"][[2, 1]]-1, "character"->symbol["loc"][[2,2]]-1|>
-					|>
+getWorkspaceSymbols[]:=Module[{allsymbols},
+	allsymbols = Flatten@DeleteCases[
+			KeyValueMap[{key, value} |->
+				<|
+					"name" -> FileBaseName@key,
+					"kind" -> ToString[String, InputForm],
+					"definition" -> ToString[key, InputForm, TotalWidth -> 500],
+					"children" -> {},
+					"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> "]]",
+    				"icon" -> "file-code",
+					"collapsibleState" -> 1
 				|>,
-				"children" -> If[MemberQ[{List, Association}, Head[ToExpression[symbol["name"]]]], symbolToTreeItem@ToExpression[symbol["name"]], {}]
-			|>
+				documents
+			], 
+	_Missing];
+	OpenWrite[symbolListFile];
+	Check[
+		WriteString[
+			symbolListFile,
+			ExportString[allsymbols, "JSON"]
 		],
-		symbols
+		Print["Error saving tree items"]
 	];
-
-	(*
-
-	*)
-
-
-	response = <|"id"->json["id"],"result"-> ToString@symbolListFile|>;
-	Export[symbolListFile, <|"workspace" -> result1|>, "JSON"];
-	
-	sendResponse[response];
-
+	Close[symbolListFile];
+	sendResponse[<|"method"->"updateTreeItems", "params" -> <|"file"->ToString@symbolListFile|>|>];
 ];
 
 handle["abort", json_]:=Module[{},
@@ -510,37 +614,21 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f}, 
-			
 		res = EvaluationData[ToExpression[string]];
 		If[
 			res["Success"], 
 			(
-				(* sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Success: " <> ToString[res["Result"], InputForm, TotalWidth->1000] |> |>]; *)
-				r1 = {res["Result"], True};
-				If[Length@r1 > 2,
-					r1 = {Most[r1], True}
-				];
-				r1
+				res
 			),
 
 			(
-				
-				(* sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[res["Messages"], OutputForm, TotalWidth -> 200, CharacterEncoding->"ASCII"] |> |>]; *)
-				f[msg_,val__]:=StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, General]]][val];
+				f[msg_,val__]:=Apply[StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, Infinity]]],val];
 				Table[
-					r2 = ToString@ReleaseHold[r //. Message :> f];
-					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->8192, CharacterEncoding->"ASCII"] |> |>];,
+					r2 = ToString[ReleaseHold[r //. Message :> f], InputForm, TotalWidth -> 8192];
+					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> r2 |> |>];
+					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> r2|>|>];,
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
-								 
-				(* {ToString[StringRiffle[Take[res["Messages"],UpTo[3]], "\n"] <> "\n" <> "...", InputForm, TotalWidth -> 1000], False} *)
-				{
-					(* Check[
-						StringRiffle[Join[ToString@ReleaseHold[# //. Message :> f] & /@ Take[res["MessagesExpressions"],UpTo[3]], 
-						List@res["Result"]], "\n"], 
-					"Errors"],  *)
-					res["Result"],
-					True
-				}
+				res
 			)
 		]
 ];
@@ -726,9 +814,14 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 			rhs[[2]]
 		];
 		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind, "uri" -> uri|>];
+		<|
+		"name"->name,
+		"definition"->StringTrim[definition],
+		"loc"->loc,
+		"kind"->kind, 
+		"uri" -> uri|>];
 
-	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
 	symbols
 ];
 
