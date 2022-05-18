@@ -554,16 +554,8 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 }
                 let output = data;
                 if(output.includes("<img")) {
-
-                    // printResults.push("<img src='" +
-                    //     plotsPanel?.webview.asWebviewUri(
-                    //         vscode.Uri.file(
-                    //             output.match(/src="(.*?)"/)[1]
-                    //         )
-                    //     ).toString() + "'/>"
-                    // );
                     printResults.push(output)
-                    console.log("")
+                    outputChannel.appendLine("-GRAPHIC-")
                 } else {
                     printResults.push(output)
                     outputChannel.appendLine(output.slice(0, 8192));
@@ -873,7 +865,7 @@ async function connectModule(modulePath: string, runtimePath: string, port: numb
 
 let console_outputs:string[] = []
 let socketsClosed = 0;
-async function startWLSP(): Promise<void> {
+async function startWLSP(id:number): Promise<void> {
     let timeout: any;
 
     let serverOptions: ServerOptions = function () {
@@ -949,7 +941,8 @@ async function startWLSP(): Promise<void> {
                  
 
             fp(clientPort).then(([freePort]:number[]) => {
-                clientPort = freePort;
+                clientPort = freePort+id;
+                outputChannel.appendLine("Client Socket connecting: " + clientPort)
                 load(wolfram, lspPath, clientPort, outputChannel).then((r:any) => {
                     wolfram = r
                     socket.connect(clientPort, "127.0.0.1", () => {
@@ -979,7 +972,7 @@ async function startWLSP(): Promise<void> {
             let disposible: vscode.Disposable |undefined;
             disposible = wolframClient?.start();
             outputChannel.appendLine("Client Started")
-            outputChannel.appendLine(new Date().toLocaleTimeString())
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
             if (disposible) {context.subscriptions.push(disposible)};
             resolve()
         }, 2000)
@@ -988,7 +981,7 @@ async function startWLSP(): Promise<void> {
 }
 
 
-async function startWLSPKernel(): Promise<void> {
+async function startWLSPKernel(id:number): Promise<void> {
     let timeout: any;
     
     let serverOptions: ServerOptions = function () {
@@ -1069,7 +1062,8 @@ async function startWLSPKernel(): Promise<void> {
                  
 
             fp(kernelPort).then(([freePort]:number[]) => {
-                kernelPort = freePort;
+                kernelPort = freePort+id;
+                outputChannel.appendLine("Kernel Socket connecting: " + kernelPort);
                 load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r:any) => {
                     wolframKernel = r
                     socket.connect(kernelPort, "127.0.0.1");
@@ -1098,7 +1092,7 @@ async function startWLSPKernel(): Promise<void> {
             let disposible: vscode.Disposable |undefined;
             disposible = wolframKernelClient?.start();
             outputChannel.appendLine("Kernel Started")
-            outputChannel.appendLine(new Date().toLocaleTimeString())
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
             if (disposible) {context.subscriptions.push(disposible)};
             resolve()
         }, 2000)
@@ -1298,26 +1292,26 @@ function isUntitled(document:vscode.TextDocument) {
 }
 
 
+let totalClients:number = 0;
 function didOpenTextDocument(document: vscode.TextDocument): void {
     if (document.languageId !== 'wolfram' || (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled')) {
         return;
     }
 
-    if (isUntitled(document) && !clients.has("default")) {
-        startWLSP()
-        startWLSPKernel()
+    if (!wolframClient) {
+        startWLSP(0)
+    }
 
-        clients.set("default", [wolframClient, wolframKernelClient])
-        return;
-
-    }  
+    if(!wolframKernelClient) {
+        startWLSPKernel(0)
+    }
 
     let folder = vscode.workspace.getWorkspaceFolder(document.uri);
     if (!folder) {
         if (document.languageId == 'wolfram' && !clients.has("default")) {
-            startWLSP()
-            startWLSPKernel()
-
+            totalClients++;
+            // startWLSP(totalClients)
+            // startWLSPKernel(totalClients)
             clients.set("default", [wolframClient, wolframKernelClient])
             return;
         }  
@@ -1325,10 +1319,20 @@ function didOpenTextDocument(document: vscode.TextDocument): void {
     }
     
     if (!clients.has(folder.uri.toString()) && document.languageId === "wolfram"){
-        startWLSP()
-        startWLSPKernel()
+        totalClients++;
+        // startWLSP(totalClients)
+        // startWLSPKernel(totalClients)
         clients.set(folder.uri.toString(), [wolframClient, wolframKernelClient])
     }
+
+    if (isUntitled(document) && clients.size == 0) {
+        // startWLSP()
+        // startWLSPKernel()
+
+        clients.set("default", [wolframClient, wolframKernelClient])
+        return;
+
+    }  
 
     return;
 }

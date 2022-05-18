@@ -82,7 +82,9 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                 item.children = symbol.children;
                 item.lazyload = symbol.lazyload;
                 item.location = symbol.location;
-                item.iconPath = new vscode.ThemeIcon(symbol.icon);
+                item.resourceUri = vscode.Uri.parse(symbol.location["uri"]);
+                item.iconPath = new vscode.ThemeIcon(symbol.icon); 
+                item.command = {command: 'vscode.open', arguments: [vscode.Uri.parse(symbol.location["uri"])], title: 'Open'}
                 return item
                 // if (symbol.children && symbol.children.length > 0) {
                 //     item.children = symbol.children.map((child:any) => {
@@ -155,10 +157,15 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                                 newItem.lazyload = item.lazyload;
                                 newItem.iconPath = new vscode.ThemeIcon(item.icon);
                                 newItem.collapsibleState = item.collapsibleState;
-                                // if(newItem.children?.length == 0 && newItem.lazyload === "") {
-                                //     newItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-                                // }
-                                // newItem.collapsibleState = 0;
+                                newItem.resourceUri = vscode.Uri.parse(item.location["uri'"])
+                                newItem.command = {command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]),{
+                                    preview: false,
+                                    preserveFocus: false,
+                                    selection: item.location.range
+                                }], title: 'Open'};
+                                
+                                vscode.window.showTextDocument(vscode.Uri.parse(item.location["uri"]), {preview: true});
+
                                 return newItem
                             });
                             tokenSource.dispose();

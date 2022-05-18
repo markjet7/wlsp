@@ -21,8 +21,12 @@ contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~con
 	handle[json["method"],json];]; *)
 
 ServerCapabilities=<|
-	"textDocumentSync"->1
-	|>;
+	"textDocumentSync"->1,
+	"workspaceSymbolProvider" -> True,
+	"workspace" -><|
+		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
+	|>
+|>;
 
 
 handle["initialize",json_]:=Module[{response, response2},
@@ -173,7 +177,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
-	string = Echo@StringTrim[code2["code"]];
+	string = StringTrim[code2["code"]];
 
 	start= Now;
 	Which[
@@ -317,6 +321,16 @@ handle["storageUri", json_]:=Module[{},
 	sendResponse[
 		<|"id" -> json["id"], "result" -> DirectoryName[CreateFile[]] |>
 	]
+];
+
+handle["workspace/symbol", json_]:=Module[{response},
+	Print["workspace symbol"];
+	symbol = Echo@json["params"]["query"];
+
+	symbols = If[symbol != "", Echo@Flatten@Select[AllSymbols[[All, "children"]], StringContainsQ[ToString@#["name"], ToString@symbol] &], {}];
+
+	response = <|"id" -> json["id"], "result"->symbols|>;
+	sendResponse[response];
 ];
 
 handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
@@ -574,16 +588,19 @@ symbolIcons = <|
 	String -> "symbol-string"
 |>;
 
-getWorkspaceSymbols[]:=Module[{allsymbols},
-	allsymbols = Flatten@DeleteCases[
+getWorkspaceSymbols[]:=Module[{},
+	AllSymbols = Flatten@DeleteCases[
 			KeyValueMap[{key, value} |->
 				<|
 					"name" -> FileBaseName@key,
 					"kind" -> ToString[String, InputForm],
 					"definition" -> ToString[key, InputForm, TotalWidth -> 500],
-					"children" -> {},
-					"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> "]]",
+					"children" -> Map[symbolToTreeItem2, getSymbols[value, key]],
+					"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> ", " <> ToString[key,InputForm] <> "]]",
     				"icon" -> "file-code",
+					"location" -> <|
+						"uri" -> key
+					|>,
 					"collapsibleState" -> 1
 				|>,
 				documents
@@ -593,7 +610,7 @@ getWorkspaceSymbols[]:=Module[{allsymbols},
 	Check[
 		WriteString[
 			symbolListFile,
-			ExportString[allsymbols, "JSON"]
+			ExportString[AllSymbols, "JSON"]
 		],
 		Print["Error saving tree items"]
 	];

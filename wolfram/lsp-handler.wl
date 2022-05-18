@@ -35,7 +35,6 @@ ServerCapabilities=<|
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
 	"renameProvider" -> <| "prepareProvider" -> True|>,
-	"workspaceSymbolProvider" -> True,
 	"definitionProvider" -> True,
 	"colorProvider" -> True,
 	"workspace" -><|
@@ -488,7 +487,6 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 		src = documents[json["params","textDocument","uri"]];
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
-		Print["Completion"];
 		If[StringLength@symbol >= 2, 
 			names = Select[labels, SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
 			items = Table[
