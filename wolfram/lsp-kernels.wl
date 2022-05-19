@@ -323,11 +323,10 @@ handle["storageUri", json_]:=Module[{},
 	]
 ];
 
-handle["workspace/symbol", json_]:=Module[{response},
-	Print["workspace symbol"];
-	symbol = Echo@json["params"]["query"];
+handle["workspace/symbol", json_]:=Module[{response, symbol, symbols},
+	symbol = json["params"]["query"];
 
-	symbols = If[symbol != "", Echo@Flatten@Select[AllSymbols[[All, "children"]], StringContainsQ[ToString@#["name"], ToString@symbol] &], {}];
+	symbols = If[symbol != "", Flatten@Select[AllSymbols[[All, "children"]], StringContainsQ[ToString@#["name"], ToString@symbol] &], {}];
 
 	response = <|"id" -> json["id"], "result"->symbols|>;
 	sendResponse[response];
