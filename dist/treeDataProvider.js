@@ -149,7 +149,7 @@ class workspaceSymbolProvider {
                                 newItem.collapsibleState = item.collapsibleState;
                                 newItem.resourceUri = vscode.Uri.parse(item.location["uri'"]);
                                 newItem.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]), {
-                                            preview: true,
+                                            preview: false,
                                             preserveFocus: false,
                                             selection: item.location.range
                                         }], title: 'Open' };

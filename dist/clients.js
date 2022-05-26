@@ -56,6 +56,8 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', exports.scriptserializer));
         context.subscriptions.push(exports.notebookcontroller);
         context.subscriptions.push(exports.scriptController);
+        startWLSP(0);
+        startWLSPKernel(0);
         vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
         vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
         vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
@@ -120,6 +122,8 @@ function restart() {
         });
         stopWolfram(undefined, exports.wolfram);
         stopWolfram(undefined, exports.wolframKernel);
+        startWLSP(0);
+        startWLSPKernel(0);
         return new Promise((resolve) => {
             vscode.workspace.textDocuments.forEach(didOpenTextDocument);
             resolve();
@@ -945,12 +949,13 @@ function load(wolfram, path, port, outputChannel) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve) => {
             var _a, _b, _c;
+            let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
             try {
                 if (process.platform === "win32") {
-                    wolfram = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', path, port.toString(), path], { detached: false });
+                    wolfram = cp.spawn('cmd.exe', ['/c', executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), '-file', path, port.toString(), path], { detached: false });
                 }
                 else {
-                    wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: true });
+                    wolfram = cp.spawn(executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), ['-file', path, port.toString(), path], { detached: true });
                 }
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString());
@@ -1098,12 +1103,6 @@ let totalClients = 0;
 function didOpenTextDocument(document) {
     if (document.languageId !== 'wolfram' || (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled')) {
         return;
-    }
-    if (!exports.wolframClient) {
-        startWLSP(0);
-    }
-    if (!exports.wolframKernelClient) {
-        startWLSPKernel(0);
     }
     let folder = vscode.workspace.getWorkspaceFolder(document.uri);
     if (!folder) {

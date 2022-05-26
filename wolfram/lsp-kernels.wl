@@ -4,7 +4,7 @@ BeginPackage["WolframKernel`"]
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
 
-(* scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; *)
+scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; 
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
 
 imageToPNG[graphic_]:=Module[{}, 
@@ -22,7 +22,6 @@ contentPattern[length_]:= (("Content-Length: "~~ToString@length~~"\r\n\r\n"~~con
 
 ServerCapabilities=<|
 	"textDocumentSync"->1,
-	"workspaceSymbolProvider" -> True,
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>
@@ -45,7 +44,7 @@ handle["initialize",json_]:=Module[{response, response2},
 	evalnumber = 1;
 
 	decorationFile = CreateFile[];
-	symbolListFile = CreateFile[];
+	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
 	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
 ];
 
@@ -171,6 +170,9 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
+Inputs = {};
+Outputs = {};
+Protect[Inputs, Outputs];
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time},
 	$busy = True;
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
@@ -188,6 +190,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"Success" -> True
 		|>,
 		SyntaxQ[string],
+		AppendTo[Inputs, string];
 		If[json["params"]["trace"], 
 			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
 
@@ -202,6 +205,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	];
 
 	{time, {result, successQ}} = {r["AbsoluteTiming"], {r["Result"], r["Success"]}};
+	ans = result;
+	AppendTo[Outputs, ans];
 
 	output = transforms[result];
 	
@@ -263,7 +268,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 							ToString@time <> 
 							"s: " <> 
 							ToString[result /. Null ->"-", InputForm, TotalWidth->8192, CharacterEncoding -> "ASCII"],
-						"backgroundColor" -> "editor.background",
+						"backgroundColor" -> If[Length[r["Messages"]] == 0,"editor.background", "red"],
 						"foregroundColor" -> "editor.foreground",
 						"margin" -> "0 0 0 10px",
 						"borderRadius" -> "2px",
@@ -467,7 +472,7 @@ handle["textDocument/didSave", json_]:=Module[{},
 
 
 
-getChildren[symbol_]:=Echo[{}, "Heelo"];
+getChildren[symbol_]:={};
 
 symbolToTreeItem2[symbol_List]:=Table[
      <|
@@ -640,7 +645,10 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 			(
 				f[msg_,val__]:=Apply[StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, Infinity]]],val];
 				Table[
-					r2 = ToString[ReleaseHold[r //. Message :> f], InputForm, TotalWidth -> 8192];
+					r2 = ToString[FirstCase[
+ 								r["MessagesExpressions"],
+ 								Message[msg_, val__] :> StringTemplate[msg][val], Infinity], 
+							InputForm, TotalWidth -> 8192];
 					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> r2 |> |>];
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> r2|>|>];,
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];

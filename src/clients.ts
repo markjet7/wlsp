@@ -83,6 +83,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
 
+    startWLSP(0);
+    startWLSPKernel(0);
+
     vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
     vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
     vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
@@ -151,6 +154,9 @@ export async function restart(): Promise<void> {
 
     stopWolfram(undefined, wolfram);
     stopWolfram(undefined, wolframKernel);
+
+    startWLSP(0);
+    startWLSPKernel(0);
 
     return new Promise((resolve) => {
         vscode.workspace.textDocuments.forEach(didOpenTextDocument);
@@ -1112,11 +1118,12 @@ function connectKernelClient(outputChannel: any, context: any) {
 
 async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess> {
     return new Promise((resolve) => {
+        let executablePath:string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
         try {
             if (process.platform === "win32") {
-                wolfram = cp.spawn('cmd.exe', ['/c', 'wolframscript.exe', '-file', path, port.toString(), path], { detached: false });
+                wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path], { detached: false });
             } else {
-                wolfram = cp.spawn('wolframscript', ['-file', path, port.toString(), path], { detached: true });
+                wolfram = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path], { detached: true });
             }
 
             wolfram.stdout?.once('data', (data: any) => {
@@ -1296,14 +1303,6 @@ let totalClients:number = 0;
 function didOpenTextDocument(document: vscode.TextDocument): void {
     if (document.languageId !== 'wolfram' || (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled')) {
         return;
-    }
-
-    if (!wolframClient) {
-        startWLSP(0)
-    }
-
-    if(!wolframKernelClient) {
-        startWLSPKernel(0)
     }
 
     let folder = vscode.workspace.getWorkspaceFolder(document.uri);

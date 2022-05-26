@@ -28,10 +28,20 @@
                     "description": "Enable live document",
                     "default": false
                 },
-                "editor.wordSeparators":{
+                "wlsp.wordSeparators":{
                     "type": "string",
                     "default": "`~!@#$%^&*()-=+[{]}\\|;:'\",<.>/?_",
                     "description": "Word separators"
+                },
+                "wlsp.executablePath":{
+                    "type": "string",
+                    "default": "wolframscript",
+                    "description": "Path to wolframscript executable"
+                },
+                "comments.blockComment":{
+                    "type": "string",
+                    "default": ["(*", "*)"],
+                    "description": "Block comment"
                 }
             }
         },
@@ -221,6 +231,11 @@
             {
                 "command": "wolfram.printInWolfram",
                 "key": "ctrl+shift+enter",
+                "when": "editorLangId == wolfram"
+            },
+            {
+                "command": "wolfram.restart",
+                "key": "cmd+.",
                 "when": "editorLangId == wolfram"
             }
         ],

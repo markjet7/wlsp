@@ -67,7 +67,12 @@ transforms[output_]:=Module[{f, txt},
 			];
 		];*)
 		WriteString[f, 
-				ExportString[output, 
+				ExportString[
+					If[graphicsQ@output,
+						Rasterize[output /.Null->"", Background ->None],
+						Rasterize[Short[output, 25] /.Null->"", Background ->None]
+					],
+					
 					"HTMLFragment", 
 					"GraphicsOutput"->"PNG",
 					"URIHandler" -> "Export", 

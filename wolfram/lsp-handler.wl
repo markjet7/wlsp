@@ -13,7 +13,7 @@ Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspec
 COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
 DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[path] <> "details.json","RawJSON"]];
  
-(* scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; *)
+scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; 
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
 
 
@@ -37,6 +37,7 @@ ServerCapabilities=<|
 	"renameProvider" -> <| "prepareProvider" -> True|>,
 	"definitionProvider" -> True,
 	"colorProvider" -> True,
+	"workspaceSymbolProvider" -> True,
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>|>;
@@ -54,11 +55,16 @@ handle["initialize",json_]:=Module[{response, builtins},
 	sendResponse[response];	
 	
 	builtinSymbols = {};
+	symbolListFile = scriptPath <> "symbolList.js";
 ];
 
 handle["workspace/symbol", json_]:=Module[{response},
-	Print["workspace symbol"];
-	response = <|"id" -> json["id"], "result"->{}|>;
+	symbol = json["params"]["query"];
+	AllSymbols = Import[symbolListFile, "RawJSON"];
+
+	symbols = If[symbol != "", Flatten@Select[AllSymbols[[All, "children"]], StringContainsQ[ToString@#["name"], ToString@symbol] &], {}];
+
+	response = <|"id" -> json["id"], "result"->symbols|>;
 	sendResponse[response];
 ];
 
@@ -265,8 +271,8 @@ handle["shutdown", json_]:=(
 
 handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	range = json["params", "range"];
-	uri = json["params", "textDocument"]["uri", "external"];
-	src = documents[json["params","textDocument","uri", "external"]];
+	uri = Check[json["params", "textDocument"]["uri", "external"],""];
+	src = Check[documents[json["params","textDocument","uri", "external"]],""];
 	end = range["end"];
 	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
@@ -435,7 +441,7 @@ handle["textDocument/rename", json_]:=Module[{pos, src, newName, str, renames, e
 ];
 
 handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, response}, 
-	src = documents[json["params","textDocument","uri"]];
+	src = Check[documents[json["params","textDocument","uri"]],""];
     prn = Cell[BoxData[#], "Input"] &;
     out = UsingFrontEnd[First[FrontEndExecute[FrontEnd`ExportPacket[prn@CodeFormatter`FullCodeFormat@src, "InputText"]]]];
 
