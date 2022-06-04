@@ -269,14 +269,26 @@ handle["shutdown", json_]:=(
 );
 
 
-handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
-	range = json["params", "range"];
+handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, ast,next, functions},
+	range = Echo@json["params", "range"];
 	uri = Check[json["params", "textDocument"]["uri", "external"],""];
 	src = Check[documents[json["params","textDocument","uri", "external"]],""];
-	end = range["end"];
-	code = getCode[src, range];
-	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition|>|>]; 
+
+	ast = CodeParse[StringReplace[src, ";" -> " "]];
+	functions = Cases[ast, CallNode[LeafNode[Symbol,(_),_],___],3];
+
+	next = First[BlockMap[{f12} |-> (
+			If[
+    			f12[[1, -1]][Source][[1, 1]]-1 <= range[["start", "line"]] < f12[[2, -1]][Source][[1, 1]]-1,
+				f12[[2, -1]][Source][[1, 1]]-1,
+   				Nothing
+   			]), 
+			functions, 2, 1], 
+		   	range["end"]["line"]+1
+		];
+
+	newPosition = <|"line"->next, "character"->0|>;
+	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition|>|>];
 ];
 
 handle["textDocument/foldingRange", json_]:=Module[{document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},

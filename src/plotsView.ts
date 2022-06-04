@@ -83,17 +83,20 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
                 display: block;
                 margin:0px;
                 width:95vw;
-                max-height:90vh;
+                max-height:95vh;
+                object-fit:cover;
                 overflow-y:hidden;
                 image-rendering:auto;
             }
 
             #result img{
-                max-width: 92vw;
-                max-height: 95vh; 
+                width:95vw;
+                max-height:95vh;
+                object-fit:cover;
                 /* margin: 0; */
                 /* min-height: 200px; */
                 width: auto;
+                margin-bottom: 5px;
                 margin-left: auto;
                 margin-right: auto;
                 display: block;

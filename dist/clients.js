@@ -347,6 +347,18 @@ let starttime = 0;
 function runInWolfram(print = false, trace = false) {
     let e = vscode.window.activeTextEditor;
     let sel = e.selection;
+    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onReady().then(() => {
+        let cursorMoved = false;
+        vscode.window.onDidChangeTextEditorSelection((e) => {
+            cursorMoved = true;
+        });
+        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("moveCursor", { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document }).then((result) => {
+            if (((sel.active.line + 1) === e.selection.active.line) &&
+                e.selection.active.character === 0) {
+                moveCursor(result);
+            }
+        });
+    });
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: print, trace };
     evaluationQueue.push(evaluationData);
     if (!exports.wolframKernelClient) {
@@ -359,17 +371,6 @@ function runInWolfram(print = false, trace = false) {
     if (evaluationQueue.length == 1 || wolframBusyQ == false) {
         sendToWolfram(print);
     }
-    let cursorMoved = false;
-    vscode.window.onDidChangeTextEditorSelection((e) => {
-        cursorMoved = true;
-    });
-    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onReady().then(() => {
-        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("moveCursor", { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document }).then((result) => {
-            if (!cursorMoved) {
-                moveCursor(result);
-            }
-        });
-    });
 }
 let evaluationQueue = [];
 function sendToWolfram(print = false, sel = undefined) {

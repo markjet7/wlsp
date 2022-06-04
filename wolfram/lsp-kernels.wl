@@ -187,28 +187,33 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		r = <|
 			"AbsoluteTiming" -> "0",
 			"Result" -> "",
-			"Success" -> True
-		|>,
+			"Success" -> True,
+			"Messages" -> {}
+		|>;
+		output = "",
 		SyntaxQ[string],
 		AppendTo[Inputs, string];
 		If[json["params"]["trace"], 
 			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
 
 			r = evaluateString[Echo[string, "Evaluating: "]]
-		],
+		];
+		output = transforms[result];
+		,
 		True,
 		r = <|
 			"AbsoluteTiming" -> "NA",
 			"Result" -> "Syntax error",
-			"Success" -> False
-		|>
+			"Success" -> False,
+			"Messages" -> {}
+		|>;
+		output = "Syntax error";
 	];
 
 	{time, {result, successQ}} = {r["AbsoluteTiming"], {r["Result"], r["Success"]}};
 	ans = result;
 	AppendTo[Outputs, ans];
 
-	output = transforms[result];
 	
 	maxWidth = 8192;
 	response = If[KeyMemberQ[json, "id"],
@@ -643,14 +648,14 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 			),
 
 			(
-				f[msg_,val__]:=Apply[StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, Infinity]]],val];
+				(* f[msg_,val__]:=Apply[StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, Infinity]]],val]; *)
 				Table[
-					r2 = ToString[FirstCase[
- 								r["MessagesExpressions"],
- 								Message[msg_, val__] :> StringTemplate[msg][val], Infinity], 
-							InputForm, TotalWidth -> 8192];
-					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> r2 |> |>];
-					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> r2|>|>];,
+					msgs = Cases[r, Message[msg_, val_] :> StringTemplate[msg][val], {1}];
+					Table[
+						sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> TextString[r2] |>|>];
+						sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> TextString[r2]|>|>];,
+						{r2, msgs}
+					],
 					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
 				res
 			)

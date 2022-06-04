@@ -54,31 +54,34 @@ transforms =.;
 graphicsQ = 
   FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
     x_ /; x == {1.`, 0.9019607843137255`, 0.9019607843137255`}] &;
+
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
-		(*If[MemberQ[graphicHeads, Head@output],
-			Print["GRAPHIC"];
-			,
-			If[ByteCount[output] > 200000,
-				WriteString[f, ExportString["Large output: " <> ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]],
-				WriteString[f, ExportString[ToString[output, InputForm, TotalWidth -> 1000], "HTMLFragment", "GraphicsOutput"->"PNG"]]
-			];
-		];*)
+
+		If[!(graphicsQ@output) && (ByteCount[output] > 1000000),
+			Print[1];
+			WriteString[f, ExportString["Large output: " <> ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]];
+			Close[f];
+			Return[f]
+		];
+
+		Print[2];
 		WriteString[f, 
-				ExportString[
-					If[graphicsQ@output,
-						Rasterize[output /.Null->"", Background ->None],
-						Rasterize[Short[output, 25] /.Null->"", Background ->None]
-					],
-					
-					"HTMLFragment", 
-					"GraphicsOutput"->"PNG",
-					"URIHandler" -> "Export", 
-					"FilesDirectory" -> DirectoryName[f], 
-					"FilesPrefix" -> "https://file%2B.vscode-resource.vscode-cdn.net" <> DirectoryName[f]
-					]];
+			ExportString[
+				If[graphicsQ@output,
+					Rasterize[output /.Null->"", Background ->None],
+
+					Rasterize[Short[output, 25] /.Null->"", Background ->None]
+				],
+				
+				"HTMLFragment", 
+				"GraphicsOutput"->"PNG",
+				"URIHandler" -> "Export", 
+				"FilesDirectory" -> DirectoryName[f], 
+				"FilesPrefix" -> "https://file%2B.vscode-resource.vscode-cdn.net" <> DirectoryName[f]
+				]];
 
 		Close[f];
 		f
