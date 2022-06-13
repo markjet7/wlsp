@@ -172,7 +172,6 @@ resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
 Inputs = {};
 Outputs = {};
-Protect[Inputs, Outputs];
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time},
 	$busy = True;
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
@@ -190,15 +189,15 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"Success" -> True,
 			"Messages" -> {}
 		|>;
-		output = "",
+		output = transforms[Null],
 		SyntaxQ[string],
-		AppendTo[Inputs, string];
 		If[json["params"]["trace"], 
 			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
 
 			r = evaluateString[Echo[string, "Evaluating: "]]
 		];
-		output = transforms[result];
+		AppendTo[Inputs, string];
+		output = transforms[r["Result"]];
 		,
 		True,
 		r = <|
@@ -207,7 +206,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"Success" -> False,
 			"Messages" -> {}
 		|>;
-		output = "Syntax error";
+		output = transforms["Syntax error"];
 	];
 
 	{time, {result, successQ}} = {r["AbsoluteTiming"], {r["Result"], r["Success"]}};
@@ -221,14 +220,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"id" -> json["id"],
 		"result" -> <|
 			"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
-			"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
 			"output"-> ExportString[output, "JSON"], 
-			"result"->ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
 			"document" ->  ""|>
@@ -238,11 +237,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"method"->"onRunInWolfram", 
 		"params"-><|
 			"input" -> string,
-			"output"-> ToString[output], 
-			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth], 
+			"output"-> output, 
+			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
-			"document" ->  json["params", "textDocument"]["uri"]|>
+			"document" -> json["params", "textDocument"]["uri"]
+			|>
 		|>
 	];
 	evalnumber = evalnumber + 1;
@@ -250,8 +250,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	file = CreateFile[];
 	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
-		sendResponse[<|"id"->json["id"], "params" -> <|"file"->ToString@file|>|>];,
-		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|"file"->ToString@file|>|>];
+		sendResponse[<|"id"->json["id"], "params" -> <|
+		"input" -> string,
+		"file"->ToString@file|>|>];,
+		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
+		"input" -> string,
+		"file"->ToString@file|>|>];
 	];
 	Close[file];
 
@@ -283,7 +287,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 						"textDecoration" -> "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
 					|>,
 					"rangeBehavior" -> 4
-				|>
+				|>,
+				"hoverMessage" -> "<div>Test3 </div>"
 			|>;
 
 		workspaceDecorations[
@@ -429,7 +434,7 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 ];
 
 handle["didChangeWorkspaceFolders", json_]:=Module[{dir, files},
-	files = json["params"];
+	files = json["params"][[1]];
 	Table[
 		documents[f["external"]] = Import[f["path"], "Text"],
 		{f, files}

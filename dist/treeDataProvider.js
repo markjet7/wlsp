@@ -34,35 +34,33 @@ class workspaceSymbolProvider {
     }
     getBuiltins() {
         return __awaiter(this, void 0, void 0, function* () {
-            clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.onReady().then(() => {
-                clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("builtInList").then((file) => {
-                    fs.readFile(file, 'utf8', (err, data) => {
-                        var _a;
-                        let result = JSON.parse(data.toString());
-                        let files = [];
-                        // get all the letters in the alphabet
-                        let letters = [];
-                        for (let i = 65; i < 91; i++) {
-                            letters.push(String.fromCharCode(i));
-                        }
-                        let builtinsymbols = result.builtins.map((symbol) => {
-                            let item = new vscode.TreeItem(symbol.name);
-                            item.tooltip = symbol.definition;
-                            let e = vscode.window.activeTextEditor;
-                            item.command = { command: 'wolfram.stringHelp', arguments: [
-                                    symbol.name
-                                ], title: 'Open' };
-                            //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
-                            return item;
-                        });
-                        if (((_a = this.builtins.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
-                            this.builtins = new TreeItem("Builtins", letters.map((letter) => {
-                                return new TreeItem(letter, builtinsymbols.filter((item) => { var _a; return (_a = item.label) === null || _a === void 0 ? void 0 : _a.toString().startsWith(letter); }));
-                            }));
-                        }
-                        this.data = [this.builtins];
-                        this._onDidChangeTreeData.fire();
+            clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("builtInList").then((file) => {
+                fs.readFile(file, 'utf8', (err, data) => {
+                    var _a;
+                    let result = JSON.parse(data.toString());
+                    let files = [];
+                    // get all the letters in the alphabet
+                    let letters = [];
+                    for (let i = 65; i < 91; i++) {
+                        letters.push(String.fromCharCode(i));
+                    }
+                    let builtinsymbols = result.builtins.map((symbol) => {
+                        let item = new vscode.TreeItem(symbol.name);
+                        item.tooltip = symbol.definition;
+                        let e = vscode.window.activeTextEditor;
+                        item.command = { command: 'wolfram.stringHelp', arguments: [
+                                symbol.name
+                            ], title: 'Open' };
+                        //item.command = {command: 'editor.action.addCommentLine', arguments: [], title: 'Add Comment'};
+                        return item;
                     });
+                    if (((_a = this.builtins.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
+                        this.builtins = new TreeItem("Builtins", letters.map((letter) => {
+                            return new TreeItem(letter, builtinsymbols.filter((item) => { var _a; return (_a = item.label) === null || _a === void 0 ? void 0 : _a.toString().startsWith(letter); }));
+                        }));
+                    }
+                    this.data = [this.builtins];
+                    this._onDidChangeTreeData.fire();
                 });
             });
         });

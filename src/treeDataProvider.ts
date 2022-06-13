@@ -35,7 +35,6 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
 	}
 
     async getBuiltins() {
-        wolframClient?.onReady().then(() => {
             wolframClient?.sendRequest("builtInList").then((file:any) => {
         
             fs.readFile(file, 'utf8', (err:any, data:string) => {
@@ -71,7 +70,6 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                 this._onDidChangeTreeData.fire();
                 });
             })
-        });
     }
 
     async getSymbols(file:string) {

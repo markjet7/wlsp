@@ -73,6 +73,14 @@ function showPlotPanel(webview, extensionUri) {
                 top:5vh;
             }
 
+            #result-header {
+                display:block;
+                margin-top: 5px;
+                padding: 5px;
+                font-family: var(--vscode-editor-font-family);
+                font-size: var(--vscode-editor-font-size);
+            }
+
             #result {
                 border-bottom: var(--vscode-editor-foreground) 2px solid;
                 margin-top: 5px;

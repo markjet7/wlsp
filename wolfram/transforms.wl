@@ -61,21 +61,24 @@ transforms[output_]:=Module[{f, txt},
 		f = CreateFile[];
 
 		If[!(graphicsQ@output) && (ByteCount[output] > 1000000),
-			Print[1];
 			WriteString[f, ExportString["Large output: " <> ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]];
 			Close[f];
 			Return[f]
 		];
 
-		Print[2];
+		If[output === Null,
+			WriteString[f, "\t"];
+			Close[f];
+			Return[f];
+		];
+
 		WriteString[f, 
 			ExportString[
 				If[graphicsQ@output,
-					Rasterize[output /.Null->"", Background ->None],
+					Rasterize[output /.Null->"", Background ->None], 
 
 					Rasterize[Short[output, 25] /.Null->"", Background ->None]
 				],
-				
 				"HTMLFragment", 
 				"GraphicsOutput"->"PNG",
 				"URIHandler" -> "Export", 

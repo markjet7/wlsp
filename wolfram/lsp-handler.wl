@@ -40,7 +40,15 @@ ServerCapabilities=<|
 	"workspaceSymbolProvider" -> True,
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
-	|>|>;
+	|>,
+	"semanticTokensProvider" -> <|
+		"full" -> True,
+		"legend" -> <|
+			"tokenTypes" -> {"variable", "parameter", "keyword", "number", "string", "function"},
+			"tokenModifiers" -> {"definition"}
+		|>
+	|>
+|>;
 
 handle["initialize",json_]:=Module[{response, builtins},
 	Print["Initializing WLSP"];
@@ -269,26 +277,34 @@ handle["shutdown", json_]:=(
 );
 
 
-handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, ast,next, functions},
-	range = Echo@json["params", "range"];
+handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, ast,next, functions, input},
+	range = json["params", "range"];
 	uri = Check[json["params", "textDocument"]["uri", "external"],""];
 	src = Check[documents[json["params","textDocument","uri", "external"]],""];
 
 	ast = CodeParse[StringReplace[src, ";" -> " "]];
 	functions = Cases[ast, CallNode[LeafNode[Symbol,(_),_],___],3];
 
-	next = First[BlockMap[{f12} |-> (
+	{prev, next} = First[BlockMap[{f12} |-> (
 			If[
-    			f12[[1, -1]][Source][[1, 1]]-1 <= range[["start", "line"]] < f12[[2, -1]][Source][[1, 1]]-1,
-				f12[[2, -1]][Source][[1, 1]]-1,
+    			And[(f12[[1, -1]][Source][[1, 1]]-1 <= range[["start", "line"]]), range[["start", "line"]] <= f12[[2, -1]][Source][[1, 1]]-1],
+				{
+					f12[[2, -1]][Source], 
+					f12[[2, -1]][Source][[1, 1]]-1
+				},
    				Nothing
    			]), 
 			functions, 2, 1], 
-		   	range["end"]["line"]+1
+		   	{range, range["end"]["line"]+1}
 		];
 
+
+	input = ReplaceAll[<|
+		"start" -> <|"line" -> prev[[1,1]]-1, "character" -> prev[[1, 2]]-1 |>,
+		"end" -> <|"line" -> prev[[2,1]]-1, "character" -> prev[[2, 2]]-1 |>
+		|>, x_/;x<0 -> 0];
 	newPosition = <|"line"->next, "character"->0|>;
-	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition|>|>];
+	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition, "input" -> input|>|>];
 ];
 
 handle["textDocument/foldingRange", json_]:=Module[{document, src, lines, sectionPattern, ranges, functionSections, listSections, assocSections},
@@ -355,6 +371,7 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 			lines = StringCount[Check[StringTake[src, {1, #[[2]]}], ""], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
 			sections = BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]; 
 			sections = StringPosition[src, "\n\n\n", Overlaps -> False];*)
+
 			src = ImportString[documents[json["params","textDocument","uri"]],"Lines"];
 			breaks=BlockMap[Identity,Join[{1},SequencePosition[src,{"","","", Except[""]}][[All,2]], {Length@src}+1],2,1];
 			sections = Map[StringRiffle[src[[#[[1]];;#[[2]]-1]],"\n"]&,breaks];
@@ -389,7 +406,7 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 									"end" -><|"line"->ends[[i, "line"]], "character"->0|>
 								|>,
 							"command" -> <|
-								"title" -> "Run above (" <> ToString[starts[[i, "line"]]] <> " line(s))",
+								"title" -> "Run above "(* <> ToString[starts[[i, "line"]]] <> " line(s))"*),
 								"command" -> "wolfram.runTextCell",
 								"arguments" -> {<|
 									"start" -><|"line"->0, "character"->0|>,
@@ -404,7 +421,7 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 									"end" -><|"line"->ends[[i, "line"]], "character"->0|>
 								|>,
 							"command" -> <|
-								"title" -> "Run below (" <> ToString[Length[src] - starts[[i, "line"]]] <> " line(s))",
+								"title" -> "Run below " (* <> ToString[Length[src] - starts[[i, "line"]]] <> " line(s))" *),
 								"command" -> "wolfram.runTextCell",
 								"arguments" -> {<|
 									"start" -><|"line"->starts[[i, "line"]], "character"->0|>,
@@ -414,7 +431,7 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 						|>
 
 					},
-					{i, Length@starts-1}
+					{i, Length@starts}
 				];,
 				lens = {}
 			];
@@ -506,7 +523,13 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
 		If[StringLength@symbol >= 2, 
-			names = Select[labels, SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
+			ast = CodeParse[src];
+			keys = Cases[ast,
+				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
+				Infinity
+			];
+
+			names = Select[Join[keys,labels], SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
 			items = Table[
 					<|
 						"label" -> n,
@@ -727,6 +750,63 @@ handle["textDocument/didChange", json_]:=Module[{},
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
+];
+
+handle["textDocument/semanticTokens", json_]:=Module[{},
+	Print["semanticTokens"];
+];
+
+handle["textDocument/semanticTokens/full", json_]:=Module[{},
+	src = documents[json["params","textDocument","uri"]];
+	ast = CodeParse[src];
+
+	leafs = Cases[ast, LeafNode[t_ /; ! MemberQ[{Symbol, String, Real, Integer}, t], v_, <|Source -> r_|>] :> {"keyword", v, r, {}}, Infinity];
+	numbers = Cases[ast, LeafNode[t_ /;  MemberQ[{Real, Integer}, t], v_, <|Source -> r_|>] :> {"number", v, r, {}}, Infinity];
+	symbols = Cases[ast, LeafNode[Symbol, v_, <|Source -> r_|>] :> {"variable", v, r, {}}, Infinity];
+	strings = Cases[ast, LeafNode[String, v_, <|Source -> r_|>] :> {"string", v, r, {}}, Infinity];
+	params = Cases[ast, 
+		CallNode[LeafNode[Symbol,"Pattern",<||>],{LeafNode[Symbol,v_,<|Source->_|>],CallNode[LeafNode[Symbol,"Blank",<||>],{},<|Source->_|>]},<|Source->r_|>]:>{"parameter", v, r, {}},
+		Infinity];
+
+	defs = Cases[ast, CallNode[
+		LeafNode[Symbol, 
+		"Set", _], {CallNode[
+		LeafNode[Symbol, v_, _], ___], ___}, <|Source -> 
+		r_, ___|>] :> {"variable", v, r, {}}, Infinity];
+
+	functions = Cases[ast, CallNode[
+		LeafNode[Symbol, 
+		"SetDelayed", _], {CallNode[
+		LeafNode[Symbol, v_, _], ___], ___}, <|Source -> 
+		r_, ___|>] :> {"function", v, r, {}}, Infinity];
+
+	result1 = Table[
+		<|
+			"line" -> r[[3, 1, 1]],
+			"startCharacter" -> r[[3, 1, 2]],
+			"length" -> r[[3, 2, 2]] - r[[3, 1, 2]],
+			"tokenType" -> First[Flatten@Position[{"variable", "parameter", "keyword", "number", "string", "function"}, 
+  				r[[1]]]-1, 0],
+			"tokenModifiers" -> 0(* First[Flatten@Position[{"definition", "private"}, 
+  				r[[1]]], 0] *)
+		|>,
+		{r, SortBy[Join[leafs, numbers, symbols, strings, params, defs, functions], {#[[3,1,1]], #[[3,1,2]]} &]}
+	];
+	
+	deltaLines = Flatten[{result1[[1]]["line"]-1,result1[[2;;, "line"]]- result1[[1]]["line"]}];
+	deltaChars =Flatten@Values@GroupBy[
+		result1,
+		Key["line"],
+		Flatten[{#[[1]]["startCharacter"]-1, #[[2;;, "startCharacter"]]-#[[1]]["startCharacter"]}]&
+	];
+
+	result2 = Quiet@Check[Flatten@MapThread[
+		{#1,#2, #3["length"], #3["tokenType"],#3["tokenModifiers"]}&,
+		{deltaLines,deltaChars,result1}
+	],{}];
+
+	sendResponse[<|"id" -> json["id"], "result" -> <|"data" -> {} |>|>];
+
 ];
 
 handle["textDocument/didSave", json_]:=Module[{},
