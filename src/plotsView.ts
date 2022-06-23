@@ -85,6 +85,8 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
             }
 
             #result {
+                font-family: var(--vscode-editor-font-family);
+                font-size: var(--vscode-editor-font-size);
                 border-bottom: var(--vscode-editor-foreground) 2px solid;
                 margin-top: 5px;
                 padding: 5px;
@@ -157,10 +159,12 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
 
             outputDiv.scrollTop = outputDiv.scrollHeight;
 
+            scrollToBottom()
+
         })
         </script>
     </head>
-    <body onload="scrollToBottom()">
+    <body>
         <div class="outer">
             <div class="inner" id='outputs'>
             </div>

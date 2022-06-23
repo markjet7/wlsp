@@ -184,6 +184,7 @@ async function onclientReady() : Promise<void> {
         if (wolframClient !== undefined && wolframClient.initializeResult !== undefined) {
 
                 wolframClient?.onNotification("updatePositions", updatePositions);
+                wolframClient?.onNotification("updateLintDecorations", updateLintDecorations);
     
                 wolframClient?.sendRequest("wolframVersion").then((result:any) => {
                     wolframVersionText = result["output"];
@@ -258,7 +259,7 @@ export async function  onkernelReady(): Promise<void> {
 function clearResults() {
     // while(printResults.pop) {
     // }
-    printResults.clear()
+    printResults = [];
     updateOutputPanel()
 }
 
@@ -538,11 +539,11 @@ function onRunInWolfram(file: any) {
 }
 
 let maxPrintResults = 20;
-// let printResults: any[] = [];
-let printResults: Map<string, string> = new Map();
+let printResults: any[] = [];
+// let printResults: Map<string, string> = new Map();
 function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input:string = "") {
-    if (printResults.keys.length > maxPrintResults) {
-        printResults.delete(Object.keys(printResults)[0])
+    if (printResults.length > maxPrintResults) {
+        printResults.shift();
     }
 
     if (typeof (e) !== "undefined") {
@@ -564,9 +565,10 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                     return
                 }
                 let output = data;
-                printResults.set(
-                    input,
-                    output
+
+                printResults.push(
+                    [input,
+                    output]
                 )
                 if(output.includes("<img")) {
                 } else {
@@ -703,6 +705,7 @@ function wolframBusy(params: any) {
 }
 
 let workspaceDecorations: { [index: string]: vscode.DecorationOptions[]; } = {};
+let workspaceLintDecorations: { [index: string]: vscode.DecorationOptions[]; } = {};
 function clearDecorations() {
     let editor = vscode.window.activeTextEditor;
     let uri = editor?.document.uri.toString();
@@ -756,7 +759,61 @@ function updateDecorations(decorationfile: string) {
     }
 }
 
+function updateLintDecorations(decorationfile: string) {
+    let editor = vscode.window.activeTextEditor;
+    if (editor?.document.uri.scheme === 'file' || editor?.document.uri.scheme === 'untitled') {
+        //editor.setDecorations(variableDecorationType, []);
+
+        fs.readFile(decorationfile, "utf8", (err: any, data: any) => {
+            if (err) {
+                outputChannel.appendLine(err)
+                return
+            }
+            newDecorations = JSON.parse(data)
+
+            if (typeof (editor) === "undefined") {
+                return;
+            }
+            let uri = editor.document.uri.toString();
+    
+            let editorLintDecorations: vscode.DecorationOptions[] = [];
+            if (newDecorations[uri] === workspaceDecorations[uri]) {
+                return
+            } else {
+                workspaceLintDecorations[uri] = newDecorations[uri];
+                Object.keys(workspaceLintDecorations[uri]).forEach((d: any) => {
+                    editorLintDecorations.push(workspaceLintDecorations[uri][d]);
+                });
+        
+                runningLines = [];
+                editor.setDecorations(lintDecorationType, editorLintDecorations);
+                editor.setDecorations(runningDecorationType, runningLines);
+            }
+        })
+
+        // try{
+        //     ;
+        // } catch{
+        //     newDecorations = {};
+        //     return
+        // }
+    }
+}
+
 let variableDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
+    {
+        backgroundColor: 'none',
+        light: {
+            color: new vscode.ThemeColor("foreground")
+        },
+        dark: {
+            color: new vscode.ThemeColor("foreground")
+        },
+        rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+    }
+);
+
+let lintDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
     {
         backgroundColor: 'none',
         light: {
@@ -785,10 +842,10 @@ let runningDecorationType: vscode.TextEditorDecorationType = vscode.window.creat
 function updateOutputPanel() {
     let out = "";
 
-    printResults.forEach((v, k) => {
+    printResults.forEach((row) => {
         let data = "";
         try {
-                data += v;
+                data += row[1];
         } catch (e) {
             console.log((e as Error).message);
             data += "Error reading result";
@@ -796,7 +853,7 @@ function updateOutputPanel() {
 
         if (data !== "") {
             out += "<div id='result-header'>In: " +
-                    k.substring(0,  1000) + 
+                    row[0].substring(0,  1000) + 
                 "</div>" +
             
                 "<div id='result'>" +

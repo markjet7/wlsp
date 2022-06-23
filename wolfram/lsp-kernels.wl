@@ -128,8 +128,8 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		
 		decoration = <|
 					"range" -> 	<|
-						"start"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+10|>,
-						"end"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+110|>
+						"start"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+1096|>,
+						"end"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+1196|>
 					|>,
 					"renderOptions"-><|
 						"after" -> <|
@@ -190,6 +190,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"Messages" -> {}
 		|>;
 		output = transforms[Null],
+
 		SyntaxQ[string],
 		If[json["params"]["trace"], 
 			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
@@ -197,8 +198,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			r = evaluateString[Echo[string, "Evaluating: "]]
 		];
 		AppendTo[Inputs, string];
-		output = transforms[r["Result"]];
-		,
+		output = transforms[r["Result"]],
+
 		True,
 		r = <|
 			"AbsoluteTiming" -> "NA",
@@ -655,13 +656,14 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 			(
 				(* f[msg_,val__]:=Apply[StringTemplate[msg /. Messages[Evaluate@FirstCase[msg,_Symbol, Infinity]]],val]; *)
 				Table[
-					msgs = Cases[r, Message[msg_, val_] :> StringTemplate[msg][val], {1}];
+					msgs = {Apply[StringTemplate[r[[1, 1]] /. Messages[Evaluate[r[[1, 1, 1]]]]], r[[1, 2]]]};
+					
 					Table[
 						sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> TextString[r2] |>|>];
 						sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> TextString[r2]|>|>];,
 						{r2, msgs}
 					],
-					{r, Take[res["MessagesExpressions"],UpTo[3]]}];
+					{r, Take[DeleteDuplicates@res["MessagesExpressions"],UpTo[3]]}];
 				res
 			)
 		]

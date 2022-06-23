@@ -6,11 +6,9 @@ const fp = require('find-free-port');
 const psTree = require('ps-tree');
 import * as cp from 'child_process';
 import { 
-	LanguageClient,
+	BaseLanguageClient,
 	LanguageClientOptions,
-    NotificationType,
-	ServerOptions,
-	TransportKind } from 'vscode-languageclient';
+    NotificationType } from 'vscode-languageclient';
 import { EEXIST } from 'constants';
 const fs = require('fs')
 

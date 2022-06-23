@@ -3,10 +3,8 @@ import { Runnable } from 'mocha';
 import { rawListeners } from 'process';
 import * as vscode from 'vscode';
 import { 
-	LanguageClient,
-	LanguageClientOptions,
-	ServerOptions,
-	TransportKind } from 'vscode-languageclient';
+	BaseLanguageClient,
+	LanguageClientOptions} from 'vscode-languageclient';
 import { wolframClient } from './clients';
 
 
@@ -65,7 +63,6 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
         return new vscode.NotebookData(this.cells);
       } 
       if (wolframClient !== undefined) {
-        wolframClient.onReady().then(() => {
       
           wolframClient?.sendRequest("deserializeNotebook", {contents: contents}).then((result:any)=>{
 
@@ -97,7 +94,6 @@ export class WolframNotebookSerializer implements vscode.NotebookSerializer {
           }).then((result:any) => {
             return result
           })
-        })
       } else {
         console.log("Waiting for kernel")
         this.mretry(contents, attempts++, cb)
@@ -167,11 +163,9 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
 
     return new Promise((resolve, reject) => {
       if (wolframClient !== undefined) {
-        wolframClient.onReady().then(() => {
         return wolframClient?.sendRequest("serializeScript", {contents: contents}).then((result:any)=>{
           resolve(Buffer.from(result));
         });
-      });
     } else {
       let string = "";
       for (const cell of contents) {
@@ -205,7 +199,6 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
         return new vscode.NotebookData(this.cells);
       } 
       if (wolframClient !== undefined) {
-        wolframClient.onReady().then(() => {
       
           wolframClient?.sendRequest("deserializeScript", {contents: contents}).then((result:any)=>{
 
@@ -231,7 +224,6 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
           }).then((result:any) => {
             return result
           })
-        })
       } else {
         console.log("Waiting for kernel to deserialize script")
         this.mretry(contents, attempts++, cb)
@@ -243,7 +235,7 @@ export class WolframScriptSerializer implements vscode.NotebookSerializer {
 
 export class WolframNotebook {
     public mapping: Map<number, any> = new Map();
-    private wolframClient:LanguageClient;
+    private wolframClient:BaseLanguageClient;
 	private preloadScript = false;
 	private displayOrders = [
 		'text/html',
@@ -273,7 +265,7 @@ export class WolframNotebook {
         public cells: readonly any[],
         public languages: string[],
         // public metadata: vscode.NotebookDocumentMetadata,
-        private _wolframClient:LanguageClient) {
+        private _wolframClient:BaseLanguageClient) {
 
             // this.uri = uri;
             this.fileName = fileName;
@@ -295,7 +287,7 @@ export class WolframNotebook {
     // displayOrder?: vscode.GlobPattern[] | undefined;
     // metadata: vscode.NotebookDocumentMetadata;
 
-    public setWolframClient(_wolframClient:LanguageClient) {
+    public setWolframClient(_wolframClient:BaseLanguageClient) {
         this.wolframClient = _wolframClient
     }
 

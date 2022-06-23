@@ -149,6 +149,7 @@ function onclientReady() {
         function checkClient(cb) {
             if (exports.wolframClient !== undefined && exports.wolframClient.initializeResult !== undefined) {
                 exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updatePositions", updatePositions);
+                exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updateLintDecorations", updateLintDecorations);
                 exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("wolframVersion").then((result) => {
                     wolframVersionText = result["output"];
                     wolframStatusBar.text = result["output"];
@@ -210,7 +211,7 @@ exports.onkernelReady = onkernelReady;
 function clearResults() {
     // while(printResults.pop) {
     // }
-    printResults.clear();
+    printResults = [];
     updateOutputPanel();
 }
 function updateTreeItems(result) {
@@ -451,11 +452,11 @@ function onRunInWolfram(file) {
     // }
 }
 let maxPrintResults = 20;
-// let printResults: any[] = [];
-let printResults = new Map();
+let printResults = [];
+// let printResults: Map<string, string> = new Map();
 function updateResults(e, result, print, input = "") {
-    if (printResults.keys.length > maxPrintResults) {
-        printResults.delete(Object.keys(printResults)[0]);
+    if (printResults.length > maxPrintResults) {
+        printResults.shift();
     }
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
@@ -475,7 +476,8 @@ function updateResults(e, result, print, input = "") {
                     return;
                 }
                 let output = data;
-                printResults.set(input, output);
+                printResults.push([input,
+                    output]);
                 if (output.includes("<img")) {
                 }
                 else {
@@ -580,6 +582,7 @@ function wolframBusy(params) {
     }
 }
 let workspaceDecorations = {};
+let workspaceLintDecorations = {};
 function clearDecorations() {
     let editor = vscode.window.activeTextEditor;
     let uri = editor === null || editor === void 0 ? void 0 : editor.document.uri.toString();
@@ -625,7 +628,53 @@ function updateDecorations(decorationfile) {
         // }
     }
 }
+function updateLintDecorations(decorationfile) {
+    let editor = vscode.window.activeTextEditor;
+    if ((editor === null || editor === void 0 ? void 0 : editor.document.uri.scheme) === 'file' || (editor === null || editor === void 0 ? void 0 : editor.document.uri.scheme) === 'untitled') {
+        //editor.setDecorations(variableDecorationType, []);
+        fs.readFile(decorationfile, "utf8", (err, data) => {
+            if (err) {
+                outputChannel.appendLine(err);
+                return;
+            }
+            newDecorations = JSON.parse(data);
+            if (typeof (editor) === "undefined") {
+                return;
+            }
+            let uri = editor.document.uri.toString();
+            let editorLintDecorations = [];
+            if (newDecorations[uri] === workspaceDecorations[uri]) {
+                return;
+            }
+            else {
+                workspaceLintDecorations[uri] = newDecorations[uri];
+                Object.keys(workspaceLintDecorations[uri]).forEach((d) => {
+                    editorLintDecorations.push(workspaceLintDecorations[uri][d]);
+                });
+                runningLines = [];
+                editor.setDecorations(variableDecorationType, editorLintDecorations);
+                editor.setDecorations(runningDecorationType, runningLines);
+            }
+        });
+        // try{
+        //     ;
+        // } catch{
+        //     newDecorations = {};
+        //     return
+        // }
+    }
+}
 let variableDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'none',
+    light: {
+        color: new vscode.ThemeColor("foreground")
+    },
+    dark: {
+        color: new vscode.ThemeColor("foreground")
+    },
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+});
+let lintDecorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: 'none',
     light: {
         color: new vscode.ThemeColor("foreground")
@@ -647,10 +696,10 @@ let runningDecorationType = vscode.window.createTextEditorDecorationType({
 });
 function updateOutputPanel() {
     let out = "";
-    printResults.forEach((v, k) => {
+    printResults.forEach((row) => {
         let data = "";
         try {
-            data += v;
+            data += row[1];
         }
         catch (e) {
             console.log(e.message);
@@ -658,7 +707,7 @@ function updateOutputPanel() {
         }
         if (data !== "") {
             out += "<div id='result-header'>In: " +
-                k.substring(0, 1000) +
+                row[0].substring(0, 1000) +
                 "</div>" +
                 "<div id='result'>" +
                 data +

@@ -4,7 +4,7 @@ import {
 	LanguageClientOptions,
     NotificationType,
 	ServerOptions,
-	TransportKind } from 'vscode-languageclient';
+	TransportKind } from 'vscode-languageclient/node';
 const psTree = require('ps-tree');
 import * as net from 'net';
 const fp = require('find-free-port');
@@ -310,7 +310,7 @@ function loadkernel(outputChannel:any, context:vscode.ExtensionContext, callback
 		};
 
 		kernel = new LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions)
-		kernel.onReady().then(() => {
+		kernel.onDidChangeState((e:any) => {
 			// kernel.onNotification("onRunInWolfram", onRunInWolfram);
 			// kernel.onNotification("wolframBusy", wolframBusy);
 			// kernel.onNotification("updateDecorations", updateDecorations);

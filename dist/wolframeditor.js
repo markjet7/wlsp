@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WolframEditorProvider = void 0;
 const vscode = require("vscode");
-const vscode_languageclient_1 = require("vscode-languageclient");
+const node_1 = require("vscode-languageclient/node");
 const psTree = require('ps-tree');
 const net = require("net");
 const fp = require('find-free-port');
@@ -280,8 +280,8 @@ function loadkernel(outputChannel, context, callback) {
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel
     };
-    kernel = new vscode_languageclient_1.LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions);
-    kernel.onReady().then(() => {
+    kernel = new node_1.LanguageClient('wolfram', 'Wolfram Language Server Kernel', serverOptions, clientOptions);
+    kernel.onDidChangeState((e) => {
         // kernel.onNotification("onRunInWolfram", onRunInWolfram);
         // kernel.onNotification("wolframBusy", wolframBusy);
         // kernel.onNotification("updateDecorations", updateDecorations);

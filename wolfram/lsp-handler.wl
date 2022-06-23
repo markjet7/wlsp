@@ -61,6 +61,7 @@ handle["initialize",json_]:=Module[{response, builtins},
 	documents = <||>;
 	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	sendResponse[response];	
+	workspaceLintDecorationsFile = CreateFile[];
 	
 	builtinSymbols = {};
 	symbolListFile = scriptPath <> "symbolList.js";
@@ -283,13 +284,16 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, as
 	src = Check[documents[json["params","textDocument","uri", "external"]],""];
 
 	ast = CodeParse[StringReplace[src, ";" -> " "]];
-	functions = Cases[ast, CallNode[LeafNode[Symbol,(_),_],___],3];
+	functions = Cases[ast, (
+		CallNode[LeafNode[Symbol,(_),_],___] |
+		LeafNode[_,_,_]
+	),{2}];
 
-	{prev, next} = First[BlockMap[{f12} |-> (
+	{prev, next} = Last[BlockMap[{f12} |-> (
 			If[
     			And[(f12[[1, -1]][Source][[1, 1]]-1 <= range[["start", "line"]]), range[["start", "line"]] <= f12[[2, -1]][Source][[1, 1]]-1],
 				{
-					f12[[2, -1]][Source], 
+					f12[[1, -1]][Source], 
 					f12[[2, -1]][Source][[1, 1]]-1
 				},
    				Nothing
@@ -899,6 +903,7 @@ handle["abort", json_]:=Module[{},
 
 validate[json_]:=Module[{src, lints, severities, msgs, response},
 	Check[
+		workspaceLintDecorations = <||>;
 		uri = json["params", "textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 		lints = CodeInspect[src];
@@ -912,16 +917,46 @@ validate[json_]:=Module[{src, lints, severities, msgs, response},
 			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]],0] |> &, lints];
 		
 		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
+		sendResponse[response];
 		
-		sendResponse[response];,
+		(* Decorations *)
+		decorations = Map[lintToDecoration, lints];
+		workspaceLintDecorations[uri] = decorations;
+
+		Export[workspaceLintDecorationsFile, workspaceLintDecorations, "JSON"];
+		response = <| "method" -> "updateLintDecorations", "params"-> ToString@workspaceLintDecorationsFile|>;
+		sendResponse[response];
+		,
 		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>]
 	]
 ];
+
+lintToDecoration[lint_]:=Module[{},
+	Echo@<|
+		"range"-><|
+			"start" -> <| "line" -> lint[[4, 1, 1, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1096 |>,
+			"end" -> <| "line" -> lint[[4, 1, 2, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1196 |>
+		|>,
+		"renderOptions" -> <|
+			"after" -> <|
+				"contentText" -> lint[[2]],
+				"backgroundColor" -> "editor.background",
+				"foregroundColor" -> "editor.foreground",
+				"color" -> Switch[lint[[3]], "Fatal", "red", "Warning", "yellow", "Information","white", "Hint","blue", _, "yellow"],
+				"margin" -> "0 0 0 10px",
+				"rangeBehavior" -> 4
+			|>,
+			"rangeBehavior"->4
+		|>
+	|>
+];
+
 
 validate[]:=Module[{lints, severities, msgs, response},
 		Check[
 			KeyValueMap[
 				Function[{uri, src},
+					Print["validating"];
 					lints = CodeInspect[src];
 					severities = <| "Fatal"->0, "Warning"->1, "Information"->2, "Hint"->3 |>;
 					msgs = Map[<|
@@ -938,6 +973,7 @@ validate[]:=Module[{lints, severities, msgs, response},
 				],
 				documents
 			];,
+
 		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> {} |>|>;
 		sendResponse[response];
 		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "File diagnostics failed." |> |>];

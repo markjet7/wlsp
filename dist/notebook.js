@@ -52,29 +52,27 @@ class WolframNotebookSerializer {
                 return new vscode.NotebookData(this.cells);
             }
             if (clients_1.wolframClient !== undefined) {
-                clients_1.wolframClient.onReady().then(() => {
-                    clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
-                        this.raw = [];
-                        result.map((item) => this.getCells(item));
-                        this.cells = this.raw.map((item) => {
-                            let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
-                            i.metadata = item.metadata;
-                            let outs = item.outputs.reduce((o, c) => {
-                                var _a, _b;
-                                return { value: ((_a = o.value) === null || _a === void 0 ? void 0 : _a.toString()) + "<br>" + ((_b = c === null || c === void 0 ? void 0 : c.value) === null || _b === void 0 ? void 0 : _b.toString()) };
-                            }, { value: "" }).value;
-                            i.outputs = [
-                                new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.text(outs, "text/html")
-                                ])
-                            ];
-                            return i;
-                        });
-                        cb(new vscode.NotebookData(this.cells));
-                        return new vscode.NotebookData(this.cells);
-                    }).then((result) => {
-                        return result;
+                clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeNotebook", { contents: contents }).then((result) => {
+                    this.raw = [];
+                    result.map((item) => this.getCells(item));
+                    this.cells = this.raw.map((item) => {
+                        let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
+                        i.metadata = item.metadata;
+                        let outs = item.outputs.reduce((o, c) => {
+                            var _a, _b;
+                            return { value: ((_a = o.value) === null || _a === void 0 ? void 0 : _a.toString()) + "<br>" + ((_b = c === null || c === void 0 ? void 0 : c.value) === null || _b === void 0 ? void 0 : _b.toString()) };
+                        }, { value: "" }).value;
+                        i.outputs = [
+                            new vscode.NotebookCellOutput([
+                                vscode.NotebookCellOutputItem.text(outs, "text/html")
+                            ])
+                        ];
+                        return i;
                     });
+                    cb(new vscode.NotebookData(this.cells));
+                    return new vscode.NotebookData(this.cells);
+                }).then((result) => {
+                    return result;
                 });
             }
             else {
@@ -134,10 +132,8 @@ class WolframScriptSerializer {
             }
             return new Promise((resolve, reject) => {
                 if (clients_1.wolframClient !== undefined) {
-                    clients_1.wolframClient.onReady().then(() => {
-                        return clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
-                            resolve(Buffer.from(result));
-                        });
+                    return clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("serializeScript", { contents: contents }).then((result) => {
+                        resolve(Buffer.from(result));
                     });
                 }
                 else {
@@ -172,26 +168,24 @@ class WolframScriptSerializer {
                 return new vscode.NotebookData(this.cells);
             }
             if (clients_1.wolframClient !== undefined) {
-                clients_1.wolframClient.onReady().then(() => {
-                    clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeScript", { contents: contents }).then((result) => {
-                        this.raw = [];
-                        result.map((item) => this.getCells(item));
-                        this.cells = this.raw.map((item) => {
-                            var _a;
-                            try {
-                                let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
-                                i.metadata = item.metadata;
-                                return i;
-                            }
-                            catch (e) {
-                                return new vscode.NotebookCellData(1, item ? "" : (_a = item.value) === null || _a === void 0 ? void 0 : _a.toString(), "markdown");
-                            }
-                        });
-                        cb(new vscode.NotebookData(this.cells));
-                        return new vscode.NotebookData(this.cells);
-                    }).then((result) => {
-                        return result;
+                clients_1.wolframClient === null || clients_1.wolframClient === void 0 ? void 0 : clients_1.wolframClient.sendRequest("deserializeScript", { contents: contents }).then((result) => {
+                    this.raw = [];
+                    result.map((item) => this.getCells(item));
+                    this.cells = this.raw.map((item) => {
+                        var _a;
+                        try {
+                            let i = new vscode.NotebookCellData(item.kind, item.value, item.languageId);
+                            i.metadata = item.metadata;
+                            return i;
+                        }
+                        catch (e) {
+                            return new vscode.NotebookCellData(1, item ? "" : (_a = item.value) === null || _a === void 0 ? void 0 : _a.toString(), "markdown");
+                        }
                     });
+                    cb(new vscode.NotebookData(this.cells));
+                    return new vscode.NotebookData(this.cells);
+                }).then((result) => {
+                    return result;
                 });
             }
             else {
