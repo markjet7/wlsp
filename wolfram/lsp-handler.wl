@@ -307,7 +307,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, as
 		"start" -> <|"line" -> prev[[1,1]]-1, "character" -> prev[[1, 2]]-1 |>,
 		"end" -> <|"line" -> prev[[2,1]]-1, "character" -> prev[[2, 2]]-1 |>
 		|>, x_/;x<0 -> 0];
-	newPosition = <|"line"->next, "character"->0|>;
+	newPosition = <|"line"->If[next > range["end"]["line"], next, range["end"]["line"]+1], "character"->0|>;
 	sendResponse[<|"id" -> json["id"], "result" -> <|"position" -> newPosition, "input" -> input|>|>];
 ];
 
@@ -1198,7 +1198,7 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 
 	f[node_]:=Module[{astStr,name,loc,kind,rhs},
 		astStr=ToFullFormString[node[[2,1]]];
-		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
+		name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
 		loc=node[[-1]][Source];
 		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
 		kind=If[Head@rhs == CallNode,

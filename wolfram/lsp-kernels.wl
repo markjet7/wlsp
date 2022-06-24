@@ -491,10 +491,10 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		value = Which[
 			symbol === "",
 				"",
-			Or[graphicsQ@Symbol[symbol], MemberQ[graphicHeads, Head[Symbol[symbol]]]],
-				"<img src=\"data:image/png;base64," <> ExportString[Symbol[symbol], {"Base64", "PNG"}] <> "\" width=\"200\" />",
+			Check[Or[graphicsQ@Symbol[symbol], MemberQ[graphicHeads, Head[Symbol[symbol]]]],False],
+				Check["<img src=\"data:image/png;base64," <> ExportString[Symbol[symbol], {"Base64", "PNG"}] <> "\" width=\"200\" />","-Error-"],
 			True,
-				ToString[Symbol[symbol], InputForm, TotalWidth -> 8192]
+				ToString[Check[Symbol[symbol],symbol], InputForm, TotalWidth -> 8192]
 		];
 
 		result = <|"contents"-><|
@@ -881,7 +881,7 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 
 	f[node_]:=Module[{astStr,name,loc,kind,rhs},
 		astStr=ToFullFormString[node[[2,1]]];
-		name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];
+		name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
 		loc=node[[-1]][Source];
 		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
 		kind=If[Head@rhs == CallNode,

@@ -359,7 +359,7 @@ function runInWolfram(print = false, trace = false) {
     });
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: print, trace };
     evaluationQueue.push(evaluationData);
-    showPlots();
+    // showPlots();
     if (!exports.wolframKernelClient) {
         restart().then(() => {
             evaluationQueue.push(evaluationData);
@@ -533,9 +533,7 @@ function showPlots() {
     let outputColumn = (_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.viewColumn;
     //let out = "<table id='outputs'>";
     if (plotsPanel) {
-        if (plotsPanel.visible) {
-        }
-        else {
+        if (!plotsPanel.visible) {
             if (outputColumn) {
                 plotsPanel.reveal(outputColumn + 1, true);
             }
