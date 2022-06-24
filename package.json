@@ -300,7 +300,6 @@
     "dependencies": {
         "@shelacek/ubjson": "1.0.1",
         "abort-controller": "^3.0.0",
-        "lodash-es": "^4.17.21",
         "open": "7.1.0",
         "supports-color": "^7.1.0",
         "tmp": "0.2.1",
