@@ -1,13 +1,42 @@
-# Wolfram Language Server
+# WLSP
 
-A Wolfram implementation of the [Language Server Protocol](https://github.com/Microsoft/language-server-protocol)
+This is an implementation of the [Language Server Protocol](https://github.com/Microsoft/language-server-protocol) for the Wolfram language[1].
+
+![](main_image.jpg)
 
 ## Installation
-The language server requires an installation of [Wolfram](https://www.wolfram.com) or the [Wolfram Engine](https://www.wolfram.com/engine/).
+The language server requires an installation of [Wolfram](https://www.wolfram.com) or the [Wolfram Engine](https://www.wolfram.com/engine/) with wolframscript.
 
-wolframscript should be available in the global path. A configuration option for specifying the path of wolframscript will be added in the future.
+The wolframscript path can be configured.
 
-## Language Server features
+## Features
+Kernel: Evaluate wolfram code blocks, selections, and files
+
+Results: Preview results in the plot window and on hover
+
+Hovers: supports function documentation and variable previews on hover
+
+Signatures: supports function signatures 
+
+Folding Ranges: supports folding ranges for functions
+
+Document Formatting: supports document formatting by request
+
+Completions: supports variable and function completions. Partial support for association keys included
+
+Document Symbols: supports finding symbol references and implementations
+
+Code Lens: provides code lens to run sections (split by 3 lines)
+
+Rename: partial support for renaming expressions
+
+Definitions: provides definitions for most built-in functions and function preview for custom functions
+
+Colors: provides a color picker for the RGBA function
+
+Workspace Symbols: provides support for finding symbols in a workspace 
+
+## Other features
 ### Run Expressions
 ![](wlsp-results-decoration.gif)
 
@@ -23,8 +52,8 @@ wolframscript should be available in the global path. A configuration option for
 ### Find Help
 ![](wlsp-help-others.gif)
 
-### Jupyter Notebook (Insiders)
-wlsp works with the Jupyter notebook interface but you will need to install the Insiders version of vscode.
+### Notebooks
+
 
 
 ## License 
@@ -35,4 +64,4 @@ This project is made available under the MIT License
 
 [codeparser] (https://github.com/WolframResearch/codeparser)
 
-Wolfram is a registered trademark of Wolfram Research, Inc. All other product names mentioned are trademarks of their producers.
+[1] Wolfram is a registered trademark of Wolfram Research, Inc. All other product names mentioned are trademarks of their producers.
