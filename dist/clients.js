@@ -652,7 +652,7 @@ function updateLintDecorations(decorationfile) {
                     editorLintDecorations.push(workspaceLintDecorations[uri][d]);
                 });
                 runningLines = [];
-                editor.setDecorations(variableDecorationType, editorLintDecorations);
+                editor.setDecorations(lintDecorationType, editorLintDecorations);
                 editor.setDecorations(runningDecorationType, runningLines);
             }
         });
@@ -920,7 +920,11 @@ function startWLSPKernel(id) {
                 "wolfram"
             ],
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: outputChannel
+            outputChannel: outputChannel,
+            markdown: {
+                isTrusted: true,
+                supportHtml: true
+            }
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);

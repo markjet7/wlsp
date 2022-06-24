@@ -60,8 +60,6 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
 
-		Print[(graphicsQ@output) ];
-
 		If[!(graphicsQ@output) && (!MemberQ[ graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
 			WriteString[f, ExportString[ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]];
 			Close[f];

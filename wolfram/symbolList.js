@@ -6,7 +6,7 @@
 		"children":[
 			{
 				"name":"z",
-				"kind":"Integer",
+				"kind":"Symbol",
 				"definition":"z = 5",
 				"location":{
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
@@ -23,7 +23,7 @@
 				},
 				"children":[],
 				"lazyload":"symbolToTreeItem2[z]",
-				"icon":"symbol-numeric",
+				"icon":"symbol-variable",
 				"collapsibleState":1
 			},
 			{
@@ -72,7 +72,7 @@
 			},
 			{
 				"name":"names",
-				"kind":"Symbol",
+				"kind":"Association",
 				"definition":"names = <|\n    \"John\"->9,\n    \"Carl\"->10,\n    \"Pedro\"->8\n|>",
 				"location":{
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
@@ -91,9 +91,31 @@
 				"lazyload":"symbolToTreeItem2[names]",
 				"icon":"symbol-variable",
 				"collapsibleState":1
+			},
+			{
+				"name":"plot1",
+				"kind":"Graphics",
+				"definition":"plot1 = Plot[x^2, {x, -10, 10}]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
+					"range":{
+						"start":{
+							"line":22,
+							"character":0
+						},
+						"end":{
+							"line":22,
+							"character":31
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[plot1]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
 			}
 		],
-		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Table[x, {x, 1, 10  }]  \\nz = 5\\n\\n\\n1\\n2\\n3\\n\\n\\n\\nf[y_]:=2+1\\n\\nmyname[\\\"test\\\"] = 7\\n\\nnames = <|\\n    \\\"John\\\"->9,\\n    \\\"Carl\\\"->10,\\n    \\\"Pedro\\\"->8\\n|>\\n\\nnames[\\\"John\\\"]\\n\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"]]",
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Table[x, {x, 1, 10  }]  \\nz = 5\\n\\n\\n1\\n2\\n3\\n\\n\\n\\nf[y_]:=2+1  \\n\\nmyname[\\\"test\\\"] = 7  \\n\\nnames = <|\\n    \\\"John\\\"->9,\\n    \\\"Carl\\\"->10,\\n    \\\"Pedro\\\"->8\\n|>\\n\\nnames[\\\"John\\\"]\\n\\nplot1 = Plot[x^2, {x, -10, 10}]\\n\\n1+1\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"]]",
 		"icon":"file-code",
 		"location":{
 			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl"
@@ -466,151 +488,6 @@
 		"collapsibleState":1
 	},
 	{
-		"name":"Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type",
-		"kind":"String",
-		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"",
-		"children":[
-			{
-				"name":"p1",
-				"kind":"Symbol",
-				"definition":"p1 = ListPlot[\n    Evaluate@KeyValueMap[{k,v} |->\n        v[[1;;, {3, 4}]],\n        byFuelFeedstock[\"AtJ-SPK\"]\n    ],\n    PlotLabel -> \"Aviation Jet Fuel\",\n    PlotLegends -> SwatchLegend[\n        Automatic,\n        Keys@byFuelFeedstock[\"AtJ-SPK\"],\n        LegendLayout -> {\"Column\", 1}],\n    Frame -> True,\n    FrameLabel -> {\n        {Style[\"Biofuel Cost ($\/gallon)\", 32], None},\n        {Style[\"Biorefinery Input Capacity (Metric Tons per Day)\", 32], None}\n    },\n    FrameTicksStyle -> 32,\n    LabelStyle -> 36,\n    ImageSize -> 20*72\n]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":39,
-							"character":0
-						},
-						"end":{
-							"line":57,
-							"character":1
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[p1]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"fit",
-				"kind":"Symbol",
-				"definition":"fit = NonlinearModelFit[\n        [[1;;, {3,4}]],\n        a*(1\/x)^b,\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\n        x\n    ]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":61,
-							"character":0
-						},
-						"end":{
-							"line":66,
-							"character":5
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[fit]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"bands90",
-				"kind":"Symbol",
-				"definition":"bands90[x_]:=fit[\"MeanPredictionBands\", ConfidenceLevel -> 0.9999999]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":71,
-							"character":0
-						},
-						"end":{
-							"line":71,
-							"character":69
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[bands90]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"p1",
-				"kind":"Symbol",
-				"definition":"p1 = Plot[\n    Evaluate@Table[\n    Check[f[x],0],\n    {f, fits[[1;;]]}\n], {x, 100, 10000},\n    PlotLabel -> \"Aviation Jet Fuel\",\n    PlotLabels -> Keys@byFuelFeedstock[\"AtJ-SPK\"],\n    Frame -> True,\n    FrameLabel -> {\n        {Style[\"Biofuel Cost ($\/gallon)\", 32], None},\n        {Style[\"Biorefinery Input Capacity (Metric Tons per Day)\", 32], None}\n    },\n    FrameTicksStyle -> 32,\n    LabelStyle -> 36,\n    ImageSize -> 20*72\n\n]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":97,
-							"character":0
-						},
-						"end":{
-							"line":113,
-							"character":1
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[p1]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"p3",
-				"kind":"Symbol",
-				"definition":"p3 = MatrixPlot[\n    countsBySizeTable[[All,2;;]]\/(5*3050),\n    FrameTicks -> {\n        {\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\n        {None, \n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\n        }\n    },\n    FrameLabel -> {\n        {None,\"Biomass Input Capacity\\n(metric tonnes per day)\"},\n        {None, None}\n    },\n    PlotLegends -> Automatic\n]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":176,
-							"character":0
-						},
-						"end":{
-							"line":190,
-							"character":1
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[p3]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"usBios",
-				"kind":"Symbol",
-				"definition":"usBios = Import[NotebookDirectory[] <> \"us_biorefineries.txt\", \"Table\"]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
-					"range":{
-						"start":{
-							"line":196,
-							"character":0
-						},
-						"end":{
-							"line":196,
-							"character":71
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[usBios]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			}
-		],
-		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Get[NotebookDirectory[]<>\\\"functions.wl\\\"];\\n\\ndata = Import[FileNameJoin[{NotebookDirectory[] , \\\"data\\\",\\\"full_county_data.mx\\\"}]];\\n\\nbiorefineries = Select[\\n    loadBILT[],\\n    MemberQ[{\\\"FT-SPK\\\", \\\"AtJ-SPK\\\", \\\"FT-Diesel\\\", \\\"FT-Gasoline\\\", \\\"EtOH\\\"},#[\\\"product\\\"]]\\n    &];\\nfeedstocks = biorefineries[[All, \\\"feedstock\\\"]] \/\/ DeleteDuplicates;\\nn =0;\\n\\nallresults = AbsoluteTiming[ParallelTable[\\n    Print[n];\\n    n=n+1;\\n    counties = Select[data, #[b[\\\"feedstock\\\"]]>1000&];\\n    Flatten@{\\n        b[\\\"feedstock\\\"],\\n        b[\\\"product\\\"],\\n        Values[\\n            optimalBiorefineryCapacityCost[\\n                Values[c[[{\\\"Lat\\\",\\\"Lon\\\"}]]],\\n                counties,\\n            b][[{\\\"Capacity\\\",\\\"Biofuel Cost\\\",\\\"CO2\\\"}]]]\\n    },\\n    {b, biorefineries[[1;;]]},{c,data[[1;;]]}\\n]];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.mx\\\"}], allresults];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}], Flatten[allresults[[2]],1]];\\n\\noptimals = Import[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}],\\\"CSV\\\"];\\n\\nbyFuelFeedstock = GroupBy[optimals, {#[[2]]&, #[[1]]&}];\\n\\nbyFuelFeedstock \/\/ Keys\\n\\nbyFuelFeedstock[\\\"AtJ-SPK\\\"] \/\/ Keys\\n\\np1 = ListPlot[\\n    Evaluate@KeyValueMap[{k,v} |->\\n        v[[1;;, {3, 4}]],\\n        byFuelFeedstock[\\\"AtJ-SPK\\\"]\\n    ],\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLegends -> SwatchLegend[\\n        Automatic,\\n        Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n        LegendLayout -> {\\\"Column\\\", 1}],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n]\\n\\nExport[NotebookDirectory[] <> \\\"figures\/aviation_jet_fuel.jpg\\\", p1]\\n\\nfit = NonlinearModelFit[\\n        [[1;;, {3,4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ]\\n\\nfit[3000]\\n  \\n\\nbands90[x_]:=fit[\\\"MeanPredictionBands\\\", ConfidenceLevel -> 0.9999999]\\n\\n\\n\\nCases[\\n    byFuel[[2, 1;;, {3,4}]],\\n    {0., _},\\n    {-2}]\\n\\nMin[Flatten@byFuel[[2, 1;;, {3,4}]]]\\n\\nPlot[10000*(1\/x)^0.7, {x, 100, 5000}]\\n\\nfits = KeyValueMap[ {k,v} |->\\n    NonlinearModelFit[\\n        v[[1;;, {3, 4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ], byFuelFeedstock[\\\"AtJ-SPK\\\"]];\\n\\nPlot[{fit[x], bands90[x]}, \\n    {x, 100, 5000},\\n    Filling -> {2 -> {1}}]\\n\\n\\np1 = Plot[\\n    Evaluate@Table[\\n    Check[f[x],0],\\n    {f, fits[[1;;]]}\\n], {x, 100, 10000},\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLabels -> Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n\\n]\\n\\n\\nTable[\\n    ListPlot[\\n        b[[All, {3, 4}]],\\n        PlotRange->{All, {0, 100}}\\n    ],\\n    {b, byFuel}\\n] \/\/ Column\\n\\nbins = {{0, 250, 750, 1250, 2750, 5250, 10750}};\\ncountsBySize[r_]:=Round[HistogramList[\\n    r,\\n    bins\\n][[2]], 100];\\n\\nbyBiomass = GroupBy[\\n    optimals,\\n    First,\\n    #[[All, 3]] &\\n] \/\/ SortBy[Mean];\\n\\np1 = DistributionChart[\\n    byBiomass,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byBiomass,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biomass Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByBiomass.jpg\\\"}], p1]\\n\\nbyFuel = GroupBy[\\n    optimals,\\n    #[[2]] &,\\n    #[[All, 3]] &\\n];\\n\\np2 = DistributionChart[\\n    byFuel,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byFuel,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biofuel Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuel.jpg\\\"}], p2]\\n\\n\\ncountsBySizeTable = KeyValueMap[{k,v} |-> Flatten@{k, countsBySize[v]}, byBiomass] \/\/ Reverse;\\ncountsBySizeTable \\nReverse \/\/ TableForm[\\n    #,\\n    TableHeadings -> {\\n        None, \\n    Flatten@{\\\"Feedstock\/Capacity (MTPD)\\\", \\n        BlockMap[Mean,bins[[1]],2,1]\\n    }}\\n] &\\n\\np3 = MatrixPlot[\\n    countsBySizeTable[[All,2;;]]\/(5*3050),\\n    FrameTicks -> {\\n        {\\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\\n        {None, \\n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\\n        }\\n    },\\n    FrameLabel -> {\\n        {None,\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\"},\\n        {None, None}\\n    },\\n    PlotLegends -> Automatic\\n]\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuelMatrixPlot.jpg\\\"}], p3]\\n\\n(* Biorefinery Capacities by State: https:\/\/neo.ne.gov\/programs\/stats\/inf\/122.htm *)\\n(* ADM's Decatur, IL corn ethanol facility consumes almost 10,000 mtpd of corn *)\\n\\nusBios = Import[NotebookDirectory[] <> \\\"us_biorefineries.txt\\\", \\\"Table\\\"]\\n\\nusBios[[1]]\\n\\n3+9\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"]]",
-		"icon":"file-code",
-		"location":{
-			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl"
-		},
-		"collapsibleState":1
-	},
-	{
 		"name":"Crop%20versus%20CSR%20model",
 		"kind":"String",
 		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl\"",
@@ -752,6 +629,151 @@
 		"icon":"file-code",
 		"location":{
 			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl"
+		},
+		"collapsibleState":1
+	},
+	{
+		"name":"Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type",
+		"kind":"String",
+		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"",
+		"children":[
+			{
+				"name":"p1",
+				"kind":"Symbol",
+				"definition":"p1 = ListPlot[\n    Evaluate@KeyValueMap[{k,v} |->\n        v[[1;;, {3, 4}]],\n        byFuelFeedstock[\"AtJ-SPK\"]\n    ],\n    PlotLabel -> \"Aviation Jet Fuel\",\n    PlotLegends -> SwatchLegend[\n        Automatic,\n        Keys@byFuelFeedstock[\"AtJ-SPK\"],\n        LegendLayout -> {\"Column\", 1}],\n    Frame -> True,\n    FrameLabel -> {\n        {Style[\"Biofuel Cost ($\/gallon)\", 32], None},\n        {Style[\"Biorefinery Input Capacity (Metric Tons per Day)\", 32], None}\n    },\n    FrameTicksStyle -> 32,\n    LabelStyle -> 36,\n    ImageSize -> 20*72\n]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":39,
+							"character":0
+						},
+						"end":{
+							"line":57,
+							"character":1
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[p1]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"fit",
+				"kind":"Symbol",
+				"definition":"fit = NonlinearModelFit[\n        [[1;;, {3,4}]],\n        a*(1\/x)^b,\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\n        x\n    ]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":61,
+							"character":0
+						},
+						"end":{
+							"line":66,
+							"character":5
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[fit]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"bands90",
+				"kind":"Symbol",
+				"definition":"bands90[x_]:=fit[\"MeanPredictionBands\", ConfidenceLevel -> 0.9999999]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":71,
+							"character":0
+						},
+						"end":{
+							"line":71,
+							"character":69
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[bands90]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"p1",
+				"kind":"Symbol",
+				"definition":"p1 = Plot[\n    Evaluate@Table[\n    Check[f[x],0],\n    {f, fits[[1;;]]}\n], {x, 100, 10000},\n    PlotLabel -> \"Aviation Jet Fuel\",\n    PlotLabels -> Keys@byFuelFeedstock[\"AtJ-SPK\"],\n    Frame -> True,\n    FrameLabel -> {\n        {Style[\"Biofuel Cost ($\/gallon)\", 32], None},\n        {Style[\"Biorefinery Input Capacity (Metric Tons per Day)\", 32], None}\n    },\n    FrameTicksStyle -> 32,\n    LabelStyle -> 36,\n    ImageSize -> 20*72\n\n]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":97,
+							"character":0
+						},
+						"end":{
+							"line":113,
+							"character":1
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[p1]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"p3",
+				"kind":"Symbol",
+				"definition":"p3 = MatrixPlot[\n    countsBySizeTable[[All,2;;]]\/(5*3050),\n    FrameTicks -> {\n        {\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\n        {None, \n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\n        }\n    },\n    FrameLabel -> {\n        {None,\"Biomass Input Capacity\\n(metric tonnes per day)\"},\n        {None, None}\n    },\n    PlotLegends -> Automatic\n]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":176,
+							"character":0
+						},
+						"end":{
+							"line":190,
+							"character":1
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[p3]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"usBios",
+				"kind":"Symbol",
+				"definition":"usBios = Import[NotebookDirectory[] <> \"us_biorefineries.txt\", \"Table\"]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
+					"range":{
+						"start":{
+							"line":196,
+							"character":0
+						},
+						"end":{
+							"line":196,
+							"character":71
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[usBios]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			}
+		],
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Get[NotebookDirectory[]<>\\\"functions.wl\\\"];\\n\\ndata = Import[FileNameJoin[{NotebookDirectory[] , \\\"data\\\",\\\"full_county_data.mx\\\"}]];\\n\\nbiorefineries = Select[\\n    loadBILT[],\\n    MemberQ[{\\\"FT-SPK\\\", \\\"AtJ-SPK\\\", \\\"FT-Diesel\\\", \\\"FT-Gasoline\\\", \\\"EtOH\\\"},#[\\\"product\\\"]]\\n    &];\\nfeedstocks = biorefineries[[All, \\\"feedstock\\\"]] \/\/ DeleteDuplicates;\\nn =0;\\n\\nallresults = AbsoluteTiming[ParallelTable[\\n    Print[n];\\n    n=n+1;\\n    counties = Select[data, #[b[\\\"feedstock\\\"]]>1000&];\\n    Flatten@{\\n        b[\\\"feedstock\\\"],\\n        b[\\\"product\\\"],\\n        Values[\\n            optimalBiorefineryCapacityCost[\\n                Values[c[[{\\\"Lat\\\",\\\"Lon\\\"}]]],\\n                counties,\\n            b][[{\\\"Capacity\\\",\\\"Biofuel Cost\\\",\\\"CO2\\\"}]]]\\n    },\\n    {b, biorefineries[[1;;]]},{c,data[[1;;]]}\\n]];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.mx\\\"}], allresults];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}], Flatten[allresults[[2]],1]];\\n\\noptimals = Import[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}],\\\"CSV\\\"];\\n\\nbyFuelFeedstock = GroupBy[optimals, {#[[2]]&, #[[1]]&}];\\n\\nbyFuelFeedstock \/\/ Keys\\n\\nbyFuelFeedstock[\\\"AtJ-SPK\\\"] \/\/ Keys\\n\\np1 = ListPlot[\\n    Evaluate@KeyValueMap[{k,v} |->\\n        v[[1;;, {3, 4}]],\\n        byFuelFeedstock[\\\"AtJ-SPK\\\"]\\n    ],\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLegends -> SwatchLegend[\\n        Automatic,\\n        Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n        LegendLayout -> {\\\"Column\\\", 1}],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n]\\n\\nExport[NotebookDirectory[] <> \\\"figures\/aviation_jet_fuel.jpg\\\", p1]\\n\\nfit = NonlinearModelFit[\\n        [[1;;, {3,4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ]\\n\\nfit[3000]\\n  \\n\\nbands90[x_]:=fit[\\\"MeanPredictionBands\\\", ConfidenceLevel -> 0.9999999]\\n\\n\\n\\nCases[\\n    byFuel[[2, 1;;, {3,4}]],\\n    {0., _},\\n    {-2}]\\n\\nMin[Flatten@byFuel[[2, 1;;, {3,4}]]]\\n\\nPlot[10000*(1\/x)^0.7, {x, 100, 5000}]\\n\\nfits = KeyValueMap[ {k,v} |->\\n    NonlinearModelFit[\\n        v[[1;;, {3, 4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ], byFuelFeedstock[\\\"AtJ-SPK\\\"]];\\n\\nPlot[{fit[x], bands90[x]}, \\n    {x, 100, 5000},\\n    Filling -> {2 -> {1}}]\\n\\n\\np1 = Plot[\\n    Evaluate@Table[\\n    Check[f[x],0],\\n    {f, fits[[1;;]]}\\n], {x, 100, 10000},\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLabels -> Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n\\n]\\n\\n\\nTable[\\n    ListPlot[\\n        b[[All, {3, 4}]],\\n        PlotRange->{All, {0, 100}}\\n    ],\\n    {b, byFuel}\\n] \/\/ Column\\n\\nbins = {{0, 250, 750, 1250, 2750, 5250, 10750}};\\ncountsBySize[r_]:=Round[HistogramList[\\n    r,\\n    bins\\n][[2]], 100];\\n\\nbyBiomass = GroupBy[\\n    optimals,\\n    First,\\n    #[[All, 3]] &\\n] \/\/ SortBy[Mean];\\n\\np1 = DistributionChart[\\n    byBiomass,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byBiomass,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biomass Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByBiomass.jpg\\\"}], p1]\\n\\nbyFuel = GroupBy[\\n    optimals,\\n    #[[2]] &,\\n    #[[All, 3]] &\\n];\\n\\np2 = DistributionChart[\\n    byFuel,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byFuel,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biofuel Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuel.jpg\\\"}], p2]\\n\\n\\ncountsBySizeTable = KeyValueMap[{k,v} |-> Flatten@{k, countsBySize[v]}, byBiomass] \/\/ Reverse;\\ncountsBySizeTable \\nReverse \/\/ TableForm[\\n    #,\\n    TableHeadings -> {\\n        None, \\n    Flatten@{\\\"Feedstock\/Capacity (MTPD)\\\", \\n        BlockMap[Mean,bins[[1]],2,1]\\n    }}\\n] &\\n\\np3 = MatrixPlot[\\n    countsBySizeTable[[All,2;;]]\/(5*3050),\\n    FrameTicks -> {\\n        {\\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\\n        {None, \\n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\\n        }\\n    },\\n    FrameLabel -> {\\n        {None,\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\"},\\n        {None, None}\\n    },\\n    PlotLegends -> Automatic\\n]\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuelMatrixPlot.jpg\\\"}], p3]\\n\\n(* Biorefinery Capacities by State: https:\/\/neo.ne.gov\/programs\/stats\/inf\/122.htm *)\\n(* ADM's Decatur, IL corn ethanol facility consumes almost 10,000 mtpd of corn *)\\n\\nusBios = Import[NotebookDirectory[] <> \\\"us_biorefineries.txt\\\", \\\"Table\\\"]\\n\\nusBios[[1]]\\n\\n3+9\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"]]",
+		"icon":"file-code",
+		"location":{
+			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl"
 		},
 		"collapsibleState":1
 	},

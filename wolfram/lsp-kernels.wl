@@ -24,7 +24,8 @@ ServerCapabilities=<|
 	"textDocumentSync"->1,
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
-	|>
+	|>,
+	"hoverProvider" -> <|"contentFormat"->"markdown", "supportHtml"->True|>
 |>;
 
 
@@ -46,6 +47,7 @@ handle["initialize",json_]:=Module[{response, response2},
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
 	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
+	symbolDefinitions = <||>;
 ];
 
 
@@ -78,7 +80,6 @@ handle["runCell", json_]:=Module[{},
 ];
 
 handle["$/cancelRequest", json_]:=Module[{response},
-	Print["Aborting Kernel"];
 	TaskRemove[Tasks[]];
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response];
@@ -481,6 +482,44 @@ handle["textDocument/didSave", json_]:=Module[{},
 ];
 
 
+handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
+	Check[
+		position = json["params", "position"];
+		uri = json["params"]["textDocument"]["uri"];
+		src = documents[json["params","textDocument","uri"]];
+		symbol = ToString@getWordAtPosition[src, position];
+		value = Which[
+			symbol === "",
+				"",
+			Or[graphicsQ@Symbol[symbol], MemberQ[graphicHeads, Head[Symbol[symbol]]]],
+				"<img src=\"data:image/png;base64," <> ExportString[Symbol[symbol], {"Base64", "PNG"}] <> "\" width=\"200\" />",
+			True,
+				ToString[Symbol[symbol], InputForm, TotalWidth -> 8192]
+		];
+
+		result = <|"contents"-><|
+				"kind" -> "markdown",
+				"value" ->  value 
+				
+				(* Echo@Check["" <> First[
+					StringCases[
+						value, 
+						"src=" ~~ src__ ~~ "class" :> StringTake[
+							FileNameTake[src],
+							{1,-3}
+						]], ""] <> "", ""] *)
+			|>
+		|>;
+
+		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
+		sendResponse[response];,
+
+		response = <|"id"->json["id"], "result"->""|>;
+		sendResponse[response];
+		
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>];
+	];
+];
 
 
 getChildren[symbol_]:={};
@@ -860,6 +899,12 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
 	symbols
 ];
+
+graphicsQ = 
+  FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
+    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}] &;
+
+graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
 
 EndPackage[]

@@ -680,6 +680,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
+		f = CreateFile[];
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -907,14 +908,14 @@ validate[json_]:=Module[{src, lints, severities, msgs, response},
 		uri = json["params", "textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 		lints = CodeInspect[src];
-		severities = <| "Fatal"->0, "Warning"->1, "Information"->2, "Hint"->3 |>;
+		severities = <| "Error"->1, "Warning"->2, "Information"->3, "Hint"->4 |>;
 		msgs = Map[<|  
 			"message"->#[[2]], 
 			"range"-><|
 				"start" -> <| "line" -> #[[4, 1, 1, 1]]-1, "character" -> #[[4, 1, 1, 2]]-1 |>,
 				"end" -> <| "line" -> #[[4, 1, 2, 1]]-1, "character" -> #[[4, 1, 2, 2]]-1 |>
 			|>,
-			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]],0] |> &, lints];
+			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]], 2] |> &, lints];
 		
 		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
 		sendResponse[response];
@@ -932,7 +933,7 @@ validate[json_]:=Module[{src, lints, severities, msgs, response},
 ];
 
 lintToDecoration[lint_]:=Module[{},
-	Echo@<|
+	<|
 		"range"-><|
 			"start" -> <| "line" -> lint[[4, 1, 1, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1096 |>,
 			"end" -> <| "line" -> lint[[4, 1, 2, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1196 |>
@@ -942,7 +943,7 @@ lintToDecoration[lint_]:=Module[{},
 				"contentText" -> lint[[2]],
 				"backgroundColor" -> "editor.background",
 				"foregroundColor" -> "editor.foreground",
-				"color" -> Switch[lint[[3]], "Fatal", "red", "Warning", "yellow", "Information","white", "Hint","blue", _, "yellow"],
+				"color" -> Switch[lint[[3]], "Error", "red", "Warning", "yellow", "Information","white", "Hint","blue", _, "yellow"],
 				"margin" -> "0 0 0 10px",
 				"rangeBehavior" -> 4
 			|>,
@@ -1286,5 +1287,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 		labels = DeleteDuplicates[labels];
 	)
 ];
+
 *)
+
 EndPackage[];

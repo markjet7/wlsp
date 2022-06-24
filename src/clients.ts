@@ -1102,7 +1102,11 @@ async function startWLSPKernel(id:number): Promise<void> {
             "wolfram"
         ],
         diagnosticCollectionName: 'wolfram-lsp',
-        outputChannel: outputChannel
+        outputChannel: outputChannel,
+        markdown:{
+            isTrusted: true,
+            supportHtml: true
+        }
     };
 
     return new Promise(async (resolve) => {
