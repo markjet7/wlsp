@@ -21,7 +21,7 @@ export interface RawNotebookCell {
 //     context.subscriptions.push(
 //       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
 //   );
-// }
+// } todo: add this back in when we have a way to activate the extension
 
 export class WolframNotebookSerializer implements vscode.NotebookSerializer {
 
