@@ -173,45 +173,41 @@ resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
 Inputs = {};
 Outputs = {};
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack},
 	$busy = True;
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
-	string = StringTrim[code2["code"]];
+	string = StringTrim[Echo@code2["code"]];
 
 	start= Now;
 	Which[
 		string == "",
 		r = <|
 			"AbsoluteTiming" -> "0",
-			"Result" -> "",
+			"Result" -> {""},
 			"Success" -> True,
 			"Messages" -> {}
 		|>;
 		output = transforms[Null],
 
 		SyntaxQ[string],
-		If[json["params"]["trace"], 
-			r = evaluateString[Echo["Trace[" <> string <>"]", "Evaluating: "]],
-
-			r = evaluateString[Echo[string, "Evaluating: "]]
-		];
+		r = evaluateString[Echo[string, "Evaluating: "]];
 		AppendTo[Inputs, string];
 		output = transforms[r["Result"]],
 
 		True,
 		r = <|
 			"AbsoluteTiming" -> "NA",
-			"Result" -> "Syntax error",
+			"Result" -> {"Syntax error"},
 			"Success" -> False,
 			"Messages" -> {}
 		|>;
 		output = transforms["Syntax error"];
 	];
 
-	{time, {result, successQ}} = {r["AbsoluteTiming"], {r["Result"], r["Success"]}};
+	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {Last[r["Result"]], r["Success"], r["Result"]}};
 	ans = result;
 	AppendTo[Outputs, ans];
 
@@ -290,7 +286,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 					|>,
 					"rangeBehavior" -> 4
 				|>,
-				"hoverMessage" -> "<div>Test3 </div>"
+				"hoverMessage" -> StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 8192] &, stack], "\n"]
 			|>;
 
 		workspaceDecorations[
@@ -484,6 +480,7 @@ handle["textDocument/didSave", json_]:=Module[{},
 
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
+		On[Symbol::symname];
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -491,23 +488,15 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		value = Which[
 			symbol === "",
 				"",
-			Check[Or[graphicsQ@Symbol[symbol], MemberQ[graphicHeads, Head[Symbol[symbol]]]],False],
-				Check["<img src=\"data:image/png;base64," <> ExportString[Symbol[symbol], {"Base64", "PNG"}] <> "\" width=\"200\" />","-Error-"],
+			If[!(Names[symbol] == {}), Or[graphicsQ@Symbol[symbol], MemberQ[graphicHeads, Head[Symbol[symbol]]]], False],
+				Check["<img src=\"data:image/png;base64," <> ExportString[Symbol[symbol], {"Base64", "PNG"}] <> "\" width=\"200\" />", "-Error-"],
 			True,
-				ToString[Check[Symbol[symbol],symbol], InputForm, TotalWidth -> 8192]
+				ToString[symbol, InputForm, TotalWidth -> 8192]
 		];
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",
 				"value" ->  value 
-				
-				(* Echo@Check["" <> First[
-					StringCases[
-						value, 
-						"src=" ~~ src__ ~~ "class" :> StringTake[
-							FileNameTake[src],
-							{1,-3}
-						]], ""] <> "", ""] *)
 			|>
 		|>;
 
@@ -664,7 +653,7 @@ getWorkspaceSymbols[]:=Module[{},
 	Check[
 		WriteString[
 			symbolListFile,
-			ExportString[AllSymbols, "JSON"]
+			Replace[ExportString[AllSymbols, "JSON"], $Failed -> {}]
 		],
 		Print["Error saving tree items"]
 	];
@@ -685,7 +674,7 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f}, 
-		res = EvaluationData[ToExpression[string]];
+		res = EvaluationData[Trace[ToExpression[string]]];
 		If[
 			res["Success"], 
 			(
@@ -771,10 +760,7 @@ getCode[src_, range_]:=Module[{},
 
 (* getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1}, *)
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
-		(* SetDirectory[$TemporaryDirectory];
-		Export["srcFile.wl", src, "Text"];
-		tree=CodeConcreteParse["srcFile.wl"];
-		ResetDirectory[]; *)
+
 		tree = CodeParse[src]; 
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 		
@@ -785,7 +771,8 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-				str = getStringAtRange[src, call[[-1]][Source]];
+			
+			str = getStringAtRange[src, call[[-1]][Source]];
 			<|"code"->StringReplace[str, {
  				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
  				Shortest["(*" ~~ ___ ~~ "*)"] -> ""}], "range"->call[[-1]][Source]|>
@@ -862,10 +849,10 @@ getSourceRanges[{start_, end_}]:=Table[
 	{l,start[[1]],end[[1]]}];
 
 lineRange[line_,start_,end_]:= {line, Which[
-	line == start[[1]] && line==end[[1]], {start[[2]], UpTo@end[[2]]},
+	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]+1]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
-	line != start[[1]] && line==end[[1]], {1, UpTo@end[[2]]}
+	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]]}
 ]};
 
 constructRPCBytes[_Missing]:= Module[{}, ""];

@@ -1151,10 +1151,10 @@ getSourceRanges[{start_, end_}]:=Table[
 ];
 
 lineRange[line_,start_,end_]:= {line, Which[
-	line == start[[1]] && line==end[[1]], {start[[2]], UpTo@end[[2]]},
+	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]+1]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
-	line != start[[1]] && line==end[[1]], {1, end[[2]]}
+	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]+1]}
 ]};
 
 constructRPCBytes[_Missing]:= Module[{}, ""];

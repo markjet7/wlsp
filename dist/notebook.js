@@ -16,7 +16,7 @@ const clients_1 = require("./clients");
 //     context.subscriptions.push(
 //       vscode.workspace.registerNotebookSerializer('wolfram-notebook', new WolframNotebookSerializer())
 //   );
-// }
+// } todo: add this back in when we have a way to activate the extension
 class WolframNotebookSerializer {
     constructor() {
         this.raw = [];

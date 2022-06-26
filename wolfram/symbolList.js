@@ -1,255 +1,31 @@
 [
 	{
-		"name":"scratch",
+		"name":"Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type",
 		"kind":"String",
-		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"",
+		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"",
 		"children":[
 			{
-				"name":"f",
+				"name":"feedstockGroups",
 				"kind":"Symbol",
-				"definition":"f[y1_]:=2+5*x-2",
+				"definition":"feedstockGroups = <|\n    \"Wood\" -> {\"Pine\", \"Poplar\", \"Hardwood lowland residue\", \"Softwood natural residue\", \"Softwood planted residue\", \"Willow\", \"Eucalyptus\"},\n    \"Grass\" -> {\"Barley straw\", \"Wheat straw\"},\n    \"Energy\" -> {\"Miscanthus\", \"Switchgrass\"},\n    \"Residue\" -> {\"Corn stover\"},\n    \"Sugars\" -> {\"Energy cane\"}\n|>",
 				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":2,
+							"line":12,
 							"character":0
 						},
 						"end":{
-							"line":2,
-							"character":15
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[f]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"myname",
-				"kind":"Symbol",
-				"definition":"myname[\"test\"] = 7",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
-					"range":{
-						"start":{
-							"line":4,
-							"character":0
-						},
-						"end":{
-							"line":4,
-							"character":18
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[myname]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"names",
-				"kind":"Symbol",
-				"definition":"names = <|\n    \"John\"->9,\n    \"Carl\"->10,\n    \"Pedro\"->8\n|>",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
-					"range":{
-						"start":{
-							"line":6,
-							"character":0
-						},
-						"end":{
-							"line":10,
+							"line":18,
 							"character":2
 						}
 					}
 				},
 				"children":[],
-				"lazyload":"symbolToTreeItem2[names]",
+				"lazyload":"symbolToTreeItem2[feedstockGroups]",
 				"icon":"symbol-variable",
 				"collapsibleState":1
 			},
-			{
-				"name":"plot1",
-				"kind":"Graphics",
-				"definition":"plot1 = Plot[x^2, {x, -10, 10}]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl",
-					"range":{
-						"start":{
-							"line":14,
-							"character":0
-						},
-						"end":{
-							"line":14,
-							"character":31
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[plot1]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			}
-		],
-		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Table[x, {x, 1,  10,}]    \\n\\nf[y1_]:=2+5*x-2    \\n\\nmyname[\\\"test\\\"] = 7  \\n\\nnames = <|\\n    \\\"John\\\"->9,\\n    \\\"Carl\\\"->10,\\n    \\\"Pedro\\\"->8\\n|>\\n\\nnames[\\\"John\\\"]\\n\\nplot1 = Plot[x^2, {x, -10, 10}]\\n\\nnames\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"]]",
-		"icon":"file-code",
-		"location":{
-			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl"
-		},
-		"collapsibleState":1
-	},
-	{
-		"name":"Crop%20versus%20CSR%20model",
-		"kind":"String",
-		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl\"",
-		"children":[
-			{
-				"name":"csr",
-				"kind":"Symbol",
-				"definition":"csr = Import[\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/CSR.xlsx\",{\"Data\", 1}]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":4,
-							"character":0
-						},
-						"end":{
-							"line":4,
-							"character":104
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[csr]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"resources",
-				"kind":"Symbol",
-				"definition":"resources = DeleteDuplicates[billionTon[[All,\"Resource\"]]]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":12,
-							"character":0
-						},
-						"end":{
-							"line":12,
-							"character":58
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[resources]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"f",
-				"kind":"Symbol",
-				"definition":"f[r_]:=Join[r,<| \"CSR\"->First[Select[csr, #[[1]]<> \" County\"==r[[\"County\"]] &],{0,0}][[2]]|>]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":22,
-							"character":0
-						},
-						"end":{
-							"line":22,
-							"character":93
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[f]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"g",
-				"kind":"Symbol",
-				"definition":"g[r_]:=Module[{x,y,data},\ndata =Select[iowaBillionTonCSR, #[\"Resource\"]==r&];\nx = data[[All,\"CSR\"]];\ny = data[[All, \"Yield\"]];\nIf[Length@data>1,\nr-><|\"data\"->Transpose@{x,y},\"unit\"->data[[1,\"Yield Unit\"]]|>\n]\n]",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":27,
-							"character":0
-						},
-						"end":{
-							"line":34,
-							"character":1
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[g]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"fits",
-				"kind":"Symbol",
-				"definition":"fits = {LinearModelFit[#[\"data\"],x, x],#[\"unit\"]}&\/@pairedData",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":40,
-							"character":0
-						},
-						"end":{
-							"line":40,
-							"character":62
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[fits]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			},
-			{
-				"name":"r",
-				"kind":"Symbol",
-				"definition":"r = \"Wheat\"",
-				"location":{
-					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
-					"range":{
-						"start":{
-							"line":75,
-							"character":0
-						},
-						"end":{
-							"line":75,
-							"character":11
-						}
-					}
-				},
-				"children":[],
-				"lazyload":"symbolToTreeItem2[r]",
-				"icon":"symbol-variable",
-				"collapsibleState":1
-			}
-		],
-		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"csr={{\\\"Linn\\\",68.1`},{\\\"Sioux\\\",85.3`},{\\\"Polk\\\",70.7`},{\\\"Tama\\\",70.3`},{\\\"Sac\\\",82.8`},{\\\"Clay\\\",79.9`},{\\\"Cass\\\",69.5`},{\\\"Lyon\\\",75.1`},{\\\"Lee\\\",52.3`},{\\\"Kossuth\\\",78.2`},{\\\"Iowa\\\",62.5`},{\\\"Jasper\\\",68.5`},{\\\"Page\\\",70.6`},{\\\"Story\\\",80.2`},{\\\"Adair\\\",64},{\\\"Clayton\\\",43.9`},{\\\"Jones\\\",62.2`},{\\\"Ida\\\",77.1`},{\\\"Cedar\\\",76.9`},{\\\"Fayette\\\",68.2`},{\\\"Clinton\\\",63},{\\\"Benton\\\",78.9`},{\\\"Dallas\\\",76.6`},{\\\"Butler\\\",74.6`},{\\\"Davis\\\",46.7`},{\\\"Floyd\\\",79.5`},{\\\"Scott\\\",72.4`},{\\\"Mills\\\",71.8`},{\\\"Plymouth\\\",73.5`},{\\\"Boone\\\",75.5`},{\\\"Shelby\\\",69.6`},{\\\"Taylor\\\",58.5`},{\\\"Carroll\\\",76.5`},{\\\"Webster\\\",75.1`},{\\\"Wright\\\",78.6`},{\\\"Hardin\\\",79.5`},{\\\"Jackson\\\",44},{\\\"Obrien\\\",91.4`},{\\\"Woodbury\\\",61.4`},{\\\"Monona\\\",59.1`},{\\\"Harrison\\\",61.2`},{\\\"Lucas\\\",43.8`},{\\\"Keokuk\\\",63},{\\\"Greene\\\",78.3`},{\\\"Guthrie\\\",61.4`},{\\\"Crawford\\\",68.6`},{\\\"Marion\\\",59.7`},{\\\"Warren\\\",57.3`},{\\\"Wayne\\\",50.7`},{\\\"Johnson\\\",65},{\\\"Franklin\\\",79.4`},{\\\"Henry\\\",63.8`},{\\\"Union\\\",63.2`},{\\\"Calhoun\\\",82.2`},{\\\"Clarke\\\",47.2`},{\\\"Hancock\\\",74.6`},{\\\"Decatur\\\",40.1`},{\\\"Grundy\\\",86.9`},{\\\"Dubuque\\\",49.2`},{\\\"Louisa\\\",63.7`},{\\\"Marshall\\\",75.7`},{\\\"Pottawattamie\\\",68.4`},{\\\"Madison\\\",60.8`},{\\\"Mahaska\\\",68.2`},{\\\"Palo Alto\\\",77},{\\\"Worth\\\",73.8`},{\\\"Allamakee\\\",40.8`},{\\\"Hamilton\\\",79.1`},{\\\"Adams\\\",61.1`},{\\\"Ringgold\\\",50.2`},{\\\"Cherokee\\\",82.2`},{\\\"Delaware\\\",65.1`},{\\\"Fremont\\\",72.1`},{\\\"Howard\\\",76.9`},{\\\"Bremer\\\",75.5`},{\\\"Winneshiek\\\",59.2`},{\\\"Buchanan\\\",75.8`},{\\\"Mitchell\\\",80.9`},{\\\"Emmet\\\",77.2`},{\\\"Poweshiek\\\",67.9`},{\\\"Monroe\\\",48.3`},{\\\"Wapello\\\",56.6`},{\\\"Osceola\\\",86.3`},{\\\"Pocahontas\\\",81.2`},{\\\"Black Hawk\\\",73.9`},{\\\"Buena Vista\\\",83.4`},{\\\"Chickasaw\\\",77.2`},{\\\"Jefferson\\\",61},{\\\"Audubon\\\",69.3`},{\\\"Washington\\\",68},{\\\"Van Buren\\\",49},{\\\"Cerro Gordo\\\",74.6`},{\\\"Appanoose\\\",46.7`},{\\\"Humboldt\\\",80.3`},{\\\"Dickinson\\\",79.9`},{\\\"Winnebago\\\",72.9`},{\\\"Muscatine\\\",64.9`},{\\\"Des Moines\\\",67},{\\\"Montgomery\\\",70.3`}};\\n\\n\\n\\ncsr = Import[\\\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/CSR.xlsx\\\",{\\\"Data\\\", 1}]\\n\\n\\n\\nbillionTon =SemanticImport[\\\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/billionton_county_download20211119-044647.csv\\\",{\\\"Integer\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"Integer\\\",\\\"String\\\",\\\"Real\\\",\\\"Integer\\\",\\\"Real\\\",\\\"String\\\",\\\"Real\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\"},\\\"NamedRows\\\"];\\n\\n\\n\\nresources = DeleteDuplicates[billionTon[[All,\\\"Resource\\\"]]]\\n\\n\\n\\niowaBillionTon = Select[billionTon, #[[\\\"State\\\"]]==\\\"Iowa\\\"&];\\n\\n\\n\\nClearAll[f]\\nSetAttributes[f,HoldAll]\\nf[r_]:=Join[r,<| \\\"CSR\\\"->First[Select[csr, #[[1]]<> \\\" County\\\"==r[[\\\"County\\\"]] &],{0,0}][[2]]|>]\\niowaBillionTonCSR=Map[f,iowaBillionTon];\\n\\n\\n\\ng[r_]:=Module[{x,y,data},\\ndata =Select[iowaBillionTonCSR, #[\\\"Resource\\\"]==r&];\\nx = data[[All,\\\"CSR\\\"]];\\ny = data[[All, \\\"Yield\\\"]];\\nIf[Length@data>1,\\nr-><|\\\"data\\\"->Transpose@{x,y},\\\"unit\\\"->data[[1,\\\"Yield Unit\\\"]]|>\\n]\\n]\\n\\npairedData=Association[DeleteCases[g\/@resources[[1;;9]],Null]];\\n\\n\\n\\nfits = {LinearModelFit[#[\\\"data\\\"],x, x],#[\\\"unit\\\"]}&\/@pairedData\\n\\n\\n\\nfitPlots = Association@KeyValueMap[#1->Plot[#2[[1]][x],{x,10,100}, \\nEpilog->Text[#2[[1]][\\\"BestFit\\\"],Scaled[{0.3,0.9}]],\\nPlotRange->{{0,100},All},\\nPlotLabel->#1,\\nFrame->True,\\nFrameLabel->{\\\"CSR\\\",#1<> \\\" Yield\\\\n(\\\" <> #2[[2]]<>\\\")\\\"},\\nImageSize->10*72\\n]&,fits];\\n\\n\\n\\ngraphs = Map[\\nListPlot[\\n#1[[1]],\\nImageSize->10*72\\n]&,pairedData];\\n\\n\\n\\nMapThread[Show,{fitPlots,graphs}]\/\/Values\/\/Partition[#,2]&\/\/Grid\\n\\n\\n\\nresources\\n\\n\\n\\notherResources={\\\"Wheat\\\",\\\"Sorghum\\\",\\\"Cotton\\\",\\\"Rice\\\",\\\"Barley\\\"} ;\\n\\n\\n\\nr = \\\"Wheat\\\"\\nyields=Select[billionTon,#[\\\"Resource\\\"]==r&][[All,\\\"Yield\\\"]];\\nHistogram[data[[All,\\\"Yield\\\"]]]\\n\\n\\n\\nQuantile[yields,{0.05,0.95}]\\n\\n\\n\\nQuantile[pairedData[\\\"Hay\\\"][\\\"data\\\"][[All,2]],{0.05,0.95}]\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl\"]]",
-		"icon":"file-code",
-		"location":{
-			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl"
-		},
-		"collapsibleState":1
-	},
-	{
-		"name":"Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type",
-		"kind":"String",
-		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"",
-		"children":[
 			{
 				"name":"p1",
 				"kind":"Symbol",
@@ -258,11 +34,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":39,
+							"line":51,
 							"character":0
 						},
 						"end":{
-							"line":57,
+							"line":69,
 							"character":1
 						}
 					}
@@ -280,11 +56,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":61,
+							"line":73,
 							"character":0
 						},
 						"end":{
-							"line":66,
+							"line":78,
 							"character":5
 						}
 					}
@@ -302,11 +78,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":71,
+							"line":83,
 							"character":0
 						},
 						"end":{
-							"line":71,
+							"line":83,
 							"character":69
 						}
 					}
@@ -324,11 +100,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":97,
+							"line":109,
 							"character":0
 						},
 						"end":{
-							"line":113,
+							"line":125,
 							"character":1
 						}
 					}
@@ -346,11 +122,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":176,
+							"line":188,
 							"character":0
 						},
 						"end":{
-							"line":190,
+							"line":202,
 							"character":1
 						}
 					}
@@ -368,11 +144,11 @@
 					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl",
 					"range":{
 						"start":{
-							"line":196,
+							"line":208,
 							"character":0
 						},
 						"end":{
-							"line":196,
+							"line":208,
 							"character":71
 						}
 					}
@@ -383,7 +159,7 @@
 				"collapsibleState":1
 			}
 		],
-		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Get[NotebookDirectory[]<>\\\"functions.wl\\\"];\\n\\ndata = Import[FileNameJoin[{NotebookDirectory[] , \\\"data\\\",\\\"full_county_data.mx\\\"}]];\\n\\nbiorefineries = Select[\\n    loadBILT[],\\n    MemberQ[{\\\"FT-SPK\\\", \\\"AtJ-SPK\\\", \\\"FT-Diesel\\\", \\\"FT-Gasoline\\\", \\\"EtOH\\\"},#[\\\"product\\\"]]\\n    &];\\nfeedstocks = biorefineries[[All, \\\"feedstock\\\"]] \/\/ DeleteDuplicates;\\nn =0;\\n\\nallresults = AbsoluteTiming[ParallelTable[\\n    Print[n];\\n    n=n+1;\\n    counties = Select[data, #[b[\\\"feedstock\\\"]]>1000&];\\n    Flatten@{\\n        b[\\\"feedstock\\\"],\\n        b[\\\"product\\\"],\\n        Values[\\n            optimalBiorefineryCapacityCost[\\n                Values[c[[{\\\"Lat\\\",\\\"Lon\\\"}]]],\\n                counties,\\n            b][[{\\\"Capacity\\\",\\\"Biofuel Cost\\\",\\\"CO2\\\"}]]]\\n    },\\n    {b, biorefineries[[1;;]]},{c,data[[1;;]]}\\n]];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.mx\\\"}], allresults];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}], Flatten[allresults[[2]],1]];\\n\\noptimals = Import[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}],\\\"CSV\\\"];\\n\\nbyFuelFeedstock = GroupBy[optimals, {#[[2]]&, #[[1]]&}];\\n\\nbyFuelFeedstock \/\/ Keys\\n\\nbyFuelFeedstock[\\\"AtJ-SPK\\\"] \/\/ Keys\\n\\np1 = ListPlot[\\n    Evaluate@KeyValueMap[{k,v} |->\\n        v[[1;;, {3, 4}]],\\n        byFuelFeedstock[\\\"AtJ-SPK\\\"]\\n    ],\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLegends -> SwatchLegend[\\n        Automatic,\\n        Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n        LegendLayout -> {\\\"Column\\\", 1}],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n]\\n\\nExport[NotebookDirectory[] <> \\\"figures\/aviation_jet_fuel.jpg\\\", p1]\\n\\nfit = NonlinearModelFit[\\n        [[1;;, {3,4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ]\\n\\nfit[3000]\\n  \\n\\nbands90[x_]:=fit[\\\"MeanPredictionBands\\\", ConfidenceLevel -> 0.9999999]\\n\\n\\n\\nCases[\\n    byFuel[[2, 1;;, {3,4}]],\\n    {0., _},\\n    {-2}]\\n\\nMin[Flatten@byFuel[[2, 1;;, {3,4}]]]\\n\\nPlot[10000*(1\/x)^0.7, {x, 100, 5000}]\\n\\nfits = KeyValueMap[ {k,v} |->\\n    NonlinearModelFit[\\n        v[[1;;, {3, 4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ], byFuelFeedstock[\\\"AtJ-SPK\\\"]];\\n\\nPlot[{fit[x], bands90[x]}, \\n    {x, 100, 5000},\\n    Filling -> {2 -> {1}}]\\n\\n\\np1 = Plot[\\n    Evaluate@Table[\\n    Check[f[x],0],\\n    {f, fits[[1;;]]}\\n], {x, 100, 10000},\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLabels -> Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n\\n]\\n\\n\\nTable[\\n    ListPlot[\\n        b[[All, {3, 4}]],\\n        PlotRange->{All, {0, 100}}\\n    ],\\n    {b, byFuel}\\n] \/\/ Column\\n\\nbins = {{0, 250, 750, 1250, 2750, 5250, 10750}};\\ncountsBySize[r_]:=Round[HistogramList[\\n    r,\\n    bins\\n][[2]], 100];\\n\\nbyBiomass = GroupBy[\\n    optimals,\\n    First,\\n    #[[All, 3]] &\\n] \/\/ SortBy[Mean];\\n\\np1 = DistributionChart[\\n    byBiomass,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byBiomass,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biomass Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByBiomass.jpg\\\"}], p1]\\n\\nbyFuel = GroupBy[\\n    optimals,\\n    #[[2]] &,\\n    #[[All, 3]] &\\n];\\n\\np2 = DistributionChart[\\n    byFuel,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byFuel,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biofuel Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuel.jpg\\\"}], p2]\\n\\n\\ncountsBySizeTable = KeyValueMap[{k,v} |-> Flatten@{k, countsBySize[v]}, byBiomass] \/\/ Reverse;\\ncountsBySizeTable \\nReverse \/\/ TableForm[\\n    #,\\n    TableHeadings -> {\\n        None, \\n    Flatten@{\\\"Feedstock\/Capacity (MTPD)\\\", \\n        BlockMap[Mean,bins[[1]],2,1]\\n    }}\\n] &\\n\\np3 = MatrixPlot[\\n    countsBySizeTable[[All,2;;]]\/(5*3050),\\n    FrameTicks -> {\\n        {\\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\\n        {None, \\n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\\n        }\\n    },\\n    FrameLabel -> {\\n        {None,\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\"},\\n        {None, None}\\n    },\\n    PlotLegends -> Automatic\\n]\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuelMatrixPlot.jpg\\\"}], p3]\\n\\n(* Biorefinery Capacities by State: https:\/\/neo.ne.gov\/programs\/stats\/inf\/122.htm *)\\n(* ADM's Decatur, IL corn ethanol facility consumes almost 10,000 mtpd of corn *)\\n\\nusBios = Import[NotebookDirectory[] <> \\\"us_biorefineries.txt\\\", \\\"Table\\\"]\\n\\nusBios[[1]]\\n\\n3+9\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"]]",
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"Get[NotebookDirectory[]<>\\\"functions.wl\\\"];\\n\\ndata = Import[FileNameJoin[{NotebookDirectory[] , \\\"data\\\",\\\"full_county_data.mx\\\"}]];\\n\\n\\nbiorefineries = Select[\\n    loadBILT[],\\n    MemberQ[{\\\"FT-SPK\\\", \\\"AtJ-SPK\\\", \\\"FT-Diesel\\\", \\\"FT-Gasoline\\\", \\\"EtOH\\\"},\\n    #[\\\"product\\\"]]&];\\nfeedstocks = biorefineries[[All, \\\"feedstock\\\"]] \/\/ DeleteDuplicates;\\nn =0;\\n\\nfeedstockGroups = <|\\n    \\\"Wood\\\" -> {\\\"Pine\\\", \\\"Poplar\\\", \\\"Hardwood lowland residue\\\", \\\"Softwood natural residue\\\", \\\"Softwood planted residue\\\", \\\"Willow\\\", \\\"Eucalyptus\\\"},\\n    \\\"Grass\\\" -> {\\\"Barley straw\\\", \\\"Wheat straw\\\"},\\n    \\\"Energy\\\" -> {\\\"Miscanthus\\\", \\\"Switchgrass\\\"},\\n    \\\"Residue\\\" -> {\\\"Corn stover\\\"},\\n    \\\"Sugars\\\" -> {\\\"Energy cane\\\"}\\n|>\\n\\n{\\\"Barley straw\\\", \\\"Biomass sorghum\\\", \\\"Corn stover\\\", \\\"Energy cane\\\", \\\"Eucalyptus\\\", \\\"Hardwood lowland residue\\\", \\\"Miscanthus\\\", \\\"Pine\\\", \\\"Poplar\\\", \\\"Softwood natural residue\\\", \\\"Softwood planted residue\\\", \\\"Switchgrass\\\", \\\"Wheat straw\\\", \\\"Willow\\\"}\\n\\n\\nallresults = AbsoluteTiming[ParallelTable[\\n    Print[n];\\n    n=n+1;\\n    counties = Select[data, #[b[\\\"feedstock\\\"]]>1000&];\\n    Flatten@{\\n        b[\\\"feedstock\\\"],\\n        b[\\\"product\\\"],\\n        Values[\\n            optimalBiorefineryCapacityCost[\\n                Values[c[[{\\\"Lat\\\",\\\"Lon\\\"}]]],\\n                counties,\\n            b][[{\\\"Capacity\\\",\\\"Biofuel Cost\\\",\\\"CO2\\\"}]]]\\n    },\\n    {b, biorefineries[[1;;]]},{c,data[[1;;]]}\\n]];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.mx\\\"}], allresults];\\n\\nExport[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}], Flatten[allresults[[2]],1]];\\n\\noptimals = Import[FileNameJoin[{NotebookDirectory[], \\\"results.csv\\\"}],\\\"CSV\\\"];\\n\\nbyFuelFeedstock = GroupBy[optimals, {#[[2]]&, #[[1]]&}];\\n\\nbyFuelFeedstock \/\/ Keys\\n\\nbyFuelFeedstock[\\\"AtJ-SPK\\\"] \/\/ Keys\\n\\np1 = ListPlot[\\n    Evaluate@KeyValueMap[{k,v} |->\\n        v[[1;;, {3, 4}]],\\n        byFuelFeedstock[\\\"AtJ-SPK\\\"]\\n    ],\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLegends -> SwatchLegend[\\n        Automatic,\\n        Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n        LegendLayout -> {\\\"Column\\\", 1}],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n]\\n\\nExport[NotebookDirectory[] <> \\\"figures\/aviation_jet_fuel.jpg\\\", p1]\\n\\nfit = NonlinearModelFit[\\n        [[1;;, {3,4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ]\\n\\nfit[3000]\\n  \\n\\nbands90[x_]:=fit[\\\"MeanPredictionBands\\\", ConfidenceLevel -> 0.9999999]\\n\\n\\n\\nCases[\\n    byFuel[[2, 1;;, {3,4}]],\\n    {0., _},\\n    {-2}]\\n\\nMin[Flatten@byFuel[[2, 1;;, {3,4}]]]\\n\\nPlot[10000*(1\/x)^0.7, {x, 100, 5000}]\\n\\nfits = KeyValueMap[ {k,v} |->\\n    NonlinearModelFit[\\n        v[[1;;, {3, 4}]],\\n        a*(1\/x)^b,\\n        {{a,5000, 10, 10000}, {b, 0.7, 0.2, 1.5}},\\n        x\\n    ], byFuelFeedstock[\\\"AtJ-SPK\\\"]];\\n\\nPlot[{fit[x], bands90[x]}, \\n    {x, 100, 5000},\\n    Filling -> {2 -> {1}}]\\n\\n\\np1 = Plot[\\n    Evaluate@Table[\\n    Check[f[x],0],\\n    {f, fits[[1;;]]}\\n], {x, 100, 10000},\\n    PlotLabel -> \\\"Aviation Jet Fuel\\\",\\n    PlotLabels -> Keys@byFuelFeedstock[\\\"AtJ-SPK\\\"],\\n    Frame -> True,\\n    FrameLabel -> {\\n        {Style[\\\"Biofuel Cost ($\/gallon)\\\", 32], None},\\n        {Style[\\\"Biorefinery Input Capacity (Metric Tons per Day)\\\", 32], None}\\n    },\\n    FrameTicksStyle -> 32,\\n    LabelStyle -> 36,\\n    ImageSize -> 20*72\\n\\n]\\n\\n\\nTable[\\n    ListPlot[\\n        b[[All, {3, 4}]],\\n        PlotRange->{All, {0, 100}}\\n    ],\\n    {b, byFuel}\\n] \/\/ Column\\n\\nbins = {{0, 250, 750, 1250, 2750, 5250, 10750}};\\ncountsBySize[r_]:=Round[HistogramList[\\n    r,\\n    bins\\n][[2]], 100];\\n\\nbyBiomass = GroupBy[\\n    optimals,\\n    First,\\n    #[[All, 3]] &\\n] \/\/ SortBy[Mean];\\n\\np1 = DistributionChart[\\n    byBiomass,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byBiomass,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biomass Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByBiomass.jpg\\\"}], p1]\\n\\nbyFuel = GroupBy[\\n    optimals,\\n    #[[2]] &,\\n    #[[All, 3]] &\\n];\\n\\np2 = DistributionChart[\\n    byFuel,\\n    BarOrigin -> Left,\\n    ChartLabels -> Keys@byFuel,\\n    ChartElementFunction -> \\\"HistogramDensity\\\",\\n    PlotLabel -> \\\"Optimal Biorefinery Capacities by Biofuel Type\\\\nEstimated from U.S. counties\\\",\\n    FrameLabel -> {\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\", None},\\n    GridLines -> {Automatic, Automatic}\\n];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuel.jpg\\\"}], p2]\\n\\n\\ncountsBySizeTable = KeyValueMap[{k,v} |-> Flatten@{k, countsBySize[v]}, byBiomass] \/\/ Reverse;\\ncountsBySizeTable \\nReverse \/\/ TableForm[\\n    #,\\n    TableHeadings -> {\\n        None, \\n    Flatten@{\\\"Feedstock\/Capacity (MTPD)\\\", \\n        BlockMap[Mean,bins[[1]],2,1]\\n    }}\\n] &\\n\\np3 = MatrixPlot[\\n    countsBySizeTable[[All,2;;]]\/(5*3050),\\n    FrameTicks -> {\\n        {\\n            Transpose[{Range@Length@countsBySizeTable, countsBySizeTable[[All,1]]}], None},\\n        {None, \\n            Transpose[{Range@Length@#, #} & @BlockMap[Mean,bins[[1]],2,1]]\\n        }\\n    },\\n    FrameLabel -> {\\n        {None,\\\"Biomass Input Capacity\\\\n(metric tonnes per day)\\\"},\\n        {None, None}\\n    },\\n    PlotLegends -> Automatic\\n]\\nExport[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", \\\"optimalByFuelMatrixPlot.jpg\\\"}], p3]\\n\\n(* Biorefinery Capacities by State: https:\/\/neo.ne.gov\/programs\/stats\/inf\/122.htm *)\\n(* ADM's Decatur, IL corn ethanol facility consumes almost 10,000 mtpd of corn *)\\n\\nusBios = Import[NotebookDirectory[] <> \\\"us_biorefineries.txt\\\", \\\"Table\\\"]\\n\\nusBios[[1]]\\n\\n3+9\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl\"]]",
 		"icon":"file-code",
 		"location":{
 			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/Biorefinery%20Scale%20Analysis%20By%20Feedstock%20Type.wl"
@@ -756,6 +532,119 @@
 		"collapsibleState":1
 	},
 	{
+		"name":"saveBiomassData",
+		"kind":"String",
+		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl\"",
+		"children":[
+			{
+				"name":"fs",
+				"kind":"Symbol",
+				"definition":"fs = FileNames[\"*.csv\", FileNameJoin[{NotebookDirectory[], \"data\", \"billion_ton\"}]]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl",
+					"range":{
+						"start":{
+							"line":1,
+							"character":0
+						},
+						"end":{
+							"line":1,
+							"character":83
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[fs]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"fidToName",
+				"kind":"Symbol",
+				"definition":"fidToName[fid_]:=(First[StringSplit[fid, \".\"],\"\"] \n    \/\/ StringReplace[{\"bts_county_2016_\" -> \"\"}]\n    \/\/ StringReplace[{\"_\" -> \" \"}]\n    \/\/ ToUpperCase[StringTake[#, 1]] <> StringTake[#, {2, -1}] &)",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl",
+					"range":{
+						"start":{
+							"line":5,
+							"character":0
+						},
+						"end":{
+							"line":8,
+							"character":65
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[fidToName]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"stateNames",
+				"kind":"Symbol",
+				"definition":"stateNames = Apply[AssociationThread, Transpose@Import[FileNameJoin[{NotebookDirectory[], \"data\", \"states.csv\"}], \"CSV\"][[2;;,{1,2}]]]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl",
+					"range":{
+						"start":{
+							"line":12,
+							"character":0
+						},
+						"end":{
+							"line":12,
+							"character":134
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[stateNames]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"graphicBiomass",
+				"kind":"Symbol",
+				"definition":"graphicBiomass[g_]:=Module[{biomass, a},\n    a = AssociationThread[biomassNames -> ConstantArray[0, Length@biomassNames]];\n    biomass = Select[d, stateNames[#[[2]]] == g[\"StateG\"] && #[[3]] == g[\"CountyG\"] &];\n    Map[(a[fidToName[#[[1]]]] = #[[4]]) &, biomass];\n    Merge[{g, a}, Total]\n]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl",
+					"range":{
+						"start":{
+							"line":16,
+							"character":0
+						},
+						"end":{
+							"line":21,
+							"character":1
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[graphicBiomass]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			}
+		],
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"\\nfs = FileNames[\\\"*.csv\\\", FileNameJoin[{NotebookDirectory[], \\\"data\\\", \\\"billion_ton\\\"}]]\\nd = Flatten[Table[Import[f, \\\"CSV\\\"], {f, fs}],1];\\n\\n\\nfidToName[fid_]:=(First[StringSplit[fid, \\\".\\\"],\\\"\\\"] \\n    \/\/ StringReplace[{\\\"bts_county_2016_\\\" -> \\\"\\\"}]\\n    \/\/ StringReplace[{\\\"_\\\" -> \\\" \\\"}]\\n    \/\/ ToUpperCase[StringTake[#, 1]] <> StringTake[#, {2, -1}] &)\\n\\nbiomassNames = Map[fidToName, d[[All, 1]]] \/\/ DeleteDuplicates \/\/ DeleteCases[#, \\\"FID\\\"] &;\\n\\nstateNames = Apply[AssociationThread, Transpose@Import[FileNameJoin[{NotebookDirectory[], \\\"data\\\", \\\"states.csv\\\"}], \\\"CSV\\\"][[2;;,{1,2}]]]\\ngs = LoadCountyGraphics[];\\n\\n\\ngraphicBiomass[g_]:=Module[{biomass, a},\\n    a = AssociationThread[biomassNames -> ConstantArray[0, Length@biomassNames]];\\n    biomass = Select[d, stateNames[#[[2]]] == g[\\\"StateG\\\"] && #[[3]] == g[\\\"CountyG\\\"] &];\\n    Map[(a[fidToName[#[[1]]]] = #[[4]]) &, biomass];\\n    Merge[{g, a}, Total]\\n]\\n\\n\\nnewGs = Map[graphicBiomass, gs];\\nExport[FileNameJoin[{NotebookDirectory[], \\\"data\\\", \\\"biomass.mx\\\"}], newGs];\\n\\nTable[\\n    Export[FileNameJoin[{NotebookDirectory[], \\\"figures\\\", n <> \\\".png\\\"}], \\n        GeoRegionValuePlot[\\n            MapThread[Rule, Transpose@Values[newGs[[All, {\\\"Graphics\\\",n}]]]],\\n            ClippingStyle -> Transparent,\\n            PlotRange -> {10, 1*^9},\\n            ColorFunction -> \\\"BlueGreenYellow\\\"\\n        ]\\n    ];,\\n    {n, biomassNames}\\n]\\n\\n\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl\"]]",
+		"icon":"file-code",
+		"location":{
+			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/saveBiomassData.wl"
+		},
+		"collapsibleState":1
+	},
+	{
+		"name":"scratch",
+		"kind":"String",
+		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"",
+		"children":[],
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"\\n(a = 123212; a\/0)\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl\"]]",
+		"icon":"file-code",
+		"location":{
+			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/scratch.wl"
+		},
+		"collapsibleState":1
+	},
+	{
 		"name":"bilt",
 		"kind":"String",
 		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/bilt.wl\"",
@@ -888,6 +777,151 @@
 		"icon":"file-code",
 		"location":{
 			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/optimization.wl"
+		},
+		"collapsibleState":1
+	},
+	{
+		"name":"Crop%20versus%20CSR%20model",
+		"kind":"String",
+		"definition":"\"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl\"",
+		"children":[
+			{
+				"name":"csr",
+				"kind":"Symbol",
+				"definition":"csr = Import[\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/CSR.xlsx\",{\"Data\", 1}]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":4,
+							"character":0
+						},
+						"end":{
+							"line":4,
+							"character":104
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[csr]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"resources",
+				"kind":"Symbol",
+				"definition":"resources = DeleteDuplicates[billionTon[[All,\"Resource\"]]]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":12,
+							"character":0
+						},
+						"end":{
+							"line":12,
+							"character":58
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[resources]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"f",
+				"kind":"Symbol",
+				"definition":"f[r_]:=Join[r,<| \"CSR\"->First[Select[csr, #[[1]]<> \" County\"==r[[\"County\"]] &],{0,0}][[2]]|>]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":22,
+							"character":0
+						},
+						"end":{
+							"line":22,
+							"character":93
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[f]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"g",
+				"kind":"Symbol",
+				"definition":"g[r_]:=Module[{x,y,data},\ndata =Select[iowaBillionTonCSR, #[\"Resource\"]==r&];\nx = data[[All,\"CSR\"]];\ny = data[[All, \"Yield\"]];\nIf[Length@data>1,\nr-><|\"data\"->Transpose@{x,y},\"unit\"->data[[1,\"Yield Unit\"]]|>\n]\n]",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":27,
+							"character":0
+						},
+						"end":{
+							"line":34,
+							"character":1
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[g]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"fits",
+				"kind":"Symbol",
+				"definition":"fits = {LinearModelFit[#[\"data\"],x, x],#[\"unit\"]}&\/@pairedData",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":40,
+							"character":0
+						},
+						"end":{
+							"line":40,
+							"character":62
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[fits]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			},
+			{
+				"name":"r",
+				"kind":"Symbol",
+				"definition":"r = \"Wheat\"",
+				"location":{
+					"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl",
+					"range":{
+						"start":{
+							"line":75,
+							"character":0
+						},
+						"end":{
+							"line":75,
+							"character":11
+						}
+					}
+				},
+				"children":[],
+				"lazyload":"symbolToTreeItem2[r]",
+				"icon":"symbol-variable",
+				"collapsibleState":1
+			}
+		],
+		"lazyload":"Map[symbolToTreeItem2, getSymbols[\"csr={{\\\"Linn\\\",68.1`},{\\\"Sioux\\\",85.3`},{\\\"Polk\\\",70.7`},{\\\"Tama\\\",70.3`},{\\\"Sac\\\",82.8`},{\\\"Clay\\\",79.9`},{\\\"Cass\\\",69.5`},{\\\"Lyon\\\",75.1`},{\\\"Lee\\\",52.3`},{\\\"Kossuth\\\",78.2`},{\\\"Iowa\\\",62.5`},{\\\"Jasper\\\",68.5`},{\\\"Page\\\",70.6`},{\\\"Story\\\",80.2`},{\\\"Adair\\\",64},{\\\"Clayton\\\",43.9`},{\\\"Jones\\\",62.2`},{\\\"Ida\\\",77.1`},{\\\"Cedar\\\",76.9`},{\\\"Fayette\\\",68.2`},{\\\"Clinton\\\",63},{\\\"Benton\\\",78.9`},{\\\"Dallas\\\",76.6`},{\\\"Butler\\\",74.6`},{\\\"Davis\\\",46.7`},{\\\"Floyd\\\",79.5`},{\\\"Scott\\\",72.4`},{\\\"Mills\\\",71.8`},{\\\"Plymouth\\\",73.5`},{\\\"Boone\\\",75.5`},{\\\"Shelby\\\",69.6`},{\\\"Taylor\\\",58.5`},{\\\"Carroll\\\",76.5`},{\\\"Webster\\\",75.1`},{\\\"Wright\\\",78.6`},{\\\"Hardin\\\",79.5`},{\\\"Jackson\\\",44},{\\\"Obrien\\\",91.4`},{\\\"Woodbury\\\",61.4`},{\\\"Monona\\\",59.1`},{\\\"Harrison\\\",61.2`},{\\\"Lucas\\\",43.8`},{\\\"Keokuk\\\",63},{\\\"Greene\\\",78.3`},{\\\"Guthrie\\\",61.4`},{\\\"Crawford\\\",68.6`},{\\\"Marion\\\",59.7`},{\\\"Warren\\\",57.3`},{\\\"Wayne\\\",50.7`},{\\\"Johnson\\\",65},{\\\"Franklin\\\",79.4`},{\\\"Henry\\\",63.8`},{\\\"Union\\\",63.2`},{\\\"Calhoun\\\",82.2`},{\\\"Clarke\\\",47.2`},{\\\"Hancock\\\",74.6`},{\\\"Decatur\\\",40.1`},{\\\"Grundy\\\",86.9`},{\\\"Dubuque\\\",49.2`},{\\\"Louisa\\\",63.7`},{\\\"Marshall\\\",75.7`},{\\\"Pottawattamie\\\",68.4`},{\\\"Madison\\\",60.8`},{\\\"Mahaska\\\",68.2`},{\\\"Palo Alto\\\",77},{\\\"Worth\\\",73.8`},{\\\"Allamakee\\\",40.8`},{\\\"Hamilton\\\",79.1`},{\\\"Adams\\\",61.1`},{\\\"Ringgold\\\",50.2`},{\\\"Cherokee\\\",82.2`},{\\\"Delaware\\\",65.1`},{\\\"Fremont\\\",72.1`},{\\\"Howard\\\",76.9`},{\\\"Bremer\\\",75.5`},{\\\"Winneshiek\\\",59.2`},{\\\"Buchanan\\\",75.8`},{\\\"Mitchell\\\",80.9`},{\\\"Emmet\\\",77.2`},{\\\"Poweshiek\\\",67.9`},{\\\"Monroe\\\",48.3`},{\\\"Wapello\\\",56.6`},{\\\"Osceola\\\",86.3`},{\\\"Pocahontas\\\",81.2`},{\\\"Black Hawk\\\",73.9`},{\\\"Buena Vista\\\",83.4`},{\\\"Chickasaw\\\",77.2`},{\\\"Jefferson\\\",61},{\\\"Audubon\\\",69.3`},{\\\"Washington\\\",68},{\\\"Van Buren\\\",49},{\\\"Cerro Gordo\\\",74.6`},{\\\"Appanoose\\\",46.7`},{\\\"Humboldt\\\",80.3`},{\\\"Dickinson\\\",79.9`},{\\\"Winnebago\\\",72.9`},{\\\"Muscatine\\\",64.9`},{\\\"Des Moines\\\",67},{\\\"Montgomery\\\",70.3`}};\\n\\n\\n\\ncsr = Import[\\\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/CSR.xlsx\\\",{\\\"Data\\\", 1}]\\n\\n\\n\\nbillionTon =SemanticImport[\\\"\/Users\/mark\/Downloads\/billionton_county_download20211119-044647.csv\/billionton_county_download20211119-044647.csv\\\",{\\\"Integer\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"Integer\\\",\\\"String\\\",\\\"Real\\\",\\\"Integer\\\",\\\"Real\\\",\\\"String\\\",\\\"Real\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\",\\\"String\\\"},\\\"NamedRows\\\"];\\n\\n\\n\\nresources = DeleteDuplicates[billionTon[[All,\\\"Resource\\\"]]]\\n\\n\\n\\niowaBillionTon = Select[billionTon, #[[\\\"State\\\"]]==\\\"Iowa\\\"&];\\n\\n\\n\\nClearAll[f]\\nSetAttributes[f,HoldAll]\\nf[r_]:=Join[r,<| \\\"CSR\\\"->First[Select[csr, #[[1]]<> \\\" County\\\"==r[[\\\"County\\\"]] &],{0,0}][[2]]|>]\\niowaBillionTonCSR=Map[f,iowaBillionTon];\\n\\n\\n\\ng[r_]:=Module[{x,y,data},\\ndata =Select[iowaBillionTonCSR, #[\\\"Resource\\\"]==r&];\\nx = data[[All,\\\"CSR\\\"]];\\ny = data[[All, \\\"Yield\\\"]];\\nIf[Length@data>1,\\nr-><|\\\"data\\\"->Transpose@{x,y},\\\"unit\\\"->data[[1,\\\"Yield Unit\\\"]]|>\\n]\\n]\\n\\npairedData=Association[DeleteCases[g\/@resources[[1;;9]],Null]];\\n\\n\\n\\nfits = {LinearModelFit[#[\\\"data\\\"],x, x],#[\\\"unit\\\"]}&\/@pairedData\\n\\n\\n\\nfitPlots = Association@KeyValueMap[#1->Plot[#2[[1]][x],{x,10,100}, \\nEpilog->Text[#2[[1]][\\\"BestFit\\\"],Scaled[{0.3,0.9}]],\\nPlotRange->{{0,100},All},\\nPlotLabel->#1,\\nFrame->True,\\nFrameLabel->{\\\"CSR\\\",#1<> \\\" Yield\\\\n(\\\" <> #2[[2]]<>\\\")\\\"},\\nImageSize->10*72\\n]&,fits];\\n\\n\\n\\ngraphs = Map[\\nListPlot[\\n#1[[1]],\\nImageSize->10*72\\n]&,pairedData];\\n\\n\\n\\nMapThread[Show,{fitPlots,graphs}]\/\/Values\/\/Partition[#,2]&\/\/Grid\\n\\n\\n\\nresources\\n\\n\\n\\notherResources={\\\"Wheat\\\",\\\"Sorghum\\\",\\\"Cotton\\\",\\\"Rice\\\",\\\"Barley\\\"} ;\\n\\n\\n\\nr = \\\"Wheat\\\"\\nyields=Select[billionTon,#[\\\"Resource\\\"]==r&][[All,\\\"Yield\\\"]];\\nHistogram[data[[All,\\\"Yield\\\"]]]\\n\\n\\n\\nQuantile[yields,{0.05,0.95}]\\n\\n\\n\\nQuantile[pairedData[\\\"Hay\\\"][\\\"data\\\"][[All,2]],{0.05,0.95}]\", \"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl\"]]",
+		"icon":"file-code",
+		"location":{
+			"uri":"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/data\/billionton_county_download20211119-044647.csv\/Crop%20versus%20CSR%20model.wl"
 		},
 		"collapsibleState":1
 	}
