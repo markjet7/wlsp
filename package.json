@@ -1,7 +1,7 @@
 {
     "name": "wlsp",
     "displayName": "wlsp",
-    "description": "wolfram-language-server",
+    "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
     "icon": "logo.png",  
     "publisher": "markmba",
     "enabledProposedApi": false,

@@ -1,6 +1,14 @@
 # WLSP
 
 This is an implementation of the [Language Server Protocol](https://github.com/Microsoft/language-server-protocol) for the Wolfram language[1].
+This extension focuses on code evaluation and inline previews. 
+
+To run a code block, use Shift + Enter.
+To print the results in the document, use Shift+Ctrl+Enter.
+Right-click to view other options.
+
+You can view result summaries inline, and previews on variable hover.
+The plot window shows the latest inputs and outputs. 
 
 ![](main_image.jpg)
 
