@@ -145,13 +145,15 @@ class workspaceSymbolProvider {
                                 newItem.lazyload = item.lazyload;
                                 newItem.iconPath = new vscode.ThemeIcon(item.icon);
                                 newItem.collapsibleState = item.collapsibleState;
-                                newItem.resourceUri = vscode.Uri.parse(item.location["uri'"]);
-                                newItem.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]), {
-                                            preview: false,
-                                            preserveFocus: false,
-                                            selection: item.location.range
-                                        }], title: 'Open' };
-                                vscode.window.showTextDocument(vscode.Uri.parse(item.location["uri"]), { preview: true });
+                                if (Object.keys(item).includes("location") && Object.keys(item.location).includes("uri")) {
+                                    newItem.resourceUri = vscode.Uri.parse(item.location["uri"]);
+                                    newItem.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]), {
+                                                preview: false,
+                                                preserveFocus: false,
+                                                selection: item.location.range
+                                            }], title: 'Open' };
+                                    vscode.window.showTextDocument(vscode.Uri.parse(item.location["uri"]), { preview: true });
+                                }
                                 return newItem;
                             });
                             tokenSource.dispose();

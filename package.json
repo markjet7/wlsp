@@ -4,6 +4,7 @@
     "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
     "icon": "logo.png",  
     "publisher": "markmba",
+    "preview": true,
     "enabledProposedApi": false,
     "repository": {
         "url": "https://github.com/markjet7/wlsp"

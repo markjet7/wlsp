@@ -179,7 +179,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
-	string = StringTrim[Echo@code2["code"]];
+	string = StringTrim[code2["code"]];
 
 	start= Now;
 	Which[
@@ -207,7 +207,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		output = transforms["Syntax error"];
 	];
 
-	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {Last[r["Result"]], r["Success"], r["Result"]}};
+	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {First[Last[r["Result"]], Last[r["Result"]]], r["Success"], r["Result"]}};
 	ans = result;
 	AppendTo[Outputs, ans];
 
@@ -356,15 +356,15 @@ handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
 ];
 
 handle["getChildren", json_]:=Module[{function, result, file},
-	SessionSubmit[
-		(function = json["params"];
-		result = ToExpression@function;
+	RemoteEvaluate[
+		(function = Echo[First[json["params"],"{}"],"params"];
+		result = Echo@ToExpression@function;
 		file = CreateFile[];
 		OpenWrite[file];
 		WriteString[file, Check[ExportString[result, "JSON"], "[]"]];
 		Close[file];
 		sendResponse[<|"id" -> json["id"], "result" -> file|>];)
-	]
+		]
 ];
 
 handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
@@ -480,7 +480,6 @@ handle["textDocument/didSave", json_]:=Module[{},
 
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
-		On[Symbol::symname];
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -544,7 +543,7 @@ symbolToTreeItem2[symbol_Association]:= ({<|
 	"collapsibleState" -> 1
 |>});
 
-symbolToTreeItem2[key_, value_]:=(Print["key values"];<|
+symbolToTreeItem2[key_, value_]:=(<|
 	"name" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 150],
 	"kind" -> ToString[Head@value, InputForm],
 	"definition" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 150],
@@ -554,7 +553,7 @@ symbolToTreeItem2[key_, value_]:=(Print["key values"];<|
 	"collapsibleState" -> 1
 |>);
 
-symbolToTreeItem2[symbol_String]:=<|
+symbolToTreeItem2[symbol_String]:=Echo@{<|
 	"name" -> ToString[symbol, InputForm, TotalWidth ->150],
 	"kind" -> ToString[Head@symbol, InputForm, TotalWidth -> 150],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 300],
@@ -562,9 +561,9 @@ symbolToTreeItem2[symbol_String]:=<|
     "lazyload" -> "",
     "icon" -> "symbol-string",
 	"collapsibleState" -> 0
-|>;
+|>};
 
-symbolToTreeItem2[(symbol_Real| symbol_Integer)]:=<|
+symbolToTreeItem2[(symbol_Real| symbol_Integer)]:={<|
 	"name" -> ToString@symbol,
 	"kind" -> ToString@Head@symbol,
 	"definition" -> ToString@Short[symbol],
@@ -572,7 +571,7 @@ symbolToTreeItem2[(symbol_Real| symbol_Integer)]:=<|
     "lazyload" ->  "",
     "icon" -> "symbol-numeric",
 	"collapsibleState" -> 0
-|>;
+|>};
 
 symbolToTreeItem2[symbol_Failure]:=<|
 	"name" -> ToString[SymbolName@symbol],
@@ -632,32 +631,35 @@ symbolIcons = <|
 |>;
 
 getWorkspaceSymbols[]:=Module[{},
-	AllSymbols = Flatten@DeleteCases[
-			KeyValueMap[{key, value} |->
-				<|
-					"name" -> FileBaseName@key,
-					"kind" -> ToString[String, InputForm],
-					"definition" -> ToString[key, InputForm, TotalWidth -> 500],
-					"children" -> Map[symbolToTreeItem2, getSymbols[value, key]],
-					"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> ", " <> ToString[key,InputForm] <> "]]",
-    				"icon" -> "file-code",
-					"location" -> <|
-						"uri" -> key
+		RemoteEvaluate[(
+			AllSymbols = Flatten@DeleteCases[
+				KeyValueMap[{key, value} |->
+					<|
+						"name" -> FileBaseName@key,
+						"kind" -> ToString[String, InputForm],
+						"definition" -> ToString[key, InputForm, TotalWidth -> 500],
+						"children" -> Map[symbolToTreeItem2, getSymbols[value, key]],
+						"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> ", " <> ToString[key,InputForm] <> "]]",
+						"icon" -> "file-code",
+						"location" -> <|
+							"uri" -> key
+						|>,
+						"collapsibleState" -> 1
 					|>,
-					"collapsibleState" -> 1
-				|>,
-				documents
-			], 
-	_Missing];
-	OpenWrite[symbolListFile];
-	Check[
-		WriteString[
-			symbolListFile,
-			Replace[ExportString[AllSymbols, "JSON"], $Failed -> {}]
-		],
-		Print["Error saving tree items"]
-	];
-	Close[symbolListFile];
+					documents
+				], 
+			_Missing];
+			OpenWrite[symbolListFile];
+			Check[
+				WriteString[
+					symbolListFile,
+					Replace[ExportString[AllSymbols, "JSON"], $Failed -> {}]
+				],
+				Print["Error saving tree items"]
+			];
+			Close[symbolListFile];
+			)
+		];
 	sendResponse[<|"method"->"updateTreeItems", "params" -> <|"file"->ToString@symbolListFile|>|>];
 ];
 
@@ -893,5 +895,15 @@ graphicsQ =
 
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
+
+SetAttributes[compressWithDefinitions, HoldFirst];
+compressWithDefinitions[expr_] := With[
+    {def = Language`ExtendedFullDefinition[expr]},
+
+    Compress @ Unevaluated[
+        Language`ExtendedFullDefinition[] = def;
+        expr
+    ]
+];
 
 EndPackage[]
