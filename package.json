@@ -1,6 +1,6 @@
 {
     "name": "wlsp",
-    "displayName": "wlsp",
+    "displayName": "A Wolfram language server implementation for Visual Studio Code",
     "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
     "icon": "Wolf_icon2.png",  
     "publisher": "markmba",
