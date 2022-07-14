@@ -64,7 +64,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 			Check[handle[msg["method"], msg],
 				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
 			]
-		]		
+		]
 	];
 	If[state === "Continue", {"Continue",state}, {"Continue", state}]
 ];

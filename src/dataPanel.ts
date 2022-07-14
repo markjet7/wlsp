@@ -5,30 +5,14 @@ import { Uri, Webview } from "vscode";
 export function getOutputContent(webview: any, extensionUri: Uri) {
     let timeNow = new Date().getTime();
     const toolkitUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js",
-    ]);
-
-    const mainUri = getUri(webview, extensionUri, ["media", "main.js"]);
-    const styleUri = getUri(webview, extensionUri, ["media", "style.css"]);
-    const codiconsUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "codicons",
-        "dist",
-        "codicon.css",
+        "media",
+        "toolkit.js"
     ]);
     
     let result = `<!DOCTYPE html>
     <html lang="en">
     <head>
-        <script type="module" src="${toolkitUri}"></script>
-        <!-- <script type="module" src="${mainUri}"></script>
-        <link rel="stylesheet" href="${styleUri}"> 
-        <link rel="stylesheet" href="${codiconsUri}"> -->
+
         <style type="text/css">
 
             body{
@@ -92,11 +76,18 @@ export function getOutputContent(webview: any, extensionUri: Uri) {
         </style>
         <meta charset="UTF-8">
 
-        <!-- <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/> -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; img-src ${webview.cspSource} https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
+            />
+
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Wolfram Output</title>
+        <script type="module" src="${toolkitUri}"></script>
+        <title>Data Table</title>
         <script>
+            console.log("My SCRIPT");
             const vscode = acquireVsCodeApi();
+
             function scrollToBottom() {
                 // window.scrollTo(0,document.body.scrollHeight);
 
@@ -129,25 +120,27 @@ export function getOutputContent(webview: any, extensionUri: Uri) {
 
         window.addEventListener('message', event => {
             const message = event.data;
+            console.log(message.vars)
 
-            const varT = document.getElementById('varTable');
+            const varT = document.getElementById("vars");
             varT.innerHTML = message.vars;
         })
         </script>
     </head>
-    <body onload="scrollToBottom()">
+    <body>
         <div class="outer">
             <div id="vars">
-            <vscode-data-grid generate-header="sticky" aria-label="With Sticky Header" id="varTable">
-                <vscode-data-grid-row row-type="header">
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
-                    <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
-                </vscode-data-grid-row>
-            </vscode-data-grid>
+                <vscode-data-grid id="varTable" generate-header="sticky" aria-label="With Sticky Header">
+                    <vscode-data-grid-row row-type="header">
+                        <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Name
+                        </vscode-data-grid-cell>
+                        <vscode-data-grid-cell cell-type="columnheader" grid-column="2">value
+                        </vscode-data-grid-cell>
+                    </vscode-data-grid-row>
+              
+                
+                </vscode-data-grid>
             </div>
-            <!--- <div id="scratch">
-                <vscode-text-area id="expression" onkeydown="run(this)" rows="3" placeholder="Shift+Enter to run"></vscode-text-area>
-            </div> -->
         </div>
     </body>
     </html>`;
@@ -155,5 +148,9 @@ export function getOutputContent(webview: any, extensionUri: Uri) {
 }
 
 function getUri(webview: Webview, extensionUri: Uri, pathList: string[]) {
+    // return webview.asWebviewUri(
+    //     Uri.file(
+    //         Uri.joinPath(extensionUri, ...pathList).toString()));
+
     return webview.asWebviewUri(Uri.joinPath(extensionUri, ...pathList));
 }

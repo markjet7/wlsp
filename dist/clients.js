@@ -250,10 +250,17 @@ function runToLine() {
 }
 let variableTable = {};
 function updateVarTable(vars) {
-    for (let index = 0; index < vars["values"].length; index++) {
-        variableTable[vars["values"][index][0]] = vars["values"][index][1].slice(0, 200) + "...";
-    }
-    updateOutputPanel();
+    fs.readFile(vars["values"], "utf8", (err, data) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        let updatedVariables = JSON.parse(data);
+        Object.keys(updatedVariables).map((k) => {
+            variableTable[k] = updatedVariables[k];
+        });
+        updateOutputPanel();
+    });
 }
 let runningLines = [];
 function moveCursor2(position) {
@@ -511,10 +518,8 @@ function showOutput() {
         }
     }
     else {
-        outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Output", { viewColumn: 2, preserveFocus: true }, {
-            localResourceRoots: [vscode.Uri.file(temporaryDir)],
-            enableScripts: true,
-            retainContextWhenHidden: true
+        outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Data Table", { viewColumn: 2, preserveFocus: true }, {
+            enableScripts: true
         });
         outputPanel.webview.html = dataPanel_1.getOutputContent(outputPanel.webview, context.extensionUri);
         outputPanel.webview.onDidReceiveMessage(message => {
@@ -544,7 +549,7 @@ function showPlots() {
     }
     else {
         plotsPanel = vscode.window.createWebviewPanel('WolframPlots', "Wolfram Plots", { viewColumn: 2, preserveFocus: true }, {
-            localResourceRoots: [vscode.Uri.file(temporaryDir)],
+            localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "media"))],
             enableScripts: true,
             retainContextWhenHidden: true
         });
@@ -712,11 +717,13 @@ function updateOutputPanel() {
                 "</div>";
         }
     });
-    let vars = `<vscode-data-grid-row row-type="header">
-        <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Var</vscode-data-grid-cell>
+    let vars = "";
+    let i = 0;
+    vars += `<vscode-data-grid id="varTable" generate-header="sticky" aria-label="With Sticky Header">
+    <vscode-data-grid-row row-type="header">
+        <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Name</vscode-data-grid-cell>
         <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
     </vscode-data-grid-row>`;
-    let i = 0;
     Object.keys(variableTable).forEach(k => {
         // if (i % 2 === 0) {
         //     vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n"
@@ -724,14 +731,13 @@ function updateOutputPanel() {
         //     vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n"
         // }
         vars += `<vscode-data-grid-row>
-		    <vscode-data-grid-cell grid-column="1">${k}</vscode-data-grid-cell>
-		    <vscode-data-grid-cell grid-column="2">${variableTable[k]}</vscode-data-grid-cell>
-        </vscode-data-grid-row>
-        `;
-        i++;
+        <vscode-data-grid-cell grid-column="1">${k}</vscode-data-grid-cell>
+        <vscode-data-grid-cell grid-column="2">${variableTable[k]}</vscode-data-grid-cell>
+      </vscode-data-grid-row>`;
     });
-    outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: vars });
-    plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.webview.postMessage({ text: out, vars: vars });
+    vars += "</vscode-data-grid>";
+    outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: (vars) });
+    plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.webview.postMessage({ text: out, vars: (vars) });
 }
 let console_outputs = [];
 let socketsClosed = 0;
@@ -805,7 +811,7 @@ function startWLSP(id) {
                     load(exports.wolfram, lspPath, clientPort, outputChannel).then((r) => {
                         exports.wolfram = r;
                         socket.connect(clientPort, "127.0.0.1", () => {
-                            socket.setKeepAlive(false);
+                            socket.setKeepAlive(true);
                         });
                     });
                 });
@@ -866,7 +872,9 @@ function startWLSPKernel(id) {
                     if (retries < 10) {
                         if (err.code === 'ECONNREFUSED') {
                             timeout = setTimeout(() => {
-                                socket.connect(kernelPort, "127.0.0.1");
+                                socket.connect(kernelPort, "127.0.0.1", () => {
+                                    socket.setKeepAlive(true);
+                                });
                             }, 1500);
                         }
                     }

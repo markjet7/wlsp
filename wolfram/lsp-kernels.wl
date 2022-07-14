@@ -46,6 +46,7 @@ handle["initialize",json_]:=Module[{response, response2},
 
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
+	varTableFile = scriptPath <> "varTable.js";
 	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
 	symbolDefinitions = <||>;
 ];
@@ -162,6 +163,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 		sendResponse[response4];	
 
+		Print["Decorations " <> ToString[Now - start]];
 		(* Add the evaluation to the evaluation queue *)
 		evaluateFromQueue[code, json, newPosition];
 		,
@@ -181,7 +183,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
 	string = StringTrim[code2["code"]];
 
-	start= Now;
 	Which[
 		string == "",
 		r = <|
@@ -194,8 +195,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
+		Print["Evaluated " <> ToString[Now - start]];
 		AppendTo[Inputs, string];
-		output = transforms[r["Result"]],
+		output = transforms[ReleaseHold[Last[r["Result"]]]];
+		Print["Transformed " <> ToString[Now - start]];,
 
 		True,
 		r = <|
@@ -207,10 +210,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		output = transforms["Syntax error"];
 	];
 
-	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {First[Last[r["Result"]], Last[r["Result"]]], r["Success"], r["Result"]}};
+	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {ReleaseHold[Last[r["Result"]]], r["Success"], r["Result"]}};
 	ans = result;
 	AppendTo[Outputs, ans];
-
 	
 	maxWidth = 8192;
 	response = If[KeyMemberQ[json, "id"],
@@ -243,6 +245,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			|>
 		|>
 	];
+	Print["Response " <> ToString[Now - start]];
 	evalnumber = evalnumber + 1;
 
 	file = CreateFile[];
@@ -256,8 +259,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"file"->ToString@file|>|>];
 	];
 	Close[file];
+	Print["Response exported " <> ToString[Now - start]];
 
-	getWorkspaceSymbols[];
 
 	decorationLine = code2["range"][[2, 1]];
 	decorationChar = code2["range"][[2, 2]];
@@ -298,13 +301,19 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				<|ToString@decoration["range"]["start"]["line"]-> decoration|>],
 			<|ToString@decoration["range"]["start"]["line"]-> decoration|>
 		];
+		Print["Decorations " <> ToString[Now - start]];
 		
 		Export[decorationFile, workspaceDecorations, "JSON"];
+		Print["Decorations exported " <> ToString[Now - start]];
 
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 		sendResponse[response4];	
+
+		getWorkspaceSymbols[];
+		Print["Got workspace symbols " <> ToString[Now - start]];
 	];
 
+	
 	ast = CodeConcreteParse[string];
 
 	f[node_]:=Module[{},
@@ -319,8 +328,19 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	
 	symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
 
-	values = Table[{v["name"], ToString[v["definition"], InputForm, TotalWidth->8192]}, {v, symbols}];
-	result = <| "method"->"updateVarTable", "params" -> <|"values" -> values |> |>;
+	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->150], {v, symbols}];
+
+	
+
+	(* values = Echo@Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->150], {v, Names["Global`*"]}];*)
+
+	Check[
+		Export[varTableFile, values, "JSON"],
+		Print["Error saving variables"]
+	];
+
+	result = <| "method"->"updateVarTable", "params" -> <|"values" -> varTableFile |> |>;
+	
 	sendResponse[
 		result
 	]; 
@@ -553,7 +573,7 @@ symbolToTreeItem2[key_, value_]:=(<|
 	"collapsibleState" -> 1
 |>);
 
-symbolToTreeItem2[symbol_String]:=Echo@{<|
+symbolToTreeItem2[symbol_String]:={<|
 	"name" -> ToString[symbol, InputForm, TotalWidth ->150],
 	"kind" -> ToString[Head@symbol, InputForm, TotalWidth -> 150],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 300],
@@ -676,7 +696,7 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f}, 
-		res = EvaluationData[Trace[ToExpression[string]]];
+		res = EvaluationData[Trace@ToExpression[string]];
 		If[
 			res["Success"], 
 			(
@@ -865,27 +885,29 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 
 ];
 
+cellToSymbol[node_]:=Module[{astStr,name,loc,kind,rhs},
+	astStr=ToFullFormString[node[[2,1]]];
+	name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
+	loc=node[[-1]][Source];
+	rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
+	kind=If[Head@rhs == CallNode,
+		rhs[[1,2]],
+		rhs[[2]]
+	];
+	definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
+	<|
+	"name"->name,
+	"definition"->StringTrim[definition],
+	"loc"->loc,
+	"kind"->kind, 
+	"uri" -> uri|>];
+
 getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 	ast = CodeParse[src];
 
-	f[node_]:=Module[{astStr,name,loc,kind,rhs},
-		astStr=ToFullFormString[node[[2,1]]];
-		name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
-		loc=node[[-1]][Source];
-		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-		kind=If[Head@rhs == CallNode,
-			rhs[[1,2]],
-			rhs[[2]]
-		];
-		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
-		<|
-		"name"->name,
-		"definition"->StringTrim[definition],
-		"loc"->loc,
-		"kind"->kind, 
-		"uri" -> uri|>];
 
-	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
+
+	symbols = cellToSymbol /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
 	symbols
 ];
 
