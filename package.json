@@ -2,7 +2,7 @@
     "name": "wlsp",
     "displayName": "wlsp",
     "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
-    "icon": "logo.png",  
+    "icon": "Wolf_icon2.png",  
     "publisher": "markmba",
     "preview": true,
     "enabledProposedApi": false,
