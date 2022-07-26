@@ -23,7 +23,7 @@ class WolframScriptController {
         this.controllerId = 'wolfram-script';
         this.notebookType = 'wolfram-script';
         this.label = 'Wolfram Script';
-        this.supportedLanguages = ['wolfram'];
+        this.supportedLanguages = ['wolfram', 'raw', 'plaintext'];
         this._executionOrder = 0;
         this.executions = [];
         this._controller = vscode.notebooks.createNotebookController(this.controllerId, this.notebookType, this.label);
@@ -44,7 +44,6 @@ class WolframScriptController {
     }
     _interrupt(notebook) {
         /* Do some interruption here; not implemented */
-        console.log(this.executions);
         this.executions.map((execution) => {
             try {
                 execution.end(false, Date.now());
@@ -69,7 +68,7 @@ class WolframScriptController {
     }
     _doExecution(cell) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!clients_1.wolframKernelClient) {
+            if (clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.needsStart()) {
                 clients_1.restart();
                 clients_1.onkernelReady().then(() => {
                     this._doExecution(cell);
@@ -94,19 +93,25 @@ class WolframScriptController {
                         execution.end(false, Date.now());
                     });
                     while (!execution.token.isCancellationRequested) {
-                        clients_1.wolframKernelClient.sendRequest("runExpression", {
+                        clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("runExpression", {
                             expression: cell.document.getText(),
                             line: 0,
                             end: 0,
                             textDocument: cell.document
                         }).then((result) => {
+                            let output = fs.readFileSync(result["output"], 'utf8').toString().replace("https:/file%2B.vscode-resource.vscode-cdn.net", "");
+                            let re = new RegExp('data:image\/png;base64,(.*?)>', 'g');
+                            let base64matches = output.replace(/\n/g, "").match(re);
+                            let base64 = "";
+                            if (base64matches != null && base64matches.length > 0) {
+                                base64 = base64matches[0].replace('data:image\/png;base64,', '').replace('>', '');
+                            }
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.text(
-                                    // result["output"],
-                                    fs.readFileSync(result["output"].toString().substring(1, result["output"].toString().length - 1), 'utf8'), 'text/html'),
+                                    vscode.NotebookCellOutputItem.text(output, 'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"]),
-                                    vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
+                                    vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram'),
+                                    new vscode.NotebookCellOutputItem(Buffer.from(base64, 'base64'), 'image/png')
                                 ])
                             ]);
                             if (execution.executionOrder !== undefined) {

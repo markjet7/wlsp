@@ -30,8 +30,6 @@ import { kill } from 'process';
 
 export function activate(context0: vscode.ExtensionContext){
     context = context0;
-    let lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
-    let kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
 
     startLanguageServer(context, outputChannel)
     vscode.workspace.onWillSaveTextDocument(willsaveDocument) 
@@ -40,9 +38,6 @@ export function activate(context0: vscode.ExtensionContext){
 
 
 function willsaveDocument(event:vscode.TextDocumentWillSaveEvent) {
-    if(event.document.fileName.endsWith(".nb")) {
-        
-    }
 }
 
 export function deactivate() {

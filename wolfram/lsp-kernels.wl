@@ -27,8 +27,7 @@ ServerCapabilities=<|
 	|>,
 	"hoverProvider" -> <|"contentFormat"->"markdown", "supportHtml"->True|>
 |>;
-
-
+$NewSymbol = (Print["New symbols2343", #1, #2] &;);
 handle["initialize",json_]:=Module[{response, response2},
 	Print["Initializing Kernel"];
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
@@ -49,18 +48,27 @@ handle["initialize",json_]:=Module[{response, response2},
 	varTableFile = scriptPath <> "varTable.js";
 	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
 	symbolDefinitions = <||>;
+	values = <||>;
+	(* $NewSymbol = (AssociateTo[values, #1 -> Echo@First[OwnValues[#1], {#1,#1}][[2]]] &;) *)
 ];
 
 
 handle["shutdown", json_]:=Module[{},
 	Print["Stopping Kernels"];
 	state = "Stop";
-	sendResponse[<|"id" -> json["id"], "result" -> Null|>];
+	sendResponse[<|"id" -> json["id"], "result" -> "null"|>];
 	CloseKernels[];
-	Close[KERNELSERVER];
 	Quit[];
 	Exit[]; 
 ];
+
+handle["exit", json_]:=(
+	Print["LSP Goodbye"];
+	state = "Stop";
+	sendResponse[<|"id" -> json["id"], "result" -> "null"|>];
+	Quit[];
+	Exit[];
+);
 
 boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
 ErrorBox[f_]:>{f}};
@@ -175,7 +183,7 @@ resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
 Inputs = {};
 Outputs = {};
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, f, maxWidth, time, stack},
 	$busy = True;
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 	Unprotect[NotebookDirectory];
@@ -195,10 +203,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
-		Print["Evaluated " <> ToString[Now - start]];
 		AppendTo[Inputs, string];
-		output = transforms[ReleaseHold[Last[r["Result"]]]];
-		Print["Transformed " <> ToString[Now - start]];,
+		output = transforms[ReleaseHold[Last[r["Result"]]]];,
 
 		True,
 		r = <|
@@ -214,7 +220,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	ans = result;
 	AppendTo[Outputs, ans];
 	
-	maxWidth = 8192;
+	maxWidth = 300;
 	response = If[KeyMemberQ[json, "id"],
 		<|
 		"id" -> json["id"],
@@ -245,22 +251,21 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			|>
 		|>
 	];
-	Print["Response " <> ToString[Now - start]];
 	evalnumber = evalnumber + 1;
 
 	file = CreateFile[];
 	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
-		sendResponse[<|"id"->json["id"], "params" -> <|
+		sendResponse[<|"id"->json["id"], "result" -> <|
 		"input" -> string,
-		"file"->ToString@file|>|>];,
+		"output"->ToString@output,
+		"result" -> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth]
+		|>|>];,
 		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
 		"input" -> string,
 		"file"->ToString@file|>|>];
 	];
 	Close[file];
-	Print["Response exported " <> ToString[Now - start]];
-
 
 	decorationLine = code2["range"][[2, 1]];
 	decorationChar = code2["range"][[2, 2]];
@@ -301,19 +306,16 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				<|ToString@decoration["range"]["start"]["line"]-> decoration|>],
 			<|ToString@decoration["range"]["start"]["line"]-> decoration|>
 		];
-		Print["Decorations " <> ToString[Now - start]];
 		
 		Export[decorationFile, workspaceDecorations, "JSON"];
-		Print["Decorations exported " <> ToString[Now - start]];
 
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 		sendResponse[response4];	
 
 		getWorkspaceSymbols[];
-		Print["Got workspace symbols " <> ToString[Now - start]];
 	];
 
-	
+	(*
 	ast = CodeConcreteParse[string];
 
 	f[node_]:=Module[{},
@@ -328,14 +330,15 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	
 	symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
 
-	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->150], {v, symbols}];
+	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->150], {v, symbols}];*)
 
 	
 
 	(* values = Echo@Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->150], {v, Names["Global`*"]}];*)
 
+	Print["saving variables"];
 	Check[
-		Export[varTableFile, values, "JSON"],
+		Export[varTableFile, Echo@values, "JSON"],
 		Print["Error saving variables"]
 	];
 
@@ -376,15 +379,15 @@ handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
 ];
 
 handle["getChildren", json_]:=Module[{function, result, file},
-	RemoteEvaluate[
-		(function = Echo[First[json["params"],"{}"],"params"];
-		result = Echo@ToExpression@function;
-		file = CreateFile[];
-		OpenWrite[file];
-		WriteString[file, Check[ExportString[result, "JSON"], "[]"]];
-		Close[file];
-		sendResponse[<|"id" -> json["id"], "result" -> file|>];)
-		]
+	
+	(function = First[json["params"],"{}"];
+	result = ToExpression@function;
+	file = CreateFile[];
+	OpenWrite[file];
+	WriteString[file, Check[ExportString[result, "JSON"], "[]"]];
+	Close[file];
+	sendResponse[<|"id" -> json["id"], "result" -> file|>];)
+	
 ];
 
 handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
@@ -624,16 +627,10 @@ symbolToTreeItem2[symbol_]:=<|
 
 symbolToTreeItem2[symbol : Association[Rule["name", _], ___]] := Module[{expr},
   expr = Symbol@symbol["name"];
-  <|"name" -> 
-    symbol["name"],
+  <|"name" -> symbol["name"],
    "kind" -> ToString[Head@expr],
    "definition" -> Check[symbol["definition"], ToString@Short[expr]],
-   "location" -> <|"uri" -> symbol["uri"], 
-     "range" -> <|
-       "start" -> <|"line" -> symbol["loc"][[1, 1]] - 1, 
-         "character" -> symbol["loc"][[1, 2]] - 1|>, 
-       "end" -> <|"line" -> symbol["loc"][[2, 1]] - 1, 
-         "character" -> symbol["loc"][[2, 2]] - 1|>|>|>, 
+   "location" -> symbol["location"], 
    "children" -> {},
    "lazyload" -> "symbolToTreeItem2[" <> symbol["name"] <> "]",
    "icon" -> If[KeyExistsQ[symbolIcons, Head@expr], symbolIcons[Head@expr], "symbol-variable"],
@@ -653,19 +650,30 @@ symbolIcons = <|
 getWorkspaceSymbols[]:=Module[{},
 		RemoteEvaluate[(
 			AllSymbols = Flatten@DeleteCases[
-				KeyValueMap[{key, value} |->
+				KeyValueMap[{key, value} |-> Check[
 					<|
 						"name" -> FileBaseName@key,
 						"kind" -> ToString[String, InputForm],
 						"definition" -> ToString[key, InputForm, TotalWidth -> 500],
-						"children" -> Map[symbolToTreeItem2, getSymbols[value, key]],
-						"lazyload" -> "Map[symbolToTreeItem2, getSymbols[" <> ToString[value, InputForm] <> ", " <> ToString[key,InputForm] <> "]]",
+						"children" -> Map[symbolToTreeItem2, Check[getSymbols[ToString[value], ToString[key]], {}]],
+						"lazyload" -> "Map[symbolToTreeItem2, Check[getSymbols[" <> ToString[value, InputForm] <> ", " <> ToString[key,InputForm] <> "], {}]]",
 						"icon" -> "file-code",
 						"location" -> <|
 							"uri" -> key
 						|>,
 						"collapsibleState" -> 1
-					|>,
+					|>, 
+					<|
+						"name" -> FileBaseName@key,
+						"kind" -> "String",
+						"definition" -> ToString[key, InputForm, TotalWidth -> 500],
+						"children" -> {},
+						"lazyload" -> {},
+						"icon" -> "file-code",
+						"location" -> <|
+							"uri" -> key
+						|>
+					|>],
 					documents
 				], 
 			_Missing];
@@ -693,6 +701,10 @@ handle["abort", json_]:=Module[{},
 	AbortKernels[];
 ];
 
+handle[_, json_]:=Module[{},
+	Print["Unknown method: ", json["method"]];
+];
+
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f}, 
@@ -709,8 +721,8 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f},
 					msgs = {Apply[StringTemplate[r[[1, 1]] /. Messages[Evaluate[r[[1, 1, 1]]]]], r[[1, 2]]]};
 					
 					Table[
-						sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> TextString[r2] |>|>];
-						sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> TextString[r2]|>|>];,
+						sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth -> 200] |>|>];
+						sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth -> 1000]|>|>];,
 						{r2, msgs}
 					],
 					{r, Take[DeleteDuplicates@res["MessagesExpressions"],UpTo[3]]}];
@@ -747,7 +759,7 @@ toRange[{start_, end_}]:=Module[{},
 	|>
 ];
 
-getWordsPosition[word_, src_]:=Module[{sLines, lines, character, range},
+getWordsPosition[word_, src_String]:=Module[{sLines, lines, character, range},
 	sLines = StringSplit[src, EndOfLine, All];
 	lines = Flatten@Position[sLines,x_/;StringMatchQ[x, ___~~word~~___], Heads->False];
 	Table[
@@ -822,7 +834,7 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 	]
 ];
 
-getFunctionAtPosition[src_, position_]:=Module[{symbol, p},
+getFunctionAtPosition[src_String, position_]:=Module[{symbol, p},
 	p = position;
 	symbol = "";
 	NestWhile[
@@ -840,9 +852,7 @@ getFunctionAtPosition[src_, position_]:=Module[{symbol, p},
 	symbol
 ];
 
-getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
-
-
+getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = srcLines[[position["line"]+1]];
 
@@ -885,31 +895,38 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 
 ];
 
-cellToSymbol[node_]:=Module[{astStr,name,loc,kind,rhs},
-	astStr=ToFullFormString[node[[2,1]]];
-	name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
-	loc=node[[-1]][Source];
-	rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
-	kind=If[Head@rhs == CallNode,
-		rhs[[1,2]],
-		rhs[[2]]
-	];
-	definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
+cellToSymbol[node_, uri_:""]:=Module[{symbol, source, definition, kind},
+	{symbol, source} = FirstCase[node, LeafNode[Symbol,name_,<|Source->source_,___|>]:>{name,source}, {"var", {{1,1},{1,1}}},Infinity,Heads->True];
+	definition = ToExpression[symbol];
+	kind = Head@value;
 	<|
-	"name"->name,
-	"definition"->StringTrim[definition],
-	"loc"->loc,
-	"kind"->kind, 
-	"uri" -> uri|>];
+		"name"->ToString@symbol,
+		"kind"->ToString@kind,
+		"definition"->ToString[definition, InputForm, TotalWidth -> 200],
+		"location"->Check[
+			<|"uri" -> uri, 
+			"range" -> <|
+				"start" -> <|"line" -> source[[1, 1]] - 1, 
+					"character" -> source[[1, 2]] - 1|>, 
+				"end" -> <|"line" -> source[[2, 1]] - 1, 
+					"character" -> source[[2, 2]] - 1|>|>|>,
+		 <|"uri" -> uri, 
+			"range" -> <|
+				"start" -> <|"line" -> 0, 
+					"character" -> 0|>, 
+				"end" -> <|"line" -> 0, 
+					"character" -> 0|>|>|>],
+		 "uri" -> uri
+	|>
+];
 
 getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 	ast = CodeParse[src];
-
-
-
-	symbols = cellToSymbol /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
+	symbols = (cellToSymbol[#, uri] &) /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],3];
 	symbols
 ];
+
+getSymbols[___]:={};
 
 graphicsQ = 
   FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 

@@ -289,25 +289,8 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, ast, codeRange, code},
 		ToExpression[
 			"EvaluationData["<>code<>"]", 
 			InputForm, 
-		Unevaluated]
+		    Unevaluated]
 	];	
-
-	response = <|
-		"method" -> "onRunInWolfram", 
-		"params"-><|
-			"input" -> code,
-			"output"-> ToString[First[result]["Result"], InputForm, TotalWidth -> 500, CharacterEncoding -> "ASCII"], 
-			"result"-> ToString[First[result]["Result"], InputForm, TotalWidth -> 500, CharacterEncoding -> "ASCII"], 
-			"position"-> <|
-				"range" -> 	<|
-					"start"-><|"line"->codeRange[[1,1]]-1, "character"->codeRange[[1,2]]-1|>,
-					"end"-><|"line"->codeRange[[2,1]]-1, "character"->codeRange[[2,2]]+110|>
-				|>
-			|>,
-			"print" -> json["params", "print"],
-			"document" -> json["params", "textDocument"]["uri"]
-		|>
-	|>;
 
     file = CreateFile[];
 	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
@@ -315,7 +298,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, ast, codeRange, code},
 
 
 	sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
-		"input" -> ToString[code],
+		"input" -> string,
 		"file"->ToString@file|>|>];
 ];
 

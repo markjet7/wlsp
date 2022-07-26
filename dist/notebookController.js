@@ -15,21 +15,23 @@ const vscode = require("vscode");
 const fs = require('fs');
 const clients_1 = require("./clients");
 function activate(context) {
-    context.subscriptions.push(new WolframNotebookController());
+    context.subscriptions.push(new WolframNotebookController(context));
 }
 exports.activate = activate;
 class WolframNotebookController {
-    constructor() {
+    constructor(context) {
         this.controllerId = 'wolfram-notebook';
         this.notebookType = 'wolfram-notebook';
         this.label = 'Wolfram Notebook';
         this.supportedLanguages = ['wolfram'];
+        this.executions = [];
         this._executionOrder = 0;
         this._controller = vscode.notebooks.createNotebookController(this.controllerId, this.notebookType, this.label);
+        this._context = context;
         this._controller.supportedLanguages = this.supportedLanguages;
         this._controller.supportsExecutionOrder = true;
         this._controller.executeHandler = this._execute.bind(this);
-        // this._controller.interruptHandler = this._interrupt.bind(this);
+        this._controller.interruptHandler = this._interrupt.bind(this);
     }
     _execute(cells, _notebook, _controller) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -45,6 +47,22 @@ class WolframNotebookController {
         // for (let cell of notebook.getCells()) {
         //     this._doInterrupt(cell);
         // }
+        this.executions.map((execution) => {
+            try {
+                execution.end(false, Date.now());
+                execution.replaceOutput(new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.error({
+                        name: 'error',
+                        message: "aborted"
+                    })
+                ]));
+            }
+            catch (e) {
+                console.log(e);
+            }
+        });
+        this.executions = [];
+        clients_1.restart();
     }
     _doInterrupt(cell) {
         if (cell.kind === vscode.NotebookCellKind.Code) {
@@ -61,53 +79,70 @@ class WolframNotebookController {
     }
     _doExecution(cell) {
         return __awaiter(this, void 0, void 0, function* () {
-            let execution = this._controller.createNotebookCellExecution(cell);
-            execution.executionOrder = ++this._executionOrder;
-            execution.start(Date.now()); // Keep track of elapsed time to execute cell.
-            /* Do some execution here; not implemented */
-            try {
-                let abortCtl = new abort_controller_1.default();
-                execution.token.onCancellationRequested(() => {
-                    abortCtl.abort();
-                    clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("$/cancelRequest", { id: execution.executionOrder }).then(() => { });
+            if (clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.needsStart()) {
+                clients_1.restart();
+                clients_1.onkernelReady().then(() => {
+                    this._doExecution(cell);
+                });
+            }
+            else {
+                let execution = this._controller.createNotebookCellExecution(cell);
+                execution.executionOrder = ++this._executionOrder;
+                execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+                this.executions.push(execution);
+                /* Do some execution here; not implemented */
+                try {
+                    let abortCtl = new abort_controller_1.default();
+                    execution.token.onCancellationRequested(() => {
+                        abortCtl.abort();
+                        execution.replaceOutput(new vscode.NotebookCellOutput([
+                            vscode.NotebookCellOutputItem.error({
+                                name: 'error',
+                                message: "aborted"
+                            })
+                        ]));
+                        execution.end(false, Date.now());
+                    });
+                    while (!execution.token.isCancellationRequested) {
+                        clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("runExpression", {
+                            expression: cell.document.getText(),
+                            line: 0,
+                            end: 0,
+                            textDocument: cell.document
+                        }).then((result) => {
+                            let output = fs.readFileSync(result["output"], 'utf8').toString().replace("https:/file%2B.vscode-resource.vscode-cdn.net", "");
+                            let re = new RegExp('data:image\/png;base64,(.*?)>', 'g');
+                            let base64matches = output.replace(/\n/g, "").match(re);
+                            let base64 = "";
+                            if (base64matches != null && base64matches.length > 0) {
+                                base64 = base64matches[0].replace('data:image\/png;base64,', '').replace('>', '');
+                            }
+                            execution.replaceOutput([
+                                new vscode.NotebookCellOutput([
+                                    vscode.NotebookCellOutputItem.text(output, 'text/html'),
+                                    vscode.NotebookCellOutputItem.text(result["result"]),
+                                    vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram'),
+                                    new vscode.NotebookCellOutputItem(Buffer.from(base64, 'base64'), 'image/png')
+                                ])
+                            ]);
+                            if (execution.executionOrder !== undefined) {
+                                if (execution.executionOrder <= this._executionOrder) {
+                                    execution.end(true, Date.now());
+                                }
+                            }
+                        });
+                        break;
+                    }
+                }
+                catch (e) {
                     execution.replaceOutput(new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.error({
-                            name: 'error',
-                            message: "aborted"
+                            name: e instanceof Error && e.name || 'error',
+                            message: e instanceof Error && e.message || JSON.stringify(e, undefined, 4)
                         })
                     ]));
                     execution.end(false, Date.now());
-                });
-                while (!execution.token.isCancellationRequested) {
-                    clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("runExpression", {
-                        expression: cell.document.getText(),
-                        line: 0,
-                        end: 0
-                    }).then((result) => {
-                        execution.replaceOutput([
-                            new vscode.NotebookCellOutput([
-                                vscode.NotebookCellOutputItem.text(fs.readFileSync(result["output"], 'utf8'), 'text/html'),
-                                vscode.NotebookCellOutputItem.text(result["result"]),
-                                vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
-                            ])
-                        ]);
-                        if (execution.executionOrder !== undefined) {
-                            if (execution.executionOrder <= this._executionOrder) {
-                                execution.end(true, Date.now());
-                            }
-                        }
-                    });
-                    break;
                 }
-            }
-            catch (e) {
-                execution.replaceOutput(new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.error({
-                        name: e instanceof Error && e.name || 'error',
-                        message: e instanceof Error && e.message || JSON.stringify(e, undefined, 4)
-                    })
-                ]));
-                execution.end(false, Date.now());
             }
         });
     }

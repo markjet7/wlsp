@@ -13,7 +13,7 @@ export class WolframScriptController {
     readonly controllerId = 'wolfram-script';
     readonly notebookType = 'wolfram-script';
     readonly label = 'Wolfram Script';
-    readonly supportedLanguages = ['wolfram'];
+    readonly supportedLanguages = ['wolfram', 'raw', 'plaintext'];
 
     private readonly _controller: vscode.NotebookController;
     private _executionOrder = 0;
@@ -50,7 +50,6 @@ export class WolframScriptController {
 
     private _interrupt(notebook: vscode.NotebookDocument): void {
         /* Do some interruption here; not implemented */
-        console.log(this.executions);
         this.executions.map((execution) => {
             try {
                 execution.end(false, Date.now());
@@ -80,7 +79,7 @@ export class WolframScriptController {
 
     private async _doExecution(cell: vscode.NotebookCell): Promise<void> {
 
-        if(!wolframKernelClient) {
+        if(wolframKernelClient?.needsStart()) {
             restart()
             onkernelReady().then(() => {
                 this._doExecution(cell)
@@ -105,7 +104,7 @@ export class WolframScriptController {
                     execution.end(false, Date.now());
                 });
                 while(!execution.token.isCancellationRequested){
-                        wolframKernelClient.sendRequest("runExpression", 
+                        wolframKernelClient?.sendRequest("runExpression", 
                             {
                                 expression: cell.document.getText(),
                                 line: 0,
@@ -113,14 +112,24 @@ export class WolframScriptController {
                                 textDocument: cell.document
                             }
                         ).then((result:any) => {
+
+                            let output = fs.readFileSync(result["output"], 'utf8').toString().replace("https:/file%2B.vscode-resource.vscode-cdn.net", "")
+       
+                            let re:RegExp = new RegExp('data:image\/png;base64,(.*?)>', 'g')
+                            let base64matches:string[] = output.replace(/\n/g,"").match(re);
+        
+                            let base64:string = "";
+                            if(base64matches != null && base64matches.length>0){
+                                base64 = base64matches[0].replace('data:image\/png;base64,', '').replace('>', '')
+                            } 
+        
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
                                     vscode.NotebookCellOutputItem.text(
-                                            // result["output"],
-                                            fs.readFileSync(result["output"].toString().substring(1,result["output"].toString().length-1), 'utf8'),
-                                            'text/html'),
+                                            output,'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"]),
-                                    vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
+                                    vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram'),
+                                    new vscode.NotebookCellOutputItem(Buffer.from(base64, 'base64'), 'image/png')
                                 ])
                             ]);
                             if (execution.executionOrder !== undefined) {

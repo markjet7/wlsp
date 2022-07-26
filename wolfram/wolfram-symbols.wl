@@ -1,39 +1,9 @@
 (* ::Package:: *)
-BeginPackage["wolframLSP`"];
-If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
-If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
-
-SERVER = SocketConnect[port, "TCP"];
-If[(Head@SERVER === SocketObject),
-	connected = True;
-	handleMessageList[ReadMessages[SERVER], "Continue"];
-	Print["Connected: ", ToString@connected];
-];
-Print["Server: ", ToString@SERVER];
-
-
-If[StringContainsQ[ToString@SERVER, "Connection refused"],
-	Quit[1];
-];
-
-If[connected === False,
-    Print["Cannot connect to symbols"];
-    Quit[1];
-];
-
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
-
-EKernel = First[LaunchKernel[1], Print["Cannot start evaluation kernel."]; Quit[1]];
+BeginPackage["wolframSymbolsLSP`"];
 
 
 
-logfile = "/Users/mark/Downloads/wlsp.txt";
-s = OpenAppend[logfile];
-WriteString[s, "WolframLSP started at " <> DateString[] <> "\n"];
-Close[s];
-
-
-(* $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &); *)
+$MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 constructRPCBytes[_Missing]:= Module[{}, ""];
 constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
@@ -47,8 +17,8 @@ sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
         (*Print["Sending response: " <> ToString[res, CharacterEncoding->"ASCII"]];*)
 		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
-        If[Head[SERVER] === SocketObject, 
-            BinaryWrite[SERVER, # , "Character32"] &/@ byteResponse;
+        If[Head[SYMBOLSERVER] === SocketObject, 
+            BinaryWrite[SYMBOLSERVER, # , "Character32"] &/@ byteResponse;
         ],
 		Print["response error"];
 		Print[res];
@@ -67,15 +37,14 @@ sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
 
-(*
-$MessagePrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>];) &); 
-$PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); 
-*)
+(* $MessagePrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>];) &); *)
+(* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
 
 
-
+If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
+If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "lsp-handler.wl"];
+Get[DirectoryName[path] <> "lsp-symbols.wl"];
 (*Get[DirectoryName[path] <> "notebook2jupyter.m"];*)
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
@@ -97,9 +66,6 @@ SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
 handleMessage[msg_Association, state_]:=Module[{},
-	OpenAppend[logfile];
-	Write[logfile, "handleMessage: " <> ToString[msg["method"], CharacterEncoding->"ASCII"]];
-	Close[logfile];
 	Check[
 		handle[msg["method"], msg],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
@@ -136,12 +102,9 @@ handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
-Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-Get[DirectoryName[path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
+    Get[DirectoryName[path] <> "lsp-symbols.wl"];
 	Pause[handlerWait];
-	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-	Get[DirectoryName[path] <> "file-transforms.wl"]; 
 
 	(*
     Last[(Replace[
@@ -151,11 +114,15 @@ socketHandler[state_]:=Module[{},
 			{stop_, state2_} :> {stop, state2},
 			{} :> state
 		}
-	] & /@ SERVER["ConnectedClients"]), "Continue"]
+	] & /@ SYMBOLSERVER["ConnectedClients"]), "Continue"]
     *)
     Last[
         Replace[
-                handleMessageList[ReadMessages[SERVER], state],
+            If[
+                SocketReadyQ[SYMBOLSERVER, Quantity[5, "Minutes"]],
+                handleMessageList[ReadMessages[SYMBOLSERVER], state],
+                Print["LSP is idle"];
+            ],
             {
                 {"Continue", state2_} :> state2,
                 {stop_, state2_} :> {stop, state2},
@@ -165,12 +132,31 @@ socketHandler[state_]:=Module[{},
     "Continue"]
 ] // socketHandler;
 
-(*SERVER=SocketOpen[port,"TCP"];
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];*)
+(*SYMBOLSERVER=SocketOpen[port,"TCP"];
+Replace[SYMBOLSERVER,{$Failed:>(Print["Cannot start tcp SYMBOLSERVER."]; Quit[1])}];*)
 connected = False;
+Print["Symbols client connecting on port: ", ToString@port];
+SYMBOLSERVER = SocketConnect[port, "TCP"];
+Print["SYMBOLSERVER: ", ToString@SYMBOLSERVER];
+If[(Head@SYMBOLSERVER === SocketObject),
+    connected = True;
+    Print["Connected: ", ToString@connected];
+    handleMessageList[ReadMessages[SYMBOLSERVER], "Continue"];,
+    Print["Failed attempt: ", ToString@a, " ", ToString@connected];
+];
 
+If[StringContainsQ[ToString@SYMBOLSERVER, "Connection refused"],
+    Print["Connection refused. Quitting. "];
+    Quit[1];
+];
 
-Print["Symbols ", SERVER, ": ", port];
+If[connected === False,
+    Print["Cannot connect to symbols"];
+    Quit[1];
+];
+
+Replace[SYMBOLSERVER,{$Failed:>(Print["Cannot start tcp SYMBOLSERVER."]; Quit[1])}];
+Print["Symbols ", SYMBOLSERVER, ": ", port];
 Print[Now];
 
 MemoryConstrained[

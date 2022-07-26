@@ -11,28 +11,12 @@ function invalidator() {
 function showPlotPanel(webview, extensionUri) {
     let timeNow = new Date().getTime();
     const toolkitUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js",
-    ]);
-    const mainUri = getUri(webview, extensionUri, ["media", "main.js"]);
-    const styleUri = getUri(webview, extensionUri, ["media", "style.css"]);
-    const codiconsUri = getUri(webview, extensionUri, [
-        "node_modules",
-        "@vscode",
-        "codicons",
-        "dist",
-        "codicon.css",
+        "media",
+        "toolkit.js"
     ]);
     let result = `<!DOCTYPE html>
     <html lang="en">
     <head>
-        <script type="module" src="${toolkitUri}"></script>
-        <!-- <script type="module" src="${mainUri}"></script>
-        <link rel="stylesheet" href="${styleUri}"> 
-        <link rel="stylesheet" href="${codiconsUri}"> -->
         <style type="text/css">
 
             body{
@@ -113,7 +97,11 @@ function showPlotPanel(webview, extensionUri) {
         </style>
         <meta charset="UTF-8">
 
-        <!-- <meta http-equiv="Content-Security-Policy" content="default-src *; img-src ${webview.cspSource} https: data:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"/> -->
+        <!-- <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; img-src ${webview.cspSource} https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
+            /> -->
+            <script type="module" src="${toolkitUri}"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Plots</title>
         <script>

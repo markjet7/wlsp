@@ -1,7 +1,7 @@
 {
     "name": "wlsp",
-    "displayName": "A Wolfram language server implementation for Visual Studio Code",
-    "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
+    "displayName": "An (unofficial) Wolfram Language LSP",
+    "description": "A Wolfram Language Server Protocol implementation to run Wolfram code, preview results, and interact with the Wolfram kernel.",
     "icon": "Wolf_icon2.png",  
     "publisher": "markmba",
     "preview": true,
@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.4",
+    "version": "0.0.9",
     "engines": {
         "vscode":"^1.68.1" 
     },
@@ -29,6 +29,11 @@
                     "type": "boolean",
                     "description": "Enable live document",
                     "default": false
+                },
+                "wlsp.runtime":{
+                    "type": "string",
+                    "description": "Runtime to use",
+                    "default": "wolframscript"
                 },
                 "wlsp.wordSeparators":{
                     "type": "string",
@@ -68,24 +73,13 @@
     
         "notebooks": [
             {
-                "id": "wolfram-script",
-                "type": "wolfram-script",
-                "displayName": "Wolfram Script Notebook",
-                "priority": "option",
-                "selector": [
-                    {
-                        "filenamePattern": "*.wl"
-                    }
-                ]
-            },
-            {
                 "id": "wolfram-notebook",
                 "type": "wolfram-notebook",
                 "displayName": "Wolfram Notebook (experimental)",
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.nb"
+                        "filenamePattern": "*.wlnb"
                     }
                 ]
             }
@@ -120,20 +114,12 @@
         ],
         "commands": [
             {
-                "command": "wolfram.new",
-                "title": "Wolfram: Create notebook"
+                "command": "wolfram.newNotebook",
+                "title": "Wolfram: Create New Notebook"
             },
             {
                 "command": "wolfram.createFile",
                 "title": "Wolfram: Create New File"
-            },
-            {
-                "command": "wolfram.createNotebook",
-                "title": "Wolfram: Create New Notebook (experimental)"
-            },
-            {
-                "command": "wolfram.createNotebookScript",
-                "title": "Wolfram: Create New Notebook Script"
             },
             {
                 "command": "wolfram.runCell",

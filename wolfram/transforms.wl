@@ -60,31 +60,42 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
 
-		If[!(graphicsQ@output) && (!MemberQ[ graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
-			WriteString[f, ExportString[ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]];
-			Close[f];
-			Return[f]
+		TimeConstrained[
+			If[!(graphicsQ@output) && (!MemberQ[ graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
+				WriteString[f, ExportString[ToString[output, InputForm, TotalWidth -> 4000], "HTMLFragment", "GraphicsOutput"->"PNG"]];
+				Close[f];
+				Return[f]
+			];
+
+			If[output === Null,
+				WriteString[f, "\t"];
+				Close[f];
+				Return[f];
+			];
+
+			(*WriteString[f, 
+				ExportString[
+					If[graphicsQ@output,
+						Rasterize[output /.Null->"", Background ->None], 
+
+						Rasterize[Short[output, 25] /.Null->"", Background ->None]
+					],
+					"HTMLFragment", 
+					"GraphicsOutput"->"PNG",
+					"URIHandler" -> "Export", 
+					"FilesDirectory" -> DirectoryName[f], 
+					"FilesPrefix" -> "https://file%2B.vscode-resource.vscode-cdn.net" <> DirectoryName[f]
+					]];*)
+					
+			WriteString[f,
+				"<img src=\"data:image/png;base64," <> 
+				ExportString[output, {"Base64", "PNG"}] <>
+				"\" />"
+			];
+			,
+			Quantity[10, "Seconds"],
+			WriteString[f, "output is too large"]
 		];
-
-		If[output === Null,
-			WriteString[f, "\t"];
-			Close[f];
-			Return[f];
-		];
-
-		WriteString[f, 
-			ExportString[
-				If[graphicsQ@output,
-					Rasterize[output /.Null->"", Background ->None], 
-
-					Rasterize[Short[output, 25] /.Null->"", Background ->None]
-				],
-				"HTMLFragment", 
-				"GraphicsOutput"->"PNG",
-				"URIHandler" -> "Export", 
-				"FilesDirectory" -> DirectoryName[f], 
-				"FilesPrefix" -> "https://file%2B.vscode-resource.vscode-cdn.net" <> DirectoryName[f]
-				]];
 
 		Close[f];
 		Return[f]
