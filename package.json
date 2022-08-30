@@ -2,26 +2,30 @@
     "name": "wlsp",
     "displayName": "A Wolfram language server implementation for Visual Studio Code",
     "description": "Run wolfram code; preview results inline; function help and documentation, and more...",
-    "icon": "Wolf_icon2.png",  
+    "icon": "Wolf_icon2.png",
     "publisher": "markmba",
     "preview": true,
     "enabledProposedApi": false,
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.4",
+    "version": "0.0.16",
     "engines": {
-        "vscode":"^1.68.1" 
+        "vscode": "^1.68.1"
     },
     "categories": [
         "Programming Languages"
     ],
     "main": "./dist/extension",
     "activationEvents": [
-        "onLanguage:wolfram",
-        "onStartupFinished"
+        "onLanguage:wolfram"
     ],
     "contributes": {
+        "capabilities": {
+            "untrustedWorkspaces": {
+                "supported": true
+            }
+        },
         "configuration": {
             "title": "WLSP",
             "properties": {
@@ -30,19 +34,22 @@
                     "description": "Enable live document",
                     "default": false
                 },
-                "wlsp.wordSeparators":{
+                "wlsp.wordSeparators": {
                     "type": "string",
                     "default": "`~!@#$%^&*()-=+[{]}\\|;:'\",<.>/?_",
                     "description": "Word separators"
                 },
-                "wlsp.executablePath":{
+                "wlsp.executablePath": {
                     "type": "string",
                     "default": "wolframscript",
                     "description": "Path to wolframscript executable"
                 },
-                "comments.blockComment":{
+                "comments.blockComment": {
                     "type": "string",
-                    "default": ["(*", "*)"],
+                    "default": [
+                        "(*",
+                        "*)"
+                    ],
                     "description": "Block comment"
                 }
             }
@@ -53,7 +60,7 @@
                 "editor.semanticHighlighting.enabled": true
             },
             "editor.semanticTokenColorCustomizations": {
-                "enabled": true, 
+                "enabled": true,
                 "rules": {
                     "function": {
                         "foreground": "#ff0000",
@@ -65,7 +72,6 @@
                 }
             }
         },
-    
         "notebooks": [
             {
                 "id": "wolfram-script",
@@ -157,7 +163,7 @@
             },
             {
                 "command": "wolfram.abort",
-                "title": "Wolfram: Abort"
+                "title": "Wolfram: Abort current computation"
             },
             {
                 "command": "wolfram.help",
@@ -301,18 +307,18 @@
     },
     "dependencies": {
         "@shelacek/ubjson": "1.0.1",
+        "@types/socket.io": "^2.1.11",
+        "@vscode/webview-ui-toolkit": "^0.8.1",
         "abort-controller": "^3.0.0",
+        "find-free-port": "^2.0.0",
         "open": "7.1.0",
+        "ps-tree": "^1.2.0",
         "supports-color": "^7.1.0",
         "tmp": "0.2.1",
         "tsun": "^0.5.0",
-        "vsce": "^1.100.1",
-        "ps-tree": "^1.2.0",
-        "@types/socket.io": "^2.1.11",
-        "@vscode/webview-ui-toolkit": "^0.8.1",
-        "find-free-port": "^2.0.0",
+        "vsce": "^1.103.1",
         "vscode-jsonrpc": "^5.0.1",
-        "vscode-languageclient":"^8.0.1",
+        "vscode-languageclient": "^8.0.1",
         "vscode-languageserver": "^8.0.1",
         "vscode-languageserver-textdocument": "1.0.1",
         "vscode-textmate": "^5.2.0"

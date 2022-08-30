@@ -62,8 +62,12 @@ lastChange = Now;
 
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
+logfile = DirectoryName[path] <> "wlsp.log";
 
 handleMessage[msg_Association, state_]:=Module[{},
+	log = OpenAppend[logfile];
+	Write[log, msg["method"] <> ": " <> ToString@Now];
+	Close[log];
 	Check[
 		handle[msg["method"],msg],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
@@ -97,7 +101,7 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.01;
+handlerWait = 0.02;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;

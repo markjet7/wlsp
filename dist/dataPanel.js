@@ -84,7 +84,6 @@ function getOutputContent(webview, extensionUri) {
         <script type="module" src="${toolkitUri}"></script>
         <title>Data Table</title>
         <script>
-            console.log("My SCRIPT");
             const vscode = acquireVsCodeApi();
 
             function scrollToBottom() {

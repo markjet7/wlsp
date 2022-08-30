@@ -1,9 +1,9 @@
-BeginPackage["WolframKernel`"]
-(* Kernel Start Section *)
 
+BeginPackage["WolframKernel`"];
+(* Kernel Start Section *)
 $HistoryLength = 100;
 (* ::Package:: *)
-$MessagePrePrint = (ToString[#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+$MessagePrePrint = (ToString[#, InputForm, TotalWidth->100, CharacterEncoding->"ASCII"] &);
 
 sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
@@ -56,7 +56,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 	If[KeyMemberQ[msg, "method"],
 		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 			Check[
-				Get[DirectoryName[path] <> "transforms.wl"];
 				handle[msg["method"],msg], 
 				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 			],
