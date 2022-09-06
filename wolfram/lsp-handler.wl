@@ -251,19 +251,19 @@ handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, resu
 ];
 
 handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
-	src = documents[json["params"]["textDocument"]["uri"]];
-	position = json["params"]["position"];
+		src = documents[json["params"]["textDocument"]["uri"]];
+		position = json["params"]["position"];
 
-	str = getWordAtPosition[src, position];
-	definitions = Select[Flatten@KeyValueMap[getSymbols[#2, #1] &, documents], StringMatchQ[#["name"], str] &];
-	result = Table[<|
-		"uri" -> d["uri"], 
-		"range" -> <|
-			"start" -> <|"line" -> d["loc"][[1, 1]]-1, "character"->d["loc"][[1,2]]-1|>,
-			"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
-		|>|>, {d, definitions}];
-	
-	sendResponse[<|"id" -> json["id"], "result"-> result|>];
+		str = getWordAtPosition[src, position];
+		definitions = Select[Flatten@KeyValueMap[getSymbols[#2, #1] &, documents], StringMatchQ[#["name"], str] &];
+		result = Table[<|
+			"uri" -> d["uri"], 
+			"range" -> <|
+				"start" -> <|"line" -> d["loc"][[1, 1]]-1, "character"->d["loc"][[1,2]]-1|>,
+				"end" -> <|"line" -> d["loc"][[2, 1]]-1, "character"->d["loc"][[2,2]]-1|>
+			|>|>, {d, definitions}];
+		
+		sendResponse[<|"id" -> json["id"], "result"-> result|>];
 ];
 
 handle["wolframVersion", json_]:=Module[{response},
@@ -740,7 +740,7 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 		response = <|"id"->json["id"], "result"->""|>;
 		sendResponse[response];
 		
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> symbol |> |>];
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[symbol, InputForm, TotalWidth -> 250] |> |>];
 	];
 ];
 
@@ -1151,12 +1151,8 @@ getStringAtLineChar[src_String, position_]:=Module[{lines},
 	]
 ];
 
+getWordAtPosition[_,_]:="";
 getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
-
-	(*
-	vals = {src, position};
-	Save["/Users/Mark/Downloads/dump.wl", vals]; *)
-
 
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];

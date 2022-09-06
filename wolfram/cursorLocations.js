@@ -1,172 +1,62 @@
 [
 	{
 		"start":{
+			"line":3,
+			"character":0
+		},
+		"end":{
+			"line":6,
+			"character":2
+		}
+	},
+	{
+		"start":{
+			"line":8,
+			"character":0
+		},
+		"end":{
+			"line":11,
+			"character":2
+		}
+	},
+	{
+		"start":{
 			"line":13,
 			"character":0
 		},
 		"end":{
-			"line":82,
+			"line":13,
+			"character":90
+		}
+	},
+	{
+		"start":{
+			"line":14,
+			"character":0
+		},
+		"end":{
+			"line":41,
 			"character":1
 		}
 	},
 	{
 		"start":{
-			"line":87,
+			"line":43,
 			"character":0
 		},
 		"end":{
-			"line":87,
-			"character":19
+			"line":59,
+			"character":6
 		}
 	},
 	{
 		"start":{
-			"line":88,
+			"line":62,
 			"character":0
 		},
 		"end":{
-			"line":88,
-			"character":19
-		}
-	},
-	{
-		"start":{
-			"line":89,
-			"character":0
-		},
-		"end":{
-			"line":89,
-			"character":20
-		}
-	},
-	{
-		"start":{
-			"line":90,
-			"character":0
-		},
-		"end":{
-			"line":90,
-			"character":19
-		}
-	},
-	{
-		"start":{
-			"line":92,
-			"character":0
-		},
-		"end":{
-			"line":92,
-			"character":44
-		}
-	},
-	{
-		"start":{
-			"line":93,
-			"character":0
-		},
-		"end":{
-			"line":93,
-			"character":180
-		}
-	},
-	{
-		"start":{
-			"line":96,
-			"character":0
-		},
-		"end":{
-			"line":110,
-			"character":1
-		}
-	},
-	{
-		"start":{
-			"line":112,
-			"character":0
-		},
-		"end":{
-			"line":114,
-			"character":1
-		}
-	},
-	{
-		"start":{
-			"line":116,
-			"character":0
-		},
-		"end":{
-			"line":116,
-			"character":136
-		}
-	},
-	{
-		"start":{
-			"line":117,
-			"character":0
-		},
-		"end":{
-			"line":117,
-			"character":35
-		}
-	},
-	{
-		"start":{
-			"line":119,
-			"character":0
-		},
-		"end":{
-			"line":119,
-			"character":183
-		}
-	},
-	{
-		"start":{
-			"line":121,
-			"character":0
-		},
-		"end":{
-			"line":121,
-			"character":52
-		}
-	},
-	{
-		"start":{
-			"line":122,
-			"character":0
-		},
-		"end":{
-			"line":122,
-			"character":96
-		}
-	},
-	{
-		"start":{
-			"line":124,
-			"character":0
-		},
-		"end":{
-			"line":124,
-			"character":18
-		}
-	},
-	{
-		"start":{
-			"line":125,
-			"character":0
-		},
-		"end":{
-			"line":125,
-			"character":11
-		}
-	},
-	{
-		"start":{
-			"line":126,
-			"character":0
-		},
-		"end":{
-			"line":126,
-			"character":1
+			"line":70,
+			"character":76
 		}
 	}
 ]
