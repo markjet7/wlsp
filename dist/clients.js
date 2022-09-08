@@ -352,6 +352,9 @@ function moveCursor() {
 function decorateRunningLine(outputPosition) {
     let e = vscode.window.activeTextEditor;
     if (e) {
+        if (outputPosition.line == 0) {
+            return;
+        }
         let decorationLine = e.document.lineAt(outputPosition.line - 1);
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character);
         let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character);
@@ -673,6 +676,9 @@ function updateDecorations(decorationfile) {
         fs.readFile(decorationfile, "utf8", (err, data) => {
             if (err) {
                 outputChannel.appendLine(err);
+                return;
+            }
+            if (data == '') {
                 return;
             }
             newDecorations = JSON.parse(data);

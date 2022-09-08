@@ -422,6 +422,10 @@ function decorateRunningLine(outputPosition:vscode.Position) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     if (e) {
 
+        if (outputPosition.line == 0) {
+            return
+        }
+
         let decorationLine = e.document.lineAt(outputPosition.line - 1)
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
         let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
@@ -813,6 +817,11 @@ function updateDecorations(decorationfile: string) {
                 outputChannel.appendLine(err)
                 return
             }
+
+            if (data == '') {
+                return
+            }
+
             newDecorations = JSON.parse(data)
 
             if (typeof (editor) === "undefined") {

@@ -62,9 +62,15 @@ transforms[output_]:=Module[{f, txt},
 
 		TimeConstrained[
 			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
-				WriteString[f, ExportString[ToString[output, InputForm, TotalWidth -> 2000], "HTMLFragment",
-				"GraphicsOutput"->"PNG",
-				 "XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]];
+				WriteString[f, 
+					StringReplace[
+						ExportString[
+							ToString[output, InputForm, TotalWidth -> 2000], 
+							"HTMLFragment",
+							"GraphicsOutput"->"PNG",
+							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)],
+						{"\\n"->"<br>"}]
+				];
 				Close[f];
 				Return[f]
 			];

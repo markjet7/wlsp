@@ -50,7 +50,7 @@ handle["initialize",json_]:=Module[{response, response2},
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
 	varTableFile = scriptPath <> "varTable.js";
-	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
+	workspaceDecorations =  <||>;
 	symbolDefinitions = <||>;
 
 	(*
@@ -232,7 +232,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		output = transforms["Syntax error"];
 	];
 
-	Print["235"];
 	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {ReleaseHold[Last[r["Result"]]], r["Success"], r["Result"]}};
 	ans = result;
 	
@@ -273,7 +272,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
 		sendResponse[<|"id"->json["id"], "params" -> <|
-		"input" -> string,
+		"input" -> StringReplace[string, {"\\n"->"<br>"}],
 		"file"->ToString@file|>|>];,
 		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
 		"input" -> string,
@@ -740,7 +739,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs},
 				];
 
 				errorFile = CreateFile[];
-				Export[errorFile, msgs, "JSON"];
+				Check[Export[errorFile, msgs, "JSON"], Export[errorFile, {"Errors were generated"}, "JSON"]];
 				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile|>|>];
 				
 				(*
