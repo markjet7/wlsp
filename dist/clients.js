@@ -1006,6 +1006,7 @@ function startWLSPKernel(id) {
                 let disposible;
                 // disposible = wolframKernelClient?.start();
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start();
+                outputChannel.appendLine("Client Started");
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();

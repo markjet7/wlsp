@@ -1,0 +1,1570 @@
+"initialize: DateObject[{2022, 9, 10, 9, 0, 9.705828}, Instant, Gregorian, \
+-5.]"
+"initialized: DateObject[{2022, 9, 10, 9, 0, 9.777743}, Instant, Gregorian, \
+-5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 10, 9, 0, 9.845276}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 10, 9, 0, 9.909981}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 10, 9, 0, 10.405947}, \
+Instant, Gregorian, -5.]"
+"wolframVersion: DateObject[{2022, 9, 10, 9, 0, 10.475107}, Instant, \
+Gregorian, -5.]"
+"DocumentSymbolRequest: DateObject[{2022, 9, 10, 9, 0, 10.545760}, Instant, \
+Gregorian, -5.]"
+"builtInList: DateObject[{2022, 9, 10, 9, 0, 10.613601}, Instant, Gregorian, \
+-5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 10.733191}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 9, 0, 10.925781}, \
+Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 10, 9, 0, 17.801153}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 10, 9, 0, 24.577568}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 25.370301}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 31.113227}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 36.528327}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 9, 0, 38.268593}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 10, 9, 0, 38.347358}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 38.420059}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 9, 0, 38.778407}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 10, 9, 0, 38.851473}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 38.926745}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 10, 9, 0, 39.003264}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 10, 9, 0, 39.076043}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 10, 9, 0, 39.153563}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 9, 0, 39.223336}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 9, 0, 39.299450}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 10, 9, 0, 39.579306}, \
+Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 10, 9, 0, 45.329433}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 10, 10, 50, 53.892033}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 10, 50, 53.965645}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 10, 50, \
+54.061576}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 10, 10, 50, 54.146723}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 10, 10, 50, 54.702648}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 10, 12, 1, 42.301090}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 10, 12, 1, 42.399550}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 10, 12, 1, \
+42.543507}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 10, 12, 1, 42.635896}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 10, 12, 1, 42.929884}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 10, 36, 49.958863}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 10, 36, 50.034777}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 10, 36, \
+50.132527}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 10, 36, 50.222458}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 10, 36, 50.751842}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 14, 8, 52.891898}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 14, 8, 52.966725}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 14, 8, \
+53.091381}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 14, 8, 53.201579}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 14, 8, 53.694142}, \
+Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 43, 59.989511}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 44, 0.120681}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 51, 51.378913}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 51, 58.510170}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 11, 19, 51, 58.806667}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 52, 6.748862}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 52, 9.711168}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 52, 9.956144}, Instant, \
+Gregorian, -5.]"
+"shutdown: DateObject[{2022, 9, 11, 19, 52, 11.281474}, Instant, Gregorian, \
+-5.]"
+"initialize: DateObject[{2022, 9, 11, 19, 53, 36.980645}, Instant, Gregorian, \
+-5.]"
+"initialized: DateObject[{2022, 9, 11, 19, 53, 37.060053}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 11, 19, 53, 37.131509}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 19, 53, 37.201274}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 19, 53, 37.334775}, \
+Instant, Gregorian, -5.]"
+"wolframVersion: DateObject[{2022, 9, 11, 19, 53, 37.408728}, Instant, \
+Gregorian, -5.]"
+"DocumentSymbolRequest: DateObject[{2022, 9, 11, 19, 53, 37.482218}, Instant, \
+Gregorian, -5.]"
+"builtInList: DateObject[{2022, 9, 11, 19, 53, 37.553570}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 53, 37.682848}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 19, 53, \
+38.202690}, Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 55, 7.403631}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 55, 7.868514}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 55, 38.777189}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 56, 30.223664}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 56, 30.296977}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 56, 30.532442}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 57, 13.859092}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 59, 19.122669}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 59, 19.365371}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 19, 59, \
+20.152070}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 19, 59, 20.268617}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 59, 20.341144}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 19, 59, \
+20.669408}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 19, 59, 20.781223}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 59, 20.855918}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 19, 59, 20.990585}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 19, 59, 21.079449}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 11, 19, 59, 21.213778}, Instant, \
+Gregorian, -5.]"
+"shutdown: DateObject[{2022, 9, 11, 19, 59, 25.718243}, Instant, Gregorian, \
+-5.]"
+"initialize: DateObject[{2022, 9, 11, 19, 59, 31.410959}, Instant, Gregorian, \
+-5.]"
+"initialized: DateObject[{2022, 9, 11, 19, 59, 31.486432}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 19, 59, 31.553831}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 11, 19, 59, 31.624062}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 19, 59, 31.692752}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 19, 59, 32.254651}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 19, 59, 32.325804}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 19, 59, \
+32.472550}, Instant, Gregorian, -5.]"
+"wolframVersion: DateObject[{2022, 9, 11, 19, 59, 32.579801}, Instant, \
+Gregorian, -5.]"
+"DocumentSymbolRequest: DateObject[{2022, 9, 11, 19, 59, 32.653123}, Instant, \
+Gregorian, -5.]"
+"builtInList: DateObject[{2022, 9, 11, 19, 59, 32.723621}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 20, 0, 10.936799}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 11, 20, 0, 12.663564}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 11, 20, 0, 12.747782}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 0, 14.541392}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 20, 0, 16.161762}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 0, 16.233632}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 20, 0, \
+16.369062}, Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 20, 0, 16.496901}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 20, 0, 16.709185}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 11, 20, 0, 17.015855}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 20, 0, 27.781941}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 0, 27.855293}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 20, 0, 27.990637}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 20, 0, \
+28.104361}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 20, 0, 28.213194}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 20, 0, 28.384231}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 0, 28.454738}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 20, 0, \
+28.589975}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 20, 0, 28.706436}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 11, 20, 0, 28.826851}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 20, 0, 28.972627}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 11, 20, 0, 32.947949}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 0, 33.021412}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 11, 20, 0, \
+33.157535}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 11, 20, 0, 33.263853}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 11, 20, 0, 33.740514}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 11, 20, 0, 35.601525}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 20, 1, 27.666283}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 20, 1, 28.348430}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 11, 20, 1, 28.626815}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 11, 20, 1, 28.685612}, Instant, \
+Gregorian, -5.]"
+"initialize: DateObject[{2022, 9, 13, 7, 43, 35.410617}, Instant, Gregorian, \
+-5.]"
+"initialized: DateObject[{2022, 9, 13, 7, 43, 35.486761}, Instant, Gregorian, \
+-5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 13, 7, 43, 35.560362}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 7, 43, 35.629895}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 7, 43, 35.701617}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 7, 43, 35.854340}, \
+Instant, Gregorian, -5.]"
+"wolframVersion: DateObject[{2022, 9, 13, 7, 43, 35.930912}, Instant, \
+Gregorian, -5.]"
+"DocumentSymbolRequest: DateObject[{2022, 9, 13, 7, 43, 36.001814}, Instant, \
+Gregorian, -5.]"
+"builtInList: DateObject[{2022, 9, 13, 7, 43, 36.071269}, Instant, Gregorian, \
+-5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 7, 43, 36.200973}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 7, 43, \
+36.632841}, Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 8, 3, 25.333875}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 8, 3, 25.900497}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 8, 3, 30.471794}, Instant, \
+Gregorian, -5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 28, 33.742613}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 29, 18.299289}, Instant, Gregorian, \
+-5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 8, 29, 18.623552}, Instant, \
+Gregorian, -5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 16.657216}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 18.416974}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 20.407799}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 26.142518}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 27.291915}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 48.469593}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 51.766456}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 52.191733}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 56, 52.699957}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 57, 2.177636}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 57, 12.352445}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 8, 57, 15.458960}, Instant, Gregorian, \
+-5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 34, 4.046478}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 34, 32.402018}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 34, 32.642396}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 34, 34.836965}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 34, 36.791273}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 34, 37.349204}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 34, 38.320579}, Instant, \
+Gregorian, -5.]"
+"shutdown: DateObject[{2022, 9, 13, 17, 34, 39.699839}, Instant, Gregorian, \
+-5.]"
+"initialize: DateObject[{2022, 9, 13, 17, 34, 47.959390}, Instant, Gregorian, \
+-5.]"
+"initialized: DateObject[{2022, 9, 13, 17, 34, 48.038958}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 13, 17, 34, 48.110084}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 34, 48.180950}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 34, 48.777171}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 34, 48.850461}, Instant, \
+Gregorian, -5.]"
+"wolframVersion: DateObject[{2022, 9, 13, 17, 34, 48.996937}, Instant, \
+Gregorian, -5.]"
+"DocumentSymbolRequest: DateObject[{2022, 9, 13, 17, 34, 49.068598}, Instant, \
+Gregorian, -5.]"
+"builtInList: DateObject[{2022, 9, 13, 17, 34, 49.136023}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 34, \
+49.258350}, Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 36, 30.332354}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 39, 54.513397}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 40, 0.151421}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 41, 21.099641}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 41, 21.733308}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 42, 21.165699}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 42, 34.806580}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 43, 7.013948}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 43, 18.590542}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 43, 46.134943}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 43, 46.395537}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 45, 53.612508}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 45, 53.867974}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 45, 58.500060}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 45, 59.243899}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 45, 59.316687}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 45, 59.478149}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 45, 59.796529}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 0.032037}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 0.314323}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 25.546936}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 25.618694}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+25.742407}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 26.060848}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 26.337979}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 26.671456}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 26.743575}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+26.864849}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 26.984687}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 27.458469}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 28.381542}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 31.302905}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 36.623870}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+36.624117}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 36.677766}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 36.941059}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+37.273853}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 37.325658}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 37.403199}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 37.476774}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+37.546042}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 37.668055}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 37.736906}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 37.912049}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+37.962850}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 38.013761}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 38.201275}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 38.273603}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+38.402613}, Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 38.525291}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 38.598405}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 38.733986}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 38.803156}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+38.923639}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 39.066411}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 39.372865}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 39.443471}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+39.566472}, Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 39.688025}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 39.759757}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 40.054763}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 40.126588}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+40.250616}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 40.373548}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 40.507145}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 40.577861}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+40.697303}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 40.821695}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 40.957891}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 41.034043}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+41.105518}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 41.230054}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 41.304658}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 41.379939}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+41.503049}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 41.623869}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 42.048745}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 43.246280}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 43.613857}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+46.706607}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 46.832698}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 46.906687}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 47.036211}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+47.132404}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 47.259162}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 47.382256}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 47.455417}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 47.532109}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+47.602738}, Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 47.725958}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 47.847071}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 48.407012}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 48.562614}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 51.962548}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+52.059626}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 52.194724}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 52.265613}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 52.521869}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 52.594845}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+52.722413}, Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 52.842107}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 52.916723}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 52.985862}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+53.111131}, Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+53.283674}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 53.408580}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 46, 53.627176}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 46, 53.700231}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 46, \
+53.820806}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 46, 53.940816}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 46, 54.076116}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 56.866562}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 46, 58.150031}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 3.563418}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 3.633603}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+3.755300}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 3.877739}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 4.360766}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 4.769687}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 4.840905}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+4.966125}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 5.086810}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 5.562175}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 13.735584}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 13.813083}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+13.940403}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 14.058983}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 14.527435}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 20.231015}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 22.200170}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 28.016640}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 28.297874}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 28.632632}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 30.768289}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 30.841202}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+30.967804}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 31.089781}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 31.560757}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 13, 17, 47, 32.481283}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 32.635060}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 32.704394}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+32.829521}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 32.955212}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 33.361016}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 37.626404}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 37.700329}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+37.821656}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 37.945189}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 38.231427}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 38.304551}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+38.430378}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 38.554422}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 38.692107}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 42.365601}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 45.699031}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 46.366031}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 48.103727}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 48.248430}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 48.325483}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 48.565390}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 49.233349}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 49.777699}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 50.432302}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 50.652677}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 51.440507}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 51.514041}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+51.638726}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 51.764652}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 52.001433}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 52.236219}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 52.352868}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 52.766535}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 54.433533}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 54.558361}, \
+Instant, Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 47, 54.631914}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 54.707182}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 54.780063}, \
+Instant, Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 47, 54.852404}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 47, 54.924163}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 54.993684}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 55.135360}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 55.723532}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 55.798878}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 55.871123}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 55.990491}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 47, \
+56.112495}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 47, 56.236599}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 56.566470}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 47, 56.637908}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 56.799274}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 57.016537}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 57.989081}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 58.084969}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 58.217820}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 58.298837}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 58.373247}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 47, 59.000436}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 59.465219}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 47, 59.544695}, \
+Instant, Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 59.617556}, \
+Instant, Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 47, 59.738292}, Instant, \
+Gregorian, -5.]"
+"textDocument/definition: DateObject[{2022, 9, 13, 17, 47, 59.811557}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 47, 59.885157}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 48, \
+0.008456}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 48, 0.132866}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 0.276150}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 48, 0.347395}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 0.424928}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 48, 0.500607}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 0.933308}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 11.966338}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 14.510961}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 13, 17, 48, 14.523442}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 17.785133}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 18.233931}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 41.351996}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 48, 41.585022}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 48, 45.760093}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 48, 45.831924}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 48, \
+45.954284}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 48, 46.077225}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 48, 46.554709}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 13, 17, 48, 48.959037}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 13, 17, 49, 18.043300}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 49, 18.114656}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 17, 49, \
+18.238055}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 13, 17, 49, 18.363616}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 13, 17, 49, 18.838547}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 13, 17, 50, 8.777545}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 13, 17, 50, 9.466904}, Instant, \
+Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 13, 17, 50, 10.008513}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 51, 55.871865}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 53, 43.865310}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 54, 2.005234}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 54, 17.747441}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 54, 19.207806}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 54, 58.676229}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 58, 0.145873}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 58, 1.466617}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 58, 11.109052}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 59, 7.415381}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 59, 12.661808}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 59, 17.724875}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 17, 59, 21.701706}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 1, 54.163091}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 1, 56.836556}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 6, 54.832916}, Instant, \
+Gregorian, -5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 19, 9, 21.895198}, Instant, Gregorian, \
+-5.]"
+"$/setTrace: DateObject[{2022, 9, 13, 19, 9, 21.976405}, Instant, Gregorian, \
+-5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 9, 22.067159}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 13, 19, 9, \
+24.268026}, Instant, Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 9, 26.227796}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 9, 32.276844}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 9, 44.915608}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 18, 16.851313}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 20.457599}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 22.624745}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 23.166253}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 30.764609}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 31.396202}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 51.021336}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 20, 59.452539}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 21, 57.087028}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 22, 9.999435}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 26, 17.483524}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 26, 37.044057}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 26, 39.499486}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 27, 45.724139}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 43.131478}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 47.976525}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 52.192859}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 55.489611}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 57.203624}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 33, 59.512987}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 34, 0.497873}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 37, 16.957867}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 37, 20.327308}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 38, 7.140660}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 38, 19.503300}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 39, 18.004019}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 39, 56.513791}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 40, 0.202209}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 40, 1.862006}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 40, 33.539281}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 45, 15.881947}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 45, 57.058199}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 45, 58.215234}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 46, 7.037401}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 46, 8.003100}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 46, 8.768666}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 46, 10.995795}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 19, 46, 42.951309}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 13, 20, 14, 43.004862}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 46, 56.509952}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 47, 10.322556}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 47, 19.399496}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 47, 28.867409}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 47, 56.856943}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 8, 48, 38.383732}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 11, 11.801190}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 11, 32.070584}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 11, 34.503844}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 11, 35.650428}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 35, 22.397481}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 9, 36, 0.827759}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 10, 14, 26.189127}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 10, 14, 28.944301}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 6, 29.354296}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 6, 46.380597}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 6, 53.378641}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 6, 55.240589}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 8, 15.453806}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 8, 29.646615}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 11, 4.109290}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 11, 19.381996}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 11, 33.311204}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 11, 37.787803}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 11, 49.396911}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 12, 20.897453}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 12, 36.904238}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 13, 3.586770}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 13, 21.514515}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 14, 41.727953}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 14, 44.091296}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 17, 23.590879}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 17, 33.458898}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 18, 14.761617}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 18, 19.717595}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 18, 20.716458}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 19, 15.096162}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 20, 59.546368}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 26, 45.428695}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 22.194967}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 44.581634}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 47.290744}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 49.708204}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 52.791061}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 55.951846}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 56.642448}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 35, 57.184814}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 36, 19.403066}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 36, 20.533827}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 40, 20.427291}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 40, 32.719525}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 40, 36.442313}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 40, 37.568599}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 41, 16.841633}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 42, 3.477248}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 43, 4.001657}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 43, 13.687114}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 43, 15.018342}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 48, 0.856012}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 48, 51.442109}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 49, 4.884816}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 51, 52.982460}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 52, 17.551283}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 52, 22.874832}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 52, 39.262283}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 2.130548}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 3.974830}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 5.804293}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 47.738541}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 52.912025}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 53, 59.682136}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 55, 49.778313}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 15, 59, 22.390582}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 2, 42.439859}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 5, 35.470125}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 5, 43.938899}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 6, 2.796241}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 6, 15.653881}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 8, 4.054954}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 17, 35.524816}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 17, 52.759879}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 18, 19.539433}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 18, 34.910985}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 21, 11.523525}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 22, 1.229141}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 22, 13.661451}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 23, 5.400694}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 41, 16.343761}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 41, 43.086433}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 42, 17.515379}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 43, 34.639973}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 43, 54.769672}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 44, 9.502733}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 44, 12.811869}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 44, 13.594251}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 44, 26.164276}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 45, 13.158776}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 45, 25.492508}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 45, 28.786949}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 45, 30.634508}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 45, 45.708694}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 2.538102}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 6.785204}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 11.271334}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 13.671648}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 19.957185}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 20.966416}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 51.461889}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 46, 56.506129}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 47, 4.059264}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 47, 7.554251}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 48, 1.497156}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 48, 7.555228}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 52, 15.581277}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 52, 25.421583}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 52, 36.847736}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 52, 45.773773}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 56, 45.576891}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 16, 56, 49.224051}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 17, 0, 44.539818}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 27, 4.044621}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 38, 28.407116}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 38, 40.846315}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 38, 56.847522}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 39, 47.426766}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 39, 49.838670}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 40, 32.581427}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 14, 18, 41, 13.009839}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 41, 13.010083}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 41, 13.089223}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 41, \
+13.198245}, Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 41, 13.296831}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 13.877074}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 41, 18.388341}, Instant, \
+Gregorian, -5.]"
+"textDocument/didClose: DateObject[{2022, 9, 14, 18, 41, 28.893238}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 14, 18, 41, 28.971007}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 41, 29.044086}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 41, 29.116682}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 41, \
+29.219706}, Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 41, 29.308912}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 41, 30.550344}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 32.427845}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 50.012148}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 55.564335}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 55.781895}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 41, 56.614016}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 42, 1.678109}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 42, 4.215281}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 4.366804}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 4.445144}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 4.627842}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 4.964179}, Instant, \
+Gregorian, -5.]"
+"textDocument/didClose: DateObject[{2022, 9, 14, 18, 42, 12.697463}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 42, 26.625742}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 42, 28.992353}, Instant, \
+Gregorian, -5.]"
+"textDocument/didOpen: DateObject[{2022, 9, 14, 18, 42, 40.049343}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 42, 40.049612}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 40.052318}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+40.156635}, Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 40.259515}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 42.270280}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 51.282083}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 52.801781}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+53.478281}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 53.568803}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 53.694777}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 53.763295}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+53.858175}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 53.945532}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 42, 54.181653}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 54.818790}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 54.890927}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+54.992841}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 55.082971}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 55.187296}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 55.259283}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+55.357001}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 55.442460}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 42, 55.617647}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 42, 56.279943}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 56.394111}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 56.466402}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+56.558714}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 56.644844}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 42, 57.157268}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 42, 57.649397}, Instant, \
+Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 42, 58.947731}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 59.068173}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 59.139643}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 42, \
+59.234730}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 42, 59.323094}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 42, 59.391665}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 42, 59.505486}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 42, 59.593399}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 42, 59.832169}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 4.615316}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 4.657383}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 4.742488}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+4.844570}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 4.930753}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 5.494797}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 6.776574}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 6.888577}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 6.959942}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+7.059365}, Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 7.144086}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 7.258133}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+7.326209}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 7.412701}, Instant, \
+Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 7.479951}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 7.595624}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 7.684817}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 7.776206}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 7.848333}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 7.969150}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+8.039933}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 8.127881}, Instant, \
+Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 8.197913}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 8.310268}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 8.397071}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 8.689117}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 8.690890}, Instant, \
+Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 8.799225}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+8.978951}, Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 9.065450}, Instant, \
+Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 9.134614}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 9.250522}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 9.366176}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 9.434652}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+9.525962}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 9.610550}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 9.923328}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 43, 10.582571}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 43, 11.949385}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 12.821163}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 12.892765}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+12.991497}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 13.074449}, \
+Instant, Gregorian, -5.]"
+"textDocument/signatureHelp: DateObject[{2022, 9, 14, 18, 43, 13.457135}, \
+Instant, Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 13.570083}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 13.659842}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 13.751292}, \
+Instant, Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+13.822740}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 13.907927}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 43, 15.259947}, Instant, \
+Gregorian, -5.]"
+"$/cancelRequest: DateObject[{2022, 9, 14, 18, 43, 15.334088}, Instant, \
+Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 43, 15.685402}, Instant, \
+Gregorian, -5.]"
+"textDocument/didChange: DateObject[{2022, 9, 14, 18, 43, 16.539971}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 14, 18, 43, 16.609171}, Instant, \
+Gregorian, -5.]"
+"textDocument/semanticTokens/full: DateObject[{2022, 9, 14, 18, 43, \
+16.704916}, Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 14, 18, 43, 16.792306}, \
+Instant, Gregorian, -5.]"
+"textDocument/didSave: DateObject[{2022, 9, 14, 18, 43, 17.080844}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 14, 18, 43, 17.331934}, \
+Instant, Gregorian, -5.]"
+"textDocument/hover: DateObject[{2022, 9, 14, 18, 43, 23.916242}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 43, 44.726153}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 43, 47.166985}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 47, 10.798392}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 18, 48, 54.592882}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 1, 8.922558}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 3, 1.778487}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 3, 4.343336}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 3, 18.157206}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 16.637550}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 18.172735}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 21.541142}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 22.824163}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 25.866291}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 7, 40.691861}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 11, 14.434099}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 11, 23.333780}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 11, 24.480335}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 11, 25.678723}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 1.979110}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 16.933483}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 22.060301}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 37.856700}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 46.719101}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 47.794926}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 52.008600}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 12, 53.158796}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 16, 34.831425}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 16, 56.023833}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 17, 5.398089}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 23, 59.986527}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 3.364582}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 4.483016}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 5.984083}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 14.530500}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 29.887672}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 24, 35.318582}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 30, 30.371097}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 31, 33.092829}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 31, 38.743344}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 31, 42.673040}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 32, 22.326377}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 32, 39.665350}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 32, 44.269295}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 32, 45.816398}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 35, 35.420906}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 35, 41.385942}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 36, 25.901577}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 37, 17.776833}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 37, 29.159850}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 37, 35.856507}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 38, 21.398294}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 19, 40, 19.811913}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 14, 20, 0, 51.649488}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 10, 46, 46.685314}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 10, 46, 51.417287}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 10, 56, 13.211919}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 10, 56, 19.825078}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 18, 39, 8.265240}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 18, 41, 11.609882}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 19, 14, 37.935046}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 19, 16, 30.503692}, Instant, \
+Gregorian, -5.]"
+"windowFocused: DateObject[{2022, 9, 15, 19, 45, 18.889464}, Instant, \
+Gregorian, -5.]"
+"shutdown: DateObject[{2022, 9, 15, 19, 45, 24.072606}, Instant, Gregorian, \
+-5.]"

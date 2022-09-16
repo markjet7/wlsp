@@ -284,9 +284,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	decorationChar = code2["range"][[2, 2]];
 
 	If[!json["params", "print"],
-		hoverMessage = If[Length@r["FormattedMessages"] == 0, 
+		hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
 								TimeConstrained[
-									Check["<img src=\"data:image/png;base64," <> ExportString[Last[r["Result"][[1]]], {"Base64", "PNG"}] <> "\" height=\"190px\" />", "-Error-"], 
+									Check["<img src=\"data:image/png;base64," <> ExportString[Check[Last[r["Result"][[1]]], ""], {"Base64", "PNG"}] <> "\" height=\"190px\" />", "-Error-"], 
 									Quantity[30, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
