@@ -57,19 +57,23 @@ graphicsQ =
 
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
-transforms[output_]:=Module[{f, txt}, 
+transforms[output0_]:=Module[{f, txt, output}, 
 		f = CreateFile[];
+
+		Print[ByteCount@output0];
+		If[ByteCount@output0 > 300000,
+			output = Rasterize@Short[output0, 8];,
+			output = output0;
+		];
 
 		TimeConstrained[
 			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
-				WriteString[f, 
-					StringReplace[
-						ExportString[
-							ToString[output, InputForm, TotalWidth -> 2000], 
+				EchoTiming@WriteString[f, 
+						EchoTiming@ExportString[
+							output, 
 							"HTMLFragment",
 							"GraphicsOutput"->"PNG",
-							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)],
-						{"\\n"->"<br>"}]
+							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
 				];
 				Close[f];
 				Return[f]
@@ -81,12 +85,12 @@ transforms[output_]:=Module[{f, txt},
 				Return[f];
 			];
 			
-			WriteString[f,
+			EchoTiming@WriteString[f,
 				"<img src=\"data:image/png;base64," <> 
-				(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
+				EchoTiming@(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
 				"\" />"
-			];
-			,
+			];,
+
 			Quantity[30, "Seconds"],
 			WriteString[f, "output is too large"]
 		];
