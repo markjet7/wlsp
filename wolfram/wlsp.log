@@ -1568,3 +1568,17 @@ Gregorian, -5.]"
 Gregorian, -5.]"
 "shutdown: DateObject[{2022, 9, 15, 19, 45, 24.072606}, Instant, Gregorian, \
 -5.]"
+"windowFocused: DateObject[{2022, 9, 8, 9, 11, 31.713274}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 8, 9, 11, 31.951202}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 8, 9, 11, 32.043796}, Instant, \
+Gregorian, -5.]"
+"textDocument/documentColor: DateObject[{2022, 9, 8, 9, 11, 38.298639}, \
+Instant, Gregorian, -5.]"
+"textDocument/documentSymbol: DateObject[{2022, 9, 8, 9, 11, 38.427636}, \
+Instant, Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 8, 9, 11, 38.582101}, Instant, \
+Gregorian, -5.]"
+"textDocument/codeLens: DateObject[{2022, 9, 8, 9, 11, 38.693106}, Instant, \
+Gregorian, -5.]"
