@@ -188,6 +188,8 @@ async function onclientReady() : Promise<void> {
 
                 wolframClient?.onNotification("updatePositions", updatePositions);
                 wolframClient?.onNotification("updateLintDecorations", updateLintDecorations);
+
+                wolframClient.handleFailedRequest
     
                 wolframClient?.sendRequest("wolframVersion").then((result:any) => {
                     wolframVersionText = result["output"];
@@ -501,8 +503,12 @@ function runInWolfram(print = false, trace=false) {
     // })
 
     moveCursor()
+    let output = false;
+    if (plotsPanel?.visible == true) {
+        output = true;
+    }
 
-    let evaluationData = { range: sel, textDocument: e?.document, print: print, trace};
+    let evaluationData = { range: sel, textDocument: e?.document, print: print, output: output, trace: trace };
     evaluationQueue.push(evaluationData);
 
     // showPlots();
@@ -652,7 +658,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 }
             }
 
-            fs.readFile(result["params"]["output"].substring(1, result["params"]["output"].length), "utf8", (err:any, data:any) => {
+            fs.readFile(result["params"]["output"], "utf8", (err:any, data:any) => {
                 if (err) {
                     outputChannel.appendLine(err);
                     return
@@ -670,6 +676,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 // let out = console_outputs.pop();
                 // printResults.push(out);
                 // showOutput();
+                updateOutputPanel();
             })
 
 
@@ -679,7 +686,6 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
         });
     };
 
-    updateOutputPanel();
 
 }
 

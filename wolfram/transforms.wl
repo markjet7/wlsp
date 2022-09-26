@@ -60,16 +60,15 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 transforms[output0_]:=Module[{f, txt, output}, 
 		f = CreateFile[];
 
-		Print[ByteCount@output0];
 		If[ByteCount@output0 > 300000,
-			output = Rasterize@Short[output0, 8];,
-			output = output0;
+			output = Rasterize[Short[output0, 8]],
+			output = output0
 		];
 
 		TimeConstrained[
 			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
-				EchoTiming@WriteString[f, 
-						EchoTiming@ExportString[
+				WriteString[f, 
+						ExportString[
 							output, 
 							"HTMLFragment",
 							"GraphicsOutput"->"PNG",
@@ -85,9 +84,9 @@ transforms[output0_]:=Module[{f, txt, output},
 				Return[f];
 			];
 			
-			EchoTiming@WriteString[f,
+			WriteString[f,
 				"<img src=\"data:image/png;base64," <> 
-				EchoTiming@(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
+				(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
 				"\" />"
 			];,
 

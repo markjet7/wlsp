@@ -219,7 +219,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
 		AppendTo[Inputs, string];
-		output = transforms@ReleaseHold[Last[r["Result"]]];,
+		output = If[json["params", "output"],
+			transforms@ReleaseHold[Last[r["Result"]]],
+			ToString[ReleaseHold[Last[r["Result"]]], InputForm, TotalWidth -> 1000]
+		],
 
 		True,
 		r = <|
@@ -534,7 +537,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			Return[]
 		];
 		value = TimeConstrained[
-			"<img src=\"data:image/png;base64," <> ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" height=\"190px\" />", 
+			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" height=\"190px\" />", 
 			Quantity[5, "Seconds"],
 			"Large output"];
 

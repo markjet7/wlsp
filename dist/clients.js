@@ -154,6 +154,7 @@ function onclientReady() {
             if (exports.wolframClient !== undefined && exports.wolframClient.initializeResult !== undefined) {
                 exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updatePositions", updatePositions);
                 exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updateLintDecorations", updateLintDecorations);
+                exports.wolframClient.handleFailedRequest;
                 exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("wolframVersion").then((result) => {
                     wolframVersionText = result["output"];
                     wolframStatusBar.text = result["output"];
@@ -423,7 +424,11 @@ function runInWolfram(print = false, trace = false) {
     //     cursorMoved = true;
     // })
     moveCursor();
-    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: print, trace };
+    let output = false;
+    if ((plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.visible) == true) {
+        output = true;
+    }
+    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: print, output: output, trace: trace };
     evaluationQueue.push(evaluationData);
     // showPlots();
     if (!exports.wolframKernelClient) {
@@ -551,7 +556,7 @@ function updateResults(e, result, print, input = "") {
                     console.log("Error: " + error);
                 }
             }
-            fs.readFile(result["params"]["output"].substring(1, result["params"]["output"].length), "utf8", (err, data) => {
+            fs.readFile(result["params"]["output"], "utf8", (err, data) => {
                 if (err) {
                     outputChannel.appendLine(err);
                     return;
@@ -567,12 +572,12 @@ function updateResults(e, result, print, input = "") {
                 // let out = console_outputs.pop();
                 // printResults.push(out);
                 // showOutput();
+                updateOutputPanel();
             });
             // let output = fs.readFileSync(result["output"].toString(), 'utf8');
         });
     }
     ;
-    updateOutputPanel();
 }
 let outputPanel;
 function showOutput() {
