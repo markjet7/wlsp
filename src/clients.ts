@@ -37,6 +37,7 @@ let kernelPort: number = 7910;
 let lspPath: string;
 let kernelPath: string;
 let context!: vscode.ExtensionContext;
+let cursorFile: String = "";
 let outputChannel!: vscode.OutputChannel;
 let clients: Map<string, (LanguageClient|undefined)[]> = new Map();
 let processes: cp.ChildProcess[] = [];
@@ -58,6 +59,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     context = context0;
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
+    cursorFile =  path.join(context.extensionPath, "wolfram", "cursorLocations.js");
     outputChannel = outputChannel0;
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.command = 'wolfram.restart';
@@ -108,7 +110,10 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
     vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
     vscode.workspace.onDidChangeConfiguration(updateConfiguration);
+    vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 
+
+    vscode.window.onDidChangeTextEditorSelection(didChangeSelection);
     vscode.window.onDidChangeWindowState(didChangeWindowState);
     treeDataProvider = new workspaceSymbolProvider();
     vscode.window.registerTreeDataProvider("wolframSymbols", treeDataProvider);
@@ -374,7 +379,25 @@ function moveCursor2(position:vscode.Position) {
 //     decorateRunningLine(outputPosition);
 // }
 
+
+function cursorBlock() {
+    let e:vscode.TextEditor |undefined = vscode.window.activeTextEditor;
+    for (let i:any = 0; i < cursorLocations.length-1; i++) {
+        if (e) {
+            if (
+                (cursorLocations[i]["start"]["line"] <= e?.selection.active.line) &&
+                (cursorLocations[i]["end"]["line"] >= e?.selection.active.line)
+                ) {
+                return cursorLocations[i]
+                break;
+            }
+        }
+    }
+    return e?.selection
+}
+
 let cursorMoved = false;
+let cursorLocations:any[] = [];
 function moveCursor() {
     // if (cursorMoved == true) {
     //     cursorMoved = false;
@@ -382,13 +405,12 @@ function moveCursor() {
     // }
 
     let e:vscode.TextEditor | undefined = vscode.window.activeTextEditor;
-        let cursorFile =  path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         fs.readFile(cursorFile, "utf8", (err: any, data: any) => {
             if (err) {
                 console.log(err)
                 return
             }
-            let cursorLocations:any[] = JSON.parse(data);
+            cursorLocations = JSON.parse(data);
             
             let top:any = new vscode.Position(0,0);
             let bottom:any = (e?.selection.active.line || 0) + 1;
@@ -945,6 +967,15 @@ let runningDecorationType: vscode.TextEditorDecorationType = vscode.window.creat
     }
 );
 
+let blockDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
+    {
+        backgroundColor: 'none',
+        fontWeight: 'bold',
+        overviewRulerColor: new vscode.ThemeColor("foreground"),
+		overviewRulerLane: vscode.OverviewRulerLane.Right
+    }
+)
+
 function updateOutputPanel() {
     let out = "";
 
@@ -1363,17 +1394,35 @@ function printInWolfram(print = true) {
     runInWolfram(print);
 }
 
+function didChangeSelection(event: vscode.TextEditorSelectionChangeEvent) {
+
+    let editor:vscode.TextEditor | undefined =  vscode.window.activeTextEditor;
+    editor?.setDecorations(blockDecorationType, []);
+    let cursorBlock0:any = cursorBlock();
+    let d: vscode.DecorationOptions = {
+        "range": new vscode.Range(
+            cursorBlock0.start.line,
+            0,
+            cursorBlock0.end.line,
+            cursorBlock0.end.character
+        )
+    }
+    editor?.setDecorations(blockDecorationType, [d]);
+}
+
 function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
     // didOpenTextDocument(event.document);
     // remove old decorations
 
-    let editor = vscode.window.activeTextEditor;
+    let editor =  vscode.window.activeTextEditor;
 
     if (event.document.uri.toString() !== editor?.document.uri.toString()) {
         return
     }
 
     clearDecorations();
+
+
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
         let doc = editor?.document;
 
@@ -1382,33 +1431,6 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
         } 
         return
     }  
-
-    // let decorations: vscode.DecorationOptions[] = [];
-    // if (editor == null) {
-    //     return
-    // } else {
-    //     let position = editor?.selection.active;
-
-    //     let uri = editor.document.uri.toString();
-
-    //     if ((workspaceDecorations == undefined) || (workspaceDecorations == null)) {
-    //         workspaceDecorations = {};
-    //     }
-
-    //     if (workspaceDecorations[uri] !== undefined) {
-    //         Object.keys(workspaceDecorations[uri]).forEach((line: any) => {
-    //             if (parseInt(line, 10) < position.line) {
-    //                 decorations.push(workspaceDecorations[uri][line]);
-    //             } else {
-    //                 delete workspaceDecorations[uri][line];
-    //             }
-    //         });
-    //     }
-
-    //     // live document
-    //     editor.setDecorations(variableDecorationType, decorations);
-       
-    // }
     return;
 }
 
