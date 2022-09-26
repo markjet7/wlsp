@@ -65,9 +65,6 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
 logfile = DirectoryName[path] <> "wlsp.log";
 
 handleMessage[msg_Association, state_]:=Module[{},
-	log = OpenAppend[logfile];
-	Write[log, msg["method"] <> ": " <> ToString@Now];
-	Close[log];
 	Check[
 		handle[msg["method"],msg],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
