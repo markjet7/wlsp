@@ -722,7 +722,7 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs}, 
+evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr}, 
 		res = EvaluationData[Trace@ToExpression[string]];
 		If[
 			res["Success"], 
@@ -732,15 +732,20 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs},
 			),
 
 			(
-				msgs = Cases[
-					res["MessagesExpressions"],
-					Hold@Message[name_,params___]:>Apply[
-					StringTemplate[
-						name/.Messages[Evaluate[First[name,""]]]],
-					{params}
-					],
-					{1}
-				];
+				General::general ="An unknown error was generated";
+				msgToStr[name_MessageName, params___]:=Apply[
+				StringTemplate[
+					If[
+						Head@name ==MessageName,
+						name/.Messages[Evaluate[First[name,General]]],
+						General::general/.Messages[General::general]
+					]],params];
+
+				msgToStr[_,_]:="An unknown error was generated";
+
+				Quiet@Table[
+					msgToStr[m[[1,1]],m[[1,2;;]]],
+				{m, msgs}];
 
 				errorFile = CreateFile[];
 				Check[Export[errorFile, msgs, "JSON"], Export[errorFile, {"Errors were generated"}, "JSON"]];
