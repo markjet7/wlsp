@@ -721,12 +721,14 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                     hoverMessage += "\n" + result["params"]["messages"];
                 }
 
+                let startChar = e.document.lineAt(result["params"]["position"]["line"]-1).range.end.character;
+
                 let decoration:vscode.DecorationOptions = {
                     "range": new vscode.Range(
                         result["params"]["position"]["line"]-1,
-                        result["params"]["position"]["character"]+0,
+                        startChar+10,
                         result["params"]["position"]["line"]-1,
-                        result["params"]["position"]["character"]+200,
+                        startChar+200,
                         ),
                     "renderOptions": {
                         "after": {
