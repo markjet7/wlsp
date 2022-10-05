@@ -212,7 +212,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"AbsoluteTiming" -> "0",
 			"Result" -> {""},
 			"Success" -> True,
-			"Messages" -> {}
+			"Messages" -> {},
+			"FormattedMessages" -> {}
 		|>;
 		output = transforms[Null],
 
@@ -237,7 +238,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {ReleaseHold[Last[r["Result"]]], r["Success"], r["Result"]}};
 	ans = result;
-	
+	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
+								TimeConstrained[
+									Check["<img src=\"data:image/png;base64," <> 
+									ExportString[Rasterize@Short[Check[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
+									"\" style=\"max-height:190px\" />", "-Error-"], 
+									Quantity[2, "Seconds"],
+									"Large output"],
+					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
 	response = If[KeyMemberQ[json, "id"],
 		<|
@@ -247,6 +255,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
+			"hover" -> hoverMessage,
+			"messages" -> r["FormattedMessages"],
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
@@ -254,6 +264,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
+			"hover" -> hoverMessage,
+			"messages" -> r["FormattedMessages"],
 			"document" ->  ""|>
 		|>,
 
@@ -265,6 +277,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
+			"hover" -> hoverMessage,
+			"messages" -> r["FormattedMessages"],
 			"document" -> json["params", "textDocument"]["uri"]
 			|>
 		|>
@@ -272,7 +286,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	evalnumber = evalnumber + 1;
 
 	file = CreateFile[];
-	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
+	Check[WriteString[file, ExportString[Echo@response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
 		sendResponse[<|"id"->json["id"], "params" -> <|
 		"input" -> StringReplace[string, {"\\n"->"<br>"}],
@@ -283,6 +297,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	];
 	Close[file];
 
+	(*
 	decorationLine = code2["range"][[2, 1]];
 	decorationChar = code2["range"][[2, 2]];
 
@@ -324,7 +339,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 					"value"-> "Hello" (*hoverMessage*)
 				|>|>
 			|>;
+		*)
 
+		(* 
 		workspaceDecorations[
 			json["params", "textDocument", "uri", "external"]
 		] = If[
@@ -335,13 +352,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			<|ToString@decoration["range"]["start"]["line"]-> decoration|>
 		];
 		
-		Export[decorationFile, workspaceDecorations, "JSON"];
+		Export[decorationFile, workspaceDecorations, "JSON"]; 
 
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 		sendResponse[response4];	
+		*)
 
 		(* getWorkspaceSymbols[];  *)
-	];
+	(*]; *)
 
 	
 	ast = CodeConcreteParse[string];
@@ -722,7 +740,7 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr}, 
+evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, msgStr}, 
 		res = EvaluationData[Trace@ToExpression[string]];
 		If[
 			res["Success"], 
@@ -732,6 +750,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr},
 			),
 
 			(
+				msgs = res["MessagesExpressions"];
 				General::general ="An unknown error was generated";
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
@@ -743,7 +762,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr},
 
 				msgToStr[_,_]:="An unknown error was generated";
 
-				Quiet@Table[
+				msgStr = Quiet@Table[
 					msgToStr[m[[1,1]],m[[1,2;;]]],
 				{m, msgs}];
 
@@ -757,7 +776,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr},
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
 				{r2, msgs}];
 				*)
-				res["FormattedMessages"] = msgs;
+				res["FormattedMessages"] = msgStr;
 				res
 			)
 		]
