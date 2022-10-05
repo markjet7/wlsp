@@ -468,6 +468,13 @@ function decorateRunningLine(outputPosition:vscode.Position) {
 
         runningLines.push(d);
         e.setDecorations(runningDecorationType, runningLines);
+        for (let i = 0; i < editorDecorations.length; i++) {
+            const d1 = editorDecorations[i];
+            if (d1.range.start.line == d.range.start.line){
+                editorDecorations.splice(i,1)
+            }
+        }
+        e.setDecorations(variableDecorationType, editorDecorations);
         // updateDecorations([d]);
     }
 }
@@ -634,9 +641,6 @@ function onRunInWolfram(file: any) {
                 return e.document.uri.path === result["params"]["document"]["path"] 
             })[0];
 
-            if (runningLines.length > 0) {
-                runningLines.pop()
-            }
             for (let i = 0; i < runningLines.length; i++) {
                 const d = runningLines[i];
                 if (d.range.start.line == result["params"]["position"]["line"]-1){
@@ -689,7 +693,12 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 }
             }
 
-                let output = result["params"]["output"];
+                let output;
+                if (result["params"]["load"]) {
+                    output = fs.readFileSync(result["params"]["output"])
+                } else {
+                    output = result["params"]["output"];
+                }
 
                 printResults.push(
                     [input,
@@ -719,9 +728,9 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                         ),
                     "renderOptions": {
                         "after": {
-                            "contentText": output.slice(0, 8192),
+                            "contentText": "  " + result["params"]["time"] +"s: " + output,
                             "backgroundColor":  backgroundColor,
-                            "margin" : "0 0 0 10px",
+                            "margin" : "10px 0 0 10px",
                             "border": "2px solid blue",
                             "color": "foreground",
 						    "textDecoration" : "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"

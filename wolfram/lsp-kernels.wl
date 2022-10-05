@@ -151,7 +151,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		src = documents[json["params","textDocument","uri", "external"]];
 		code = Check[getCode[src, range], ""];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-		
+		(*
 		decoration = <|
 					"range" -> 	<|
 						"start"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+1096|>,
@@ -186,6 +186,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		Export[decorationFile, workspaceDecorations, "JSON"];
 		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
 		sendResponse[response4];	
+		*)
 
 		(* Add the evaluation to the evaluation queue *)
 		evaluateFromQueue[code, json, newPosition];
@@ -243,7 +244,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 									Check["<img src=\"data:image/png;base64," <> 
 									ExportString[Rasterize@Short[Check[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
 									"\" style=\"max-height:190px\" />", "-Error-"], 
-									Quantity[2, "Seconds"],
+									Quantity[10, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
@@ -252,20 +253,24 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"id" -> json["id"],
 		"result" -> <|
 			"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
+			"load" -> If[json["params", "output"], True, False],
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
 			"hover" -> hoverMessage,
 			"messages" -> r["FormattedMessages"],
+			"time" -> time,
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
-			"output"-> ExportString[output, "JSON"], 
+			"output"-> ExportString[output, "JSON"],  
+			"load" -> If[json["params", "output"], True, False],
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
 			"position"-> newPosition,
 			"print" -> False,
 			"hover" -> hoverMessage,
 			"messages" -> r["FormattedMessages"],
+			"time" -> time,
 			"document" ->  ""|>
 		|>,
 
@@ -273,12 +278,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"method"->"onRunInWolfram", 
 		"params"-><|
 			"input" -> string,
-			"output"-> output, 
+			"output"-> output,  
+			"load" -> If[json["params", "output"], True, False],
 			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
 			"hover" -> hoverMessage,
 			"messages" -> r["FormattedMessages"],
+			"time" -> time,
 			"document" -> json["params", "textDocument"]["uri"]
 			|>
 		|>
@@ -286,7 +293,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	evalnumber = evalnumber + 1;
 
 	file = CreateFile[];
-	Check[WriteString[file, ExportString[Echo@response, "JSON"]], Print["Error saving result"]];
+	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
 		sendResponse[<|"id"->json["id"], "params" -> <|
 		"input" -> StringReplace[string, {"\\n"->"<br>"}],
