@@ -504,7 +504,9 @@ function sendToWolfram(print = false, sel = undefined) {
             }, (prog, token) => {
                 return new Promise(resolve => {
                     token.onCancellationRequested(ev => {
-                        console.log("Interruption not supported yet");
+                        console.log("Aborting Wolfram evaluation");
+                        abort();
+                        resolve(false);
                     });
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
                         onRunInWolfram(result);

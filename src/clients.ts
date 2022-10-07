@@ -597,7 +597,9 @@ function sendToWolfram(print = false, sel:vscode.Selection|undefined = undefined
                     return new Promise(resolve => {
                         
                         token.onCancellationRequested(ev => {
-                            console.log("Interruption not supported yet");
+                            console.log("Aborting Wolfram evaluation");
+                            abort()
+                            resolve(false)
                         })
 
                         wolframKernelClient?.onNotification("onRunInWolfram", (result:any) => {

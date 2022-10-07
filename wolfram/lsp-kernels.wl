@@ -436,7 +436,7 @@ handle["getChildren", json_]:=Module[{function, result, file},
 			result = TimeConstrained[ToExpression@function, Quantity[20, "Seconds"], {}];
 			file = CreateFile[];
 			OpenWrite[file];
-			WriteString[file, Check[ExportString[result, "JSON"], "[]"]];
+			WriteString[file, ExportString[result, "JSON", "Compact" -> True] /. $Failed -> "[]"];
 			Close[file];
 			sendResponse[<|"id" -> json["id"], "result" -> file|>];
 		)
@@ -608,7 +608,7 @@ getChildren[symbol_Association]:= KeyValueMap[<|
 	  "icon" -> "symbol-struct"
       |> &, symbol];
 
-symbolToTreeItem2[symbol_Association]:= ({<|
+symbolToTreeItem2[symbol_Association]:= (<|
 	"label" -> ToString[symbol, InputForm, TotalWidth -> 2500],
 	"kind" -> ToString[Head@symbol, InputForm],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 500] <> ": " <> ToString[symbol, InputForm, TotalWidth -> 300],
@@ -616,7 +616,7 @@ symbolToTreeItem2[symbol_Association]:= ({<|
     "lazyload" ->  "KeyValueMap[symbolToTreeItem2," <> ToString@symbol <> "]",
     "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-struct"],
 	"collapsibleState" -> 1
-|>});
+|>);
 
 symbolToTreeItem2[key_, value_]:=(<|
 	"label" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 1500],
@@ -727,7 +727,7 @@ getWorkspaceSymbols[]:=Module[{},
 		Check[
 			WriteString[
 				symbolListFile,
-				Replace[ExportString[AllSymbols, "JSON"], $Failed -> {}]
+				Replace[ExportString[AllSymbols, "JSON", CharacterEncoding -> "ASCII"], $Failed -> {}]
 			],
 			Print["Error saving tree items"]
 		];

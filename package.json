@@ -262,7 +262,7 @@
             },
             {
                 "command": "wolfram.restart",
-                "key": "cmd+.",
+                "key": "alt+.",
                 "when": "editorLangId == wolfram"
             }
         ],

@@ -176,25 +176,30 @@ class workspaceSymbolProvider {
                         }
                         else {
                             let children = [];
-                            let result = JSON.parse(fs.readFileSync(file, 'utf8'));
-                            children = result.map((item) => {
-                                let newItem = new TreeItem(item.label, []);
-                                newItem.tooltip = item.definition;
-                                newItem.lazyload = item.lazyload;
-                                newItem.iconPath = new vscode.ThemeIcon(item.icon);
-                                newItem.location = item.location;
-                                newItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-                                if (Object.keys(item).includes("location") && Object.keys(item.location).includes("uri")) {
-                                    newItem.resourceUri = vscode.Uri.parse(item.location["uri"]);
-                                    newItem.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]), {
-                                                preview: false,
-                                                preserveFocus: false,
-                                                selection: item.location.range
-                                            }], title: 'Open' };
-                                    vscode.window.showTextDocument(vscode.Uri.parse(item.location["uri"]), { preview: true });
-                                }
-                                return newItem;
-                            });
+                            let result = JSON.parse(fs.readFileSync(file, 'ascii'));
+                            if (result.length > 0) {
+                                children = result.map((item) => {
+                                    let newItem = new TreeItem(item.label, []);
+                                    newItem.tooltip = item.definition;
+                                    newItem.lazyload = item.lazyload;
+                                    newItem.iconPath = new vscode.ThemeIcon(item.icon);
+                                    newItem.location = item.location;
+                                    newItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+                                    if (Object.keys(item).includes("location") && Object.keys(item.location).includes("uri")) {
+                                        newItem.resourceUri = vscode.Uri.parse(item.location["uri"]);
+                                        newItem.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(item.location["uri"]), {
+                                                    preview: false,
+                                                    preserveFocus: false,
+                                                    selection: item.location.range
+                                                }], title: 'Open' };
+                                        vscode.window.showTextDocument(vscode.Uri.parse(item.location["uri"]), { preview: true });
+                                    }
+                                    return newItem;
+                                });
+                            }
+                            else {
+                                children = [];
+                            }
                             tokenSource.dispose();
                             element.children = children;
                             // return [new TreeItem("Testing", [])]; 
