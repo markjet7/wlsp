@@ -20,6 +20,7 @@ const node_1 = require("vscode-LanguageClient/node");
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 const fs = require('fs');
+const ubjson = require("@shelacek/ubjson");
 const notebook_1 = require("./notebook");
 const notebookController_1 = require("./notebookController");
 const scriptController_1 = require("./scriptController");
@@ -107,6 +108,8 @@ function startLanguageServer(context0, outputChannel0) {
                 }
             }
         });
+        let obj = ubjson.decode(fs.readFileSync(path.join(context.extensionPath, "usdc.ubj")));
+        console.log(obj);
         // setTimeout(updateRunningLines, 500);
         // restart()
     });
@@ -257,7 +260,7 @@ function runToLine() {
                 e.selection = new vscode.Selection(outputPosition, outputPosition);
                 e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             }
-            updateResults(e, result, false);
+            updateResults(e, result, false, result["params"]["input"], result["params"]["file"]);
         });
     }
     catch (_a) {
@@ -560,7 +563,7 @@ function onRunInWolfram(file) {
         if (evaluationQueue.length > 0) {
             sendToWolfram();
         }
-        exports.treeDataProvider.refresh();
+        // treeDataProvider.refresh();
     }));
     // try{
     //     result = JSON.parse(fs.readFileSync(file["file"], "utf8"))["params"];
@@ -611,8 +614,9 @@ function updateResults(e, result, print, input = "", file) {
                 backgroundColor = "red";
                 hoverMessage += "\n" + result["params"]["messages"];
             }
+            let startChar = e.document.lineAt(result["params"]["position"]["line"] - 1).range.end.character;
             let decoration = {
-                "range": new vscode.Range(result["params"]["position"]["line"] - 1, result["params"]["position"]["character"] + 0, result["params"]["position"]["line"] - 1, result["params"]["position"]["character"] + 200),
+                "range": new vscode.Range(result["params"]["position"]["line"] - 1, startChar + 10, result["params"]["position"]["line"] - 1, startChar + 200),
                 "renderOptions": {
                     "after": {
                         "contentText": "  " + result["params"]["time"] + "s: " + output,
