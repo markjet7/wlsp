@@ -177,6 +177,7 @@ class workspaceSymbolProvider {
                         else {
                             let children = [];
                             let result = JSON.parse(fs.readFileSync(file, 'ascii'));
+                            console.log(result.length);
                             if (result.length > 0) {
                                 children = result.map((item) => {
                                     let newItem = new TreeItem(item.label, []);
@@ -196,12 +197,13 @@ class workspaceSymbolProvider {
                                     }
                                     return newItem;
                                 });
+                                element.children = children;
                             }
                             else {
                                 children = [];
+                                element.collapsibleState = vscode.TreeItemCollapsibleState.None;
                             }
                             tokenSource.dispose();
-                            element.children = children;
                             // return [new TreeItem("Testing", [])]; 
                             resolve(children);
                             // return children

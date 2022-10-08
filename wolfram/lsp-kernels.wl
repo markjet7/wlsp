@@ -433,7 +433,7 @@ handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
 handle["getChildren", json_]:=Module[{function, result, file},
 		(
 			function = First[json["params"],"{}"];
-			result = TimeConstrained[ToExpression@function, Quantity[20, "Seconds"], {}];
+			result = TimeConstrained[ToExpression@function, Quantity[10, "Seconds"], {}]/. $Failed -> {};
 			file = CreateFile[];
 			OpenWrite[file];
 			WriteString[file, ExportString[result, "JSON", "Compact" -> True] /. $Failed -> "[]"];
@@ -589,7 +589,7 @@ getChildren[symbol_]:={};
 
 symbolToTreeItem2[symbol_List]:=Table[
      <|
-      "name" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
+      "label" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
 	  "definition" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
       "kind" -> "List",
       "children" -> {},
@@ -600,7 +600,7 @@ symbolToTreeItem2[symbol_List]:=Table[
      , {rows, Range[1, Length@symbol, 10]}];
 
 getChildren[symbol_Association]:= KeyValueMap[<|
-      "name" -> ToString[#1, InputForm, TotalWidth -> 500] <> " -> " <> ToString[#2, InputForm, TotalWidth->500],
+      "label" -> ToString[#1, InputForm, TotalWidth -> 500] <> " -> " <> ToString[#2, InputForm, TotalWidth->500],
 	  "definition" -> ToString[#2, InputForm, TotalWidth -> 500],
       "kind" -> "Association",
       "children" -> {},
@@ -608,28 +608,34 @@ getChildren[symbol_Association]:= KeyValueMap[<|
 	  "icon" -> "symbol-struct"
       |> &, symbol];
 
-symbolToTreeItem2[symbol_Association]:= (<|
+symbolToTreeItem2[symbol_Association]:= <|
 	"label" -> ToString[symbol, InputForm, TotalWidth -> 2500],
 	"kind" -> ToString[Head@symbol, InputForm],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 500] <> ": " <> ToString[symbol, InputForm, TotalWidth -> 300],
 	"children" -> {},
-    "lazyload" ->  "KeyValueMap[symbolToTreeItem2," <> ToString@symbol <> "]",
+    "lazyload" ->  "KeyValueMap[symbolToTreeItem2," <> ToString[symbol] <> "]",
     "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-struct"],
 	"collapsibleState" -> 1
-|>);
+|>;
 
-symbolToTreeItem2[key_, value_]:=(<|
+symbolToTreeItem2[key_, value_]:=<|
 	"label" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 1500],
 	"kind" -> ToString[Head@value, InputForm],
 	"definition" -> ToString[key, InputForm] <> ": " <> ToString[value, InputForm, TotalWidth -> 1500],
 	"children" -> {},
-    "lazyload" ->  "symbolToTreeItem2[" <> ToString[value, InputForm] <> "]",
+    "lazyload" ->  Which[Head@value === List,
+		"Map[symbolToTreeItem2," <> ToString@value <> "]",
+		Head@value === Association,
+		"KeyValueMap[symbolToTreeItem2, " <> ToString@value <> "]",
+		True,
+		"symbolToTreeItem2[" <> ToString[value, InputForm] <> "]"
+	],
     "icon" -> If[KeyExistsQ[symbolIcons, Head@value], symbolIcons[Head@value], "symbol-variable"],
 	"collapsibleState" -> 1
-|>);
+|>;
 
 symbolToTreeItem2[symbol_String]:={<|
-	"name" -> ToString[symbol, InputForm, TotalWidth ->1500],
+	"label" -> ToString[symbol, InputForm, TotalWidth ->1500],
 	"kind" -> ToString[Head@symbol, InputForm, TotalWidth -> 1500],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 300],
 	"children" -> {},
@@ -709,7 +715,7 @@ getWorkspaceSymbols[]:=Module[{},
 		AllSymbols = Flatten@KeyValueMap[Function[{key, value},
 			Check[
 				<|
-					"name" -> FileBaseName@key,
+					"label" -> FileBaseName@key,
 					"kind" -> ToString[String, InputForm],
 					"definition" -> ToString[key, InputForm, TotalWidth -> 5000],
 					"children" -> Map[symbolToTreeItem2, getSymbols[value, key]],
@@ -864,7 +870,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
 			
-			str = Check[ToFullFormString[call], ""] (* getStringAtRange[src, call[[-1]][Source]]*);
+			str = Check[getStringAtRange[src, call[[-1]][Source]], ToFullFormString[call]] (* getStringAtRange[src, call[[-1]][Source]]*);
 			(* <|"code"->StringReplace[str, {
  				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
  				Shortest["(*" ~~ ___ ~~ "*)"] -> ""}], "range"->call[[-1]][Source]|> *)

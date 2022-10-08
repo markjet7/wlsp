@@ -664,7 +664,7 @@ function onRunInWolfram(file: any) {
         if (evaluationQueue.length > 0) {
             sendToWolfram();
         }
-        treeDataProvider.refresh();
+        // treeDataProvider.refresh();
     }))
     // try{
     //     result = JSON.parse(fs.readFileSync(file["file"], "utf8"))["params"];

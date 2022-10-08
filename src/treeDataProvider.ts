@@ -1,7 +1,7 @@
     import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import {wolframClient, wolframKernelClient} from './clients'
+import {treeDataProvider, wolframClient, wolframKernelClient} from './clients'
 import { syncBuiltinESMExports } from 'module';
 import { CancellationToken } from 'vscode-jsonrpc';
 
@@ -164,6 +164,7 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
 	}
 
     async getChildren(element?: TreeItem): Promise<TreeItem[] | undefined> {
+        treeDataProvider.refresh();
         if (element === undefined) {
             return this.data;
         }
@@ -188,6 +189,7 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                     } else {
                         let children:TreeItem[] = [];
                         let result  = JSON.parse(fs.readFileSync(file, 'ascii'));
+                        console.log(result.length)
                         if (result.length > 0) {
                             children = result.map( (item:any) => {
                                 let newItem = new TreeItem(item.label, []);
@@ -210,11 +212,12 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                                 }
                                 return newItem
                             });
+                            element.children = children
                         } else {
                             children = [];
+                            element.collapsibleState = vscode.TreeItemCollapsibleState.None;
                         }
                         tokenSource.dispose();
-                        element.children = children
                         // return [new TreeItem("Testing", [])]; 
                         resolve(children);
                         // return children
