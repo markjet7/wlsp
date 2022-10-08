@@ -316,7 +316,7 @@ function runToLine() {
                 e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             }
 
-            updateResults(e, result, false);
+            updateResults(e, result, false, result["params"]["input"], result["params"]["file"]);
         });
     } catch {
         console.log("Kernel is not ready. Restarting...")
