@@ -106,14 +106,14 @@ socketHandler[state_]:=Module[{},
 	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 	Get[DirectoryName[path] <> "file-transforms.wl"]; 
 	Pause[handlerWait];
-	(Replace[
+	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{
 			{"Continue", state2_} :> state2,
 			{stop_, state2_} :> {stop, state2},
 			{} :> state
 		}
-	] & /@ SERVER["ConnectedClients"])[[-1]]
+	] & /@ SERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];

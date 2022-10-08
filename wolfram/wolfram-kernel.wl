@@ -93,14 +93,14 @@ connected2 = False;
 socketHandler[state_]:=Module[{},
 	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
-	(Replace[
+	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{
 			{"Continue", state2_} :> state2,
 			{stop_, state2_} :> {stop, state2},
 			{} :> state
 		}
-	] & /@ KERNELSERVER["ConnectedClients"])[[-1]]
+	] & /@ KERNELSERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
 KERNELSERVER=SocketOpen[kernelport,"TCP"];
