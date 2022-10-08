@@ -108,8 +108,6 @@ function startLanguageServer(context0, outputChannel0) {
                 }
             }
         });
-        let obj = ubjson.decode(fs.readFileSync(path.join(context.extensionPath, "usdc.ubj")));
-        console.log(obj);
         // setTimeout(updateRunningLines, 500);
         // restart()
     });

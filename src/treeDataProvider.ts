@@ -164,7 +164,7 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
 	}
 
     async getChildren(element?: TreeItem): Promise<TreeItem[] | undefined> {
-        treeDataProvider.refresh();
+        // treeDataProvider.refresh();
         if (element === undefined) {
             return this.data;
         }
