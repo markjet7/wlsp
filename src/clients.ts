@@ -19,7 +19,6 @@ import { time } from 'console';
 let wolframStatusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 const fs = require('fs')
-const ubjson = require("@shelacek/ubjson");
 import { WolframScriptSerializer, WolframNotebookSerializer } from './notebook';
 import { WolframNotebookController } from './notebookController';
 import { WolframScriptController } from './scriptController';
