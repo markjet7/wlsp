@@ -47,8 +47,9 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	 *)
 	evalnumber = 1;
 
-	messageHandler = If[Last[#], Abort[]] &;
+	messageHandler = If[Last[#], Abort[];Exit[]] &;
 	Internal`AddHandler["Message", messageHandler];
+
 	(* Internal`RemoveHandler["Message", messageHandler] *)
 	
 
@@ -77,8 +78,8 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 ];
 
 handle["pulse", json_]:=Module[{},
-	Print["responded"];
 	responded = True;
+	sendResponse[Echo@<|"id" -> json["id"], "result"->1|>];
 ];
 
 handle["shutdown", json_]:=Module[{},

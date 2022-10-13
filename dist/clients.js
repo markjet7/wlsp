@@ -203,6 +203,7 @@ function onkernelReady() {
                     temporaryDir = result;
                 });
                 exports.treeDataProvider.getSymbols(undefined);
+                pulse();
                 cb();
             }
             else {
@@ -218,9 +219,20 @@ function onkernelReady() {
 }
 exports.onkernelReady = onkernelReady;
 function pulse() {
-    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("pulse").then((a) => {
-        console.log("sent pulse");
-    });
+    let alive = true;
+    function ping() {
+        if (alive) {
+            alive = false;
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
+                alive = true;
+                console.log("kernel responded");
+            });
+        }
+        else {
+            console.log("kernel not responding");
+        }
+    }
+    setInterval(ping, 5000);
 }
 function newFunction() {
     exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();
@@ -1052,6 +1064,8 @@ function startWLSPKernel(id) {
                 });
                 socket.on("end", () => {
                     outputChannel.appendLine("Kernel Socket end");
+                    // attempt to revive the kernel
+                    restart();
                 });
                 fp(kernelPort).then(([freePort]) => {
                     kernelPort = freePort + id;

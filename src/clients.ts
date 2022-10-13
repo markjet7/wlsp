@@ -247,7 +247,7 @@ export async function  onkernelReady(): Promise<void> {
                     temporaryDir = result;
                 });
                 treeDataProvider.getSymbols(undefined);
-
+                pulse();
                 cb()
 
         } else {
@@ -265,9 +265,25 @@ export async function  onkernelReady(): Promise<void> {
 }
 
 function pulse() {
-    wolframKernelClient?.sendNotification("pulse").then((a:any)=> {
-        console.log("sent pulse")
-    })
+    let alive = true;
+    function ping() {
+        if (alive){
+            alive = false;
+            wolframKernelClient?.sendRequest("pulse").then((a:any)=> {
+                alive = true;
+            })
+        } else {
+            vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
+            "Yes", "No").then((result) => {
+                if (result === "Yes") {
+                    restart()
+                }
+            })
+
+        }
+
+    }
+    setInterval(ping, 60000)
 }
 
 function newFunction() {
@@ -1263,6 +1279,8 @@ async function startWLSPKernel(id:number): Promise<void> {
 
             socket.on("end", () => {
                 outputChannel.appendLine("Kernel Socket end");
+                // attempt to revive the kernel
+                restart()
             })
                  
 
