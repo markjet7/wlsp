@@ -1301,7 +1301,7 @@ async function startWLSPKernel(id:number): Promise<void> {
             let disposible: vscode.Disposable |undefined;
             // disposible = wolframKernelClient?.start();
             wolframKernelClient?.start();
-            outputChannel.appendLine("Client Started")
+            outputChannel.appendLine("Kernel Started")
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             resolve()

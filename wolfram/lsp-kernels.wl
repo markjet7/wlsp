@@ -32,7 +32,7 @@ ServerCapabilities=<|
 |>;
 
 
-handle["initialize",json_]:=Module[{response, response2},
+handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	Print["Initializing Kernel"];
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
 	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
@@ -46,6 +46,11 @@ handle["initialize",json_]:=Module[{response, response2},
 	ReinstallJava[CommandLine -> "java", JVMArguments -> "-Xmx4096m"];
 	 *)
 	evalnumber = 1;
+
+	messageHandler = If[Last[#], Abort[]] &;
+	Internal`AddHandler["Message", messageHandler];
+	(* Internal`RemoveHandler["Message", messageHandler] *)
+	
 
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)

@@ -151,7 +151,7 @@ class workspaceSymbolProvider {
     }
     getChildren(element) {
         return __awaiter(this, void 0, void 0, function* () {
-            clients_1.treeDataProvider.refresh();
+            // treeDataProvider.refresh();
             if (element === undefined) {
                 return this.data;
             }

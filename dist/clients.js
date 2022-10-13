@@ -20,7 +20,6 @@ const node_1 = require("vscode-LanguageClient/node");
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 const fs = require('fs');
-const ubjson = require("@shelacek/ubjson");
 const notebook_1 = require("./notebook");
 const notebookController_1 = require("./notebookController");
 const scriptController_1 = require("./scriptController");
@@ -561,7 +560,9 @@ function onRunInWolfram(file) {
         if (evaluationQueue.length > 0) {
             sendToWolfram();
         }
-        // treeDataProvider.refresh();
+        else {
+            exports.treeDataProvider.refresh();
+        }
     }));
     // try{
     //     result = JSON.parse(fs.readFileSync(file["file"], "utf8"))["params"];
@@ -1082,7 +1083,7 @@ function startWLSPKernel(id) {
                 let disposible;
                 // disposible = wolframKernelClient?.start();
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start();
-                outputChannel.appendLine("Client Started");
+                outputChannel.appendLine("Kernel Started");
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
