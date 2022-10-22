@@ -47,11 +47,6 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	 *)
 	evalnumber = 1;
 
-	messageHandler = If[Last[#], Abort[];Exit[]] &;
-	Internal`AddHandler["Message", messageHandler];
-
-	(* Internal`RemoveHandler["Message", messageHandler] *)
-	
 
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
@@ -79,7 +74,7 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 
 handle["pulse", json_]:=Module[{},
 	responded = True;
-	sendResponse[Echo@<|"id" -> json["id"], "result"->1|>];
+	sendResponse[<|"id" -> json["id"], "result"->1|>];
 ];
 
 handle["shutdown", json_]:=Module[{},
@@ -227,11 +222,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
 		AppendTo[Inputs, string];
-		output = If[json["params", "output"],
-			transforms@ReleaseHold[Last[r["Result"]]],
-			ToString[ReleaseHold[Last[r["Result"]]], InputForm, TotalWidth -> 1000]
-		],
-
+		output = CheckAbort[
+			If[json["params", "output"],
+				transforms@ReleaseHold[Last[r["Result"]]],
+				ToString[ReleaseHold[Last[r["Result"]]], InputForm, TotalWidth -> 1000]
+			], "Evaluation aborted"
+		];
+		output,
 		True,
 		r = <|
 			"AbsoluteTiming" -> "NA",
@@ -243,12 +240,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		output = transforms["Syntax error"];
 	];
 
-	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {ReleaseHold[Last[r["Result"]]], r["Success"], r["Result"]}};
+	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {CheckAbort[ReleaseHold[Last[r["Result"]]], "Abort on result"], r["Success"], r["Result"]}};
 	ans = result;
 	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
-									ExportString[Rasterize@Short[Check[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
+									ExportString[Rasterize@Short[CheckAbort[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
 									"\" style=\"max-height:190px\" />", "-Error-"], 
 									Quantity[10, "Seconds"],
 									"Large output"],
@@ -414,6 +411,14 @@ storageUri = "";
 handle["storageUri", json_]:=Module[{},
 	sendResponse[
 		<|"id" -> json["id"], "result" -> DirectoryName[CreateFile[]] |>
+	]
+];
+
+handle["updateConfiguration", json_]:=Module[{},
+	If[json["params", "abortOnError"],
+		messageHandler = If[Last[#], Abort[];Exit[]] &;
+		Internal`AddHandler["Message", messageHandler];,
+		Internal`RemoveHandler["Message", messageHandler]
 	]
 ];
 
@@ -760,7 +765,10 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, msgStr}, 
-		res = EvaluationData[Trace@ToExpression[string]];
+		res = CheckAbort[
+			EvaluationData[Trace@ToExpression[string]],
+			<|"Result":>{string, "Failed"},"Success"->False,"FailureType"->None,"OutputLog"->{},"Messages"->{},"MessagesText"->{},"MessagesExpressions"->{},"Timing"->0.`,"AbsoluteTiming"->0.`,"InputString":>ToString[Unevaluated[string],InputForm]|>
+		]; 
 		If[
 			res["Success"], 
 			(
@@ -780,13 +788,16 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, 
 					]],params];
 
 				msgToStr[_,_]:="An unknown error was generated";
-
 				msgStr = Quiet@Table[
 					msgToStr[m[[1,1]],m[[1,2;;]]],
 				{m, msgs}];
 
 				errorFile = CreateFile[];
-				Check[Export[errorFile, msgs, "JSON"], Export[errorFile, {"Errors were generated"}, "JSON"]];
+				CheckAbort[
+					Export[errorFile, msgs, "JSON"], 
+					Export[errorFile, {"Errors were generated"}, "JSON"]
+				];
+				
 				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile|>|>];
 				
 				(*

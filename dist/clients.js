@@ -85,9 +85,9 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);
         vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
+        exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();
         vscode.window.onDidChangeTextEditorSelection(didChangeSelection);
         vscode.window.onDidChangeWindowState(didChangeWindowState);
-        exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();
         vscode.window.registerTreeDataProvider("wolframSymbols", exports.treeDataProvider);
         vscode.workspace.textDocuments.forEach(didOpenTextDocument);
         vscode.workspace.onDidChangeWorkspaceFolders((event) => {
@@ -115,9 +115,11 @@ exports.startLanguageServer = startLanguageServer;
 function updateConfiguration() {
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
     }
+    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("updateConfiguration", { "abortOnError": vscode.workspace.getConfiguration().get("wlsp.abortOnError") });
 }
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
+        let e = vscode.window.activeTextEditor;
         wolframBusyQ = false;
         evaluationQueue = [];
         clients.forEach((client, key) => {
@@ -128,6 +130,8 @@ function restart() {
             }
             clients.delete(key);
         });
+        editorDecorations = [];
+        e === null || e === void 0 ? void 0 : e.setDecorations(variableDecorationType, editorDecorations);
         stopWolfram(undefined, wolfram);
         stopWolfram(undefined, wolframKernel);
         startWLSP(0);
@@ -225,14 +229,17 @@ function pulse() {
             alive = false;
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
                 alive = true;
-                console.log("kernel responded");
             });
         }
         else {
-            console.log("kernel not responding");
+            vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?", "Yes", "No").then((result) => {
+                if (result === "Yes") {
+                    restart();
+                }
+            });
         }
     }
-    setInterval(ping, 5000);
+    setInterval(ping, 60000);
 }
 function newFunction() {
     exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();

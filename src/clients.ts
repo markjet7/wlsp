@@ -114,9 +114,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
 
 
+    treeDataProvider = new workspaceSymbolProvider();
     vscode.window.onDidChangeTextEditorSelection(didChangeSelection);
     vscode.window.onDidChangeWindowState(didChangeWindowState);
-    treeDataProvider = new workspaceSymbolProvider();
     vscode.window.registerTreeDataProvider("wolframSymbols", treeDataProvider);
 
     vscode.workspace.textDocuments.forEach(didOpenTextDocument);
@@ -146,9 +146,14 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 function updateConfiguration(){
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
     } 
+
+    wolframKernelClient?.sendNotification(
+        "updateConfiguration", 
+        {"abortOnError" :vscode.workspace.getConfiguration().get("wlsp.abortOnError")});
 }
 
 export async function restart(): Promise<void> {
+    let e:vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     wolframBusyQ = false;
     evaluationQueue = [];    
     
@@ -159,6 +164,9 @@ export async function restart(): Promise<void> {
         }
         clients.delete(key);
     });
+
+    editorDecorations = [];
+    e?.setDecorations(variableDecorationType, editorDecorations);
 
     stopWolfram(undefined, wolfram);
     stopWolfram(undefined, wolframKernel);
