@@ -86,7 +86,9 @@ transforms[output0_]:=Module[{f, txt, output},
 			
 			WriteString[f,
 				"<img src=\"data:image/png;base64," <> 
-				(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
+				(ExportString[output /. {
+					{}-> "{}"
+				}, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
 				"\" />"
 			];,
 
