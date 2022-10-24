@@ -416,6 +416,7 @@ handle["storageUri", json_]:=Module[{},
 
 handle["updateConfiguration", json_]:=Module[{},
 	If[json["params", "abortOnError"],
+		(* https://mathematica.stackexchange.com/questions/1512/how-to-abort-on-any-message-generated *)
 		messageHandler = If[Last[#], Abort[];Exit[]] &;
 		Internal`AddHandler["Message", messageHandler];,
 		Internal`RemoveHandler["Message", messageHandler]
