@@ -226,7 +226,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			If[json["params", "output"],
 				transforms@ReleaseHold[Last[r["Result"]]],
 				ToString[ReleaseHold[Last[r["Result"]]], InputForm, TotalWidth -> 1000]
-			], "Evaluation aborted"
+			], "Output evaluation aborted"
 		];
 		output,
 		True,
@@ -764,25 +764,22 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, msgStr}, 
-		res = CheckAbort[
-			EvaluationData[Trace@ToExpression[string]],
-			<|"Result":>{string, "Failed"},"Success"->False,"FailureType"->None,"OutputLog"->{},"Messages"->{},"MessagesText"->{},"MessagesExpressions"->{},"Timing"->0.`,"AbsoluteTiming"->0.`,"InputString":>ToString[Unevaluated[string],InputForm]|>
-		]; 
+evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr}, 
+		$res = EvaluationData[Trace@ToExpression[string]];
 		If[
-			res["Success"], 
+			$res["Success"], 
 			(
-				res["FormattedMessages"] = {};
-				res
+				$res["FormattedMessages"] = {};
+				$res
 			),
 
 			(
-				msgs = res["MessagesExpressions"];
+				msgs = $res["MessagesExpressions"];
 				General::general ="An unknown error was generated";
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
 					If[
-						Head@name ==MessageName,
+						Head@name === MessageName,
 						name/.Messages[Evaluate[First[name,General]]],
 						General::general/.Messages[General::general]
 					]],params];
@@ -794,7 +791,7 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, 
 
 				errorFile = CreateFile[];
 				CheckAbort[
-					Export[errorFile, msgs, "JSON"], 
+					Export[errorFile, msgStr, "JSON"], 
 					Export[errorFile, {"Errors were generated"}, "JSON"]
 				];
 				
@@ -806,8 +803,8 @@ evaluateString[string_, width_:10000]:= Module[{res, r1, r2, f, msgs, msgToStr, 
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
 				{r2, msgs}];
 				*)
-				res["FormattedMessages"] = msgStr;
-				res
+				$res["FormattedMessages"] = msgStr;
+				$res
 			)
 		]
 ];
