@@ -765,7 +765,7 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr}, 
-		$res = EvaluationData[Trace@ToExpression[string]];
+		$res = Echo@EvaluationData[Trace@ToExpression[string]];
 		If[
 			$res["Success"], 
 			(

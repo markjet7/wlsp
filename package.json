@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.24",
+    "version": "0.0.30",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -72,7 +72,14 @@
                         "fontStyle": "bold"
                     },
                     "parameter": {
-                        "foreground": "#00aa00"
+                        
+                    },
+                    "variable.definition": {
+                      "fontStyle": "bold"
+                    },
+                    "variable":{},
+                    "variable.declaration": {
+                      "fontStyle": "bold"
                     }
                 }
             }

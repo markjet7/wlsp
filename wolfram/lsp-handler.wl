@@ -5,6 +5,7 @@ BeginPackage["wolframLSP`"];
 (**)
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
+Needs["CodeParser`Scoping`"];
 
 
 COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
@@ -42,7 +43,7 @@ ServerCapabilities=<|
 		"full" -> True,
 		"legend" -> <|
 			"tokenTypes" -> {"variable", "parameter", "keyword", "number", "string", "function"},
-			"tokenModifiers" -> {"definition"}
+			"tokenModifiers" -> {"definition", "declaration"}
 		|>
 	|>
 |>;
@@ -792,56 +793,86 @@ handle["textDocument/semanticTokens", json_]:=Module[{},
 	Print["semanticTokens"];
 ];
 
-handle["textDocument/semanticTokens/full", json_]:=Module[{},
+types[form_] := Switch[
+  form,
+  "Defined", "variable",
+  "SetDelayed", "parameter",
+  "Module", "parameter",
+  "SlotFunction", "parameter",
+  "RuleDelayed", "parameter",
+  _, "variable"
+];
+
+tokenTypes[type_]:=Switch[
+	type,
+	"variable",0,
+	"parameter",1,
+	"keyword",2,
+	"number",3,
+	"string",4,
+	"function",5,
+	_,0
+];
+
+modifiers[mod_]:=FromDigits[Table[
+	If[MemberQ[mod, d],1,0],
+		{
+			d,
+			{"definition",
+			"declaration"}
+		}
+	],
+2];
+
+mods[form_] := List@Switch[
+   form,
+   "definition", "definition",
+   "unused", "declaration",
+   "shadowed", "declaration",
+   _, "declaration"
+   ];
+
+mods[] := {};
+
+tokenize[scopingDataObject[range_,{scope___}, {type___}, name_]]:=<|
+	"line"->range[[1,1]]-1,
+	"startCharacter"->range[[1,2]]-1,
+	"length"->range[[2,2]]-range[[1,2]],
+	"tokenType"->types[scope],
+	"tokenModifiers"->mods[type],
+	"name"->name
+|>;
+
+handle["textDocument/semanticTokens/full", json_]:=Module[{src, ast, tokens, digits, result},
 	src = documents[json["params","textDocument","uri"]];
 	ast = CodeParse[src];
 
-	leafs = Cases[ast, LeafNode[t_ /; ! MemberQ[{Symbol, String, Real, Integer}, t], v_, <|Source -> r_|>] :> {"keyword", v, r, {}}, Infinity];
-	numbers = Cases[ast, LeafNode[t_ /;  MemberQ[{Real, Integer}, t], v_, <|Source -> r_|>] :> {"number", v, r, {}}, Infinity];
-	symbols = Cases[ast, LeafNode[Symbol, v_, <|Source -> r_|>] :> {"variable", v, r, {}}, Infinity];
-	strings = Cases[ast, LeafNode[String, v_, <|Source -> r_|>] :> {"string", v, r, {}}, Infinity];
-	params = Cases[ast, 
-		CallNode[LeafNode[Symbol,"Pattern",<||>],{LeafNode[Symbol,v_,<|Source->_|>],CallNode[LeafNode[Symbol,"Blank",<||>],{},<|Source->_|>]},<|Source->r_|>]:>{"parameter", v, r, {}},
-		Infinity];
+	tokens = tokenize /@ ScopingData[ast] // SortBy[{"line", "startCharacter"}];
 
-	defs = Cases[ast, CallNode[
-		LeafNode[Symbol, 
-		"Set", _], {CallNode[
-		LeafNode[Symbol, v_, _], ___], ___}, <|Source -> 
-		r_, ___|>] :> {"variable", v, r, {}}, Infinity];
-
-	functions = Cases[ast, CallNode[
-		LeafNode[Symbol, 
-		"SetDelayed", _], {CallNode[
-		LeafNode[Symbol, v_, _], ___], ___}, <|Source -> 
-		r_, ___|>] :> {"function", v, r, {}}, Infinity];
-
-	result1 = Table[
+	digits = Flatten[Values/@Join[
+		{<|
+		"deltaLine"->First[tokens]["line"],
+		"deltaStartChar"->First[tokens]["startCharacter"],
+		"length"->First[tokens]["length"],
+		"tokenType"->tokenTypes[First[tokens]["tokenType"]],
+		"tokenModifiers"->modifiers[First[tokens]["tokenModifiers"]]
+		|>},
+		BlockMap[
+		Function[{ins},
+		{t1,t2} = ins;
 		<|
-			"line" -> r[[3, 1, 1]],
-			"startCharacter" -> r[[3, 1, 2]],
-			"length" -> r[[3, 2, 2]] - r[[3, 1, 2]],
-			"tokenType" -> First[Flatten@Position[{"variable", "parameter", "keyword", "number", "string", "function"}, 
-  				r[[1]]]-1, 0],
-			"tokenModifiers" -> 0(* First[Flatten@Position[{"definition", "private"}, 
-  				r[[1]]], 0] *)
-		|>,
-		{r, SortBy[Join[leafs, numbers, symbols, strings, params, defs, functions], {#[[3,1,1]], #[[3,1,2]]} &]}
-	];
-	
-	deltaLines = Flatten[{result1[[1]]["line"]-1,result1[[2;;, "line"]]- result1[[1]]["line"]}];
-	deltaChars =Flatten@Values@GroupBy[
-		result1,
-		Key["line"],
-		Flatten[{#[[1]]["startCharacter"]-1, #[[2;;, "startCharacter"]]-#[[1]]["startCharacter"]}]&
-	];
+		"deltaLine"->t2["line"]-t1["line"],
+		"deltaStartChar"->If[t2["line"]===t1["line"],
+		t2["startCharacter"]-t1["startCharacter"],
+		t2["startCharacter"]
+		],
+		"length"->t2["length"],
+		"tokenType"->tokenTypes[t2["tokenType"]],
+		"tokenModifiers"->modifiers[t2["tokenModifiers"]]
+		|>
+		],tokens,2,1]]];
 
-	result2 = Quiet@Check[Flatten@MapThread[
-		{#1,#2, #3["length"], #3["tokenType"],#3["tokenModifiers"]}&,
-		{deltaLines,deltaChars,result1}
-	],{}];
-
-	sendResponse[<|"id" -> json["id"], "result" -> <|"data" -> {} |>|>];
+	sendResponse[<|"id" -> json["id"], "result" -> <|"data" -> digits[[1;;]] |>|>];
 
 ];
 
