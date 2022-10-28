@@ -90,9 +90,8 @@ handlerWait = 0.02;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
-Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-	
+	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
