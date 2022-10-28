@@ -5,7 +5,7 @@ BeginPackage["wolframLSP`"];
 (**)
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
-Needs["CodeParser`Scoping`"];
+Needs["CodeParser`Scoping`"]; (* for Scope`Private`$Scope *)
 
 
 COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
