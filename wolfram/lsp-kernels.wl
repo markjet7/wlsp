@@ -94,7 +94,7 @@ convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[M
 convertBoxExpressionToHTML[Information[BarChart]];
 
 extractUsage[str_]:=With[{usg=Function[expr,expr::usage,HoldAll]@@MakeExpression[str,StandardForm]},StringReplace[If[Head[usg]===String,usg,""],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
-handle["runCell", json_]:=Module[{},
+handle["runCell", json_]:=Module[{uri, src, newPosition},
 	uri = json["params", "textDocument"];
 	src = json["params", "source"];
 
