@@ -72,7 +72,7 @@
                         "fontStyle": "bold"
                     },
                     "parameter": {
-                        
+                       "fontStyle": "italic" 
                     },
                     "variable.definition": {
                       "fontStyle": "bold"
