@@ -596,8 +596,18 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 	];
 ];
 
-
-getChildren[symbol_]:={};
+(* ToDO Fix getChildren for general symbols *)
+getChildren[symbol_]:=Map[
+	<|
+		"label" -> ToString[#],
+		"kind" -> 5,
+		"children" -> {},
+		"lazyload" -> "Map[symbolToTreeItem2, Level[" <> ToString[symbol, InputForm] <> ", {1}]]",
+		"icon" -> "symbol-array",
+		"collapsibleState" -> 1
+	|>&,
+	symbol
+];
 
 symbolToTreeItem2[symbol_List]:=Table[
      <|
@@ -605,7 +615,7 @@ symbolToTreeItem2[symbol_List]:=Table[
 	  "definition" -> ToString[rows] <> " ... " <> ToString[If[(rows + 9) < Length@symbol, (rows + 9), Length@symbol]],
       "kind" -> "List",
       "children" -> {},
-	  "lazyload" -> "Flatten[Map[symbolToTreeItem2, " <> ToString[Take[symbol, {rows, UpTo[rows+9]}], InputForm] <> "], {1}]",
+	  "lazyload" -> "Flatten[Map[symbolToTreeItem2, " <> ToString[Take[symbol, {rows, UpTo[rows+9]}], InputForm] <> "], 1]",
 	  "icon" -> "symbol-array",
 	  "collapsibleState" -> 1
       |>
@@ -690,7 +700,7 @@ symbolToTreeItem2[symbol_]:=<|
 	"kind" -> ToString[Head@symbol, InputForm],
 	"definition" -> ToString[symbol, InputForm, TotalWidth -> 5000],
 	"children" -> {},
-	"lazyload" -> "",
+	"lazyload" -> "getChildren[" <> ToString[symbol, InputForm] <> "]",
     "icon" -> If[KeyExistsQ[symbolIcons, Head@symbol], symbolIcons[Head@symbol], "symbol-variable"],
 	"collapsibleState" -> 0
 |>;

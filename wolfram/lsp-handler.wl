@@ -849,6 +849,8 @@ handle["textDocument/semanticTokens/full", json_]:=Module[{src, ast, tokens, dig
 
 	tokens = tokenize /@ ScopingData[ast] // SortBy[{"line", "startCharacter"}];
 
+	If[tokens === {}, Return[]];
+
 	digits = Flatten[Values/@Join[
 		{<|
 		"deltaLine"->First[tokens]["line"],

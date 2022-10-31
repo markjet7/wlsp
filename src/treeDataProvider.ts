@@ -189,7 +189,6 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                     } else {
                         let children:TreeItem[] = [];
                         let result  = JSON.parse(fs.readFileSync(file, 'ascii'));
-                        console.log(result.length)
                         if (result.length > 0) {
                             children = result.map( (item:any) => {
                                 let newItem = new TreeItem(item.label, []);
@@ -213,7 +212,35 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                                 return newItem
                             });
                             element.children = children
-                        } else {
+                            tokenSource.dispose();
+                            // return [new TreeItem("Testing", [])]; 
+                            resolve(children);
+                            return
+                        }
+                        
+                        if (typeof(result) === "object") {
+                            let newItem = new TreeItem(result.label, []);
+                            newItem.tooltip = result.definition;
+                            newItem.lazyload = result.lazyload;
+                            newItem.iconPath = new vscode.ThemeIcon(result.icon);
+                            newItem.location = result.location;
+                            newItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+
+                            if (Object.keys(result).includes("location") && Object.keys(result.location).includes("uri")) {
+    
+    
+                                newItem.resourceUri = vscode.Uri.parse(result.location["uri"])
+                                newItem.command = {command: 'vscode.open', arguments: [vscode.Uri.parse(result.location["uri"]),{
+                                    preview: false,
+                                    preserveFocus: false,
+                                    selection: result.location.range
+                                }], title: 'Open'};
+                                
+                                vscode.window.showTextDocument(vscode.Uri.parse(result.location["uri"]), {preview: true});
+                            }
+                            children = [newItem]
+                            element.children = children
+                        }else {
                             children = [];
                             element.collapsibleState = vscode.TreeItemCollapsibleState.None;
                         }
