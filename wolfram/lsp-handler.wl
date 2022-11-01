@@ -64,6 +64,14 @@ handle["initialize",json_]:=Module[{response, builtins},
 	builtinSymbols = {};
 	symbolListFile = scriptPath <> "symbolList.js";
 	cursorLocationsFile = scriptPath <> "cursorLocations.js";
+
+	messageHandler = If[Last[#],
+		Save["/tmp/lsphandler.wl", Stack[]],
+		Nothing
+	];
+
+	Internal`AddHandler["Message", messageHandler];
+
 ];
 
 handle["workspace/symbol", json_]:=Module[{response},
@@ -537,6 +545,11 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
 			];
+			If[Join[keys, labels] === {},
+				response = <|"id"->json["id"],"result"->{}|>;
+				sendResponse[response];
+				Return[]
+		 	];
 
 			names = Select[Join[keys,labels], SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
 			items = Table[

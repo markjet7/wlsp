@@ -122,6 +122,7 @@ function restart() {
         let e = vscode.window.activeTextEditor;
         wolframBusyQ = false;
         evaluationQueue = [];
+        pulseInterval.unref();
         clients.forEach((client, key) => {
             var _a, _b;
             if (client) {
@@ -222,6 +223,7 @@ function onkernelReady() {
     });
 }
 exports.onkernelReady = onkernelReady;
+let pulseInterval;
 function pulse() {
     let alive = true;
     function ping() {
@@ -239,7 +241,7 @@ function pulse() {
             });
         }
     }
-    setInterval(ping, 60000);
+    pulseInterval = setInterval(ping, 60000);
 }
 function newFunction() {
     exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();

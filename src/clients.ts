@@ -156,6 +156,7 @@ export async function restart(): Promise<void> {
     let e:vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     wolframBusyQ = false;
     evaluationQueue = [];    
+    pulseInterval.unref();
     
     clients.forEach((client, key) => {
         if (client) {
@@ -272,6 +273,7 @@ export async function  onkernelReady(): Promise<void> {
 
 }
 
+let pulseInterval:NodeJS.Timeout;
 function pulse() {
     let alive = true;
     function ping() {
@@ -291,7 +293,7 @@ function pulse() {
         }
 
     }
-    setInterval(ping, 60000)
+    pulseInterval = setInterval(ping, 60000)
 }
 
 function newFunction() {

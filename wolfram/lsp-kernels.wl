@@ -415,9 +415,14 @@ handle["storageUri", json_]:=Module[{},
 ];
 
 handle["updateConfiguration", json_]:=Module[{},
+	(* https://mathematica.stackexchange.com/questions/1512/how-to-abort-on-any-message-generated *)
+	Print["Updating kernel configuration"];
+	messageHandler = If[Last[#], 
+		Save["/Users/markmw/Downloads/abort.wl", Stack[]];
+		Abort[];Exit[]
+		] &;
 	If[json["params", "abortOnError"],
-		(* https://mathematica.stackexchange.com/questions/1512/how-to-abort-on-any-message-generated *)
-		messageHandler = If[Last[#], Abort[];Exit[]] &;
+		Print["adding message handler"];
 		Internal`AddHandler["Message", messageHandler];,
 		Internal`RemoveHandler["Message", messageHandler]
 	]
@@ -812,7 +817,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				Table[
 					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->5000] |>|>];
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
-				{r2, msgs}];
+				{r2, Take[msgs, UpTo[3]]}];
 				*)
 				$res["FormattedMessages"] = msgStr;
 				$res
