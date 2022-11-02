@@ -418,12 +418,12 @@ handle["updateConfiguration", json_]:=Module[{},
 	(* https://mathematica.stackexchange.com/questions/1512/how-to-abort-on-any-message-generated *)
 	Print["Updating kernel configuration"];
 	messageHandler = If[Last[#], 
-		Save["/Users/markmw/Downloads/abort.wl", Stack[]];
-		Abort[];Exit[]
+		Abort[];Exit[1]
 		] &;
 	If[json["params", "abortOnError"],
 		Print["adding message handler"];
 		Internal`AddHandler["Message", messageHandler];,
+		Print["removing message handler"];
 		Internal`RemoveHandler["Message", messageHandler]
 	]
 ];

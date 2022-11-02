@@ -62,11 +62,13 @@ lastChange = Now;
 
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
-logfile = DirectoryName[path] <> "wlsp.log";
+logfile = DirectoryName[path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
 		handle[msg["method"],msg],
+		Print["LSP error handling message"];
+		Export[logfile, msg];
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
 	];
 	{"Continue", state}

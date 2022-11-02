@@ -52,18 +52,23 @@ lastChange = Now;
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
 
+logfile = DirectoryName[path] <> "wlsp_kernel.txt";
 handleMessage[msg_Association, state_]:=Module[{},
-	If[KeyMemberQ[msg, "method"],
-		If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-			Check[
-				handle[msg["method"],msg], 
-				sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
-			],
+	Check[
+		If[KeyMemberQ[msg, "method"],
+			If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
+				Check[
+					handle[msg["method"],msg], 
+					sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "NA", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
+				],
 
-			Check[handle[msg["method"], msg],
-				sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
+				Check[handle[msg["method"], msg],
+					sendRespose@<|"id"->msg["id"], "result"-> "NA" |>
+				]
 			]
-		]
+		];,
+		Print["Kernel error handling message"];
+		Export[logfile, msg];
 	];
 	If[state === "Continue", {"Continue",state}, {"Continue", state}]
 ];
