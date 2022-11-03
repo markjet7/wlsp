@@ -1495,6 +1495,7 @@ function didChangeSelection(event: vscode.TextEditorSelectionChangeEvent) {
 function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
     // didOpenTextDocument(event.document);
     // remove old decorations
+    console.log(event)
 
     let editor =  vscode.window.activeTextEditor;
     let selection = editor?.selection.active;
@@ -1503,7 +1504,11 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
         return
     }
 
-    // clearDecorations();
+    if (event.contentChanges.length === 0) {
+        return
+    }
+
+    clearDecorations();
     // Remove old running lines and decorations
     let newrunninglines = [];
     newrunninglines = runningLines.filter((d:vscode.DecorationOptions) => {
@@ -1532,9 +1537,9 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
         if (selection?.line == d.range.start.line) {
             d.range = new vscode.Range(
                 selection.line,
-                selection.character + 10,
+                editor.document.lineAt(selection.line).range.end.character + 10,
                 selection.line,
-                selection.character + 110
+                editor.document.lineAt(selection.line).range.end.character + 110
             )
             runningLines[i] = d
             editor.setDecorations(runningDecorationType, runningLines)
@@ -1546,9 +1551,9 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
         if (selection?.line == d.range.start.line) {
             d.range = new vscode.Range(
                 selection.line,
-                selection.character + 10,
+                editor.document.lineAt(selection.line).range.end.character + 10,
                 selection.line,
-                selection.character + 110
+                editor.document.lineAt(selection.line).range.end.character + 110
             )
             editorDecorations[i] = d
             editor.setDecorations(variableDecorationType, editorDecorations)

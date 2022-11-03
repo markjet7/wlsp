@@ -1,0 +1,1 @@
+<|"jsonrpc" -> "2.0", "id" -> 872, "method" -> "textDocument/completion", "params" -> <|"textDocument" -> <|"uri" -> "file:///Users/mark/Library/CloudStorage/OneDrive-IowaStateUniversity/Dropbox/Research/techno-economics/AmesLab%20Metals%20Recovery/openlcaplots.wl"|>, "position" -> <|"line" -> 24, "character" -> 14|>, "context" -> <|"triggerKind" -> 1|>|>|>

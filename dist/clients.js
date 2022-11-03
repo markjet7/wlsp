@@ -1245,12 +1245,16 @@ function didChangeSelection(event) {
 function didChangeTextDocument(event) {
     // didOpenTextDocument(event.document);
     // remove old decorations
+    console.log(event);
     let editor = vscode.window.activeTextEditor;
     let selection = editor === null || editor === void 0 ? void 0 : editor.selection.active;
     if (event.document.uri.toString() !== (editor === null || editor === void 0 ? void 0 : editor.document.uri.toString())) {
         return;
     }
-    // clearDecorations();
+    if (event.contentChanges.length === 0) {
+        return;
+    }
+    clearDecorations();
     // Remove old running lines and decorations
     let newrunninglines = [];
     newrunninglines = runningLines.filter((d) => {
@@ -1277,7 +1281,7 @@ function didChangeTextDocument(event) {
     for (let i = 0; i < runningLines.length; i++) {
         const d = runningLines[i];
         if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
-            d.range = new vscode.Range(selection.line, selection.character + 10, selection.line, selection.character + 110);
+            d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
             runningLines[i] = d;
             editor.setDecorations(runningDecorationType, runningLines);
         }
@@ -1285,11 +1289,12 @@ function didChangeTextDocument(event) {
     for (let i = 0; i < editorDecorations.length; i++) {
         const d = editorDecorations[i];
         if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
-            d.range = new vscode.Range(selection.line, selection.character + 10, selection.line, selection.character + 110);
+            d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
             editorDecorations[i] = d;
             editor.setDecorations(variableDecorationType, editorDecorations);
         }
     }
+    console.log("text changed");
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
         let doc = editor === null || editor === void 0 ? void 0 : editor.document;
         if (exports.wolframKernelClient) {
