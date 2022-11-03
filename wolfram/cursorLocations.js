@@ -6,7 +6,7 @@
 		},
 		"end":{
 			"line":0,
-			"character":223
+			"character":122
 		}
 	},
 	{
@@ -35,88 +35,28 @@
 			"character":0
 		},
 		"end":{
-			"line":6,
+			"line":9,
+			"character":1
+		}
+	},
+	{
+		"start":{
+			"line":13,
+			"character":0
+		},
+		"end":{
+			"line":13,
 			"character":88
 		}
 	},
 	{
 		"start":{
-			"line":7,
-			"character":0
-		},
-		"end":{
-			"line":7,
-			"character":94
-		}
-	},
-	{
-		"start":{
-			"line":8,
-			"character":0
-		},
-		"end":{
-			"line":8,
-			"character":87
-		}
-	},
-	{
-		"start":{
-			"line":9,
-			"character":0
-		},
-		"end":{
-			"line":9,
-			"character":71
-		}
-	},
-	{
-		"start":{
-			"line":10,
-			"character":0
-		},
-		"end":{
-			"line":10,
-			"character":91
-		}
-	},
-	{
-		"start":{
-			"line":11,
-			"character":0
-		},
-		"end":{
-			"line":11,
-			"character":97
-		}
-	},
-	{
-		"start":{
-			"line":12,
-			"character":0
-		},
-		"end":{
-			"line":12,
-			"character":83
-		}
-	},
-	{
-		"start":{
-			"line":13,
-			"character":0
-		},
-		"end":{
-			"line":13,
-			"character":125
-		}
-	},
-	{
-		"start":{
 			"line":15,
 			"character":0
 		},
 		"end":{
 			"line":15,
-			"character":91
+			"character":63
 		}
 	},
 	{
@@ -125,28 +65,8 @@
 			"character":0
 		},
 		"end":{
-			"line":16,
-			"character":97
-		}
-	},
-	{
-		"start":{
 			"line":17,
-			"character":0
-		},
-		"end":{
-			"line":17,
-			"character":90
-		}
-	},
-	{
-		"start":{
-			"line":18,
-			"character":0
-		},
-		"end":{
-			"line":18,
-			"character":91
+			"character":66
 		}
 	},
 	{
@@ -155,38 +75,8 @@
 			"character":0
 		},
 		"end":{
-			"line":19,
-			"character":95
-		}
-	},
-	{
-		"start":{
-			"line":20,
-			"character":0
-		},
-		"end":{
-			"line":20,
-			"character":101
-		}
-	},
-	{
-		"start":{
-			"line":21,
-			"character":0
-		},
-		"end":{
-			"line":21,
-			"character":87
-		}
-	},
-	{
-		"start":{
 			"line":22,
-			"character":0
-		},
-		"end":{
-			"line":22,
-			"character":89
+			"character":2
 		}
 	},
 	{
@@ -195,38 +85,28 @@
 			"character":0
 		},
 		"end":{
-			"line":41,
-			"character":20
+			"line":24,
+			"character":22
 		}
 	},
 	{
 		"start":{
-			"line":43,
+			"line":26,
 			"character":0
 		},
 		"end":{
-			"line":46,
-			"character":32
+			"line":37,
+			"character":21
 		}
 	},
 	{
 		"start":{
-			"line":48,
+			"line":39,
 			"character":0
 		},
 		"end":{
-			"line":48,
-			"character":17
-		}
-	},
-	{
-		"start":{
-			"line":50,
-			"character":0
-		},
-		"end":{
-			"line":50,
-			"character":3
+			"line":39,
+			"character":69
 		}
 	}
 ]

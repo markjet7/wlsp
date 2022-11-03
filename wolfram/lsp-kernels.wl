@@ -791,13 +791,12 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 			(
 				msgs = $res["MessagesExpressions"];
-				General::general ="An unknown error was generated";
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
 					If[
 						Head@name === MessageName,
 						name/.Messages[Evaluate[First[name,General]]],
-						General::general/.Messages[General::general]
+						First[$res["MessagesText"], "Unknown error"]
 					]],params];
 
 				msgToStr[_,_]:="An unknown error was generated";

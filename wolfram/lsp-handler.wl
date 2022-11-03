@@ -671,7 +671,11 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		params =DeleteCases[FirstCase[function, List[___], {}],LeafNode[Alternatives@@(Symbol/@Names["Token`*"]),_,_]];
 
 		positions = Flatten[Cases[params,<|Source->x_,___|>:>x,{2}],1];
-		activeparam = First[Flatten@Position[positions, Check[First@Nearest[positions, Values@pos], 1]]-1,1];
+
+		If[positions === {},
+			activeparam = 1,
+			activeparam = First[Flatten@Position[positions, Check[First@Nearest[positions, Values@pos], 1]]-1,1];
+		];
 
 		activeSignature = 1;
 		If[!MissingQ[json["params"]["context"]["activeSignatureHelp"]], 
