@@ -6,7 +6,7 @@
 		},
 		"end":{
 			"line":0,
-			"character":221
+			"character":122
 		}
 	},
 	{
@@ -106,7 +106,27 @@
 		},
 		"end":{
 			"line":39,
-			"character":67
+			"character":69
+		}
+	},
+	{
+		"start":{
+			"line":42,
+			"character":0
+		},
+		"end":{
+			"line":42,
+			"character":7
+		}
+	},
+	{
+		"start":{
+			"line":44,
+			"character":0
+		},
+		"end":{
+			"line":44,
+			"character":26
 		}
 	}
 ]
