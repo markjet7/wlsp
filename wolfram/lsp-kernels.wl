@@ -224,8 +224,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		AppendTo[Inputs, string];
 		output = CheckAbort[
 			If[json["params", "output"],
-				transforms@ReleaseHold[Last[r["Result"]]],
-				ToString[ReleaseHold[Last[r["Result"]]], InputForm, TotalWidth -> 1000]
+				transforms@ReleaseHold[r["Result"]],
+				ToString[ReleaseHold[r["Result"]], InputForm, TotalWidth -> 1000]
 			], "Output evaluation aborted"
 		];
 		output,
@@ -240,13 +240,13 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		output = transforms["Syntax error"];
 	];
 
-	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {CheckAbort[ReleaseHold[Last[r["Result"]]], "Abort on result"], r["Success"], r["Result"]}};
+	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {CheckAbort[ReleaseHold[r["Result"]], "Aborted on result"], r["Success"], r["Result"]}};
 	ans = result;
 	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
-									ExportString[Rasterize@Short[CheckAbort[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
-									"\" style=\"max-height:190px\" />", "-Error-"], 
+									ExportString[Rasterize@Short[CheckAbort[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
+									"\" style=\"max-height:190px;max-width:190px\" />", "-Error-"], 
 									Quantity[10, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
@@ -315,7 +315,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
-									ExportString[Rasterize@Short[Check[Last[r["Result"][[1]]], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
+									ExportString[Rasterize@Short[Check[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
 									"\" style=\"max-height:190px\" />", "-Error-"], 
 									Quantity[5, "Seconds"],
 									"Large output"],
@@ -781,7 +781,7 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr}, 
-		$res = EvaluationData[Trace@ToExpression[string]];
+		$res = EvaluationData[ToExpression[string]];
 		If[
 			$res["Success"], 
 			(

@@ -108,5 +108,25 @@
 			"line":39,
 			"character":69
 		}
+	},
+	{
+		"start":{
+			"line":42,
+			"character":0
+		},
+		"end":{
+			"line":42,
+			"character":7
+		}
+	},
+	{
+		"start":{
+			"line":44,
+			"character":0
+		},
+		"end":{
+			"line":44,
+			"character":26
+		}
 	}
 ]
