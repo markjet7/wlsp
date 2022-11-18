@@ -72,7 +72,7 @@ transforms[output0_]:=Module[{f, txt, output},
 						ExportString[
 							output, 
 							"HTMLFragment",
-							"GraphicsOutput"->"PNG",
+							"GraphicsOutput"->"JPEG",
 							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
 				];
 				Close[f];

@@ -1,0 +1,182 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      6617,        172]
+NotebookOptionsPosition[      5180,        143]
+NotebookOutlinePosition[      5571,        159]
+CellTagsIndexPosition[      5528,        156]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData["ReplaceKey"], "Input",
+ CellChangeTimes->{{3.877469724118065*^9, 
+  3.8774697266194763`*^9}},ExpressionUUID->"a6edf2f2-03f7-4a66-9080-\
+2afba8c3113c"],
+
+Cell[BoxData["WriteM"], "Input",
+ CellChangeTimes->{{3.8774697857029667`*^9, 
+  3.877469786694147*^9}},ExpressionUUID->"6497ba87-9588-44bb-b6ce-\
+9b09f6b424b4"],
+
+Cell[BoxData["LogD"], "Input",
+ CellChangeTimes->{{3.877470998691835*^9, 
+  3.877470999494774*^9}},ExpressionUUID->"1f2b06fc-fcb5-4ac6-918b-\
+528e7e2d09ab"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"a", " ", "=", " ", "5"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"b", " ", "=", " ", "10"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"a", "+", "b"}], "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{"Table", "[", "\[IndentingNewLine]", 
+  RowBox[{"i", ",", "\[IndentingNewLine]", 
+   RowBox[{"{", 
+    RowBox[{"i", ",", " ", "10"}], "}"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.877474468322715*^9, 3.877474472538591*^9}, {
+  3.87747474357407*^9, 3.8774747505682163`*^9}},
+ CellLabel->
+  "(Debug) In[21]:=",ExpressionUUID->"e076862c-ea76-401e-8e65-5fbd3cdc2b17"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"SystemOpen", "[", "$UserBaseDirectory", "]"}]], "Input",
+ CellChangeTimes->{{3.877474586384481*^9, 3.877474597472946*^9}},
+ CellLabel->
+  "(Debug) In[2]:=",ExpressionUUID->"fdb6e05d-ccdc-449e-a56a-582e7e899200"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NotebookFileName", "nosv", 
+   "\"The notebook \\!\\(\\*TemplateBox[Association[RuleDelayed[\\\"obj\\\", \
+NotebookObject[\\\"3519ca98-a22b-4a88-8d86-6922817b7410\\\", \
+\\\"b52ce8bf-a7cd-42cc-8029-62899f9ec4d1\\\"]], Rule[\\\"label\\\", \
+\\\"\\\\\\\"Untitled-2\\\\\\\"\\\"]], \\\"NotebookObjectUUIDsUnsaved\\\"]\\) \
+is not saved.\"", 2, 2, 3, 23948415249954272112, "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.877474598614669*^9},
+ CellLabel->
+  "(Debug) During evaluation of \
+In[2]:=",ExpressionUUID->"f73109d4-b2a2-46c5-b833-db4e4d1d0b22"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "StringJoin", "string", 
+   "\"String expected at position \\!\\(\\*RowBox[{\\\"1\\\"}]\\) in \
+\\!\\(\\*RowBox[{\\\"$Failed\\\", \\\"<>\\\", \
+\\\"\\\\\\\".backup\\\\\\\"\\\"}]\\).\"", 2, 2, 4, 23948415249954272112, 
+   "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.8774745986748867`*^9},
+ CellLabel->
+  "(Debug) During evaluation of \
+In[2]:=",ExpressionUUID->"f22132c9-d893-408e-80d2-ecab85112540"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"NotebookFileName", "[", "]"}]], "Input",
+ CellChangeTimes->{{3.877474649048892*^9, 3.877474651854548*^9}},
+ CellLabel->
+  "(Debug) In[3]:=",ExpressionUUID->"d5e7e863-4b10-49a9-9560-0403f23a5e29"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NotebookFileName", "nosv", 
+   "\"The notebook \\!\\(\\*TemplateBox[Association[RuleDelayed[\\\"obj\\\", \
+NotebookObject[\\\"3519ca98-a22b-4a88-8d86-6922817b7410\\\", \
+\\\"b52ce8bf-a7cd-42cc-8029-62899f9ec4d1\\\"]], Rule[\\\"label\\\", \
+\\\"\\\\\\\"Untitled-2\\\\\\\"\\\"]], \\\"NotebookObjectUUIDsUnsaved\\\"]\\) \
+is not saved.\"", 2, 3, 5, 23948415249954272112, "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.877474652227035*^9},
+ CellLabel->
+  "(Debug) During evaluation of \
+In[3]:=",ExpressionUUID->"68424cbc-2a13-4986-92bf-48c6e550648c"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NotebookFileName", "nosv", 
+   "\"The notebook \\!\\(\\*TemplateBox[Association[RuleDelayed[\\\"obj\\\", \
+NotebookObject[\\\"3519ca98-a22b-4a88-8d86-6922817b7410\\\", \
+\\\"b52ce8bf-a7cd-42cc-8029-62899f9ec4d1\\\"]], Rule[\\\"label\\\", \
+\\\"\\\\\\\"Untitled-2\\\\\\\"\\\"]], \\\"NotebookObjectUUIDsUnsaved\\\"]\\) \
+is not saved.\"", 2, 3, 6, 23948415249954272112, "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.877474652565583*^9},
+ CellLabel->
+  "(Debug) During evaluation of \
+In[3]:=",ExpressionUUID->"e84d9e07-04db-4939-9f93-647b506a6451"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "StringJoin", "string", 
+   "\"String expected at position \\!\\(\\*RowBox[{\\\"1\\\"}]\\) in \
+\\!\\(\\*RowBox[{\\\"$Failed\\\", \\\"<>\\\", \
+\\\"\\\\\\\".backup\\\\\\\"\\\"}]\\).\"", 2, 3, 7, 23948415249954272112, 
+   "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.877474652625309*^9},
+ CellLabel->
+  "(Debug) During evaluation of \
+In[3]:=",ExpressionUUID->"321d85a1-3e5e-443c-8cf4-27903891dee5"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"$Pre", " ", "=", " ", "Nothing"}]], "Input",
+ CellChangeTimes->{{3.877474821210025*^9, 3.877474826865696*^9}},
+ CellLabel->
+  "(Debug) In[25]:=",ExpressionUUID->"7dd496fa-66f4-4598-bc4a-fdb5298d8da9"]
+},
+WindowSize->{808, 911},
+WindowMargins->{{4, Automatic}, {Automatic, 4}},
+FrontEndVersion->"13.1 for Mac OS X ARM (64-bit) (June 16, 2022)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"a2cfced5-f0ed-4a19-abe7-21aa548b7d08"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 164, 3, 30, "Input",ExpressionUUID->"a6edf2f2-03f7-4a66-9080-2afba8c3113c"],
+Cell[725, 25, 160, 3, 30, "Input",ExpressionUUID->"6497ba87-9588-44bb-b6ce-9b09f6b424b4"],
+Cell[888, 30, 156, 3, 30, "Input",ExpressionUUID->"1f2b06fc-fcb5-4ac6-918b-528e7e2d09ab"],
+Cell[1047, 35, 633, 14, 157, "Input",ExpressionUUID->"e076862c-ea76-401e-8e65-5fbd3cdc2b17"],
+Cell[CellGroupData[{
+Cell[1705, 53, 235, 4, 30, "Input",ExpressionUUID->"fdb6e05d-ccdc-449e-a56a-582e7e899200"],
+Cell[1943, 59, 604, 12, 34, "Message",ExpressionUUID->"f73109d4-b2a2-46c5-b833-db4e4d1d0b22"],
+Cell[2550, 73, 458, 11, 28, "Message",ExpressionUUID->"f22132c9-d893-408e-80d2-ecab85112540"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3045, 89, 219, 4, 30, "Input",ExpressionUUID->"d5e7e863-4b10-49a9-9560-0403f23a5e29"],
+Cell[3267, 95, 604, 12, 34, "Message",ExpressionUUID->"68424cbc-2a13-4986-92bf-48c6e550648c"],
+Cell[3874, 109, 604, 12, 34, "Message",ExpressionUUID->"e84d9e07-04db-4939-9f93-647b506a6451"],
+Cell[4481, 123, 456, 11, 28, "Message",ExpressionUUID->"321d85a1-3e5e-443c-8cf4-27903891dee5"]
+}, Open  ]],
+Cell[4952, 137, 224, 4, 30, "Input",ExpressionUUID->"7dd496fa-66f4-4598-bc4a-fdb5298d8da9"]
+}
+]
+*)
+
+(* End of internal cache information *)
+

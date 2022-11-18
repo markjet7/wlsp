@@ -790,6 +790,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 			),
 
 			(
+				(*
 				msgs = $res["MessagesExpressions"];
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
@@ -804,6 +805,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 					msgToStr[m[[1,1]],m[[1,2;;]]],
 				{m, msgs}];
 
+				
 				errorFile = CreateFile[];
 				CheckAbort[
 					Export[errorFile, msgStr, "JSON"], 
@@ -812,13 +814,28 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				
 				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile|>|>];
 				
-				(*
+				
 				Table[
 					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->5000] |>|>];
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
 				{r2, Take[msgs, UpTo[3]]}];
-				*)
 				$res["FormattedMessages"] = msgStr;
+
+				*)
+
+				$res["FormattedMessages"] = {};
+				$res["Result"] = Column[
+					Prepend[
+						Map[
+							TimeConstrained[
+								Rasterize[#, Background->RGBColor[1., 0.21, 0.21, 0.18], ImageSize->8*72],
+								2,
+								"Large error message generated"] &, 
+							Take[$res["MessagesText"], UpTo[5]]],
+						$res["Result"]],
+					Dividers -> All
+				];
+
 				$res
 			)
 		]

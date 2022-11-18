@@ -9,14 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onkernelReady = exports.stop = exports.restart = exports.startLanguageServer = exports.treeDataProvider = exports.scriptController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.onkernelReady = exports.stop = exports.restart = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
+const vscode_1 = require("vscode");
 const path = require("path");
 const net = require("net");
 const fp = require('find-free-port');
 const cp = require("child_process");
 const psTree = require('ps-tree');
 const node_1 = require("vscode-LanguageClient/node");
+const debug_1 = require("./debug");
 let wolframStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 const fs = require('fs');
@@ -56,10 +58,18 @@ function startLanguageServer(context0, outputChannel0) {
         exports.notebookSerializer = new notebook_1.WolframNotebookSerializer();
         exports.notebookcontroller = new notebookController_1.WolframNotebookController();
         exports.scriptController = new scriptController_1.WolframScriptController(context);
+        const provider = new WLSPConfigurationProvider();
+        context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', exports.notebookSerializer));
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', exports.scriptserializer));
         context.subscriptions.push(exports.notebookcontroller);
         context.subscriptions.push(exports.scriptController);
+        exports.wlspdebugger = new debug_1.WolframDebugAdapterDescriptorFactory(7777, context, outputChannel);
+        context.subscriptions.push(vscode_1.debug.registerDebugConfigurationProvider("wlspdebugger", new debug_1.WolframDebugConfigProvider()));
+        context.subscriptions.push(vscode_1.debug.registerDebugAdapterDescriptorFactory('wlspdebugger', exports.wlspdebugger));
+        // context.subscriptions.push(
+        //     wlspdebugger
+        // )
         startWLSP(0);
         startWLSPKernel(0);
         vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
@@ -81,6 +91,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.runExpression', runExpression);
         vscode.commands.registerCommand('wolfram.clearResults', clearResults);
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
+        vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);
@@ -112,6 +123,9 @@ function startLanguageServer(context0, outputChannel0) {
     });
 }
 exports.startLanguageServer = startLanguageServer;
+function startWLSPDebugger() {
+    // wolfDebugger.startDebugger()
+}
 function updateConfiguration() {
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
     }
@@ -154,6 +168,7 @@ function stop() {
     for (let p of processes) {
         stopWolfram(undefined, p);
     }
+    exports.wlspdebugger.dispose();
     return Promise.all(promises).then(() => undefined);
 }
 exports.stop = stop;
@@ -223,7 +238,7 @@ function onkernelReady() {
     });
 }
 exports.onkernelReady = onkernelReady;
-let pulseInterval;
+let pulseInterval; // NodeJS.Timeout;
 function pulse() {
     let alive = true;
     function ping() {
@@ -990,6 +1005,9 @@ function startWLSP(id) {
             documentSelector: [
                 "wolfram"
             ],
+            initializationOptions: {
+                debuggerPort: 7777
+            },
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: outputChannel
         };
@@ -1245,7 +1263,7 @@ function didChangeSelection(event) {
 function didChangeTextDocument(event) {
     // didOpenTextDocument(event.document);
     // remove old decorations
-    console.log(event);
+    // console.log(event)
     let editor = vscode.window.activeTextEditor;
     let selection = editor === null || editor === void 0 ? void 0 : editor.selection.active;
     if (event.document.uri.toString() !== (editor === null || editor === void 0 ? void 0 : editor.document.uri.toString())) {
@@ -1283,18 +1301,17 @@ function didChangeTextDocument(event) {
         if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
             d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
             runningLines[i] = d;
-            editor.setDecorations(runningDecorationType, runningLines);
         }
     }
+    editor.setDecorations(runningDecorationType, runningLines);
     for (let i = 0; i < editorDecorations.length; i++) {
         const d = editorDecorations[i];
         if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
             d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
             editorDecorations[i] = d;
-            editor.setDecorations(variableDecorationType, editorDecorations);
         }
     }
-    console.log("text changed");
+    editor.setDecorations(variableDecorationType, editorDecorations);
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
         let doc = editor === null || editor === void 0 ? void 0 : editor.document;
         if (exports.wolframKernelClient) {
@@ -1610,4 +1627,29 @@ function errorMessages(params) {
 //         // resolve([client, disposible]);
 //     });
 // }
+class WLSPConfigurationProvider {
+    /**
+     * Massage a debug configuration just before a debug session is being launched,
+     * e.g. add all missing attributes to the debug configuration.
+     */
+    resolveDebugConfiguration(folder, config, token) {
+        // if launch.json is missing or empty
+        if (!config.type && !config.request && !config.name) {
+            const editor = vscode.window.activeTextEditor;
+            if (editor && editor.document.languageId === 'markdown') {
+                config.type = 'mock';
+                config.name = 'Launch';
+                config.request = 'launch';
+                config.program = '${file}';
+                config.stopOnEntry = true;
+            }
+        }
+        if (!config.program) {
+            return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
+                return undefined; // abort launch
+            });
+        }
+        return config;
+    }
+}
 //# sourceMappingURL=clients.js.map

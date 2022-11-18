@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import {debug, WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken} from 'vscode';
 import * as path from 'path';
 import * as net from 'net';
 const fp = require('find-free-port');
@@ -16,6 +17,8 @@ import {
 import { resolve } from 'path';
 import { deactivate } from './notebook';
 import { time } from 'console';
+import {WolframDebugConfigProvider, WolframDebugAdapterDescriptorFactory} from './debug'
+
 let wolframStatusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 const fs = require('fs')
@@ -43,8 +46,8 @@ let outputChannel!: vscode.OutputChannel;
 let clients: Map<string, (LanguageClient|undefined)[]> = new Map();
 let processes: cp.ChildProcess[] = [];
 
- var wolfram!: cp.ChildProcess;
- var wolframKernel!: cp.ChildProcess;
+var wolfram!: cp.ChildProcess;
+var wolframKernel!: cp.ChildProcess;
 
 export var wolframClient!: LanguageClient | undefined;
 export var wolframKernelClient: LanguageClient | undefined;
@@ -53,6 +56,7 @@ export let notebookSerializer: WolframNotebookSerializer;
 export let notebookcontroller: WolframNotebookController;
 export let scriptController: WolframScriptController;
 export let treeDataProvider: workspaceSymbolProvider;
+export let wlspdebugger: WolframDebugAdapterDescriptorFactory;
 
 export async function startLanguageServer(context0: vscode.ExtensionContext, outputChannel0: vscode.OutputChannel): Promise<void> {
 
@@ -73,6 +77,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     notebookcontroller = new WolframNotebookController()
     scriptController = new WolframScriptController(context)
 
+    const provider = new WLSPConfigurationProvider();
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
+
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
     );
@@ -83,6 +90,19 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
+
+    wlspdebugger = new WolframDebugAdapterDescriptorFactory(7777, context, outputChannel);
+
+    context.subscriptions.push(
+        debug.registerDebugConfigurationProvider("wlspdebugger", new WolframDebugConfigProvider()));
+    context.subscriptions.push(
+        debug.registerDebugAdapterDescriptorFactory('wlspdebugger', wlspdebugger)
+    )
+
+    // context.subscriptions.push(
+    //     wlspdebugger
+    // )
+    
 
     startWLSP(0);
     startWLSPKernel(0);
@@ -106,6 +126,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.commands.registerCommand('wolfram.runExpression', runExpression);
     vscode.commands.registerCommand('wolfram.clearResults', clearResults);
     vscode.commands.registerCommand('wolfram.showTrace', showTrace);
+    vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger)
 
 
     vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
@@ -141,6 +162,11 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     // setTimeout(updateRunningLines, 500);
     
     // restart()
+}
+
+function startWLSPDebugger(){
+    
+    // wolfDebugger.startDebugger()
 }
 
 function updateConfiguration(){
@@ -192,6 +218,7 @@ export function stop() {
     for (let p of processes) {
         stopWolfram(undefined, p)
     }
+    wlspdebugger.dispose()
 
 	return Promise.all(promises).then(() => undefined);
 
@@ -273,7 +300,7 @@ export async function  onkernelReady(): Promise<void> {
 
 }
 
-let pulseInterval:NodeJS.Timeout;
+let pulseInterval:any; // NodeJS.Timeout;
 function pulse() {
     let alive = true;
     function ping() {
@@ -1190,6 +1217,9 @@ async function startWLSP(id:number): Promise<void> {
         documentSelector: [
             "wolfram"
         ],
+        initializationOptions: {
+            debuggerPort: 7777
+        },
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel
     };
@@ -1495,7 +1525,7 @@ function didChangeSelection(event: vscode.TextEditorSelectionChangeEvent) {
 function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
     // didOpenTextDocument(event.document);
     // remove old decorations
-    console.log(event)
+    // console.log(event)
 
     let editor =  vscode.window.activeTextEditor;
     let selection = editor?.selection.active;
@@ -1542,9 +1572,9 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
                 editor.document.lineAt(selection.line).range.end.character + 110
             )
             runningLines[i] = d
-            editor.setDecorations(runningDecorationType, runningLines)
         }
     }
+    editor.setDecorations(runningDecorationType, runningLines)
 
     for (let i = 0; i < editorDecorations.length; i++) {
         const d:vscode.DecorationOptions = editorDecorations[i];
@@ -1556,9 +1586,9 @@ function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
                 editor.document.lineAt(selection.line).range.end.character + 110
             )
             editorDecorations[i] = d
-            editor.setDecorations(variableDecorationType, editorDecorations)
         }
     }
+    editor.setDecorations(variableDecorationType, editorDecorations)
 
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
         let doc = editor?.document;
@@ -1945,3 +1975,34 @@ function errorMessages(params: any) {
     //         // resolve([client, disposible]);
     //     });
     // }
+
+class WLSPConfigurationProvider implements vscode.DebugConfigurationProvider {
+
+        /**
+         * Massage a debug configuration just before a debug session is being launched,
+         * e.g. add all missing attributes to the debug configuration.
+         */
+        resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+    
+            // if launch.json is missing or empty
+            if (!config.type && !config.request && !config.name) {
+                const editor = vscode.window.activeTextEditor;
+                if (editor && editor.document.languageId === 'markdown') {
+                    config.type = 'mock';
+                    config.name = 'Launch';
+                    config.request = 'launch';
+                    config.program = '${file}';
+                    config.stopOnEntry = true;
+                }
+            }
+    
+            if (!config.program) {
+                return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
+                    return undefined;	// abort launch
+                });
+            }
+    
+            return config;
+        }
+    }
+

@@ -63,7 +63,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 				Export[logfile, msg, "Text"];
 					sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "Kernel error", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 				],
-
+ 
 				Check[handle[msg["method"], msg],
 
 				Export[logfile, msg, "Text"];
@@ -71,8 +71,9 @@ handleMessage[msg_Association, state_]:=Module[{},
 				]
 			]
 		];,
-		Print["Kernel error handling message"];
-		Export[logfile, msg];
+		Nothing
+		(*Print["Kernel error handling message"];
+		Export[logfile, msg];*)
 	];
 	If[state === "Continue", {"Continue",state}, {"Continue", state}]
 ];

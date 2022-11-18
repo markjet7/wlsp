@@ -1,14 +1,22 @@
 (* ::Package:: *)
 
-BeginPackage["wolframLSP`"];
-
-
-
+BeginPackage["wolframDebugger`"];
+If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
+If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+
+constructRPCBytes[_Missing]:= Module[{}, ""];
+constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
+	jsonBytes=Check[ExportByteArray[msg,"RawJSON"], Print["Export Byte Array failed"]; ExportByteArray[<||>,"RawJSON"]];
+	headerBytes=StringToByteArray["Content-Length: " <> ToString[Length[jsonBytes], CharacterEncoding->"ASCII"]<>"\r\n\r\n"];
+	{headerBytes,jsonBytes}
+
+];
 
 sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		(*byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];*)
+		byteResponse = constructRPCBytes[res];
 		Map[
 			Function[{client},
 				If[Head[client] === SocketObject, 
@@ -20,7 +28,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 		Print["response error"];
 		Print[res];
 	]
-];
+]; 
 
 sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
 	Check[
@@ -38,12 +46,8 @@ sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
 (* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
 
 
-If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
-If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
+
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "lsp-handler.wl"];
-Get[DirectoryName[path] <> "CodeFormatter.m"];
-Get[DirectoryName[path] <> "notebook2jupyter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
@@ -62,12 +66,12 @@ lastChange = Now;
 
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
-logfile = DirectoryName[path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
-		handle[msg["method"],msg],
-		(*Print["LSP error handling message"];
+		handle[msg["command"],msg],
+		Print["Debug error message"];
+		(*Print["LSP error message"];
 		Export[logfile, msg];*)
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
 	];
@@ -99,14 +103,13 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.02;
+Get[DirectoryName[path] <> "debug-handler.wl"];
+handlerWait = 0.5;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-	Get[DirectoryName[path] <> "file-transforms.wl"]; 
+	Get[DirectoryName[path] <> "debug-handler.wl"]; 
 	Pause[handlerWait];
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
@@ -119,8 +122,8 @@ socketHandler[state_]:=Module[{},
 ] // socketHandler;
 
 SERVER=SocketOpen[port,"TCP"];
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
-Print["LSP ", SERVER, ": ", port];
+Replace[SERVER,{Failed:>(Print["Cannot start tcp server."]; Quit[])}];
+Print["DEBUG ", SERVER, ": ", port];
 Print[Now];
 
 MemoryConstrained[
