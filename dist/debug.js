@@ -8,7 +8,6 @@ const { Subject } = require('await-notify');
 const fp = require('find-free-port');
 const cp = require("child_process");
 const psTree = require('ps-tree');
-let port = 7777;
 let debugClient;
 class WolframDebugConfigProvider {
 }
@@ -29,7 +28,6 @@ class WolframDebugAdapterDescriptorFactory {
     loadWLSPDebugger() {
         return new Promise((resolve, reject) => {
             var _a, _b, _c;
-            console.log("loadWLSPDebugger");
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
             let debugpath = this.context.asAbsolutePath(path.join('wolfram', 'wolfram-debug.wl'));
             if (process.platform === "win32") {

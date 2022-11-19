@@ -38,6 +38,7 @@ import {showPlotPanel} from './plotsView';
 
 let clientPort: number = 7710;
 let kernelPort: number = 7910;
+let debugPort: number = 7810;
 let lspPath: string;
 let kernelPath: string;
 let context!: vscode.ExtensionContext;
@@ -91,7 +92,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
 
-    wlspdebugger = new WolframDebugAdapterDescriptorFactory(7777, context, outputChannel);
+    fp(debugPort).then(([freePort]:number[]) => {
+        wlspdebugger = new WolframDebugAdapterDescriptorFactory(freePort, context, outputChannel);
+    })
 
     context.subscriptions.push(
         debug.registerDebugConfigurationProvider("wlspdebugger", new WolframDebugConfigProvider()));
@@ -108,6 +111,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     startWLSPKernel(0);
 
     vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
+    vscode.commands.registerCommand('wolfram.runToLine', runToLine);
     vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
     vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
     vscode.commands.registerCommand('wolfram.wolframTerminal', startWolframTerminal);
@@ -359,22 +363,27 @@ function runToLine() {
         sel.character
     );
 
-    e.revealRange(r, vscode.TextEditorRevealType.Default);
+    // e.revealRange(r, vscode.TextEditorRevealType.Default);
 
-    try {
-        wolframKernelClient?.sendRequest("runInWolfram", { range: r, textDocument: e.document, print: false }).then((result: any) => {
-            // cursor has not moved yet
-            if (e.selection.active.line === outputPosition.line - 1 && e.selection.active.character === outputPosition.character) {
-                outputPosition = new vscode.Position(result["position"]["line"], result["position"]["character"]);
-                e.selection = new vscode.Selection(outputPosition, outputPosition);
-                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            }
+    let printOutput = false;
+    
+    let output = false;
+    if (plotsPanel?.visible == true) {
+        output = true;
+    }
+    let evaluationData = { range: r, textDocument: e?.document, print: printOutput, output: output, trace: false };
+    evaluationQueue.push(evaluationData);
 
-            updateResults(e, result, false, result["params"]["input"], result["params"]["file"]);
-        });
-    } catch {
-        console.log("Kernel is not ready. Restarting...")
-        restart()
+    if (!wolframKernelClient) {
+        restart().then(() => {
+            evaluationQueue.push(evaluationData);
+            sendToWolfram(printOutput);
+            return
+        })
+    } 
+
+    if (evaluationQueue.length == 1 || wolframBusyQ == false) {
+        sendToWolfram(printOutput);
     }
 }
 
@@ -574,7 +583,7 @@ function abort() {
 
 let starttime = 0;
 let inputs:String[] = [];
-function runInWolfram(print = false, trace=false) {
+function runInWolfram(printOutput = false, trace=false) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel: vscode.Selection = e!.selection;
 
@@ -592,7 +601,7 @@ function runInWolfram(print = false, trace=false) {
         output = true;
     }
 
-    let evaluationData = { range: sel, textDocument: e?.document, print: print, output: output, trace: trace };
+    let evaluationData = { range: sel, textDocument: e?.document, print: printOutput, output: output, trace: trace };
     evaluationQueue.push(evaluationData);
 
     // showPlots();
@@ -600,19 +609,19 @@ function runInWolfram(print = false, trace=false) {
     if (!wolframKernelClient) {
         restart().then(() => {
             evaluationQueue.push(evaluationData);
-            sendToWolfram(print);
+            sendToWolfram(printOutput);
             return
         })
     } 
 
     if (evaluationQueue.length == 1 || wolframBusyQ == false) {
-        sendToWolfram(print);
+        sendToWolfram(printOutput);
     }
 
 }
 
 let evaluationQueue:any[] = [];
-function sendToWolfram(print = false, sel:vscode.Selection|undefined = undefined) {
+function sendToWolfram(printOutput = false, sel:vscode.Selection|undefined = undefined) {
 
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     if(!sel) {sel = e!.selection};
@@ -665,8 +674,9 @@ function sendToWolfram(print = false, sel:vscode.Selection|undefined = undefined
                         // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
                         // wolframStatusBar.show();
                         starttime = Date.now();
-                        
-                        wolframKernelClient?.sendNotification("runInWolfram", evaluationQueue.pop())
+                        if (evaluationQueue.length > 0) {
+                            wolframKernelClient?.sendNotification("runInWolfram", evaluationQueue.pop())
+                        }
                     })
 
                 })

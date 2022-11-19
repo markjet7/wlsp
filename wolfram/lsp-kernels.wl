@@ -145,49 +145,13 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
 	Check[
+		Print[json];
 		start = Now;
-		(*Print["Running: " <> ToString@start];*)
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Check[getCode[src, range], ""];
+		code = Echo[Check[getCode[src, range], ""], "mycode"];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
-		(*
-		decoration = <|
-					"range" -> 	<|
-						"start"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+1096|>,
-						"end"-><|"line"->code["range"][[2,1]]-1,"character"->code["range"][[2,2]]+1196|>
-					|>,
-					"renderOptions"-><|
-						"after" -> <|
-							"contentText" -> " ... ",
-							"backgroundColor" -> "editor.background",
-							"foregroundColor" -> "editor.foreground",
-							"margin" -> "0 0 0 10px",
-							"borderRadius" -> "2px",
-							"border" -> "2px solid blue",
-							"color" -> "foreground",
-							"rangeBehavior" -> 4,
-							"textDecoration" -> "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
-						|>,
-						"rangeBehavior" -> 4
-					|>
-				|>;
-
-		workspaceDecorations[
-			json["params", "textDocument", "uri", "external"]
-		] = If[
-			KeyMemberQ[workspaceDecorations, json["params", "textDocument", "uri", "external"]],
-			Append[
-				workspaceDecorations[json["params", "textDocument", "uri", "external"]], 
-				<|ToString@decoration["range"]["start"]["line"]-> decoration|>],
-			<|ToString@decoration["range"]["start"]["line"]-> decoration|>
-		];
-
-		Export[decorationFile, workspaceDecorations, "JSON"];
-		response4 = <| "method" -> "updateDecorations", "params"-> ToString@decorationFile|>;
-		sendResponse[response4];	
-		*)
 
 		(* Add the evaluation to the evaluation queue *)
 		evaluateFromQueue[code, json, newPosition];
