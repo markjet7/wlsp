@@ -288,7 +288,7 @@ function runToLine() {
     let sel = e === null || e === void 0 ? void 0 : e.selection.active;
     let outputPosition = new vscode.Position(sel.line + 1, 0);
     let r = new vscode.Selection(0, 0, sel.line, sel.character);
-    e.revealRange(r, vscode.TextEditorRevealType.Default);
+    // e.revealRange(r, vscode.TextEditorRevealType.Default);
     let printOutput = false;
     let output = false;
     if ((plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.visible) == true) {
@@ -1269,65 +1269,71 @@ function didChangeSelection(event) {
     editor === null || editor === void 0 ? void 0 : editor.setDecorations(blockDecorationType, [d]);
 }
 function didChangeTextDocument(event) {
-    // didOpenTextDocument(event.document);
-    // remove old decorations
-    // console.log(event)
-    let editor = vscode.window.activeTextEditor;
-    let selection = editor === null || editor === void 0 ? void 0 : editor.selection.active;
-    if (event.document.uri.toString() !== (editor === null || editor === void 0 ? void 0 : editor.document.uri.toString())) {
-        return;
-    }
-    if (event.contentChanges.length === 0) {
-        return;
-    }
-    clearDecorations();
-    // Remove old running lines and decorations
-    let newrunninglines = [];
-    newrunninglines = runningLines.filter((d) => {
-        if (selection) {
-            return d.range.start.line <= selection.line;
-        }
-        else {
-            return true;
-        }
+    return __awaiter(this, void 0, void 0, function* () {
+        // didOpenTextDocument(event.document);
+        // remove old decorations
+        // console.log(event)
+        return new Promise((resolve) => {
+            var _a;
+            let editor = vscode.window.activeTextEditor;
+            let selection = (_a = editor === null || editor === void 0 ? void 0 : editor.selection) === null || _a === void 0 ? void 0 : _a.active;
+            if (event.document.uri.toString() !== (editor === null || editor === void 0 ? void 0 : editor.document.uri.toString())) {
+                return;
+            }
+            if (event.contentChanges.length === 0) {
+                return;
+            }
+            clearDecorations();
+            // Remove old running lines and decorations
+            let newrunninglines = [];
+            newrunninglines = runningLines.filter((d) => {
+                return d.range.start.line < (selection === null || selection === void 0 ? void 0 : selection.line);
+            });
+            runningLines = newrunninglines;
+            editor.setDecorations(runningDecorationType, runningLines);
+            let newEditorDecorations = [];
+            newEditorDecorations = editorDecorations.filter((d) => {
+                return d.range.start.line < selection.line;
+            });
+            editorDecorations = newEditorDecorations;
+            editor.setDecorations(variableDecorationType, editorDecorations);
+            // for (let i = 0; i < runningLines.length; i++) {
+            //     const d:vscode.DecorationOptions = runningLines[i];
+            //     if (selection?.line == d.range.start.line) {
+            //         d.range = new vscode.Range(
+            //             selection.line,
+            //             editor.document.lineAt(selection.line).range.end.character + 10,
+            //             selection.line,
+            //             editor.document.lineAt(selection.line).range.end.character + 110
+            //         )
+            //         runningLines[i] = d
+            //     }
+            // }
+            // editor.setDecorations(runningDecorationType, runningLines)
+            // for (let i = 0; i < editorDecorations.length; i++) {
+            //     const d:vscode.DecorationOptions = editorDecorations[i];
+            //     if (selection?.line == d.range.start.line) {
+            //         d.range = new vscode.Range(
+            //             selection.line,
+            //             editor.document.lineAt(selection.line).range.end.character + 10,
+            //             selection.line,
+            //             editor.document.lineAt(selection.line).range.end.character + 110
+            //         )
+            //         editorDecorations[i] = d
+            //     }
+            // }
+            // editor.setDecorations(variableDecorationType, editorDecorations)
+            // if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
+            //     let doc = editor?.document;
+            //     if (wolframKernelClient) {        
+            //             wolframKernelClient?.sendNotification("runDocumentLive", doc?.uri)
+            //     } 
+            //     return
+            // }  
+            // return ;
+            resolve();
+        });
     });
-    runningLines = newrunninglines;
-    editor.setDecorations(runningDecorationType, runningLines);
-    let newEditorDecorations = [];
-    newEditorDecorations = editorDecorations.filter((d) => {
-        if (selection) {
-            return d.range.start.line <= selection.line;
-        }
-        else {
-            return true;
-        }
-    });
-    editorDecorations = newEditorDecorations;
-    editor.setDecorations(variableDecorationType, editorDecorations);
-    for (let i = 0; i < runningLines.length; i++) {
-        const d = runningLines[i];
-        if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
-            d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
-            runningLines[i] = d;
-        }
-    }
-    editor.setDecorations(runningDecorationType, runningLines);
-    for (let i = 0; i < editorDecorations.length; i++) {
-        const d = editorDecorations[i];
-        if ((selection === null || selection === void 0 ? void 0 : selection.line) == d.range.start.line) {
-            d.range = new vscode.Range(selection.line, editor.document.lineAt(selection.line).range.end.character + 10, selection.line, editor.document.lineAt(selection.line).range.end.character + 110);
-            editorDecorations[i] = d;
-        }
-    }
-    editor.setDecorations(variableDecorationType, editorDecorations);
-    if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
-        let doc = editor === null || editor === void 0 ? void 0 : editor.document;
-        if (exports.wolframKernelClient) {
-            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runDocumentLive", doc === null || doc === void 0 ? void 0 : doc.uri);
-        }
-        return;
-    }
-    return;
 }
 function isUntitled(document) {
     return (document.languageId === "wolfram" && document.uri.scheme === 'untitled');
