@@ -145,12 +145,11 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
 	Check[
-		Print[json];
 		start = Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Echo[Check[getCode[src, range], ""], "mycode"];
+		code = Echo[Check[getCode[src, range], ""]];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 
 		(* Add the evaluation to the evaluation queue *)
