@@ -315,10 +315,13 @@ function pulse() {
                 alive = true;
             })
         } else {
+            clearTimeout(pulseInterval)
             vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
             "Yes", "No").then((result) => {
                 if (result === "Yes") {
                     restart()
+                } else {
+                    pulse()
                 }
             })
 
