@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.30",
+    "version": "0.0.33",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -240,6 +240,10 @@
             {
                 "command": "wolfram.stringHelp",
                 "title": "Wolfram: Help"
+            },
+            {
+                "command": "wolfram.updateTreeData",
+                "title": "Wolfram: Update variable tree data"
             },
             {
                 "command": "wolfram.restart",

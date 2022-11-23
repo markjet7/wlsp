@@ -37,7 +37,6 @@ import { debugPort } from 'process';
 import { time } from 'console';
 const psTree = require('ps-tree');
 
-let port:number = 7777;
 let debugClient:LanguageClient;
 
 
@@ -67,7 +66,6 @@ export class WolframDebugAdapterDescriptorFactory implements DebugAdapterDescrip
 
     loadWLSPDebugger():Promise<void> {
         return new Promise((resolve, reject) => {
-            console.log("loadWLSPDebugger");
             let executablePath:string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
             let debugpath:string = this.context.asAbsolutePath(path.join('wolfram', 'wolfram-debug.wl'));
             if (process.platform === "win32") {
