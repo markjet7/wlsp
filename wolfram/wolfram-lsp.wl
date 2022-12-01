@@ -104,10 +104,20 @@ handlerWait = 0.02;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
+$timeout = Now;
 socketHandler[state_]:=Module[{},
 	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 	Get[DirectoryName[path] <> "file-transforms.wl"]; 
 	Pause[handlerWait];
+	If[
+		Length@SERVER["ConnectedClients"] === 0 &&
+		Now - $timeout > Quantity[20, "Minutes"],
+		Print["Closing kernel connection..."]; Quit[];
+	];
+
+	If[Length@SERVER["ConnectedClients"] > 0,
+		$timeout = Now;
+	];
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{

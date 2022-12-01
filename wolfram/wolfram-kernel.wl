@@ -100,9 +100,19 @@ handlerWait = 0.02;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
+$timeout = Now;
 socketHandler[state_]:=Module[{},
 	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
+	If[
+		Length@KERNELSERVER["ConnectedClients"] === 0 &&
+		Now - $timeout > Quantity[20, "Minutes"],
+		Print["Closing kernel connection..."]; Quit[];
+	];
+
+	If[Length@KERNELSERVER["ConnectedClients"] > 0,
+		$timeout = Now;
+	];
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{
