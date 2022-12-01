@@ -209,8 +209,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
 									ExportString[Rasterize@Short[CheckAbort[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
-									"\" style=\"max-height:190px;max-width:190px\" />", "-Error-"], 
-									Quantity[10, "Seconds"],
+									"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
+									Quantity[3, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
@@ -544,7 +544,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			Return[]
 		];
 		value = TimeConstrained[
-			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" height=\"190px\" />", 
+			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
 			Quantity[5, "Seconds"],
 			"Large output"];
 
@@ -743,8 +743,10 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr}, 
+evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
+        Begin["VSCode`"];
 		$res = EvaluationData[ToExpression[string]];
+		End["VSCode`"];
 		If[
 			$res["Success"], 
 			(
@@ -789,11 +791,12 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				$res["FormattedMessages"] = {};
 				$res["Result"] = Column[
 					{
+
+						$res["Result"],
 						TimeConstrained[
 							Rasterize[Take[$res["MessagesText"], UpTo[5]], Background->RGBColor[1., 0.21, 0.21, 0.18], ImageSize->8*72],
 								2,
 								"Large error message generated"]
-						$res["Result"]
 						},
 					Dividers -> All
 				];

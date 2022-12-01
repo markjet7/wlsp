@@ -64,7 +64,7 @@ transforms[output_]:=Module[{f, txt},
 			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
 				WriteString[f, 
 						ExportString[
-							ToString[output, InputForm, TotalWidth -> 2000],
+							ToString[output, InputForm, TotalWidth -> 3500],
 							"HTMLFragment",
 							"GraphicsOutput"->"JPEG",
 							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
@@ -88,8 +88,8 @@ transforms[output_]:=Module[{f, txt},
 				}]
 			];,
 
-			Quantity[10, "Seconds"],
-			WriteString[f, "output is too large"]
+			Quantity[7, "Seconds"],
+			WriteString[f, "The output is too large. Try to export it instead."]
 		];
 
 		Close[f];
