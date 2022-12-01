@@ -788,14 +788,13 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 				$res["FormattedMessages"] = {};
 				$res["Result"] = Column[
-					Prepend[
-						Map[
-							TimeConstrained[
-								Rasterize[#, Background->RGBColor[1., 0.21, 0.21, 0.18], ImageSize->8*72],
+					{
+						TimeConstrained[
+							Rasterize[Take[$res["MessagesText"], UpTo[5]], Background->RGBColor[1., 0.21, 0.21, 0.18], ImageSize->8*72],
 								2,
-								"Large error message generated"] &, 
-							Take[$res["MessagesText"], UpTo[5]]],
-						$res["Result"]],
+								"Large error message generated"]
+						$res["Result"]
+						},
 					Dividers -> All
 				];
 

@@ -1025,6 +1025,8 @@ lintToDecoration[lint_]:=Module[{},
 				"backgroundColor" -> "editor.background",
 				"foregroundColor" -> "editor.foreground",
 				"color" -> Switch[lint[[3]], "Error", "red", "Warning", "orange", "Information","white", "Hint","blue", _, "orange"],
+				"opacity" -> "0.4",
+				"fontStyle" -> "italic",
 				"margin" -> "0 0 0 10px",
 				"rangeBehavior" -> 4
 			|>,

@@ -96,6 +96,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.clearResults', clearResults);
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
         vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
+        vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);
@@ -1368,8 +1369,11 @@ function didOpenTextDocument(document) {
     }
     return;
 }
-function didSaveTextDocument(event) {
+function updateTreeDataProvider() {
     exports.treeDataProvider.refresh();
+}
+function didSaveTextDocument(event) {
+    // treeDataProvider.refresh();
     clearDecorations();
     didOpenTextDocument(event);
     return;
