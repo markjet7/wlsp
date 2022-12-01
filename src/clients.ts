@@ -398,7 +398,7 @@ function updateVarTable(vars: any) {
         }
         let updatedVariables = JSON.parse(data)
         Object.keys(updatedVariables).map((k:any) => {
-            variableTable[k] = updatedVariables[k]
+            variableTable[k] = updatedVariables[k].slice(0, 1000)
         })
         updateOutputPanel();
 
