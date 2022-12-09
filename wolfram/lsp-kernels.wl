@@ -184,7 +184,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
-		AppendTo[Inputs, string];
+		(* AppendTo[Inputs, string]; *)
 		output = CheckAbort[
 			If[json["params", "output"],
 				transforms@ReleaseHold[r["Result"]],

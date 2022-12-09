@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.33",
+    "version": "0.0.34",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -230,6 +230,10 @@
                 "title": "Wolfram: Print"
             },
             {
+                "command": "wolfram.clearPlots",
+                "title": "Wolfram: Clear Plots"
+            },
+            {
                 "command": "wolfram.abort",
                 "title": "Wolfram: Abort current computation"
             },
@@ -349,7 +353,19 @@
                     "title": "Wolfram",
                     "icon": "media/wolf-logo.svg"
                 }
-            ]
+            ],
+            "panel": [
+                {
+                    "id": "wolfram-variable-table",
+                    "title": "Wolfram",
+                    "icon": "media/wolf-logo.svg"
+                },
+            
+                {
+                    "id": "wolfram-plots-view",
+                    "title": "Wolfram",
+                    "icon": "media/wolf-logo.svg"
+                }]
         },
         "views": {
             "wolfram-workspace-explorer": [
@@ -358,6 +374,24 @@
                     "name": "Symbols",
                     "icon": "",
                     "contextualTitle": "Symbols"
+                }
+            ],
+            "wolfram-variable-table": [
+                {
+                    "id": "wolfram.dataView",
+                    "type":"webview",
+                    "name": "Variables",
+                    "icon": "",
+                    "contextualTitle": "Variables"
+                }
+            ],
+            "wolfram-plots-view": [
+                {
+                    "id": "wolfram.plotsView",
+                    "type":"webview",
+                    "name": "Plots",
+                    "icon": "",
+                    "contextualTitle": "Plots"
                 }
             ]
         }

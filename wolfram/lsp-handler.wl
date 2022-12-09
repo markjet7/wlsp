@@ -551,7 +551,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				Return[]
 		 	];
 
-			names = Select[Join[keys,labels], SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 50];
+			names = Select[Join[keys,labels], SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 20];
 			items = Table[
 					<|
 						"label" -> n,

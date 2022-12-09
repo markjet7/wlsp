@@ -44,6 +44,9 @@ let clients = new Map();
 let processes = [];
 var wolfram;
 var wolframKernel;
+let withProgressCancellation;
+let dataProvider;
+let plotsProvider;
 function startLanguageServer(context0, outputChannel0) {
     return __awaiter(this, void 0, void 0, function* () {
         context = context0;
@@ -63,6 +66,10 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', exports.notebookSerializer));
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', exports.scriptserializer));
+        dataProvider = new dataPanel_1.DataViewProvider(context.extensionUri);
+        context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
+        plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri);
+        context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         context.subscriptions.push(exports.notebookcontroller);
         context.subscriptions.push(exports.scriptController);
         fp(debugPort).then(([freePort]) => {
@@ -97,6 +104,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
         vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
         vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
+        vscode.commands.registerCommand('wolfram.clearPlots', clearPlots);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);
@@ -142,6 +150,7 @@ function restart() {
         wolframBusyQ = false;
         evaluationQueue = [];
         pulseInterval.unref();
+        withProgressCancellation === null || withProgressCancellation === void 0 ? void 0 : withProgressCancellation.cancel();
         clients.forEach((client, key) => {
             var _a, _b;
             if (client) {
@@ -317,9 +326,28 @@ function updateVarTable(vars) {
         }
         let updatedVariables = JSON.parse(data);
         Object.keys(updatedVariables).map((k) => {
-            variableTable[k] = updatedVariables[k];
+            variableTable[k] = updatedVariables[k].slice(0, 1000);
         });
-        updateOutputPanel();
+        let vars = "";
+        let i = 0;
+        vars += `<vscode-data-grid id="varTable" generate-header="sticky" aria-label="With Sticky Header">
+    <vscode-data-grid-row row-type="header">
+        <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Name</vscode-data-grid-cell>
+        <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
+    </vscode-data-grid-row>`;
+        Object.keys(variableTable).forEach(k => {
+            // if (i % 2 === 0) {
+            //     vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n"
+            // } else {
+            //     vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n"
+            // }
+            vars += `<vscode-data-grid-row>
+        <vscode-data-grid-cell grid-column="1">${k}</vscode-data-grid-cell>
+        <vscode-data-grid-cell grid-column="2">${variableTable[k]}</vscode-data-grid-cell>
+      </vscode-data-grid-row>`;
+        });
+        vars += "</vscode-data-grid>";
+        dataProvider.updateView(vars);
     });
 }
 let runningLines = [];
@@ -492,10 +520,10 @@ function runInWolfram(printOutput = false, trace = false) {
     //     cursorMoved = true;
     // })
     moveCursor();
-    let output = false;
-    if ((plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.visible) == true) {
-        output = true;
-    }
+    let output = true;
+    // if (plotsPanel?.visible == true) {
+    //     output = true;
+    // }
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: trace };
     evaluationQueue.push(evaluationData);
     // showPlots();
@@ -540,15 +568,17 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         if (!wolframBusyQ) {
             wolframBusyQ = true;
+            let evalNext = evaluationQueue.pop();
+            withProgressCancellation = new vscode.CancellationTokenSource();
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Window,
-                title: "Wolfram",
+                title: "Wolfram (" + (evalNext.range.start.line + 1) + ")",
                 cancellable: true
-            }, (prog, token) => {
+            }, (prog, withProgressCancellation) => {
                 return new Promise(resolve => {
-                    token.onCancellationRequested(ev => {
+                    withProgressCancellation.onCancellationRequested(ev => {
                         console.log("Aborting Wolfram evaluation");
-                        abort();
+                        restart();
                         resolve(false);
                     });
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
@@ -558,9 +588,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
                     // wolframStatusBar.show();
                     starttime = Date.now();
-                    if (evaluationQueue.length > 0) {
-                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evaluationQueue.pop());
-                    }
+                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
                 });
             });
         }
@@ -692,67 +720,72 @@ function updateResults(e, result, print, input = "", file) {
 }
 let outputPanel;
 function showOutput() {
-    var _a;
-    let outputColumn = (_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.viewColumn;
-    //let out = "<table id='outputs'>";
-    if (outputPanel) {
-        if (outputPanel.visible) {
-        }
-        else {
-            if (outputColumn) {
-                outputPanel.reveal(outputColumn + 1, true);
-            }
-            else {
-                outputPanel.reveal(1, true);
-            }
-        }
-    }
-    else {
-        outputPanel = vscode.window.createWebviewPanel('WolframOutput', "Wolfram Data Table", { viewColumn: 2, preserveFocus: true }, {
-            enableScripts: true
-        });
-        outputPanel.webview.html = dataPanel_1.getOutputContent(outputPanel.webview, context.extensionUri);
-        outputPanel.webview.onDidReceiveMessage(message => {
-            runExpression(message.text, 0, 100);
-            return;
-        }, undefined, context.subscriptions);
-        outputPanel.onDidDispose(() => {
-            outputPanel = undefined;
-        }, null);
-        updateOutputPanel();
-    }
+    // let outputColumn: vscode.ViewColumn | undefined = vscode.window.activeTextEditor?.viewColumn;
+    // //let out = "<table id='outputs'>";
+    // if (outputPanel) {
+    //     if (outputPanel.visible) {
+    //     } else {
+    //         if (outputColumn) {
+    //             outputPanel.reveal(outputColumn + 1, true);
+    //         } else {
+    //             outputPanel.reveal(1, true);
+    //         }
+    //     }
+    // } else {
+    //     outputPanel = vscode.window.createWebviewPanel(
+    //         'WolframOutput',
+    //         "Wolfram Data Table",
+    //         { viewColumn: 2, preserveFocus: true },
+    //         {
+    //             enableScripts: true
+    //         });
+    //     outputPanel.webview.html = getOutputContent(outputPanel.webview, context.extensionUri);
+    //     outputPanel.webview.onDidReceiveMessage(
+    //         message => {
+    //             runExpression(message.text, 0, 100);
+    //             return;
+    //         }
+    //         , undefined, context.subscriptions);
+    //     outputPanel.onDidDispose(() => {
+    //         outputPanel = undefined;
+    //     }, null);
+    //     updateOutputPanel()
+    // }
 }
 let plotsPanel;
 function showPlots() {
-    var _a;
-    let outputColumn = (_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.viewColumn;
-    //let out = "<table id='outputs'>";
-    if (plotsPanel) {
-        if (!plotsPanel.visible) {
-            if (outputColumn) {
-                plotsPanel.reveal(outputColumn + 1, true);
-            }
-            else {
-                plotsPanel.reveal(1, true);
-            }
-        }
-    }
-    else {
-        plotsPanel = vscode.window.createWebviewPanel('WolframPlots', "Wolfram Plots", { viewColumn: 2, preserveFocus: true }, {
-            localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "media"))],
-            enableScripts: true,
-            retainContextWhenHidden: true
-        });
-        plotsPanel.webview.html = plotsView_1.showPlotPanel(plotsPanel.webview, context.extensionUri);
-        plotsPanel.webview.onDidReceiveMessage(message => {
-            runExpression(message.text, 0, 100);
-            return;
-        }, undefined, context.subscriptions);
-        plotsPanel.onDidDispose(() => {
-            plotsPanel = undefined;
-        }, null);
-        updateOutputPanel();
-    }
+    // let outputColumn: vscode.ViewColumn | undefined = vscode.window.activeTextEditor?.viewColumn;
+    // //let out = "<table id='outputs'>";
+    // if (plotsPanel) {
+    //     if (!plotsPanel.visible) {
+    //         if (outputColumn) {
+    //             plotsPanel.reveal(outputColumn + 1, true);
+    //         } else {
+    //             plotsPanel.reveal(1, true);
+    //         }
+    //     }
+    // } else {
+    //     plotsPanel = vscode.window.createWebviewPanel(
+    //         'WolframPlots',
+    //         "Wolfram Plots",
+    //         { viewColumn: 2, preserveFocus: true },
+    //         {
+    //             localResourceRoots:  [vscode.Uri.file(path.join(context.extensionPath, "media"))],
+    //             enableScripts: true,
+    //             retainContextWhenHidden: true
+    //         });
+    //         plotsPanel.webview.html = showPlotPanel(plotsPanel.webview, context.extensionUri);
+    //         plotsPanel.webview.onDidReceiveMessage(
+    //         message => {
+    //             runExpression(message.text, 0, 100);
+    //             return;
+    //         }
+    //         , undefined, context.subscriptions);
+    //     plotsPanel.onDidDispose(() => {
+    //         plotsPanel = undefined;
+    //     }, null);
+    //     updateOutputPanel()
+    // }
 }
 function runExpression(expression, line, end) {
     let e = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;
@@ -901,6 +934,10 @@ let blockDecorationType = vscode.window.createTextEditorDecorationType({
     overviewRulerColor: new vscode.ThemeColor("foreground"),
     overviewRulerLane: vscode.OverviewRulerLane.Right
 });
+function clearPlots() {
+    printResults = [];
+    updateOutputPanel();
+}
 function updateOutputPanel() {
     let out = "";
     printResults.forEach((row) => {
@@ -921,27 +958,7 @@ function updateOutputPanel() {
                 "</div>";
         }
     });
-    let vars = "";
-    let i = 0;
-    vars += `<vscode-data-grid id="varTable" generate-header="sticky" aria-label="With Sticky Header">
-    <vscode-data-grid-row row-type="header">
-        <vscode-data-grid-cell cell-type="columnheader" grid-column="1">Name</vscode-data-grid-cell>
-        <vscode-data-grid-cell cell-type="columnheader" grid-column="2">Value</vscode-data-grid-cell>
-    </vscode-data-grid-row>`;
-    Object.keys(variableTable).forEach(k => {
-        // if (i % 2 === 0) {
-        //     vars += "<tr><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + k + "</td><td style='background:var(--vscode-editor-foreground) !important; color:var(--vscode-editor-background) !important;'>" + variableTable[k] + "</td></tr>\n"
-        // } else {
-        //     vars += "<tr><td>" + k + "</td><td>" + variableTable[k] + "</td></tr>\n"
-        // }
-        vars += `<vscode-data-grid-row>
-        <vscode-data-grid-cell grid-column="1">${k}</vscode-data-grid-cell>
-        <vscode-data-grid-cell grid-column="2">${variableTable[k]}</vscode-data-grid-cell>
-      </vscode-data-grid-row>`;
-    });
-    vars += "</vscode-data-grid>";
-    outputPanel === null || outputPanel === void 0 ? void 0 : outputPanel.webview.postMessage({ text: out, vars: (vars) });
-    plotsPanel === null || plotsPanel === void 0 ? void 0 : plotsPanel.webview.postMessage({ text: out, vars: (vars) });
+    plotsProvider.updateView(out);
 }
 let console_outputs = [];
 let socketsClosed = 0;

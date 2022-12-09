@@ -82,13 +82,13 @@ transforms[output_]:=Module[{f, txt},
 			WriteString[f,
 				ReplaceAll[
 					"<img src=\"data:image/png;base64," <> 
-					(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
+					(ExportString[(output ), {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
 					"\" />", {
 					List[] -> "{}"
 				}]
 			];,
 
-			Quantity[7, "Seconds"],
+			Quantity[5, "Seconds"],
 			WriteString[f, "The output is too large. Try to export it instead."]
 		];
 
