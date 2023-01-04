@@ -1,9 +1,13 @@
+(* ::Package:: *)
 
 BeginPackage["WolframKernel`"];
 (* Kernel Start Section *)
 $HistoryLength = 100;
+
+
 (* ::Package:: *)
-$MessagePrePrint = (ToString[#, InputForm, TotalWidth->100, CharacterEncoding->"ASCII"] &);
+(**)
+
 
 sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
@@ -24,7 +28,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
 
-(* $MessagePrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>];) &); *)
+$MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); 
 (* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
 
 
@@ -101,8 +105,8 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
 $timeout = Now;
+Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

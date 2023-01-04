@@ -82,7 +82,7 @@ handleMessage[msg_Association, state_, client_]:=Module[{},
 	{"Continue", state}
 ];
 
-ReadMessages[x_]:={"Continue", "Continue"};
+ReadMessages[_]:={"Continue", "Continue"};
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,{}}, msgs:{__Association}}]:=msgs;
 ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
@@ -100,14 +100,14 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
-handlerWait = 0.02;
+handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
 $timeout = Now;
+Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+Get[DirectoryName[path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-	Get[DirectoryName[path] <> "file-transforms.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&

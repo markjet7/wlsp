@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.34",
+    "version": "0.0.40",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -254,14 +254,6 @@
                 "title": "Wolfram: Restart"
             },
             {
-                "command": "wolfram.showOutput",
-                "title": "Wolfram: Show Output Panel"
-            },
-            {
-                "command": "wolfram.showPlots",
-                "title": "Wolfram: Show Plots Panel"
-            },
-            {
                 "command": "wolfram.clearResults",
                 "title": "Wolfram: Clear Results"
             },
@@ -354,44 +346,29 @@
                     "icon": "media/wolf-logo.svg"
                 }
             ],
-            "panel": [
-                {
-                    "id": "wolfram-variable-table",
-                    "title": "Wolfram",
-                    "icon": "media/wolf-logo.svg"
-                },
-            
-                {
-                    "id": "wolfram-plots-view",
-                    "title": "Wolfram",
-                    "icon": "media/wolf-logo.svg"
-                }]
+            "panel": []
         },
         "views": {
             "wolfram-workspace-explorer": [
                 {
-                    "id": "wolframSymbols",
-                    "name": "Symbols",
+                    "id": "wolfram.plotsView",
+                    "type":"webview",
+                    "name": "WLSP Output",
                     "icon": "",
-                    "contextualTitle": "Symbols"
-                }
-            ],
-            "wolfram-variable-table": [
+                    "contextualTitle": "WLSP Output"
+                },
                 {
                     "id": "wolfram.dataView",
                     "type":"webview",
-                    "name": "Variables",
+                    "name": "WLSP Variables",
                     "icon": "",
-                    "contextualTitle": "Variables"
-                }
-            ],
-            "wolfram-plots-view": [
+                    "contextualTitle": "WLSP Variables"
+                },
                 {
-                    "id": "wolfram.plotsView",
-                    "type":"webview",
-                    "name": "Plots",
+                    "id": "wolframSymbols",
+                    "name": "WLSP Symbols",
                     "icon": "",
-                    "contextualTitle": "Plots"
+                    "contextualTitle": "Symbols"
                 }
             ]
         }
@@ -416,6 +393,7 @@
         "webpack-cli": "^4.7.0"
     },
     "dependencies": {
+        "bson": "^4.4.0",
         "@types/socket.io": "^2.1.11",
         "@vscode/webview-ui-toolkit": "^0.8.1",
         "await-notify":"^1.0.1",

@@ -5,6 +5,7 @@ const vscode_1 = require("vscode");
 class DataViewProvider {
     constructor(_extensionUri0) {
         this._extensionUri0 = _extensionUri0;
+        this._vars = "";
         this._extensionUri = _extensionUri0;
     }
     resolveWebviewView(webviewView, context, _token) {
@@ -15,13 +16,23 @@ class DataViewProvider {
         };
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         this._view.show(true);
+        this._vars = "";
+        this._view.onDidChangeVisibility((e) => {
+            var _a, _b;
+            if ((_a = this._view) === null || _a === void 0 ? void 0 : _a.visible) {
+                (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ vars: (this._vars) });
+            }
+        });
+        this._view.onDidDispose(() => {
+            this._view = undefined;
+        }, null);
         return;
     }
     updateView(vars) {
         var _a;
+        this._vars = vars;
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ vars: (vars) });
         if (this._view) {
-            console.log("Getting data view");
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         }
         else {

@@ -10,6 +10,7 @@ import { Uri,
 export class DataViewProvider implements WebviewViewProvider {
     public _view?: WebviewView;
     private _extensionUri: Uri;
+    private _vars: string = "";
 
     public static readonly viewType = "wolfram.dataView";
 
@@ -26,13 +27,27 @@ export class DataViewProvider implements WebviewViewProvider {
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
 
         this._view.show(true)
+        this._vars = "";
+        this._view.onDidChangeVisibility((e) => {
+            if (this._view?.visible) {
+                this._view?.webview.postMessage({vars: (this._vars)})
+            }
+        })
+
+        this._view.onDidDispose(
+            () => {
+                this._view = undefined;
+            },
+            null
+        );
+        
         return
     }
 
     public updateView(vars:string) {
+        this._vars = vars;
         this._view?.webview.postMessage({vars: (vars)})
         if (this._view) {
-            console.log("Getting data view")
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         } else {
             console.log("No data view")

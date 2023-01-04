@@ -74,6 +74,14 @@ handle["initialize",json_]:=Module[{response, builtins},
 
 ];
 
+handle["initialized", json_]:=Module[{},
+	Print["Initialized"];
+];
+
+handle["DocumentSymbolRequest", json_]:=Module[{},
+	Print["ToDo: DocumentSymbolRequest"];
+];
+
 handle["workspace/symbol", json_]:=Module[{response},
 	symbol = json["params"]["query"];
 	AllSymbols = Import[symbolListFile, "RawJSON"];
@@ -218,29 +226,38 @@ handle["textDocument/references", json_]:=Module[{src, position, str, definition
 
 handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, result},
 
-
-	src = Check[documents[json["params"]["textDocument"]["uri"]], ""];
-	rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
-	colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
-	result = Map[
-		If[FailureQ@#,
-			Nothing,
-
-		<|
-			"range"-><|
-			"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
-			"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
-		|>,
-		"color"-><|
-			"red"->#[[3,1,1]],
-			"green"->#[[3,1,2]],
-			"blue"->#[[3,1,3]],
-			"alpha"->If[Length@#[[3,1]] >3, #[[3,1,4]] ,1]
-			|>
-		|>]&,
-	colors
+	If[!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
+		sendResponse[<|"id"->json["id"], "result" -> {} |>];
+		Return[]
 	];
-	sendResponse[<|"id"->json["id"], "result" -> result |>];
+
+	TimeConstrained[
+		src = Check[documents[json["params"]["textDocument"]["uri"]], ""];
+		rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
+		colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
+		result = Map[
+			If[FailureQ@#,
+				Nothing,
+
+			<|
+				"range"-><|
+				"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
+				"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
+			|>,
+			"color"-><|
+				"red"->#[[3,1,1]],
+				"green"->#[[3,1,2]],
+				"blue"->#[[3,1,3]],
+				"alpha"->If[Length@#[[3,1]] >3, #[[3,1,4]] ,1]
+				|>
+			|>]&,
+		colors
+		];
+		sendResponse[<|"id"->json["id"], "result" -> result |>];,
+
+		Quantity[0.1, "Seconds"],
+		sendResponse[<|"id"->json["id"], "result" -> {} |>];
+	]
 ];
 
 handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, result},
@@ -536,6 +553,7 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 ];
 
 handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
+	TimeConstrained[
 		src = documents[json["params","textDocument","uri"]];
 		pos = json["params","position"];
 		symbol = getWordAtPosition[src, pos] /. Null -> "";
@@ -569,11 +587,18 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 			result = <| "isIncomplete" -> True, "items" -> {}|>;
 		];
 		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-		sendResponse[response];
+		sendResponse[response];,
+
+		Quantity[5, "Seconds"],
+		(
+			response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> {}|>|>;
+			sendResponse[response];
+		)
+	]
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
-handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
+handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbol", json]=Module[{uri, text, funcs, defs, result, response, kind, ast},
 	Check[
 				(
 					kind[s_]:= Switch[
@@ -906,7 +931,7 @@ handle["openNotebook", json_]:=Module[{jupyterfile, response},
 ];
 
 handle["windowFocused", json_]:=Module[{},
-	If[json["params"],
+	If[First[json["params"], True],
 		handlerWait = 0.01,
 		handlerWait = 0.1
 	]
@@ -1314,57 +1339,61 @@ getCode[src_, range_]:=Module[{},
 
 (*
 handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind},
-		(
-			Print["documentSymbol"];
-			kind[s_]:= Switch[
-						ToExpression@s[[1]], 
-						Symbol, 13, 
-						Integer, 16, 
-						Real, 16,
-						Complex, 16,
-						Rational, 16,
-						List, 18,
-						Association, 23,
-						Function, 12, 
-						String, 15, 
-						_, 19];
+	TimeConstrained[(
+		Print["documentSymbol"];
+		kind[s_]:= Switch[
+					ToExpression@s[[1]], 
+					Symbol, 13, 
+					Integer, 16, 
+					Real, 16,
+					Complex, 16,
+					Rational, 16,
+					List, 18,
+					Association, 23,
+					Function, 12, 
+					String, 15, 
+					_, 19];
 
-			uri = json["params"]["textDocument"]["uri"];
-			src = documents[json["params", "textDocument", "uri"]];
-			functions = StringCases[src,Shortest[expr:(name:WordCharacter...~~"["~~Except["]"]...~~"]"~~Whitespace...~~(":="|"="))~~Except["="]]:>{name,expr}];
-			symbols = StringCases[src, Shortest[expr:(name:WordCharacter..~~Whitespace...~~(":="|"="))~~Except["="]]:>{name, expr}];
+		uri = json["params"]["textDocument"]["uri"];
+		src = documents[json["params", "textDocument", "uri"]];
+		functions = StringCases[src,Shortest[expr:(name:WordCharacter...~~"["~~Except["]"]...~~"]"~~Whitespace...~~(":="|"="))~~Except["="]]:>{name,expr}];
+		symbols = StringCases[src, Shortest[expr:(name:WordCharacter..~~Whitespace...~~(":="|"="))~~Except["="]]:>{name, expr}];
 
-			symbolsAndRanges=MapAt[StringReplace[{":"->"","="->""}],
-				DeleteDuplicates[Flatten[getWordsPosition[#[[2]],src]&/@Join[functions,symbols],1]],{All,1}];
-    
-			result = Table[
-				TimeConstrained[
-				<|
-					"name" -> s[[1]],
-					"kind" -> kind[s[[1]]],
-					"detail"-> Quiet[ToString@Definition[s[[1]]]],
-					"location"-><|
-						"uri"->uri,
-						"range"->s[[2]]
-						|>
-				|>, 0.05, 
-				<|
-					"name" -> s[[1]],
-					"kind" -> 19,
-					"detail"-> "",
-					"location"-><|
-						"uri"->uri,
-						"range"->s[[2]]
-						|>
-				|>, 2], {s, symbolsAndRanges}];
-				
+		symbolsAndRanges=MapAt[StringReplace[{":"->"","="->""}],
+			DeleteDuplicates[Flatten[getWordsPosition[#[[2]],src]&/@Join[functions,symbols],1]],{All,1}];
+
+		result = Table[
+			TimeConstrained[
+			<|
+				"name" -> s[[1]],
+				"kind" -> kind[s[[1]]],
+				"detail"-> Quiet[ToString@Definition[s[[1]]]],
+				"location"-><|
+					"uri"->uri,
+					"range"->s[[2]]
+					|>
+			|>, 0.05, 
+			<|
+				"name" -> s[[1]],
+				"kind" -> 19,
+				"detail"-> "",
+				"location"-><|
+					"uri"->uri,
+					"range"->s[[2]]
+					|>
+			|>, 2], {s, symbolsAndRanges}];
+			
 		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 		sendResponse[response];
 
 		AppendTo[labels, DeleteCases[(#[[2]] & /@ symbols), Null]];
 		AppendTo[labels, DeleteCases[(#[[2]] & /@ functions), Null]];
 		labels = DeleteDuplicates[labels];
-	)
+		),
+		Quantity[0.1, "Seconds"],
+		response = <|"id"->json["id"],"result"->{}|>;
+		sendResponse[response];
+	]
 ];
 
 *)

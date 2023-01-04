@@ -9,6 +9,7 @@ import { Uri,
 export class PlotsViewProvider implements WebviewViewProvider {
     public _view?: WebviewView;
     private _extensionUri: Uri;
+    private _text: string = "";
 
     public static readonly viewType = "wolfram.plotsView";
 
@@ -25,11 +26,29 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
 
         this._view.show(true)
+        this._text = "No plots yet... try running some code!"
+        this._view.onDidChangeVisibility((e) => {
+            if (this._view?.visible) {
+                this._view?.webview.postMessage({text: (this._text)})
+            }
+        })
+
+        this._view.onDidDispose(
+            () => {
+                this._view = undefined;
+            },
+            null
+        );
+        
         return
     }
 
+
+
     public updateView(out:string) {
+        this._text = out;
         this._view?.webview.postMessage({text: (out)})
+        
         if (this._view) {
             console.log("Getting data view")
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
@@ -188,6 +207,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         <body>
             <div class="outer">
                 <div class="inner" id='outputs'>
+                    <p>No plots yet... try running some code!</p>
                 </div>
             </div>
         </body>
@@ -350,6 +370,7 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
     <body>
         <div class="outer">
             <div class="inner" id='outputs'>
+                <p>No plots yet... try running some code!</p>
             </div>
         </div>
     </body>

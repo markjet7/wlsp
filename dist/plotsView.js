@@ -5,6 +5,7 @@ const vscode_1 = require("vscode");
 class PlotsViewProvider {
     constructor(_extensionUri0) {
         this._extensionUri0 = _extensionUri0;
+        this._text = "";
         this._extensionUri = _extensionUri0;
     }
     resolveWebviewView(webviewView, context, _token) {
@@ -15,10 +16,21 @@ class PlotsViewProvider {
         };
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         this._view.show(true);
+        this._text = "No plots yet... try running some code!";
+        this._view.onDidChangeVisibility((e) => {
+            var _a, _b;
+            if ((_a = this._view) === null || _a === void 0 ? void 0 : _a.visible) {
+                (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ text: (this._text) });
+            }
+        });
+        this._view.onDidDispose(() => {
+            this._view = undefined;
+        }, null);
         return;
     }
     updateView(out) {
         var _a;
+        this._text = out;
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out) });
         if (this._view) {
             console.log("Getting data view");
@@ -172,6 +184,7 @@ class PlotsViewProvider {
         <body>
             <div class="outer">
                 <div class="inner" id='outputs'>
+                    <p>No plots yet... try running some code!</p>
                 </div>
             </div>
         </body>
@@ -331,6 +344,7 @@ function showPlotPanel(webview, extensionUri) {
     <body>
         <div class="outer">
             <div class="inner" id='outputs'>
+                <p>No plots yet... try running some code!</p>
             </div>
         </div>
     </body>
