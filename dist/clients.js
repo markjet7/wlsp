@@ -96,6 +96,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.clearResults', clearResults);
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
         vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
+        vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);
@@ -253,9 +254,13 @@ function pulse() {
             });
         }
         else {
+            clearTimeout(pulseInterval);
             vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?", "Yes", "No").then((result) => {
                 if (result === "Yes") {
                     restart();
+                }
+                else {
+                    pulse();
                 }
             });
         }
@@ -985,6 +990,7 @@ function startWLSP(id) {
                 });
                 socket.on("close", () => {
                     outputChannel.appendLine("Client Socket closed");
+                    stopWolfram(undefined, wolfram);
                 });
                 socket.on('timeout', () => {
                     outputChannel.appendLine("Client Socket timeout");
@@ -1055,7 +1061,7 @@ function startWLSPKernel(id) {
                             reader: socket,
                             writer: socket
                         });
-                    }, 10);
+                    }, 100);
                 });
                 socket.on('error', function (err) {
                     outputChannel.appendLine("Kernel Socket error: " + err);
@@ -1080,6 +1086,7 @@ function startWLSPKernel(id) {
                 socket.on("close", () => {
                     outputChannel.appendLine(new Date().toLocaleTimeString());
                     outputChannel.appendLine("Kernel Socket closed");
+                    stopWolfram(undefined, wolframKernel);
                 });
                 socket.on('timeout', () => {
                     outputChannel.appendLine("Kernel Socket timeout");
@@ -1091,7 +1098,7 @@ function startWLSPKernel(id) {
                             reader: socket,
                             writer: socket
                         }),
-                            500;
+                            1000;
                     });
                 });
                 socket.on('drain', () => {
@@ -1100,7 +1107,7 @@ function startWLSPKernel(id) {
                 socket.on("end", () => {
                     outputChannel.appendLine("Kernel Socket end");
                     // attempt to revive the kernel
-                    restart();
+                    stopWolfram(undefined, wolframKernel);
                 });
                 fp(kernelPort).then(([freePort]) => {
                     kernelPort = freePort + id;
@@ -1131,11 +1138,12 @@ function startWLSPKernel(id) {
             setTimeout(() => {
                 let disposible;
                 // disposible = wolframKernelClient?.start();
-                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start();
-                outputChannel.appendLine("Kernel Started");
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then(() => {
+                    outputChannel.appendLine("Kernel Started");
+                    resolve();
+                });
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
-                resolve();
             }, 2000);
         }));
     });
@@ -1368,8 +1376,11 @@ function didOpenTextDocument(document) {
     }
     return;
 }
-function didSaveTextDocument(event) {
+function updateTreeDataProvider() {
     exports.treeDataProvider.refresh();
+}
+function didSaveTextDocument(event) {
+    // treeDataProvider.refresh();
     clearDecorations();
     didOpenTextDocument(event);
     return;

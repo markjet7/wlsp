@@ -1194,7 +1194,8 @@ async function startWLSP(id:number): Promise<void> {
             })
 
             socket.on("close", () => {
-                outputChannel.appendLine("Client Socket closed")    
+                outputChannel.appendLine("Client Socket closed")  
+                stopWolfram(undefined, wolfram); 
             });
 
             socket.on('timeout', () => {
@@ -1282,7 +1283,7 @@ async function startWLSPKernel(id:number): Promise<void> {
                         reader: socket,
                         writer: socket
                     })
-                }, 10)
+                }, 100)
             })
 
             socket.on('error', function (err:any) {
@@ -1308,7 +1309,8 @@ async function startWLSPKernel(id:number): Promise<void> {
 
             socket.on("close", () => {
                 outputChannel.appendLine(new Date().toLocaleTimeString())
-                outputChannel.appendLine("Kernel Socket closed")    
+                outputChannel.appendLine("Kernel Socket closed")  
+                stopWolfram(undefined, wolframKernel)  
             });
 
             socket.on('timeout', () => {
@@ -1322,7 +1324,7 @@ async function startWLSPKernel(id:number): Promise<void> {
                         reader: socket,
                         writer: socket
                     }),
-                    500
+                    1000
                 })
             })
 
@@ -1334,7 +1336,7 @@ async function startWLSPKernel(id:number): Promise<void> {
             socket.on("end", () => {
                 outputChannel.appendLine("Kernel Socket end");
                 // attempt to revive the kernel
-                restart()
+                stopWolfram(undefined, wolframKernel)  
             })
                  
 
@@ -1372,11 +1374,12 @@ async function startWLSPKernel(id:number): Promise<void> {
         setTimeout(() => {
             let disposible: vscode.Disposable |undefined;
             // disposible = wolframKernelClient?.start();
-            wolframKernelClient?.start();
-            outputChannel.appendLine("Kernel Started")
+            wolframKernelClient?.start().then(() => {
+                outputChannel.appendLine("Kernel Started")
+                resolve()
+            });
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
-            resolve()
         }, 2000)
         
     });
