@@ -149,7 +149,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Echo[Check[getCode[src, range], ""]];
+		code = Check[getCode[src, range], ""];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 
 		(* Add the evaluation to the evaluation queue *)
@@ -163,13 +163,14 @@ resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
 Inputs = {};
 Outputs = {};
-evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack, hoverMessage},
+evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack, hoverMessage, file},
 	$busy = True;
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
 	string = code2["code"];
+	On[First::normal];
 
 	Which[
 		string == "",
@@ -184,7 +185,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
-		AppendTo[Inputs, string];
+		(* AppendTo[Inputs, string]; *)
 		output = CheckAbort[
 			If[json["params", "output"],
 				transforms@ReleaseHold[r["Result"]],
@@ -205,12 +206,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {CheckAbort[ReleaseHold[r["Result"]], "Aborted on result"], r["Success"], r["Result"]}};
 	ans = result;
-	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
+	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] === 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
-									ExportString[Rasterize@Short[CheckAbort[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
-									"\" style=\"max-height:190px;max-width:190px\" />", "-Error-"], 
-									Quantity[10, "Seconds"],
+									ExportString[Rasterize@Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
+									"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
+									Quantity[3, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
@@ -218,12 +219,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		<|
 		"id" -> json["id"],
 		"result" -> <|
-			"output"-> ToString[output, InputForm, TotalWidth->maxWidth], 
+			"output"-> ToString[output, InputForm], 
 			"load" -> If[json["params", "output"], True, False],
-			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm], 
 			"position"-> newPosition,
 			"print" -> False,
-			"hover" -> hoverMessage,
+			"hover" -> StringTake[hoverMessage, UpTo[100]]
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" ->  ""|>,
@@ -231,25 +232,24 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"input" -> string,
 			"output"-> ExportString[output, "JSON"],  
 			"load" -> If[json["params", "output"], True, False],
-			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm, TotalWidth -> maxWidth], 
+			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm], 
 			"position"-> newPosition,
 			"print" -> False,
-			"hover" -> hoverMessage,
+			"hover" -> StringTake[hoverMessage, UpTo[100]],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" ->  ""|>
 		|>,
-
 		<|
 		"method"->"onRunInWolfram", 
 		"params"-><|
 			"input" -> string,
 			"output"-> output,  
 			"load" -> If[json["params", "output"], True, False],
-			"result"-> ToString[result, InputForm, TotalWidth -> maxWidth, CharacterEncoding -> "ASCII"], 
+			"result"-> ToString[result, InputForm, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
-			"hover" -> hoverMessage,
+			"hover" -> StringTake[hoverMessage, UpTo[100]],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" -> json["params", "textDocument"]["uri"]
@@ -257,9 +257,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		|>
 	];
 	evalnumber = evalnumber + 1;
-
 	file = CreateFile[];
-	Check[WriteString[file, ExportString[response, "JSON"]], Print["Error saving result"]];
+	Check[BinaryWrite[file, ExportString[response, "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
 		sendResponse[<|"id"->json["id"], "params" -> <|
 		"input" -> StringReplace[string, {"\\n"->"<br>"}],
@@ -280,7 +279,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 									Check["<img src=\"data:image/png;base64," <> 
 									ExportString[Rasterize@Short[Check[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
 									"\" style=\"max-height:190px\" />", "-Error-"], 
-									Quantity[5, "Seconds"],
+									Quantity[2, "Seconds"],
 									"Large output"],
 					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
 
@@ -295,7 +294,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 						"contentText" -> "> " <> 
 							ToString@time <> 
 							"s: " <> 
-							ToString[result /. Null ->"-", InputForm, TotalWidth->500, CharacterEncoding -> "ASCII"],
+							ToString[output /. Null ->"-", InputForm, TotalWidth->500, CharacterEncoding -> "ASCII"],
 						"backgroundColor" -> If[Length[r["FormattedMessages"]] == 0,"editor.background", "red"],
 						"foregroundColor" -> "editor.foreground",
 						"margin" -> "0 0 0 10px",
@@ -356,7 +355,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	(* values = Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->1500], {v, Names["Global`*"]}];*)
 
 	Check[
-		Export[varTableFile, values, "JSON"],
+		Export[varTableFile, values, "UBJSON"],
 		Print["Error saving variables"]
 	];
 
@@ -365,7 +364,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	sendResponse[
 		result
 	]; 
-
 	$busy = False;
 	(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
 ];
@@ -544,7 +542,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			Return[]
 		];
 		value = TimeConstrained[
-			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" height=\"190px\" />", 
+			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
 			Quantity[5, "Seconds"],
 			"Large output"];
 
@@ -743,8 +741,18 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr}, 
-		$res = EvaluationData[ToExpression[string]];
+evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
+        Begin["VSCode`"];
+			CheckAbort[
+				$res = EvaluationData[ToExpression[string]],
+				$res = <|"Result" :> "Failed", "Success" -> False, "FailureType" -> None, 
+						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
+						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
+						"AbsoluteTiming" -> 0.`, 
+						"InputString" :> string|> 
+			];
+			If[$res["Result"] === Null, $res["Result"] = $res["Result"] /. Null -> "null", Null];
+		End[];
 		If[
 			$res["Success"], 
 			(
@@ -786,18 +794,10 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 				*)
 
-				$res["FormattedMessages"] = {};
-				$res["Result"] = Column[
-					Prepend[
-						Map[
-							TimeConstrained[
-								Rasterize[#, Background->RGBColor[1., 0.21, 0.21, 0.18], ImageSize->8*72],
-								2,
-								"Large error message generated"] &, 
-							Take[$res["MessagesText"], UpTo[5]]],
-						$res["Result"]],
-					Dividers -> All
-				];
+				$res["FormattedMessages"] = Take[$res["MessagesText"], UpTo[5]];
+
+				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
+					"message" -> StringTake[StringRiffle[$res["FormattedMessages"], "\n"], UpTo[1000]]|>|>];
 
 				$res
 			)
@@ -870,7 +870,6 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 
 		tree = CodeParse[src]; 
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
-		
 		call = First[Cases[tree, 
 			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
 			{2}], {}];
@@ -886,7 +885,6 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 
 			<|"code"->If[Head@str === String, StringTrim[str], "\"Failed\""], "range"->call[[-1]][Source]|>
 		];
-		
 		result1
 ];
 
@@ -929,8 +927,6 @@ getFunctionAtPosition[src_, position_]:=Module[{symbol, p},
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = StringTrim@srcLines[[position["line"]+1]];
-
-
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
 		IntervalMemberQ[Interval[First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]+1] &], ""];
 	

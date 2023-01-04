@@ -59,12 +59,11 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
-
-		TimeConstrained[
-			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]) && (ByteCount[output] < 1000000),
-				WriteString[f, 
+		
+			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]),
+				BinaryWrite[f, 
 						ExportString[
-							ToString[output, InputForm, TotalWidth -> 2000],
+							ToString[output, InputForm, TotalWidth -> 3500],
 							"HTMLFragment",
 							"GraphicsOutput"->"JPEG",
 							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
@@ -74,23 +73,17 @@ transforms[output_]:=Module[{f, txt},
 			];
 
 			If[output === Null,
-				WriteString[f, ""];
+				BinaryWrite[f, ""];
 				Close[f];
 				Return[f];
 			];
 			
-			WriteString[f,
-				ReplaceAll[
-					"<img src=\"data:image/png;base64," <> 
-					(ExportString[output, {"Base64", "PNG"}] /. $Failed -> ExportString[Rasterize@"Failed", {"Base64", "PNG"}]) <>
-					"\" />", {
-					List[] -> "{}"
-				}]
-			];,
-
-			Quantity[10, "Seconds"],
-			WriteString[f, "output is too large"]
-		];
+			
+			BinaryWrite[f,
+				"<img src=\"data:image/png;base64," <> 
+				(ExportString[(Rasterize@Short[output, 50]), {"Base64", "PNG"}]) <>
+				"\" />"
+			];
 
 		Close[f];
 		Return[f]

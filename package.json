@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.33",
+    "version": "0.0.40",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -230,6 +230,10 @@
                 "title": "Wolfram: Print"
             },
             {
+                "command": "wolfram.clearPlots",
+                "title": "Wolfram: Clear Plots"
+            },
+            {
                 "command": "wolfram.abort",
                 "title": "Wolfram: Abort current computation"
             },
@@ -248,14 +252,6 @@
             {
                 "command": "wolfram.restart",
                 "title": "Wolfram: Restart"
-            },
-            {
-                "command": "wolfram.showOutput",
-                "title": "Wolfram: Show Output Panel"
-            },
-            {
-                "command": "wolfram.showPlots",
-                "title": "Wolfram: Show Plots Panel"
             },
             {
                 "command": "wolfram.clearResults",
@@ -349,13 +345,28 @@
                     "title": "Wolfram",
                     "icon": "media/wolf-logo.svg"
                 }
-            ]
+            ],
+            "panel": []
         },
         "views": {
             "wolfram-workspace-explorer": [
                 {
+                    "id": "wolfram.plotsView",
+                    "type":"webview",
+                    "name": "WLSP Output",
+                    "icon": "",
+                    "contextualTitle": "WLSP Output"
+                },
+                {
+                    "id": "wolfram.dataView",
+                    "type":"webview",
+                    "name": "WLSP Variables",
+                    "icon": "",
+                    "contextualTitle": "WLSP Variables"
+                },
+                {
                     "id": "wolframSymbols",
-                    "name": "Symbols",
+                    "name": "WLSP Symbols",
                     "icon": "",
                     "contextualTitle": "Symbols"
                 }
@@ -382,6 +393,7 @@
         "webpack-cli": "^4.7.0"
     },
     "dependencies": {
+        "bson": "^4.4.0",
         "@types/socket.io": "^2.1.11",
         "@vscode/webview-ui-toolkit": "^0.8.1",
         "await-notify":"^1.0.1",
