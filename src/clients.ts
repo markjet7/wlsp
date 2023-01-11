@@ -22,6 +22,8 @@ import {WolframDebugConfigProvider, WolframDebugAdapterDescriptorFactory} from '
 
 let wolframStatusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
+let progressStatus:any;
+
 const fs = require('fs')
 import { WolframScriptSerializer, WolframNotebookSerializer } from './notebook';
 import { WolframNotebookController } from './notebookController';
@@ -353,16 +355,21 @@ function pulse() {
         resolve("true")
     })).then(
         (a:any) => {
-            setTimeout(pulse, 10000)
+            setTimeout(pulse, 1000*60*10)
         }
     ).catch(error => {
+        console.log(error)
         outputChannel.appendLine("ping failed")
+
         vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
                 "Yes", "No").then((result) => {
                     if (result === "Yes") {
                         restart()
+                    } 
+                    if (result === "No") {
+                        setTimeout(pulse, 1000*60*10)
                     } else {
-                        pulse()
+                        
                     }
                 })
     })
@@ -681,7 +688,10 @@ function runInWolfram(printOutput = false, trace=false) {
 
     // showPlots();
 
-    if (!wolframKernelClient) {
+    // check if is undefined
+
+
+    if (typeof wolframKernelClient === 'undefined') {
         restart().then(() => {
             evaluationQueue.push(evaluationData);
             sendToWolfram(printOutput);
@@ -729,7 +739,7 @@ function sendToWolfram(printOutput = false, sel:vscode.Selection|undefined = und
                 wolframBusyQ = true;
                 let evalNext = evaluationQueue.pop();
                 withProgressCancellation = new vscode.CancellationTokenSource();
-                vscode.window.withProgress({
+                progressStatus = vscode.window.withProgress({
                     location: vscode.ProgressLocation.Window,
                     title: "Wolfram (" + (evalNext.range.start.line + 1) + ")",  
                     cancellable: true
@@ -888,8 +898,11 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
                 let backgroundColor = "editor.background";
                 let hoverMessage = result["params"]["hover"];
-                if (hoverMessage.length > 8192) {
-                    hoverMessage = "Large output: " + hoverMessage.slice(0, 100) + "..."
+
+                // is <img> tags in hoverMessage string
+
+                if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
+                    hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "..."
                 }
                 if (result["params"]["messages"].length > 0) {
                     backgroundColor="red";

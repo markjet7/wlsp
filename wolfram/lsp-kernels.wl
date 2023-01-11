@@ -149,8 +149,11 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Check[getCode[src, range], ""];
-		newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
+		code = Check[getCode[src, range], <|"code"->"Failed", "range"-><|
+			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
+			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
+		|>|>];
+		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
 
 		(* Add the evaluation to the evaluation queue *)
 		evaluateFromQueue[code, json, newPosition];
@@ -170,7 +173,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
 	string = code2["code"];
-	On[First::normal];
 
 	Which[
 		string == "",
@@ -224,7 +226,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm], 
 			"position"-> newPosition,
 			"print" -> False,
-			"hover" -> StringTake[hoverMessage, UpTo[100]]
+			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" ->  ""|>,
@@ -235,7 +237,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result /. {Null ->"", "Null" -> ""}, InputForm], 
 			"position"-> newPosition,
 			"print" -> False,
-			"hover" -> StringTake[hoverMessage, UpTo[100]],
+			"hover" -> StringTake[hoverMessage, 1;;],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" ->  ""|>
@@ -249,7 +251,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"result"-> ToString[result, InputForm, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
-			"hover" -> StringTake[hoverMessage, UpTo[100]],
+			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
 			"document" -> json["params", "textDocument"]["uri"]
@@ -258,7 +260,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	];
 	evalnumber = evalnumber + 1;
 	file = CreateFile[];
-	Check[BinaryWrite[file, ExportString[response, "JSON"]], Print["Error saving result"]];
+	Check[BinaryWrite[file, ExportString[response , "JSON"]], Print["Error saving result"]];
 	If[KeyMemberQ[json, "id"],
 		sendResponse[<|"id"->json["id"], "params" -> <|
 		"input" -> StringReplace[string, {"\\n"->"<br>"}],
@@ -274,14 +276,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	decorationChar = code2["range"][[2, 2]];
 
 	If[!json["params", "print"],
-		hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
+		(* hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] == 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
 									ExportString[Rasterize@Short[Check[r["Result"], ""],7], {"Base64", "PNG"}, ImageSize->10*72] <> 
 									"\" style=\"max-height:190px\" />", "-Error-"], 
 									Quantity[2, "Seconds"],
 									"Large output"],
-					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
+					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]]; *)
 
 		decoration = 
 			<|
@@ -867,25 +869,33 @@ getCode[src_, range_]:=Module[{},
 
 (* getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1}, *)
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
-
+	Check[
 		tree = CodeParse[src]; 
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
-		call = First[Cases[tree, 
-			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
-			{2}], {}];
+
+		call = First[Cases[tree, ((x_LeafNode /; 
+			inCodeRangeQ[
+			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
+			pos]) | (x_CallNode /; 
+			inCodeRangeQ[
+			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
+			pos])), {2}], {}];
 
 
 		result1 = If[call === {},
-			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
+			<|"code"->"null", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
 			
-			str = Check[getStringAtRange[src, call[[-1]][Source]], ToFullFormString[call]] (* getStringAtRange[src, call[[-1]][Source]]*);
+			str = Check[getStringAtRange[src, FirstCase[call, <|Source -> s_, ___|> :> s, {{0, 0}, {0, 0}}, 1]], ToFullFormString[call]];
 			(* <|"code"->StringReplace[str, {
  				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
  				Shortest["(*" ~~ ___ ~~ "*)"] -> ""}], "range"->call[[-1]][Source]|> *)
 
-			<|"code"->If[Head@str === String, StringTrim[str], "\"Failed\""], "range"->call[[-1]][Source]|>
+			<|"code"->If[Head@str === String, StringTrim[str], "\"Failed\""], "range"->call[[3]][Source]|>
 		];
-		result1
+		result1,
+
+		<|"code"->"input error", "range"->{{pos["line"],0}, {pos["line"],0}}|>
+	]
 ];
 
 inCodeRangeQ[source_, pos_] := Module[{start, end},
@@ -934,6 +944,8 @@ getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 ];
 
 getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
+	If[range[[1]] == range[[2]], Return[""]];
+
 	sLines = StringSplit[string, EndOfLine, All];
 	sRanges= getSourceRanges[range];
 

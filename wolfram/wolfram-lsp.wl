@@ -66,7 +66,7 @@ logfile = DirectoryName[path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
-		handle[msg["method"],msg],
+		handle[Echo[msg["method"], "method"],msg],
 		(*Print["LSP error handling message"];
 		Export[logfile, msg];*)
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]

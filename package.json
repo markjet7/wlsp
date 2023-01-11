@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.40",
+    "version": "0.0.42",
     "engines": {
         "vscode": "^1.68.1"
     },
@@ -45,7 +45,7 @@
                     "default": "wolframscript",
                     "description": "Path to wolframscript executable"
                 },
-                "wlsp.abortOnError":{
+                "wlsp.abortOnError": {
                     "type": "boolean",
                     "description": "Abort on error",
                     "default": false
@@ -73,14 +73,14 @@
                         "fontStyle": "bold"
                     },
                     "parameter": {
-                       "fontStyle": "italic" 
+                        "fontStyle": "italic"
                     },
                     "variable.definition": {
-                      "fontStyle": "bold"
+                        "fontStyle": "bold"
                     },
-                    "variable":{},
+                    "variable": {},
                     "variable.declaration": {
-                    "fontStyle": "bold"
+                        "fontStyle": "bold"
                     }
                 }
             }
@@ -138,22 +138,22 @@
                 "languages": [
                     "wolfram"
                 ],
-                "configurationAttributes":{
+                "configurationAttributes": {
                     "attach": {
                         "required": [
                             "program"
                         ],
                         "properties": {
-							"program": {
-								"type": "string",
-								"description": "Absolute path to a text file.",
-								"default": "${file}"
-							},
-							"stopOnEntry": {
-								"type": "boolean",
-								"description": "Automatically stop after launch.",
-								"default": true
-							},
+                            "program": {
+                                "type": "string",
+                                "description": "Absolute path to a text file.",
+                                "default": "${file}"
+                            },
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Automatically stop after launch.",
+                                "default": true
+                            },
                             "trace": {
                                 "type": "boolean",
                                 "description": "Enable logging of the Debug Adapter Protocol.",
@@ -171,7 +171,7 @@
                         "stopOnEntry": true
                     }
                 ],
-                "configurationSnippets": [	
+                "configurationSnippets": [
                     {
                         "label": "Wolfram Debug Adapter: Attach",
                         "description": "Attach current workspace to a wolfram kernel session.",
@@ -183,7 +183,7 @@
                             "stopOnEntry": true
                         }
                     }
-				]
+                ]
             }
         ],
         "snippets": [
@@ -352,14 +352,14 @@
             "wolfram-workspace-explorer": [
                 {
                     "id": "wolfram.plotsView",
-                    "type":"webview",
+                    "type": "webview",
                     "name": "WLSP Output",
                     "icon": "",
                     "contextualTitle": "WLSP Output"
                 },
                 {
                     "id": "wolfram.dataView",
-                    "type":"webview",
+                    "type": "webview",
                     "name": "WLSP Variables",
                     "icon": "",
                     "contextualTitle": "WLSP Variables"
@@ -383,7 +383,7 @@
         "@typescript-eslint/parser": "^2.30.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
-        "mocha": "^7.1.2",
+        "mocha": "^10.2.0",
         "tmp": "0.2.1",
         "ts-loader": "^8.1.0",
         "typescript": "^3.9.7",
@@ -393,11 +393,11 @@
         "webpack-cli": "^4.7.0"
     },
     "dependencies": {
-        "bson": "^4.4.0",
         "@types/socket.io": "^2.1.11",
         "@vscode/webview-ui-toolkit": "^0.8.1",
-        "await-notify":"^1.0.1",
         "abort-controller": "^3.0.0",
+        "await-notify": "^1.0.1",
+        "bson": "^4.4.0",
         "find-free-port": "^2.0.0",
         "open": "7.1.0",
         "ps-tree": "^1.2.0",
@@ -405,11 +405,11 @@
         "tmp": "0.2.1",
         "tsun": "^0.5.0",
         "vsce": "^2.11.0",
+        "vscode-debugadapter": "^1.51.0",
         "vscode-jsonrpc": "^5.0.1",
         "vscode-languageclient": "^8.0.1",
         "vscode-languageserver": "^8.0.1",
         "vscode-languageserver-textdocument": "1.0.1",
-        "vscode-debugadapter": "^1.51.0",
         "vscode-textmate": "^5.2.0"
     },
     "scripts": {

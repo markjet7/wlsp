@@ -320,10 +320,10 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, as
 
 	{prev, next} = Last[BlockMap[Function[{f12} , (
 			If[
-    			And[(f12[[1, -1]][Source][[1, 1]]-1 <= range[["start", "line"]]), range[["start", "line"]] <= f12[[2, -1]][Source][[1, 1]]-1],
+    			And[(f12[[1, 3]][Source][[1, 1]]-1 <= range[["start", "line"]]), range[["start", "line"]] <= f12[[2, 3]][Source][[1, 1]]-1],
 				{
-					f12[[1, -1]][Source], 
-					f12[[2, -1]][Source][[1, 1]]-1
+					f12[[1, 3]][Source], 
+					f12[[2, 3]][Source][[1, 1]]-1
 				},
    				Nothing
    			])], 
@@ -395,6 +395,13 @@ getSections[src_, sectionPattern_]:=Module[{},
 ];
 
 handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
+
+	If[
+		!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
+		sendResponse[<|"id"->json["id"], "result"->{}|>];
+		Return[];
+	];
+
 	If[
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];,
@@ -468,7 +475,6 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 				];,
 				lens = {}
 			];
-			
 			sendResponse[<|"id"->json["id"], "result"->lens|>];,
 		sendResponse[<|"id"->json["id"], "result"->{}|>];]
 	];
@@ -667,14 +673,17 @@ updateCursorLocations[json_]:=Module[{src, ast, functions, l},
 		_LeafNode
 	),{2}];
 
-	locations = Table[
-		l = Last[f, <|Source -> {{1,1}, {1,1}}|>][Source];
+	locations = DeleteCases[Table[
+		l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
 		<|
 			"start" -> <|"line"->l[[1,1]]-1, "character" -> l[[1,2]]-1|>,
 			"end" -> <|"line"->l[[2,1]]-1, "character" -> l[[2,2]]-1|> 
 		|>,
 		{f, functions}
-	];
+	], <|
+			"start" -> <|"line"->-1, "character" -> -1|>,
+			"end" -> <|"line"->-1, "character" -> -1|> 
+		|>];
 	Export[cursorLocationsFile, locations, "JSON"];
 ];
 
@@ -1142,12 +1151,12 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1},
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 		
 		call = First[Cases[tree, 
-			((x_LeafNode/;inCodeRangeQ[x[[-1]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[-1]][Source], pos])),
+			((x_LeafNode/;inCodeRangeQ[x[[3]][Source], pos]) | (x_CallNode/;inCodeRangeQ[x[[3]][Source], pos])),
 			{2}], {}];
 		
 		result1 = If[call === {},
 			<|"code"->"", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
-			<|"code"->getStringAtRange[src, call[[-1]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[-1]][Source]|>
+			<|"code"->getStringAtRange[src, call[[3]][Source]+{{0, 0}, {0, 0}} ], "range"->call[[3]][Source]|>
 			
 		];
 		result1
@@ -1303,7 +1312,7 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 	f[node_]:=Module[{astStr,name,loc,kind,rhs},
 		astStr=ToFullFormString[node[[2,1]]];
 		name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
-		loc=node[[-1]][Source];
+		loc=FirstCase[node, <|Source -> x_, ___|> :> x, {{0,0},{0,0}}, 3];
 		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
 		kind=If[Head@rhs == CallNode,
 			rhs[[1,2]],

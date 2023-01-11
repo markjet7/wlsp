@@ -11,7 +11,7 @@ $HistoryLength = 100;
 
 sendResponse[res_Association]:=Module[{byteResponse},
 	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		byteResponse = constructRPCBytes[Prepend[Replace[res, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
 				If[Head[client] === SocketObject, 
@@ -28,7 +28,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
 
-$MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); 
+(* $MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); *)
 (* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
 
 
@@ -107,6 +107,7 @@ connected2 = False;
 $timeout = Now;
 Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
+Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&
