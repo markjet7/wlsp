@@ -135,6 +135,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.commands.registerCommand('wolfram.runInTerminal', runInTerminal);
     vscode.commands.registerCommand('wolfram.help', help);
     vscode.commands.registerCommand('wolfram.stringHelp', stringHelp);
+    vscode.commands.registerCommand('wolfram.wolframHelp', wolframHelp);
     vscode.commands.registerCommand('wolfram.restart', restart);
     vscode.commands.registerCommand('wolfram.abort', abort);
     vscode.commands.registerCommand('wolfram.textToSection', textToSection);
@@ -911,7 +912,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
                 let resultString = result["params"]["result"];
                 if (resultString.length > 8192) {
-                    resultString = "Large output: " + resultString.slice(0, 100) + "..."
+                    resultString = resultString.slice(0, 500) + "..." + resultString.slice(-500);
                 }
 
                 let startChar = e.document.lineAt(result["params"]["position"]["line"]-1).range.end.character;
@@ -1806,8 +1807,49 @@ function help() {
     `
 }
 
+function wolframHelp(url:string) {
+
+    let helpPanel = vscode.window.createWebviewPanel(
+        "wolframHelp",
+        "Wolfram Help",
+        2,
+        {
+            enableScripts: true,
+            retainContextWhenHidden: true
+        }
+    );
+
+    helpPanel.webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' ${url} 'unsafe-inline'">
+    
+    </head>
+    <body>
+        <span>
+            <input
+                action="action"
+                onclick="window.history.go(-1); return false;"
+                type="button"
+                value="Back"
+            />
+            <input
+                action="action"
+                onclick="window.history.forward(); return false;"
+                type="button"
+                value="Forward"
+            />
+        </span>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+    </body>
+    </html>
+    `
+}
+
 function stringHelp(string: string) {
     let url = "https://reference.wolfram.com/language/ref/" + string + ".html";
+
     let helpPanel = vscode.window.createWebviewPanel(
         "wolframHelp",
         "Wolfram Help",

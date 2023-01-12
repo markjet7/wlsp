@@ -761,9 +761,8 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 	];
 ];
 
-handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{position, v, uri, src, symbol, value, result, response},
+handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{position, v, uri, src, symbol, value, result, response, f},
 	Check[
-		f = CreateFile[];
 		position = json["params", "position"];
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
@@ -782,14 +781,14 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",
-				"value" -> Check["```wolfram\n" <> (value) <> "\n```", ""]
+				"value" -> Check["```wolfram\n" <> (value) <> "\n```", value]
 			|>
 		|>;
 
 		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 
-		response = <|"id"->json["id"], "result"->""|>;
+		response = <|"id"->json["id"], "result"->"-"|>;
 		sendResponse[response];
 		
 		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[symbol, InputForm, TotalWidth -> 250] |> |>];
@@ -1243,11 +1242,16 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
 
+	(*
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
 		IntervalMemberQ[
 		Interval[
-				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""];
+				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""]; 
+	*)
 	
+	word = StringTake[
+    	line,
+    	First@Nearest[StringPosition[line, TextWords[line]], {position["character"],position["character"]}]];
 	word
 ];
 

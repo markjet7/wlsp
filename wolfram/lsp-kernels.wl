@@ -214,8 +214,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 									ExportString[Rasterize@Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
 									"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
 									Quantity[3, "Seconds"],
-									"Large output"],
-					StringRiffle[Map[ToString[#, InputForm, TotalWidth -> 500] &, r["FormattedMessages"]], "\n"]];
+									ToString[Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],7], InputForm]
+									],
+					StringRiffle[Map[ToString[Short[#, 3], InputForm] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
 	response = If[KeyMemberQ[json, "id"],
 		<|
@@ -796,7 +797,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 				*)
 
-				$res["FormattedMessages"] = Take[$res["MessagesText"], UpTo[5]];
+				$res["FormattedMessages"] = Map[ToString[Short[#,4]] &, Take[$res["MessagesText"], UpTo[5]]];
 
 				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
 					"message" -> StringTake[StringRiffle[$res["FormattedMessages"], "\n"], UpTo[1000]]|>|>];

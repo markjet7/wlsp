@@ -6,7 +6,7 @@
 		},
 		"end":{
 			"line":0,
-			"character":208
+			"character":43
 		}
 	},
 	{
@@ -16,57 +16,7 @@
 		},
 		"end":{
 			"line":2,
-			"character":31
-		}
-	},
-	{
-		"start":{
-			"line":4,
-			"character":0
-		},
-		"end":{
-			"line":4,
-			"character":106
-		}
-	},
-	{
-		"start":{
-			"line":6,
-			"character":0
-		},
-		"end":{
-			"line":6,
-			"character":91
-		}
-	},
-	{
-		"start":{
-			"line":8,
-			"character":0
-		},
-		"end":{
-			"line":10,
-			"character":1
-		}
-	},
-	{
-		"start":{
-			"line":12,
-			"character":0
-		},
-		"end":{
-			"line":12,
-			"character":35
-		}
-	},
-	{
-		"start":{
-			"line":14,
-			"character":0
-		},
-		"end":{
-			"line":14,
-			"character":3
+			"character":24
 		}
 	}
 ]

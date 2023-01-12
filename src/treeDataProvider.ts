@@ -68,10 +68,21 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                 })
             
                 if (builtins.children?.length === 0){
+                    let doc:TreeItem = new TreeItem("Documentation Center");
+                    doc.command = {command: 'wolfram.wolframHelp', arguments: [
+                        "https://reference.wolfram.com/language/"
+                    ], title: 'Open'};
+
+                    let functionRepository:TreeItem = new TreeItem("Function Repository");
+                    functionRepository.command = {command: 'wolfram.wolframHelp', arguments: [
+                        "https://resources.wolframcloud.com/FunctionRepository/"
+                    ], title: 'Open'};
+
                     builtins = new TreeItem("Builtins",
+                    [doc, functionRepository].concat(
                         letters.map((letter:string) => {
                             return new TreeItem(letter, builtinsymbols.filter((item:TreeItem) => item.label?.toString().startsWith(letter)));})
-                        );
+                        ));
                     }
                 this.data = [builtins, workspace];
                 this._onDidChangeTreeData.fire();

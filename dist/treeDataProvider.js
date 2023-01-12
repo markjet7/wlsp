@@ -61,9 +61,17 @@ class workspaceSymbolProvider {
                         return item;
                     });
                     if (((_a = builtins.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
-                        builtins = new TreeItem("Builtins", letters.map((letter) => {
+                        let doc = new TreeItem("Documentation Center");
+                        doc.command = { command: 'wolfram.wolframHelp', arguments: [
+                                "https://reference.wolfram.com/language/"
+                            ], title: 'Open' };
+                        let functionRepository = new TreeItem("Function Repository");
+                        functionRepository.command = { command: 'wolfram.wolframHelp', arguments: [
+                                "https://resources.wolframcloud.com/FunctionRepository/"
+                            ], title: 'Open' };
+                        builtins = new TreeItem("Builtins", [doc, functionRepository].concat(letters.map((letter) => {
                             return new TreeItem(letter, builtinsymbols.filter((item) => { var _a; return (_a = item.label) === null || _a === void 0 ? void 0 : _a.toString().startsWith(letter); }));
-                        }));
+                        })));
                     }
                     this.data = [builtins, workspace];
                     this._onDidChangeTreeData.fire();
