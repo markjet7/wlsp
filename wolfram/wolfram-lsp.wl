@@ -108,6 +108,7 @@ $timeout = Now;
 Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 Get[DirectoryName[path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
+Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&

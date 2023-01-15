@@ -1,4 +1,4 @@
-    import * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import {treeDataProvider, wolframClient, wolframKernelClient} from './clients'
@@ -27,12 +27,26 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | void> = new vscode.EventEmitter<TreeItem | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
-    data: TreeItem[] = [new TreeItem("Symbols", [])];
+    data: TreeItem[] = [];
     cancelChildrenToken: vscode.CancellationToken | undefined = undefined;
 
     constructor() {
+
+
+        let doc:TreeItem = new TreeItem("Documentation Center");
+        doc.command = {command: 'wolfram.wolframHelp', arguments: [
+            "https://reference.wolfram.com/language/"
+        ], title: 'Open'};
+
+        let functionRepository:TreeItem = new TreeItem("Function Repository");
+        functionRepository.command = {command: 'wolfram.wolframHelp', arguments: [
+            "https://resources.wolframcloud.com/FunctionRepository/"
+        ], title: 'Open'}
+
         builtins = new TreeItem("Builtins", []);
         workspace = new TreeItem("Workspace", []);
+        this.data = [doc, functionRepository, builtins, workspace];
+        
         // this.getBuiltins();
         // this.getSymbols([]);
         // this.builtins new TreeItem("Builtins", []);
@@ -68,23 +82,24 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                 })
             
                 if (builtins.children?.length === 0){
-                    let doc:TreeItem = new TreeItem("Documentation Center");
-                    doc.command = {command: 'wolfram.wolframHelp', arguments: [
-                        "https://reference.wolfram.com/language/"
-                    ], title: 'Open'};
-
-                    let functionRepository:TreeItem = new TreeItem("Function Repository");
-                    functionRepository.command = {command: 'wolfram.wolframHelp', arguments: [
-                        "https://resources.wolframcloud.com/FunctionRepository/"
-                    ], title: 'Open'};
 
                     builtins = new TreeItem("Builtins",
-                    [doc, functionRepository].concat(
                         letters.map((letter:string) => {
                             return new TreeItem(letter, builtinsymbols.filter((item:TreeItem) => item.label?.toString().startsWith(letter)));})
-                        ));
+                        );
                     }
-                this.data = [builtins, workspace];
+
+                let doc:TreeItem = new TreeItem("Documentation Center");
+                doc.command = {command: 'wolfram.wolframHelp', arguments: [
+                    "https://reference.wolfram.com/language/"
+                ], title: 'Open'};
+
+                let functionRepository:TreeItem = new TreeItem("Function Repository");
+                functionRepository.command = {command: 'wolfram.wolframHelp', arguments: [
+                    "https://resources.wolframcloud.com/FunctionRepository/"
+                ], title: 'Open'}
+
+                this.data = [doc, functionRepository, builtins, workspace];
                 this._onDidChangeTreeData.fire();
                 });
             })

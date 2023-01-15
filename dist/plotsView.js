@@ -16,7 +16,7 @@ class PlotsViewProvider {
         };
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         this._view.show(true);
-        this._text = "No plots yet... try running some code!";
+        this._text = "In: ...";
         this._view.onDidChangeVisibility((e) => {
             var _a, _b;
             if ((_a = this._view) === null || _a === void 0 ? void 0 : _a.visible) {
@@ -184,7 +184,7 @@ class PlotsViewProvider {
         <body>
             <div class="outer">
                 <div class="inner" id='outputs'>
-                    <p>No plots yet... try running some code!</p>
+                    <p>In: ... </p>
                 </div>
             </div>
         </body>

@@ -670,7 +670,10 @@ function runInWolfram(printOutput = false, trace=false) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel: vscode.Selection = e!.selection;
 
-    e?.document.save();
+    //  is document untitiled?
+    if (!isUntitled(e?.document)){
+        e?.document.save();
+    }
 
 
     // let cursorMoved = false;
@@ -1282,7 +1285,7 @@ async function startWLSP(id:number): Promise<void> {
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             resolve()
-        }, 2000)
+        }, 1200)
 
     });
 }
@@ -1646,8 +1649,12 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
     })
 }
 
-function isUntitled(document:vscode.TextDocument) {
-    return (document.languageId === "wolfram" && document.uri.scheme === 'untitled')
+function isUntitled(document:vscode.TextDocument|undefined) {
+    if (document) {
+        return (document.languageId === "wolfram" && document.uri.scheme === 'untitled')
+    } else {
+        return false;
+    }
 }
 
 

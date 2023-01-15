@@ -26,7 +26,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
 
         this._view.show(true)
-        this._text = "No plots yet... try running some code!"
+        this._text = "In: ..."
         this._view.onDidChangeVisibility((e) => {
             if (this._view?.visible) {
                 this._view?.webview.postMessage({text: (this._text)})
@@ -207,7 +207,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         <body>
             <div class="outer">
                 <div class="inner" id='outputs'>
-                    <p>No plots yet... try running some code!</p>
+                    <p>In: ... </p>
                 </div>
             </div>
         </body>

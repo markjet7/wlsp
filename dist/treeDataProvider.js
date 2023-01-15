@@ -29,10 +29,19 @@ class workspaceSymbolProvider {
     constructor() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-        this.data = [new TreeItem("Symbols", [])];
+        this.data = [];
         this.cancelChildrenToken = undefined;
+        let doc = new TreeItem("Documentation Center");
+        doc.command = { command: 'wolfram.wolframHelp', arguments: [
+                "https://reference.wolfram.com/language/"
+            ], title: 'Open' };
+        let functionRepository = new TreeItem("Function Repository");
+        functionRepository.command = { command: 'wolfram.wolframHelp', arguments: [
+                "https://resources.wolframcloud.com/FunctionRepository/"
+            ], title: 'Open' };
         builtins = new TreeItem("Builtins", []);
         workspace = new TreeItem("Workspace", []);
+        this.data = [doc, functionRepository, builtins, workspace];
         // this.getBuiltins();
         // this.getSymbols([]);
         // this.builtins new TreeItem("Builtins", []);
@@ -61,19 +70,19 @@ class workspaceSymbolProvider {
                         return item;
                     });
                     if (((_a = builtins.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
-                        let doc = new TreeItem("Documentation Center");
-                        doc.command = { command: 'wolfram.wolframHelp', arguments: [
-                                "https://reference.wolfram.com/language/"
-                            ], title: 'Open' };
-                        let functionRepository = new TreeItem("Function Repository");
-                        functionRepository.command = { command: 'wolfram.wolframHelp', arguments: [
-                                "https://resources.wolframcloud.com/FunctionRepository/"
-                            ], title: 'Open' };
-                        builtins = new TreeItem("Builtins", [doc, functionRepository].concat(letters.map((letter) => {
+                        builtins = new TreeItem("Builtins", letters.map((letter) => {
                             return new TreeItem(letter, builtinsymbols.filter((item) => { var _a; return (_a = item.label) === null || _a === void 0 ? void 0 : _a.toString().startsWith(letter); }));
-                        })));
+                        }));
                     }
-                    this.data = [builtins, workspace];
+                    let doc = new TreeItem("Documentation Center");
+                    doc.command = { command: 'wolfram.wolframHelp', arguments: [
+                            "https://reference.wolfram.com/language/"
+                        ], title: 'Open' };
+                    let functionRepository = new TreeItem("Function Repository");
+                    functionRepository.command = { command: 'wolfram.wolframHelp', arguments: [
+                            "https://resources.wolframcloud.com/FunctionRepository/"
+                        ], title: 'Open' };
+                    this.data = [doc, functionRepository, builtins, workspace];
                     this._onDidChangeTreeData.fire();
                 });
             });

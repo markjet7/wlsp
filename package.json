@@ -370,7 +370,7 @@
                 },
                 {
                     "id": "wolframSymbols",
-                    "name": "WLSP Symbols",
+                    "name": "WLSP Help",
                     "icon": "",
                     "contextualTitle": "Symbols"
                 }

@@ -1053,7 +1053,7 @@ function startWLSP(id) {
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
-            }, 2000);
+            }, 1200);
         }));
     });
 }

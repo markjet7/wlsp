@@ -60,30 +60,41 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
 		
-			If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]),
-				BinaryWrite[f, 
-						ExportString[
-							ToString[output, InputForm, TotalWidth -> 3500],
-							"HTMLFragment",
-							"GraphicsOutput"->"JPEG",
-							"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
-				];
-				Close[f];
-				Return[f]
-			];
+		BinaryWrite[f, 
+				ExportString[
+					Rasterize@Short[Echo@output, 10],
+					"HTMLFragment",
+					"GraphicsOutput"->Automatic]
+		];
+		Close[f];
+		Return[f];
 
-			If[output === Null,
-				BinaryWrite[f, ""];
-				Close[f];
-				Return[f];
+
+		
+		If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]),
+			BinaryWrite[f, 
+					ExportString[
+						ToString[output, InputForm, TotalWidth -> 3500],
+						"HTMLFragment",
+						"GraphicsOutput"->"JPEG",
+						"XMLTransformationFunction"->(StringReplace[#, {"<" -> "&lt;", ">"->"&gt;"}] &)]
 			];
-			
-			
-			BinaryWrite[f,
-				"<img src=\"data:image/png;base64," <> 
-				(ExportString[(Rasterize@Short[output, 50]), {"Base64", "PNG"}]) <>
-				"\" />"
-			];
+			Close[f];
+			Return[f]
+		];
+
+		If[output === Null,
+			BinaryWrite[f, ""];
+			Close[f];
+			Return[f];
+		];
+		
+		
+		BinaryWrite[f,
+			"<img src=\"data:image/png;base64," <> 
+			(ExportString[(Rasterize@Short[output, 50]), {"Base64", "PNG"}]) <>
+			"\" />"
+		];
 
 		Close[f];
 		Return[f]

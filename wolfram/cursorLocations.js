@@ -6,17 +6,57 @@
 		},
 		"end":{
 			"line":0,
-			"character":43
+			"character":66
 		}
 	},
 	{
 		"start":{
-			"line":2,
+			"line":3,
 			"character":0
 		},
 		"end":{
-			"line":2,
+			"line":5,
+			"character":15
+		}
+	},
+	{
+		"start":{
+			"line":7,
+			"character":0
+		},
+		"end":{
+			"line":7,
+			"character":3
+		}
+	},
+	{
+		"start":{
+			"line":10,
+			"character":0
+		},
+		"end":{
+			"line":10,
 			"character":24
+		}
+	},
+	{
+		"start":{
+			"line":12,
+			"character":0
+		},
+		"end":{
+			"line":12,
+			"character":15
+		}
+	},
+	{
+		"start":{
+			"line":15,
+			"character":0
+		},
+		"end":{
+			"line":15,
+			"character":4
 		}
 	}
 ]

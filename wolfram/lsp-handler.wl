@@ -28,7 +28,7 @@ ServerCapabilities=<|
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"foldingRangeProvider" -> False, (* True*)
 	"documentFormattingProvider" -> True,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {".", "\\"}, "allCommitCharacters" -> {"]"}|> ,
+	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"@"}, "allCommitCharacters" -> {"["}|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
@@ -540,7 +540,7 @@ handle["textDocument/codeAction", json_]:=Module[{},
 ];
 
 handle["completionItem/resolve", json_] := Module[{item, documentation, result, response}, 
-	item = json["params"];
+	item = Echo@json["params"];
 	(* If[
 		MemberQ[COMPLETIONS[[All, "label"]], item["label"]],
 		documentation = DETAILS[item["label"]]["documentation"] (*ToString[DETAILS[[SelectFirst[COMPLETIONS, #["label"] == item["label"] &]["data"]+1]]["documentation"]] *),
@@ -559,48 +559,58 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 ];
 
 handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
-	TimeConstrained[
-		src = documents[json["params","textDocument","uri"]];
-		pos = json["params","position"];
-		symbol = getWordAtPosition[src, pos] /. Null -> "";
-		If[StringLength@symbol >= 2, 
-			ast = CodeParse[src];
-			keys = Cases[ast,
-				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
-				Infinity
-			];
-			If[Join[keys, labels] === {},
-				response = <|"id"->json["id"],"result"->{}|>;
-				sendResponse[response];
-				Return[]
-		 	];
+		TimeConstrained[
+			src = documents[json["params","textDocument","uri"]];
+			pos = json["params","position"];
+			symbol = getWordAtPosition[src, pos] /. Null -> "";
+			If[StringLength@symbol >= 1, 
+				ast = CodeParse[src];
+				keys = Cases[ast,
+					CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
+					Infinity
+				];
 
-			names = Select[Join[keys,labels], SmithWatermanSimilarity[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 20];
-			items = Table[
+				(* SmithWatermanSimilarity *)
+				(*names = Select[Join[keys,labels], EditDistance[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 15]; *)
+
+				(* names = Nearest[Select[Join[keys,labels], StringLength@#>3&], symbol,20,DistanceFunction-> (EditDistance[#1,#2, IgnoreCase->True] &)]; *)
+
+				names = PadRight[Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&],
+					20,
+					Select[Join[keys,labels],EditDistance[ StringTake[#, UpTo[StringLength@symbol]],symbol,IgnoreCase->True] <=2&]];
+
+				items = Table[
+						<|
+							"label" -> ToString[n, InputForm],
+							"kind" -> If[ValueQ@n, 12, 13],
+							"commitCharacters" -> {"[", "\t"},
+							"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
+						|>, 
+						{n,names}];
+				
+				result = <|
+					"items" -> items,
+					"isIncomplete" -> True
+					|>;,
+
+				result = <| "isIncomplete" -> True, "items" -> {
 					<|
-						"label" -> n,
-						"kind" -> If[ValueQ@n, 12, 13],
+						"label" -> "...",
+						"kind" -> 12,
 						"commitCharacters" -> {"[", "\t"},
-						"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
-					|>, 
-					{n,names}];
-			
-			result = <|
-				"items" -> items,
-				"isIncomplete" -> True
-				|>;,
+						"detail" -> "Waiting for more input..."
+					|>
+				}|>;
+			];
+			response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
+			sendResponse[response];,
 
-			result = <| "isIncomplete" -> True, "items" -> {}|>;
-		];
-		response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-		sendResponse[response];,
-
-		Quantity[5, "Seconds"],
-		(
-			response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> {}|>|>;
-			sendResponse[response];
-		)
-	]
+			Quantity[5, "Seconds"],
+			(
+				response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> {}|>|>;
+				sendResponse[response];
+			)
+		]
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
@@ -1240,8 +1250,8 @@ getWordAtPosition[_,_]:="";
 getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 
 	srcLines =StringSplit[src, EndOfLine, All];
-	line = Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
-
+	line = StringTrim@Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
+	If[line === "", Return[""]];
 	(*
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
 		IntervalMemberQ[
@@ -1249,9 +1259,12 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""]; 
 	*)
 	
-	word = StringTake[
-    	line,
-    	First@Nearest[StringPosition[line, TextWords[line]], {position["character"],position["character"]}]];
+	word=StringTake[line,
+		Replace[
+			First@Nearest[
+				StringPosition[line,TextWords[line]],
+				{position["character"],position["character"]}],
+			Rule[{},{0,0}]]];
 	word
 ];
 

@@ -211,9 +211,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	hoverMessage = If[Or[!KeyExistsQ[r, "FormattedMessages"], Length@r["FormattedMessages"] === 0], 
 								TimeConstrained[
 									Check["<img src=\"data:image/png;base64," <> 
-									ExportString[Rasterize@Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],7], {"Base64", "PNG"}, ImageSize->8*72] <> 
+									ExportString[Rasterize@Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],10], {"Base64", "PNG"}, ImageSize->8*72] <> 
 									"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
-									Quantity[3, "Seconds"],
+									Quantity[10, "Seconds"],
 									ToString[Short[CheckAbort[ReleaseHold[r["Result"]], "Error"],7], InputForm]
 									],
 					StringRiffle[Map[ToString[Short[#, 3], InputForm] &, r["FormattedMessages"]], "\n"]];
