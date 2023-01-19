@@ -540,7 +540,10 @@ let inputs = [];
 function runInWolfram(printOutput = false, trace = false) {
     let e = vscode.window.activeTextEditor;
     let sel = e.selection;
-    e === null || e === void 0 ? void 0 : e.document.save();
+    //  is document untitiled?
+    if (!isUntitled(e === null || e === void 0 ? void 0 : e.document)) {
+        e === null || e === void 0 ? void 0 : e.document.save();
+    }
     // let cursorMoved = false;
     // vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
     //     cursorMoved = true;
@@ -1363,7 +1366,12 @@ function didChangeTextDocument(event) {
     });
 }
 function isUntitled(document) {
-    return (document.languageId === "wolfram" && document.uri.scheme === 'untitled');
+    if (document) {
+        return (document.languageId === "wolfram" && document.uri.scheme === 'untitled');
+    }
+    else {
+        return false;
+    }
 }
 let totalClients = 0;
 function didOpenTextDocument(document) {

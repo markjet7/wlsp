@@ -581,7 +581,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 
 				items = Table[
 						<|
-							"label" -> ToString[n, InputForm],
+							"label" -> n,
 							"kind" -> If[ValueQ@n, 12, 13],
 							"commitCharacters" -> {"[", "\t"},
 							"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
