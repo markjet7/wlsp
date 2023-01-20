@@ -540,7 +540,7 @@ handle["textDocument/codeAction", json_]:=Module[{},
 ];
 
 handle["completionItem/resolve", json_] := Module[{item, documentation, result, response}, 
-	item = Echo@json["params"];
+	item = json["params"];
 	(* If[
 		MemberQ[COMPLETIONS[[All, "label"]], item["label"]],
 		documentation = DETAILS[item["label"]]["documentation"] (*ToString[DETAILS[[SelectFirst[COMPLETIONS, #["label"] == item["label"] &]["data"]+1]]["documentation"]] *),
@@ -558,50 +558,55 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 	sendResponse[response];
 ];
 
-handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response},
+handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response, position, missingCloser, functionArguments, candidates},
+		Print["textDocument/completion"];
 		TimeConstrained[
 			src = documents[json["params","textDocument","uri"]];
 			pos = json["params","position"];
 			symbol = getWordAtPosition[src, pos] /. Null -> "";
-			If[StringLength@symbol >= 1, 
-				ast = CodeParse[src];
-				keys = Cases[ast,
-					CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
-					Infinity
-				];
-
-				(* SmithWatermanSimilarity *)
-				(*names = Select[Join[keys,labels], EditDistance[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 15]; *)
-
-				(* names = Nearest[Select[Join[keys,labels], StringLength@#>3&], symbol,20,DistanceFunction-> (EditDistance[#1,#2, IgnoreCase->True] &)]; *)
-
-				names = PadRight[Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&],
-					20,
-					Select[Join[keys,labels],EditDistance[ StringTake[#, UpTo[StringLength@symbol]],symbol,IgnoreCase->True] <=2&]];
-
-				items = Table[
-						<|
-							"label" -> n,
-							"kind" -> If[ValueQ@n, 12, 13],
-							"commitCharacters" -> {"[", "\t"},
-							"detail" -> extractUsage[n] (* DETAILS[n]["documentation"] *)
-						|>, 
-						{n,names}];
-				
-				result = <|
-					"items" -> items,
-					"isIncomplete" -> True
-					|>;,
-
-				result = <| "isIncomplete" -> True, "items" -> {
-					<|
-						"label" -> "...",
-						"kind" -> 12,
-						"commitCharacters" -> {"[", "\t"},
-						"detail" -> "Waiting for more input..."
-					|>
-				}|>;
+			ast = CodeParse[src];
+			keys = Cases[ast,
+				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
+				Infinity
 			];
+
+			position = <|"line" -> pos["line"], "character" -> pos["character"]|>;
+			missingCloser = FirstCase[ast,
+				CallMissingCloserNode[___,source_]/;inCodeRangeQ[source[Source], position], {}, Infinity];
+
+			If[missingCloser === {},
+				functionArguments = {},
+				functionArguments = Options[ToExpression[missingCloser[[1, 2]]]][[All, 1]]
+			];
+
+			(* SmithWatermanSimilarity *)
+			(*names = Select[Join[keys,labels], EditDistance[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 15]; *)
+
+			(* names = Nearest[Select[Join[keys,labels], StringLength@#>3&], symbol,20,DistanceFunction-> (EditDistance[#1,#2, IgnoreCase->True] &)]; *)
+
+			If[StringTrim@symbol === "",
+				candidates = {"Table", "Module", "Block", "With", "ListPlot", "Association"},
+				candidates = Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&]
+			];
+
+			names = PadRight[Join[functionArguments, candidates],
+				20,
+				Select[Join[keys,labels],EditDistance[ StringTake[#, UpTo[StringLength@symbol]],symbol,IgnoreCase->True] <=2&]];
+
+			items = Table[
+					<|
+						"label" -> ToString@n,
+						"kind" -> If[ValueQ@n, 12, 13],
+						"commitCharacters" -> {"[", "\t"},
+						"detail" -> "test" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
+					|>, 
+					{n,names}];
+			
+			result = <|
+				"items" -> items,
+				"isIncomplete" -> True
+				|>;
+
 			response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 			sendResponse[response];,
 
