@@ -448,7 +448,7 @@ function updateVarTable(vars: any) {
             return
         }
 
-        let updatedVariables = bson.fromBSON(data)
+        let updatedVariables = JSON.parse(data)
         Object.keys(updatedVariables).map((k:any) => {
             variableTable[k] = updatedVariables[k].slice(0, 1000)
         })
@@ -1158,15 +1158,22 @@ function updateOutputPanel() {
     printResults.forEach((row) => {
         let data = "";
         try {
-                data += row[1];
+            data += row[1];
         } catch (e) {
             console.log((e as Error).message);
             data += "Error reading result";
         }
 
         if (data !== "") {
-            out += "<div id='result-header'>In: " +
-                    row[0].substring(0,  1000) + 
+
+            let inputString = "";
+            if (row[0].length > 500) {
+                inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
+            } else {
+                inputString = row[0];
+            }
+
+            out += "<div id='result-header'>In: " + inputString  +
                 "</div>" +
             
                 "<div id='result'>" +
@@ -1313,7 +1320,7 @@ async function startWLSPKernel(id:number): Promise<void> {
                         reader: socket,
                         writer: socket
                     })
-                }, 10000)
+                }, 2000)
             })
 
             socket.on('error', function (err:any) {
@@ -1439,8 +1446,8 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
             }
 
             wolfram.stdout?.once('data', (data: any) => {
-                outputChannel.appendLine("WLSP: " + data.toString())
-                resolve(wolfram);
+                outputChannel.appendLine("WLSP Loading: " + data.toString())
+                setTimeout(() => {resolve(wolfram)}, 500)
             });
 
 

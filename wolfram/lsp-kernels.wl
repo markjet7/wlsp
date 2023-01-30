@@ -171,7 +171,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
-		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> "/";
+		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
 	string = code2["code"];
 
 	Which[
@@ -351,14 +351,14 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	
 	symbols = f /@ Cases[ast, BinaryNode[___, {___, LeafNode[Token`Equal, ___], ___}, ___], Infinity];
 
-	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->1500], {v, symbols}];
+	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->200], {v, symbols}];
 
 	
 
-	(* values = Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->1500], {v, Names["Global`*"]}];*)
+	(* values = Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->100], {v, Names["Global`*"]}];*)
 
 	Check[
-		Export[varTableFile, values, "UBJSON"],
+		Export[varTableFile, values, "RawJSON"],
 		Print["Error saving variables"]
 	];
 

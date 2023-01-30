@@ -348,7 +348,7 @@ function updateVarTable(vars) {
             console.log(err);
             return;
         }
-        let updatedVariables = bson.fromBSON(data);
+        let updatedVariables = JSON.parse(data);
         Object.keys(updatedVariables).map((k) => {
             variableTable[k] = updatedVariables[k].slice(0, 1000);
         });
@@ -955,8 +955,14 @@ function updateOutputPanel() {
             data += "Error reading result";
         }
         if (data !== "") {
-            out += "<div id='result-header'>In: " +
-                row[0].substring(0, 1000) +
+            let inputString = "";
+            if (row[0].length > 500) {
+                inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
+            }
+            else {
+                inputString = row[0];
+            }
+            out += "<div id='result-header'>In: " + inputString +
                 "</div>" +
                 "<div id='result'>" +
                 data +
@@ -1079,7 +1085,7 @@ function startWLSPKernel(id) {
                             reader: socket,
                             writer: socket
                         });
-                    }, 10000);
+                    }, 2000);
                 });
                 socket.on('error', function (err) {
                     outputChannel.appendLine("Kernel Socket error: " + err);
@@ -1190,8 +1196,8 @@ function load(wolfram, path, port, outputChannel) {
                     wolfram = cp.spawn(executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), ['-file', path, port.toString(), path], { detached: true });
                 }
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
-                    outputChannel.appendLine("WLSP: " + data.toString());
-                    resolve(wolfram);
+                    outputChannel.appendLine("WLSP Loading: " + data.toString());
+                    setTimeout(() => { resolve(wolfram); }, 500);
                 });
                 if (wolfram.pid != undefined) {
                     // console.log("Launching wolframscript: " + wolfram.pid.toString());
