@@ -205,6 +205,7 @@ export async function restart(): Promise<void> {
     wolframBusyQ = false;
     evaluationQueue = [];    
     withProgressCancellation?.cancel()
+    wolframStatusBar.text = "Wolfram ?"
     
     clients.forEach((client, key) => {
         if (client) {
@@ -589,13 +590,13 @@ function decorateRunningLine(outputPosition:vscode.Position) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     if (e) {
 
-        if (outputPosition.line == 0) {
-            return
-        }
+        // if (outputPosition.line == 0) {
+        //     return
+        // }
 
         let decorationLine = e.document.lineAt(outputPosition.line)
-        let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
-        let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character)
+        let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 10)
+        let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 20)
         let range = new vscode.Range(start, end)
 
         let d: vscode.DecorationOptions = {
@@ -752,7 +753,8 @@ function sendToWolfram(printOutput = false, sel:vscode.Selection|undefined = und
                         
                         withProgressCancellation.onCancellationRequested(ev => {
                             console.log("Aborting Wolfram evaluation");
-                            stopWolfram(undefined, wolframKernel);
+                            // stopWolfram(undefined, wolframKernel);
+                            restart();
                             resolve(false)
                         })
 
