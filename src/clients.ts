@@ -27,6 +27,8 @@ let progressStatus:any;
 const fs = require('fs')
 import { WolframScriptSerializer, WolframNotebookSerializer } from './notebook';
 import { WolframNotebookController } from './notebookController';
+import { InteractiveNotebookSerializer } from './interactiveNotebook'; 
+import { InteractiveController } from './interactiveController';
 import { WolframScriptController } from './scriptController';
 import { workspaceSymbolProvider } from './treeDataProvider';
 import { DataViewProvider} from './dataPanel';
@@ -63,6 +65,8 @@ export var wolframKernelClient: LanguageClient | undefined;
 export let scriptserializer: vscode.NotebookSerializer;
 export let notebookSerializer: WolframNotebookSerializer;
 export let notebookcontroller: WolframNotebookController;
+export let interactiveController: InteractiveController;
+export let interactiveNotebookSerializer: InteractiveNotebookSerializer;
 export let scriptController: WolframScriptController;
 export let treeDataProvider: workspaceSymbolProvider;
 export let wlspdebugger: WolframDebugAdapterDescriptorFactory;
@@ -86,6 +90,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     notebookcontroller = new WolframNotebookController()
     scriptController = new WolframScriptController(context)
 
+    interactiveNotebookSerializer = new InteractiveNotebookSerializer()
+    interactiveController = new InteractiveController()
+
     const provider = new WLSPConfigurationProvider();
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
 
@@ -95,6 +102,10 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-script', scriptserializer)
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.registerNotebookSerializer('wolfram-interactive', interactiveNotebookSerializer)
     );
 
     dataProvider = new DataViewProvider(context.extensionUri);
@@ -109,6 +120,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
+    context.subscriptions.push(interactiveController);
 
     fp(debugPort).then(([freePort]:number[]) => {
         wlspdebugger = new WolframDebugAdapterDescriptorFactory(freePort, context, outputChannel);
@@ -143,6 +155,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.commands.registerCommand('wolfram.createFile', createFile);
     vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
     vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
+    vscode.commands.registerCommand('wolfram.createNotebookInteractive', createNotebookInteractive);
     vscode.commands.registerCommand('wolfram.runExpression', runExpression);
     vscode.commands.registerCommand('wolfram.clearResults', clearResults);
     vscode.commands.registerCommand('wolfram.showTrace', showTrace);
@@ -1726,6 +1739,14 @@ function createNotebook() {
     vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.nb")).then((document: vscode.NotebookDocument) => {
         // vscode.window.showNotebookDocument(document);
     });
+}
+
+function createNotebookInteractive() {
+    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.nb")).then((document: vscode.NotebookDocument) => {
+        // vscode.window.showNotebookDocument(document);
+    });
+
+
 }
 
 function createNotebookScript() {
