@@ -3,11 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.showPlotPanel = exports.PlotsViewProvider = void 0;
 const vscode_1 = require("vscode");
 class PlotsViewProvider {
-    constructor(_extensionUri0) {
-        this._extensionUri0 = _extensionUri0;
-        this._text = "";
-        this._extensionUri = _extensionUri0;
-    }
     resolveWebviewView(webviewView, context, _token) {
         this._view = webviewView;
         this._view.webview.options = {
@@ -39,6 +34,11 @@ class PlotsViewProvider {
         else {
             console.log("No data view");
         }
+    }
+    constructor(_extensionUri0) {
+        this._extensionUri0 = _extensionUri0;
+        this._text = "";
+        this._extensionUri = _extensionUri0;
     }
     getOutputContent(webview, extensionUri) {
         let timeNow = new Date().getTime();

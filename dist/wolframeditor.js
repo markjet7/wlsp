@@ -24,17 +24,17 @@ let wolframKernel;
 let context;
 let outputChannel;
 class WolframEditorProvider {
-    constructor(context0) {
-        this.context0 = context0;
-        console.log("WolframEditorProvider constructor");
-        context = context0;
-    }
     static register(context, kernel0, outputChannel0) {
         const provider = new WolframEditorProvider(context);
         const providerRegistration = vscode.window.registerCustomEditorProvider(WolframEditorProvider.viewType, provider);
         context = context;
         outputChannel = outputChannel0;
         return providerRegistration;
+    }
+    constructor(context0) {
+        this.context0 = context0;
+        console.log("WolframEditorProvider constructor");
+        context = context0;
     }
     resolveCustomTextEditor(document, webviewPanel, _token) {
         return __awaiter(this, void 0, void 0, function* () {

@@ -129,10 +129,12 @@ Get[DirectoryName[path] <> "lsp-handler.wl"];
 	] & /@ SERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
+Check[
 SERVER=SocketOpen[port,"TCP"];
-Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
-Print["LSP ", SERVER, ": ", port];
-Print[Now];
+	Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
+	Print["LSP ", SERVER, ": ", port];,
+
+	Quit[]];
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 

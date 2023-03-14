@@ -54,7 +54,7 @@ handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, 
 lastChange = Now;
 
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
-SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
+SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False]; 
 
 logfile = DirectoryName[path] <> "kernel-wlsp.log";
 logfile = DirectoryName[path] <> "wlsp_kernel.txt";
@@ -128,8 +128,11 @@ Get[DirectoryName[path] <> "lsp-kernels.wl"];
 	] & /@ KERNELSERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
-KERNELSERVER=SocketOpen[kernelport,"TCP"];
-Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];
+Check[
+	KERNELSERVER=SocketOpen[kernelport,"TCP"];
+	Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];,
+
+	Quit[]];
 (* Print[KERNELSERVER];
 Print[kernelport]; *)
 Print["Kernel ", KERNELSERVER, ": ", kernelport];

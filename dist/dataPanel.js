@@ -3,11 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataViewProvider = void 0;
 const vscode_1 = require("vscode");
 class DataViewProvider {
-    constructor(_extensionUri0) {
-        this._extensionUri0 = _extensionUri0;
-        this._vars = "";
-        this._extensionUri = _extensionUri0;
-    }
     resolveWebviewView(webviewView, context, _token) {
         this._view = webviewView;
         this._view.webview.options = {
@@ -38,6 +33,11 @@ class DataViewProvider {
         else {
             console.log("No data view");
         }
+    }
+    constructor(_extensionUri0) {
+        this._extensionUri0 = _extensionUri0;
+        this._vars = "";
+        this._extensionUri = _extensionUri0;
     }
     getOutputContent(webview, extensionUri) {
         let timeNow = new Date().getTime();

@@ -27,7 +27,7 @@ let progressStatus:any;
 const fs = require('fs')
 import { WolframScriptSerializer, WolframNotebookSerializer } from './notebook';
 import { WolframNotebookController } from './notebookController';
-import { InteractiveNotebookSerializer } from './interactiveNotebook'; 
+import { InteractiveNotebookSerializer, InteractiveNotebook } from './interactiveNotebook'; 
 import { InteractiveController } from './interactiveController';
 import { WolframScriptController } from './scriptController';
 import { workspaceSymbolProvider } from './treeDataProvider';
@@ -87,7 +87,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     scriptserializer = new WolframScriptSerializer()
     notebookSerializer = new WolframNotebookSerializer()
 
-    notebookcontroller = new WolframNotebookController()
+    // notebookcontroller = new WolframNotebookController()
     scriptController = new WolframScriptController(context)
 
     interactiveNotebookSerializer = new InteractiveNotebookSerializer()
@@ -96,9 +96,9 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     const provider = new WLSPConfigurationProvider();
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
 
-    context.subscriptions.push(
-        vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
-    );
+    // context.subscriptions.push(
+    //     vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
+    // );
 
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('wolfram-script', scriptserializer)
@@ -838,7 +838,8 @@ function onRunInWolfram(file: any) {
                     }
                 }
             }
-            let editors: vscode.TextEditor[] = vscode.window.visibleTextEditors;
+
+            const editors: readonly vscode.TextEditor[] =  vscode.window.visibleTextEditors;
             let e = editors.filter((e) => { 
                 return e.document.uri.path === result["params"]["document"]["path"] 
             })[0];
@@ -916,11 +917,12 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 // showOutput();
 
                 let backgroundColor = "editor.background";
+                let foregroundColor = "editor.foreground";
                 let hoverMessage = result["params"]["hover"];
 
                 // is <img> tags in hoverMessage string
 
-                if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
+                if (hoverMessage.length > 8192*100 && !hoverMessage.includes("<img")) {
                     hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "..."
                 }
                 if (result["params"]["messages"].length > 0) {
@@ -929,8 +931,8 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 }
 
                 let resultString = result["params"]["result"];
-                if (resultString.length > 8192) {
-                    resultString = resultString.slice(0, 500) + "..." + resultString.slice(-500);
+                if (resultString.length > 300) {
+                    resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
                 }
 
                 let startChar = e.document.lineAt(result["params"]["position"]["line"]-1).range.end.character;
@@ -944,11 +946,11 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                         ),
                     "renderOptions": {
                         "after": {
-                            "contentText": "  " + result["params"]["time"] +"s: " + resultString,
-                            "backgroundColor":  backgroundColor,
+                            "contentText": result["params"]["decoration"],
+                            "backgroundColor":  new vscode.ThemeColor("editor.foreground"),
+                            "color": new vscode.ThemeColor("editor.background"),
                             "margin" : "10px 0 0 10px",
                             "border": "2px solid blue",
-                            "color": "foreground",
 						    "textDecoration" : "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
 					
                         }
@@ -1114,13 +1116,12 @@ function updateLintDecorations(decorationfile: string) {
 
 let variableDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
     {
-        backgroundColor: 'none',
-        light: {
-            color: new vscode.ThemeColor("foreground")
-        },
-        dark: {
-            color: new vscode.ThemeColor("foreground")
-        },
+        // light: {
+        //     color: new vscode.ThemeColor("editor.background")
+        // },
+        // dark: {
+        //     color: new vscode.ThemeColor("editor.background")
+        // },
         rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
         
     }
@@ -1742,17 +1743,28 @@ function createNotebook() {
 }
 
 function createNotebookInteractive() {
-    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.nb")).then((document: vscode.NotebookDocument) => {
-        // vscode.window.showNotebookDocument(document);
-    });
-
+    // vscode.workspace.openNotebookDocument("wolfram-interactive").then((document: vscode.NotebookDocument) => {
+    //     // vscode.window.showNotebookDocument(document);
+    // });
+    vscode.window.showNotebookDocument(new InteractiveNotebook(
+        vscode.Uri.parse("untitled:untitled.nb"),
+        "wolfram-interactive",
+        "wolfram-interactive",
+        false,
+        true,
+        [],
+        ["wolfram"],
+        wolframKernelClient));
 
 }
 
 function createNotebookScript() {
-    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document: vscode.NotebookDocument) => {
-        // vscode.window.showNotebookDocument(document);
-    });
+    vscode.commands.executeCommand("vscode.openWith", vscode.Uri.file(""), 'jupyter-notebook');
+
+    // vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document: vscode.NotebookDocument) => {
+    //     // vscode.window.showNotebookDocument(document);
+    // });
+
 }
 
 

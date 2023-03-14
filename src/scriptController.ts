@@ -110,16 +110,21 @@ export class WolframScriptController {
                                 expression: cell.document.getText(),
                                 line: 0,
                                 end: 0,
+                                output: true,
                                 textDocument: cell.document
                             }
                         ).then((result:any) => {
+                            let output:any;
+                            try{
+                                output = fs.readFileSync(
+                                    result["output"].toString().substring(0,result["output"].toString().length), 'utf8')
+                            } catch (e) {
+                                console.log(e);
+                            }
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
                                     vscode.NotebookCellOutputItem.text(
-                                            // result["output"],
-                                            fs.readFileSync(result["output"].toString().substring(1,result["output"].toString().length-1), 'utf8'),
-                                            'text/html'),
-                                    vscode.NotebookCellOutputItem.text(result["result"]),
+                                            output,'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                                 ])
                             ]);

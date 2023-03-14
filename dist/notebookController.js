@@ -79,6 +79,7 @@ class WolframNotebookController {
                     execution.end(false, Date.now());
                 });
                 while (!execution.token.isCancellationRequested) {
+                    console.log("sending request");
                     clients_1.wolframKernelClient === null || clients_1.wolframKernelClient === void 0 ? void 0 : clients_1.wolframKernelClient.sendRequest("runExpression", {
                         expression: cell.document.getText(),
                         line: 0,

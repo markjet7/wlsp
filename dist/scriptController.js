@@ -60,7 +60,7 @@ class WolframScriptController {
             }
         });
         this.executions = [];
-        clients_1.restart();
+        (0, clients_1.restart)();
         // for (let cell of notebook.getCells()) {
         //     this._doInterrupt(cell);
         // }
@@ -70,8 +70,8 @@ class WolframScriptController {
     _doExecution(cell) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!clients_1.wolframKernelClient) {
-                clients_1.restart();
-                clients_1.onkernelReady().then(() => {
+                (0, clients_1.restart)();
+                (0, clients_1.onkernelReady)().then(() => {
                     this._doExecution(cell);
                 });
             }
@@ -98,14 +98,19 @@ class WolframScriptController {
                             expression: cell.document.getText(),
                             line: 0,
                             end: 0,
+                            output: true,
                             textDocument: cell.document
                         }).then((result) => {
+                            let output;
+                            try {
+                                output = fs.readFileSync(result["output"].toString().substring(0, result["output"].toString().length), 'utf8');
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }
                             execution.replaceOutput([
                                 new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.text(
-                                    // result["output"],
-                                    fs.readFileSync(result["output"].toString().substring(1, result["output"].toString().length - 1), 'utf8'), 'text/html'),
-                                    vscode.NotebookCellOutputItem.text(result["result"]),
+                                    vscode.NotebookCellOutputItem.text(output, 'text/html'),
                                     vscode.NotebookCellOutputItem.text(result["result"], 'text/wolfram')
                                 ])
                             ]);

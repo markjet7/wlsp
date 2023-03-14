@@ -47,9 +47,9 @@ export class InteractiveNotebookSerializer implements vscode.NotebookSerializer 
     }
 }
 
-export class InteractiveNotebook {
+export class InteractiveNotebook implements vscode.NotebookDocument {
     public mapping: Map<number, any> = new Map();
-    private wolframKernel:BaseLanguageClient;
+    private wolframKernel:BaseLanguageClient|undefined;
     public version = 0;
     public contentOptions = {
         transientOutputs: true,
@@ -66,7 +66,7 @@ export class InteractiveNotebook {
         public cells: readonly any[],
         public languages: string[],
         // public metadata: vscode.NotebookDocumentMetadata,
-        private _wolframKernel:BaseLanguageClient) {
+        private _wolframKernel:BaseLanguageClient | undefined) {
 
             // this.uri = uri;
             this.fileName = fileName;
@@ -76,7 +76,42 @@ export class InteractiveNotebook {
             this.cells = cells;
             this.languages = languages;
             // this.metadata = metadata;
-            this.wolframKernel = _wolframKernel;
+            if (_wolframKernel) {
+                this.wolframKernel = _wolframKernel;
+            }
+
+            this.notebookType = "wolfram-interactive"
+            this.isClosed = false;
+            this.metadata = {};
+
+            this.cells = [
+                new vscode.NotebookCellData(
+                    vscode.NotebookCellKind.Code,
+                    "1+1",
+                    "wolfram"
+                )
+            ]
+
+            this.cellCount = cells.length;
+    }
+    notebookType: string;
+    isClosed: boolean;
+    metadata: { [key: string]: any; };
+    cellCount: number;
+    cellAt(index: number): vscode.NotebookCell;
+    cellAt(index: number): vscode.NotebookCell;
+    cellAt(index: unknown): vscode.NotebookCell {
+        throw new Error('Method not implemented.');
+    }
+    getCells(range?: vscode.NotebookRange | undefined): vscode.NotebookCell[];
+    getCells(range?: vscode.NotebookRange | undefined): vscode.NotebookCell[];
+    getCells(range?: unknown): vscode.NotebookCell[] {
+        throw new Error('Method not implemented.');
+    }
+    save(): Thenable<boolean>;
+    save(): Thenable<boolean>;
+    save(): Thenable<boolean> {
+        throw new Error('Method not implemented.');
     }
 
     public setWolframClient(_wolframKernel:BaseLanguageClient) {

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onkernelReady = exports.stop = exports.restart = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.onkernelReady = exports.stop = exports.restart = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.interactiveNotebookSerializer = exports.interactiveController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const vscode_1 = require("vscode");
 const path = require("path");
@@ -26,7 +26,8 @@ let wolframVersionText = "$(extensions-sync-enabled~spin) Wolfram";
 let progressStatus;
 const fs = require('fs');
 const notebook_1 = require("./notebook");
-const notebookController_1 = require("./notebookController");
+const interactiveNotebook_1 = require("./interactiveNotebook");
+const interactiveController_1 = require("./interactiveController");
 const scriptController_1 = require("./scriptController");
 const treeDataProvider_1 = require("./treeDataProvider");
 const dataPanel_1 = require("./dataPanel");
@@ -63,18 +64,24 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
         exports.scriptserializer = new notebook_1.WolframScriptSerializer();
         exports.notebookSerializer = new notebook_1.WolframNotebookSerializer();
-        exports.notebookcontroller = new notebookController_1.WolframNotebookController();
+        // notebookcontroller = new WolframNotebookController()
         exports.scriptController = new scriptController_1.WolframScriptController(context);
+        exports.interactiveNotebookSerializer = new interactiveNotebook_1.InteractiveNotebookSerializer();
+        exports.interactiveController = new interactiveController_1.InteractiveController();
         const provider = new WLSPConfigurationProvider();
         context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('wlspdebugger', provider));
-        context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-notebook', exports.notebookSerializer));
+        // context.subscriptions.push(
+        //     vscode.workspace.registerNotebookSerializer('wolfram-notebook', notebookSerializer)
+        // );
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-script', exports.scriptserializer));
+        context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-interactive', exports.interactiveNotebookSerializer));
         dataProvider = new dataPanel_1.DataViewProvider(context.extensionUri);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
         plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         context.subscriptions.push(exports.notebookcontroller);
         context.subscriptions.push(exports.scriptController);
+        context.subscriptions.push(exports.interactiveController);
         fp(debugPort).then(([freePort]) => {
             exports.wlspdebugger = new debug_1.WolframDebugAdapterDescriptorFactory(freePort, context, outputChannel);
         });
@@ -101,6 +108,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.createFile', createFile);
         vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
         vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
+        vscode.commands.registerCommand('wolfram.createNotebookInteractive', createNotebookInteractive);
         vscode.commands.registerCommand('wolfram.runExpression', runExpression);
         vscode.commands.registerCommand('wolfram.clearResults', clearResults);
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
@@ -278,7 +286,7 @@ function promiseWithTimeout(ms, promise) {
 }
 function pulse() {
     promiseWithTimeout(1000 * 60 * 10, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
-        path_1.resolve("true");
+        (0, path_1.resolve)("true");
     })).then((a) => {
         setTimeout(pulse, 1000 * 60 * 10);
     }).catch(error => {
@@ -673,7 +681,7 @@ function onRunInWolfram(file) {
                     }
                 };
             }
-            let editors = vscode.window.visibleTextEditors;
+            const editors = vscode.window.visibleTextEditors;
             let e = editors.filter((e) => {
                 return e.document.uri.path === result["params"]["document"]["path"];
             })[0];
@@ -746,9 +754,10 @@ function updateResults(e, result, print, input = "", file) {
             // printResults.push(out);
             // showOutput();
             let backgroundColor = "editor.background";
+            let foregroundColor = "editor.foreground";
             let hoverMessage = result["params"]["hover"];
             // is <img> tags in hoverMessage string
-            if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
+            if (hoverMessage.length > 8192 * 100 && !hoverMessage.includes("<img")) {
                 hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "...";
             }
             if (result["params"]["messages"].length > 0) {
@@ -756,19 +765,19 @@ function updateResults(e, result, print, input = "", file) {
                 hoverMessage += "\n" + result["params"]["messages"];
             }
             let resultString = result["params"]["result"];
-            if (resultString.length > 8192) {
-                resultString = resultString.slice(0, 500) + "..." + resultString.slice(-500);
+            if (resultString.length > 300) {
+                resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
             let startChar = e.document.lineAt(result["params"]["position"]["line"] - 1).range.end.character;
             let decoration = {
                 "range": new vscode.Range(result["params"]["position"]["line"] - 1, startChar + 10, result["params"]["position"]["line"] - 1, startChar + 200),
                 "renderOptions": {
                     "after": {
-                        "contentText": "  " + result["params"]["time"] + "s: " + resultString,
-                        "backgroundColor": backgroundColor,
+                        "contentText": result["params"]["decoration"],
+                        "backgroundColor": new vscode.ThemeColor("editor.foreground"),
+                        "color": new vscode.ThemeColor("editor.background"),
                         "margin": "10px 0 0 10px",
                         "border": "2px solid blue",
-                        "color": "foreground",
                         "textDecoration": "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
                     }
                 },
@@ -906,13 +915,12 @@ function updateLintDecorations(decorationfile) {
     }
 }
 let variableDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'none',
-    light: {
-        color: new vscode.ThemeColor("foreground")
-    },
-    dark: {
-        color: new vscode.ThemeColor("foreground")
-    },
+    // light: {
+    //     color: new vscode.ThemeColor("editor.background")
+    // },
+    // dark: {
+    //     color: new vscode.ThemeColor("editor.background")
+    // },
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 });
 let lintDecorationType = vscode.window.createTextEditorDecorationType({
@@ -1430,10 +1438,17 @@ function createNotebook() {
         // vscode.window.showNotebookDocument(document);
     });
 }
+function createNotebookInteractive() {
+    // vscode.workspace.openNotebookDocument("wolfram-interactive").then((document: vscode.NotebookDocument) => {
+    //     // vscode.window.showNotebookDocument(document);
+    // });
+    vscode.window.showNotebookDocument(new interactiveNotebook_1.InteractiveNotebook(vscode.Uri.parse("untitled:untitled.nb"), "wolfram-interactive", "wolfram-interactive", false, true, [], ["wolfram"], exports.wolframKernelClient));
+}
 function createNotebookScript() {
-    vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document) => {
-        // vscode.window.showNotebookDocument(document);
-    });
+    vscode.commands.executeCommand("vscode.openWith", vscode.Uri.file(""), 'jupyter-notebook');
+    // vscode.workspace.openNotebookDocument(vscode.Uri.parse("untitled:.wl")).then((document: vscode.NotebookDocument) => {
+    //     // vscode.window.showNotebookDocument(document);
+    // });
 }
 function didChangeWindowState(state) {
     if (exports.wolframClient !== null || exports.wolframClient !== undefined) {

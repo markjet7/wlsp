@@ -87,6 +87,8 @@ export class WolframNotebookController  {
                 execution.end(false, Date.now());
             });
             while(!execution.token.isCancellationRequested){
+                console.log("sending request")
+                
                 wolframKernelClient?.sendRequest("runExpression", 
                     {
                         expression: cell.document.getText(),

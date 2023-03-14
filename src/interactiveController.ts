@@ -13,6 +13,7 @@ export class InteractiveController {
     readonly notebookType = 'wolfram-interactive';
     readonly label = 'Wolfram Interactive';
     readonly supportedLanguages = ['wolfram'];
+    private id: string;
 
     private readonly _controller: vscode.NotebookController;
     private _executionOrder = 0;
@@ -77,7 +78,7 @@ export class InteractiveController {
     }
 
     private async _doExecution(cell: vscode.NotebookCell): Promise<void> {
-        let execution: vscode.NotebookCellExecution = vscode.NotebookCellExecution = this._controller.createNotebookCellExecution(cell);
+        let execution: vscode.NotebookCellExecution = this._controller.createNotebookCellExecution(cell);
         execution.executionOrder = this._executionOrder;
         execution.start(Date.now());
         if (cell.kind === vscode.NotebookCellKind.Code) {
