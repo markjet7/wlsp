@@ -789,6 +789,7 @@ function sendToWolfram(printOutput = false, sel:vscode.Selection|undefined = und
     }
 }
 
+
 let evaluationResults:{[key:string]:string} = {}
 function onRunInWolfram(file: any) {
     let end  = Date.now();
@@ -1308,7 +1309,7 @@ async function startWLSP(id:number): Promise<void> {
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             resolve()
-        }, 1200)
+        }, 100)
 
     });
 }
@@ -1336,7 +1337,7 @@ async function startWLSPKernel(id:number): Promise<void> {
                         reader: socket,
                         writer: socket
                     })
-                }, 2000)
+                }, 100)
             })
 
             socket.on('error', function (err:any) {
@@ -1377,7 +1378,7 @@ async function startWLSPKernel(id:number): Promise<void> {
                         reader: socket,
                         writer: socket
                     }),
-                    1000
+                    100
                 })
             })
 
@@ -1436,7 +1437,7 @@ async function startWLSPKernel(id:number): Promise<void> {
             });
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
-        }, 2000)
+        }, 100)
         
     });
 }
@@ -1463,7 +1464,8 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 
             wolfram.stdout?.once('data', (data: any) => {
                 outputChannel.appendLine("WLSP Loading: " + data.toString())
-                setTimeout(() => {resolve(wolfram)}, 500)
+                // setTimeout(() => {resolve(wolfram)}, 500)
+                resolve(wolfram)
             });
 
 
@@ -1992,9 +1994,17 @@ function errorMessages(params: any) {
 
         let errors = JSON.parse(data)
 
+        let errorString = ""
         errors.forEach((e:any) => {
+            errorString += e.toString() + "\n"
             vscode.window.showErrorMessage(e.toString())
         });
+
+        printResults.push(
+            [params["input"], 
+            errorString]
+        )
+        updateOutputPanel();
     })
 }
 // let kill = function (pid:any) {

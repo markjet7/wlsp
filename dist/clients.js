@@ -1072,7 +1072,7 @@ function startWLSP(id) {
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
-            }, 1200);
+            }, 100);
         }));
     });
 }
@@ -1095,7 +1095,7 @@ function startWLSPKernel(id) {
                             reader: socket,
                             writer: socket
                         });
-                    }, 2000);
+                    }, 100);
                 });
                 socket.on('error', function (err) {
                     outputChannel.appendLine("Kernel Socket error: " + err);
@@ -1132,7 +1132,7 @@ function startWLSPKernel(id) {
                             reader: socket,
                             writer: socket
                         }),
-                            1000;
+                            100;
                     });
                 });
                 socket.on('drain', () => {
@@ -1181,7 +1181,7 @@ function startWLSPKernel(id) {
                 });
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
-            }, 2000);
+            }, 100);
         }));
     });
 }
@@ -1207,7 +1207,8 @@ function load(wolfram, path, port, outputChannel) {
                 }
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
                     outputChannel.appendLine("WLSP Loading: " + data.toString());
-                    setTimeout(() => { resolve(wolfram); }, 500);
+                    // setTimeout(() => {resolve(wolfram)}, 500)
+                    resolve(wolfram);
                 });
                 if (wolfram.pid != undefined) {
                     // console.log("Launching wolframscript: " + wolfram.pid.toString());
@@ -1631,9 +1632,14 @@ function errorMessages(params) {
         if (err)
             return;
         let errors = JSON.parse(data);
+        let errorString = "";
         errors.forEach((e) => {
+            errorString += e.toString() + "\n";
             vscode.window.showErrorMessage(e.toString());
         });
+        printResults.push([params["input"],
+            errorString]);
+        updateOutputPanel();
     });
 }
 // let kill = function (pid:any) {

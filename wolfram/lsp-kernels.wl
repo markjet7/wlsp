@@ -247,7 +247,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> ToString[DownSample[output,Round[Length[output]/50,1]], InputForm],
+			"decoration" -> myShort[result],
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
@@ -259,7 +259,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> ToString[DownSample[output,Round[Length[output]/50,1]], InputForm],
+			"decoration" -> myShort[result],
 			"document" ->  ""|>
 		|>,
 		<|
@@ -806,7 +806,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 			),
 
 			(
-				(*
+				
 				msgs = $res["MessagesExpressions"];
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
@@ -817,9 +817,9 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 					]],params];
 
 				msgToStr[_,_]:="An unknown error was generated";
-				msgStr = Quiet@Table[
-					msgToStr[m[[1,1]],m[[1,2;;]]],
-				{m, msgs}];
+				msgStr = Quiet@StringTake[Table[
+					msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
+				{m, msgs}], {1, UpTo@8912}];
 
 				
 				errorFile = CreateFile[];
@@ -829,9 +829,10 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				];
 
 				
-				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile|>|>];
+				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile, "input"->string|>|>];
 				
-				
+				(*
+
 				Table[
 					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->5000] |>|>];
 					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
