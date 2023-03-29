@@ -49,7 +49,6 @@ ServerCapabilities=<|
 |>;
 
 handle["initialize",json_]:=Module[{response, builtins},
-	Print["Initializing WLSP"];
     CONTINUE = True;
 
 	labels = COMPLETIONS[[All, "label"]];

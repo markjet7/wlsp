@@ -1009,9 +1009,44 @@ function updateOutputPanel() {
     });
     plotsProvider.updateView(out);
 }
+function startWLSP(id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let serverOptions = {
+            run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
+            },
+            debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
+        };
+        let clientOptions = {
+            documentSelector: [{ scheme: 'file', language: 'wolfram' }],
+            diagnosticCollectionName: 'Wolfram Language',
+            outputChannel: outputChannel
+        };
+        exports.wolframClient = new node_1.LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions);
+        exports.wolframClient.registerProposedFeatures();
+        exports.wolframClient.traceOutputChannel.show();
+        exports.wolframClient.onDidChangeState((event) => {
+            console.log("state changed");
+            console.log(event.newState);
+        });
+        yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start());
+        console.log("client ready");
+        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+            // wolframClient = new LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions, true);
+            // wolframClient.registerProposedFeatures();
+            // wolframClient?.start();
+            resolve();
+            // onclientReady();
+            // setTimeout(() => {
+            //     let disposible: vscode.Disposable | undefined;
+            //     wolframClient?.start();
+            //     resolve();
+            // }, 2000)
+        }));
+    });
+}
 let console_outputs = [];
 let socketsClosed = 0;
-function startWLSP(id) {
+function startWLSPOld(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         let serverOptions = function () {
@@ -1129,7 +1164,7 @@ function startWLSPKernel(id) {
             setTimeout(() => {
                 let disposible;
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start();
-                outputChannel.appendLine("Kernel Client Started");
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.outputChannel.appendLine("Kernel Client Started");
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
@@ -1159,10 +1194,11 @@ function startWLSPKernelOld(id) {
                     }, 100);
                 });
                 socket.on('error', function (err) {
-                    outputChannel.appendLine("Kernel Socket error: " + err);
+                    outputChannel.appendLine("Kernel Socket error: ");
                     retries += 1;
                     if (retries < 10) {
                         if (err.code === 'ECONNREFUSED') {
+                            outputChannel.appendLine("Kernel failed to connect");
                             timeout = setTimeout(() => {
                                 socket.connect(kernelPort, "127.0.0.1", () => {
                                     socket.setKeepAlive(true);
@@ -1268,8 +1304,8 @@ function load(wolfram, path, port, outputChannel) {
                 }
                 (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
                     outputChannel.appendLine("WLSP Loading: " + data.toString());
-                    // setTimeout(() => {resolve(wolfram)}, 500)
-                    resolve(wolfram);
+                    setTimeout(() => { resolve(wolfram); }, 1000);
+                    // resolve(wolfram)
                 });
                 if (wolfram.pid != undefined) {
                     // console.log("Launching wolframscript: " + wolfram.pid.toString());

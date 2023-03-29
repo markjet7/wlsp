@@ -60,7 +60,7 @@ let withProgressCancellation: vscode.CancellationTokenSource | undefined;
 let dataProvider: DataViewProvider;
 let plotsProvider: PlotsViewProvider;
 
-export var wolframClient!: LanguageClient | undefined;
+export var wolframClient: LanguageClient | undefined;
 export var wolframKernelClient: LanguageClient | undefined;
 export let scriptserializer: vscode.NotebookSerializer;
 export let notebookSerializer: WolframNotebookSerializer;
@@ -1238,9 +1238,53 @@ function updateOutputPanel() {
     plotsProvider.updateView(out)
 }
 
+async function startWLSP(id: number): Promise<void> {
+    let serverOptions: ServerOptions = {
+        run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl'))) ], transport: TransportKind.stdio
+        },
+        debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl'))) ], transport: TransportKind.stdio}
+    };
+
+    let clientOptions: LanguageClientOptions = {
+        documentSelector: [{ scheme: 'file', language: 'wolfram' }],
+        diagnosticCollectionName: 'Wolfram Language',
+        outputChannel: outputChannel
+    }
+
+    wolframClient = new LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions);
+    wolframClient.registerProposedFeatures();
+
+    wolframClient.traceOutputChannel.show();
+
+    wolframClient.onDidChangeState((event) => {
+        console.log("state changed");
+        console.log(event.newState);
+
+    });
+
+    await wolframClient?.start();
+
+    console.log("client ready");
+
+    return new Promise(async (resolve) => {
+        // wolframClient = new LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions, true);
+        // wolframClient.registerProposedFeatures();
+
+        // wolframClient?.start();
+        resolve();
+        // onclientReady();
+
+        // setTimeout(() => {
+        //     let disposible: vscode.Disposable | undefined;
+        //     wolframClient?.start();
+        //     resolve();
+        // }, 2000)
+    })
+}
+
 let console_outputs: string[] = []
 let socketsClosed = 0;
-async function startWLSP(id: number): Promise<void> {
+async function startWLSPOld(id: number): Promise<void> {
     let timeout: any;
 
     let serverOptions: ServerOptions = function () {
@@ -1380,7 +1424,7 @@ async function startWLSPKernel(id: number): Promise<void> {
         setTimeout(() => {
             let disposible: vscode.Disposable | undefined;
             wolframKernelClient?.start();
-            outputChannel.appendLine("Kernel Client Started")
+            wolframKernelClient?.outputChannel.appendLine("Kernel Client Started")
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             resolve()
