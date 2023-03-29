@@ -1,22 +1,12 @@
 [
 	{
 		"start":{
-			"line":0,
-			"character":0
-		},
-		"end":{
-			"line":0,
-			"character":58
-		}
-	},
-	{
-		"start":{
 			"line":2,
 			"character":0
 		},
 		"end":{
 			"line":2,
-			"character":71
+			"character":129
 		}
 	},
 	{
@@ -26,117 +16,107 @@
 		},
 		"end":{
 			"line":5,
-			"character":24
-		}
-	},
-	{
-		"start":{
-			"line":7,
-			"character":0
-		},
-		"end":{
-			"line":7,
-			"character":141
-		}
-	},
-	{
-		"start":{
-			"line":9,
-			"character":0
-		},
-		"end":{
-			"line":9,
-			"character":34
-		}
-	},
-	{
-		"start":{
-			"line":11,
-			"character":0
-		},
-		"end":{
-			"line":11,
-			"character":49
-		}
-	},
-	{
-		"start":{
-			"line":14,
-			"character":0
-		},
-		"end":{
-			"line":19,
-			"character":24
-		}
-	},
-	{
-		"start":{
-			"line":22,
-			"character":0
-		},
-		"end":{
-			"line":22,
-			"character":31
-		}
-	},
-	{
-		"start":{
-			"line":24,
-			"character":0
-		},
-		"end":{
-			"line":24,
-			"character":41
-		}
-	},
-	{
-		"start":{
-			"line":26,
-			"character":0
-		},
-		"end":{
-			"line":26,
-			"character":75
-		}
-	},
-	{
-		"start":{
-			"line":29,
-			"character":0
-		},
-		"end":{
-			"line":35,
 			"character":26
 		}
 	},
 	{
 		"start":{
-			"line":38,
+			"line":6,
 			"character":0
 		},
 		"end":{
-			"line":38,
-			"character":13
+			"line":6,
+			"character":44
 		}
 	},
 	{
 		"start":{
-			"line":41,
+			"line":8,
 			"character":0
 		},
 		"end":{
-			"line":42,
-			"character":31
+			"line":11,
+			"character":2
 		}
 	},
 	{
 		"start":{
-			"line":44,
+			"line":13,
 			"character":0
 		},
 		"end":{
-			"line":44,
-			"character":61
+			"line":13,
+			"character":47
+		}
+	},
+	{
+		"start":{
+			"line":16,
+			"character":0
+		},
+		"end":{
+			"line":16,
+			"character":88
+		}
+	},
+	{
+		"start":{
+			"line":18,
+			"character":0
+		},
+		"end":{
+			"line":18,
+			"character":64
+		}
+	},
+	{
+		"start":{
+			"line":19,
+			"character":0
+		},
+		"end":{
+			"line":20,
+			"character":66
+		}
+	},
+	{
+		"start":{
+			"line":22,
+			"character":0
+		},
+		"end":{
+			"line":24,
+			"character":47
+		}
+	},
+	{
+		"start":{
+			"line":26,
+			"character":0
+		},
+		"end":{
+			"line":26,
+			"character":34
+		}
+	},
+	{
+		"start":{
+			"line":28,
+			"character":0
+		},
+		"end":{
+			"line":30,
+			"character":2
+		}
+	},
+	{
+		"start":{
+			"line":32,
+			"character":0
+		},
+		"end":{
+			"line":43,
+			"character":21
 		}
 	},
 	{
@@ -145,8 +125,18 @@
 			"character":0
 		},
 		"end":{
-			"line":47,
-			"character":29
+			"line":46,
+			"character":69
+		}
+	},
+	{
+		"start":{
+			"line":48,
+			"character":0
+		},
+		"end":{
+			"line":48,
+			"character":3
 		}
 	}
 ]

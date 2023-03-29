@@ -14,18 +14,25 @@ import {
 	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+	TextDocumentChangeEvent,
+	DidChangeTextDocumentParams
 } from 'vscode-languageserver/node';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
-import * as cp from 'child_process'
+import * as cp from 'child_process';
+
+import * as path from 'path';
+
+import * as vscode from 'vscode';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
+const extensionPath = path.resolve(__dirname, '..');
 
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
@@ -34,26 +41,78 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-let wolfram:cp.ChildProcess
-function loadWolfram() {
-    wolfram = cp.spawn('wolframscript', ['-file', 'wolfram/wolfram-kernel-io.wl'])
-    wolfram.stdout?.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
+let wolfram:cp.ChildProcess;
+let wolframReady = false;
+let wolframLaunching = false;
+async function loadWolfram():Promise<void> {
+	return new Promise((resolve, reject) => {
+    // wolfram = cp.spawnSync( 'wolframscript', ['-file', '/Users/markmw/Github/wlsp/wolfram/wolfram-kernel-io.wl'],
+	
+	// {stdio:['inherit', 'inherit', 'pipe']});
+	if (wolframReady) {
+		resolve();
+		return;
+	}
 
-    wolfram.stderr?.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+	wolframLaunching = true;
+	wolfram?.emit('exit')
+	// console.log(extensionPath);
+	wolfram = cp.spawn('wolframscript', ['-file', path.join(extensionPath, "wolfram", 'wolfram-kernel-io.wl')]);
 
-    wolfram.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-    });
+	wolfram.on("data", (data:any) => {
+		console.log(`data: ${data}`);
+	});
 
-    wolfram.on('error', (err) => {
-        console.error(err)
-    });
+	wolfram.on('close', (code:any) => {
+		console.log(`child process exited with code ${code}`);
+	});
 
-    wolfram.stdin?.write('1+1')
+	wolfram.on('error', (err:any) => {
+		console.log(`child process error ${err}`);
+	});
+
+	wolfram.on('exit', (code:any) => {
+		console.log(`child process exited with code ${code}`);
+	});
+
+	process.stdin.pipe(wolfram?.stdin as NodeJS.WritableStream);
+
+	wolfram.stdout?.once('data', (data:any) => {
+		// console.log(`data: ${data}`);
+		wolframReady = true;
+		// console.log('wolfram ready');
+
+		let chunk:string = "";
+		wolfram?.stdout?.on('data', (data:any) => {
+			// console.log(`stdout: ${data}`);
+			chunk += data.toString();
+
+			try {
+				if (!chunk.includes("(*---*)")) {
+					0;
+				} else {
+					let messages = chunk.split("(*---*)");
+					chunk = chunk.split("(*---*)").pop() as string;
+					for (let message of messages) {
+						let json = JSON.parse(message);
+						if (Object.keys(json).includes("method")) {
+							// console.log("method: " + json.method);
+							connection.sendNotification(json.method, json.params);
+						}
+						else {
+							// console.log("message: " + data.toString());
+						}
+					}			
+				}
+			} catch (e) {
+				// console.error("Error parsing kernel output: " + e);
+			}
+		});
+
+		wolfram.stdin?.write(JSON.stringify(["path", path.join(extensionPath, "wolfram")]) + "\n");
+		resolve();
+	});
+	});
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -75,11 +134,14 @@ connection.onInitialize((params: InitializeParams) => {
 
 	const result: InitializeResult = {
 		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
+			textDocumentSync: TextDocumentSyncKind.Full,
+			workspace: {
+				workspaceFolders: {
+					supported: true
+				}
+			},
+			hoverProvider: true
 			// Tell the client that this server supports code completion.
-			completionProvider: {
-				resolveProvider: true
-			}
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -89,14 +151,15 @@ connection.onInitialize((params: InitializeParams) => {
 			}
 		};
 	}
-    loadWolfram();
 	return result;
 });
 
 connection.onInitialized(() => {
+    loadWolfram().then(() => {
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
+		console.log('registered for config changes');
 	}
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders(_event => {
@@ -104,148 +167,100 @@ connection.onInitialized(() => {
 		});
 	}
 });
+});
 
 // The example settings
-interface ExampleSettings {
-	maxNumberOfProblems: number;
-}
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
 
 // Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
-		documentSettings.clear();
+		// documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
-			(change.settings.languageServerExample || defaultSettings)
-		);
+		// globalSettings = <ExampleSettings>(
+		// 	(change.settings.languageServerExample || defaultSettings)
+		// );
 	}
 
 	// Revalidate all open text documents
-	documents.all().forEach(validateTextDocument);
+	// documents.all().forEach(validateTextDocument);
 });
-
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
-	if (!hasConfigurationCapability) {
-		return Promise.resolve(globalSettings);
-	}
-	let result = documentSettings.get(resource);
-	if (!result) {
-		result = connection.workspace.getConfiguration({
-			scopeUri: resource,
-			section: 'languageServerExample'
-		});
-		documentSettings.set(resource, result);
-	}
-	return result;
-}
 
 // Only keep settings for open documents
 documents.onDidClose(e => {
-	documentSettings.delete(e.document.uri);
+	
 });
+
+documents.onDidOpen((change:TextDocumentChangeEvent<TextDocument>) => {
+	if (wolframReady) {
+	onDidOpen(change);
+	} 
+
+	if (wolframReady == false && wolframLaunching == false) {
+		wolframLaunching = true;
+		loadWolfram();
+		onDidOpen(change);
+		
+	}
+
+	if (wolframReady == false && wolframLaunching == true) {
+		setTimeout(() => {
+			onDidOpen(change);
+		}, 2000);
+	}
+});
+
+function onDidOpen(change:TextDocumentChangeEvent<TextDocument>) {
+	if (wolframReady == false) {
+		setTimeout(() => {
+			onDidOpen(change);
+		}, 2000);
+		return
+	}
+
+	// console.log("on did open");
+	wolfram.stdin?.write(JSON.stringify(["textDocument/didOpen", 
+	{
+		"textDocument": {
+			"uri": change.document.uri,
+			"text": change.document.getText()
+		}
+	}
+]) + "\n");
+}
+
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-	validateTextDocument(change.document);
-});
-
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-	// In this simple example we get the settings for every validate run.
-	const settings = await getDocumentSettings(textDocument.uri);
-
-	// The validator creates diagnostics for all uppercase words length 2 and more
-	const text = textDocument.getText();
-	const pattern = /\b[A-Z]{2,}\b/g;
-	let m: RegExpExecArray | null;
-
-	let problems = 0;
-	const diagnostics: Diagnostic[] = [];
-	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-		problems++;
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length)
+documents.onDidChangeContent((change:TextDocumentChangeEvent<TextDocument>) => {
+	if (wolframReady) {
+		wolfram.stdin?.write(JSON.stringify(["textDocument/didChange", 
+		{
+			"textDocument": {
+				"uri": change.document.uri
 			},
-			message: `${m[0]} is all uppercase.`,
-			source: 'ex'
-		};
-		if (hasDiagnosticRelatedInformationCapability) {
-			diagnostic.relatedInformation = [
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Spelling matters'
-				},
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Particularly for names'
-				}
-			];
+			"contentChanges": [{"text":change.document.getText()}]
 		}
-		diagnostics.push(diagnostic);
-	}
+	]) + "\n");
 
-	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
+	} 
+
+	if (wolframReady == false && wolframLaunching == false) {
+		// console.log("not ready")
+		wolframLaunching = true;
+		loadWolfram();
+	}
+});
 
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
 });
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		return [
-			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
-				data: 1
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
-	}
-);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
-		}
-		return item;
-	}
-);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
@@ -254,7 +269,124 @@ documents.listen(connection);
 // Listen on the connection
 connection.listen();
 
+// let requestListener:any;
+let id = 0;
+connection.onRequest((request, params:any) => {
+	// console.log("Received: " + request)
+	// console.log(wolfram);
+	// console.log("sending request")
+	// wolfram.stdin?.write(JSON.stringify([request, params]), (msg:any) => {console.log(msg)});
+	if (wolframReady) {
+		id += 1;
+		params["id"] = id;
+		// console.log("sending: " + JSON.stringify([request, params]))
+		wolfram.stdin?.write(JSON.stringify([request, params]) + "\n");
+
+		let requestListener = (data:any) => {
+			try {
+				let parsed = JSON.parse(data.toString());
+				if (parsed["id"] == id) {
+					// console.log("received: " + data);
+					wolfram.stdout?.removeListener('data', requestListener);
+					// console.log("removed listener")
+					return parsed["result"];
+				}
+			} catch (e) {
+				// console.log("error parsing: " + e);
+				return "error"
+			}
+		}
+
+		wolfram.stdout?.on('data', requestListener)
+	} 
+
+	if (wolframReady == false && wolframLaunching == false) {
+		// console.log("not ready")
+		wolframLaunching = true;
+		loadWolfram();
+	}
+});
+
+connection.onNotification((notification, params) => {
+	// console.log("params: " + JSON.stringify(params))
+	// console.log(`{${notification}, ${params?.toString()}}\n`);
+	// wolfram.stdin?.write(`[${notification}, ${JSON.stringify(params)}]\n`);
+	// wolfram.stdin?.write(`["notification", {"param":0}]\n`);
+	// console.log(wolfram.stdin === undefined)
+
+	// console.log("Received: " + notification)
+	if (notification == "runInWolfram") {
+		notification = "runInWolframIO";
+	};
+
+	if (notification == "Shutdown") {
+		console.log("shutting down")
+		shutdown();
+		return
+	}
+	
+	if (wolframReady) {
+		// console.log("sending: " + JSON.stringify([notification, params]))
+		wolfram.stdin?.write(JSON.stringify([notification, params]) + "\n");
+	} 
+	if (wolframReady == false && wolframLaunching == false) {
+		// console.log("not ready")
+		wolframLaunching = true;
+		loadWolfram();
+	}
+
+	// connection.sendNotification('onRunInWolfram', 'hello wolfram');
+});
+
 connection.onShutdown(() => {
     // Do some cleanup
-    wolfram.kill();
+    // wolfram?.kill();
+	// console.log("shutting down")
+	wolfram.stdin?.write("[\"Quit\", \"\"]\n");
+	// Gracefully shut down the child process by sending a SIGTERM signal
+	wolfram.kill('SIGTERM');
+
+	// Set a timeout to forcefully terminate the child process if it doesn't exit
+	setTimeout(() => {
+	if (!wolfram.killed) {
+		// console.log('Forcefully terminating the child process');
+		wolfram.kill('SIGKILL');
+	}
+	}, 3000); // 5 seconds timeout
+		
 } );
+
+connection.onExit(() => {
+    // Do some cleanup
+    // wolfram?.kill();
+	// console.log("exiting")
+	wolfram.stdin?.write("[\"Quit\", \"\"]\n");
+	// Gracefully shut down the child process by sending a SIGTERM signal
+	wolfram.kill('SIGTERM');
+
+	// Set a timeout to forcefully terminate the child process if it doesn't exit
+	setTimeout(() => {
+	if (!wolfram.killed) {
+		// console.log('Forcefully terminating the child process');
+		wolfram.kill('SIGKILL');
+	}
+	}, 3000); // 5 seconds timeout
+		
+} );
+
+function shutdown() {
+	// console.log("exiting")
+	wolfram.stdin?.write(JSON.stringify(["Quit", []]) + "\n");
+	// Gracefully shut down the child process by sending a SIGTERM signal
+	wolfram.kill('SIGKILL');
+
+
+	// Set a timeout to forcefully terminate the child process if it doesn't exit
+	setTimeout(() => {
+	if (!wolfram.killed) {
+		// console.log('Forcefully terminating the child process');
+		wolfram.kill('SIGKILL');
+	}
+	}, 3000); // 5 seconds timeout
+	process.exit();
+}

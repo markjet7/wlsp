@@ -33,7 +33,7 @@ ServerCapabilities=<|
 
 
 handle["initialize",json_]:=Module[{response, response2, messageHandler},
-	Print["Initializing Kernel"];
+	(*Print["Initializing Kernel"];*)
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
 	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
     CONTINUE = True;
@@ -160,6 +160,42 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		,
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 	];
+];
+
+handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPosition, r, output, result},
+	Check[
+		start = Now;
+		range = json["params", "range"];
+		uri = json["params", "textDocument"]["uri", "external"];
+		src = documents[json["params","textDocument","uri", "external"]];
+		code = Check[getCode[src, range], <|"code"->"Failed", "range"-><|
+			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
+			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
+		|>|>];
+		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
+		
+		r = evaluateString[code["code"]];
+		output = transformsIO[ReleaseHold[r["Result"]], Lookup[r,"FormattedMessages",{}]];
+		result = <|
+			"method" -> "onRunInWolframIO",
+			"params" -> <|
+				"output" -> output,
+				"input" -> code["code"],
+				"load" -> False,
+				"result" -> myShort[ReleaseHold[r["Result"]]],
+				"position" -> newPosition,
+				"print" -> json["params", "print"],
+				"hover" -> output,
+				"messages" -> Lookup[r, "FormattedMessages", {}],
+				"time" -> Lookup[r, "AbsoluteTiming"],
+				"decoration" -> myShort[ReleaseHold[r["Result"]]],
+				"document" -> json["params", "textDocument", "uri"]
+				|>
+			|>;
+		sendResponse[result];,
+
+		sendResponse[<|"method" -> "onRunInWolframIO", "params" -> <|"output" -> "Failed", "input" -> code["code"], "result" -> "Failed", "load" -> False, "position" -> newPosition, "print" -> json["params", "print"], "hover" -> "Failed", "messages" -> {}, "time" -> 0, "decoration" -> "Failed", "document" -> json["params", "textDocument", "uri"]|>|>];
+	]
 ];
 
 resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
@@ -546,7 +582,7 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
 	
-	oldtext = documents[json["params","textDocument","uri"]];
+	oldtext = Lookup[documents, json["params","textDocument","uri"], ""];
 
 	newtext = FoldWhile[StringJoin, 
 		StringSplit[json["params","contentChanges"][[1]]["text"], "\n"->"\n", All],

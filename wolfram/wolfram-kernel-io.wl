@@ -1,5 +1,4 @@
 (* ::Package:: *)
-
 BeginPackage["WolframKernel`"];
 (* Kernel Start Section *)
 $HistoryLength = 100;
@@ -9,27 +8,38 @@ $HistoryLength = 100;
 (**)
 
 
-sendResponse[res_Association]:=Module[{byteResponse},
-	Check[
+sendResponse[res_Association]:=Module[{byteResponse}, 
+	(* Check[
 		byteResponse = constructRPCBytes[Prepend[Replace[res, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		BinaryWrite[Streams["stdout"], # , "Character32"] &/@ byteResponse;,
 		Print["response error"];
 		Print[res];
-	]
+	] *)
+	Print[Replace[ExportString[res, "JSON", "Compact" -> True], $Failed -> "{\"message\":\"Failure\"}"] <> "\n(*---*)\n"];
+];
+
+handle["textDocument/completion", msg_]:=Module[{res},
+	res = <|"isIncomplete" -> False, "items" -> {<|
+						"label" -> "Testing",
+						"kind" -> 13,
+						"commitCharacters" -> {"[", "\t"},
+						"detail" -> "Testing" 
+					|>}|>;
+	(*Print["Sending: " <> ToString@<|"id"->msg["id"], "result"-> res|>];*)
+	sendResponse@<|"id"->msg["id"], "result"-> res|>
 ];
 
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
 
-(* $MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); *)
-(* $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); *)
+$MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); 
+$PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); 
 
 
 If[Length[$ScriptCommandLine]>1,kernelport=ToExpression@Part[$ScriptCommandLine,2],port=6589];
 If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
 (* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "CodeFormatter.m"];
-Get[DirectoryName[path] <> "lsp-kernels.wl"];
+(* Get[DirectoryName[path] <> "CodeFormatter.m"];*)
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
@@ -93,12 +103,12 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.02;
+handlerWait = 1.5;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
 $timeout = Now;
-Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+(*Get[DirectoryName[path] <> "lsp-kernels.wl"];*)
 socketHandler[state_]:=Module[{},
 Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
@@ -121,25 +131,62 @@ Get[DirectoryName[path] <> "lsp-kernels.wl"];
 	] & /@ KERNELSERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
-ioHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+handle["path", msg_] := (
+	path0 = msg["params"];
+	Print["Setting path to " <> path0];
+
+	Get[path0 <> "/lsp-kernels.wl"];
+	handle["initialize", <|"id" -> 1|>];
+);
+
+handle["Quit", msg_] := (
+	Print["Closing kernel connection..."];
+	Quit[];
+);
+
+ioHandler[state_]:=Module[{msg},
 	Pause[handlerWait];
 
-	msg = InputString[];
+	If[path != "",
+		Get[path <> "/lsp-kernels.wl"];
+	];
 
-	handleMessage[msg, state];
+	(*
+	TimeConstrained[
+		(raw = InputString[""];
+		Check[msg = ImportString[raw, "RawJSON"], (Print[raw];{"unknown", "unknown"})]),
+		Quantity[10, "Seconds"],
+		msg = {"timeout", "timeout"}
+	];
+	*)
+	(raw = InputString[""];
+	Check[msg = ImportString[raw, "RawJSON"], (Print["Parsing failed: " <> raw];{"unknown", "unknown"})]);
+	Which[		
+		Head@msg === List,
+		(handle[msg[[1]], <|"params" -> msg[[2]]|>];),
+		raw === "[Quit, []]",
+		Print["Closing kernel connection..."];
+		Quit[];,
+		_,
+		Print["Unknown message: " <> msg];
+	];
+
+	(* handleMessage[msg, state]; *)
 	"Continue"
 	
 ] // ioHandler;
 
+Print["Starting kernel..."];
+(*
 Check[
 	KERNELSERVER=SocketOpen[kernelport,"TCP"];
 	Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];,
 
-	Quit[]];
-(* Print[KERNELSERVER];
-Print[kernelport]; *)
+	Quit[]]; 
+Print[KERNELSERVER];
+Print[kernelport]; 
 Print["Kernel ", KERNELSERVER, ": ", kernelport];
+*)
 
 Block[{$IterationLimit = Infinity}, 
 	ioHandler[state]

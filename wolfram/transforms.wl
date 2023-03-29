@@ -144,3 +144,14 @@ transforms[output_]:=Module[{f, txt},
 		Close[f];
 		Return[f]
 ];
+
+transformsIO[output_, errors_]:=Module[{out},
+	If[Length@erros > 0,
+		out = Rasterize@GraphicsColumn[
+			{Short[output, 10],
+			Short[errors, 10]}],
+		out = Rasterize@Short[output, 10]
+	];
+
+	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
+];
