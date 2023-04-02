@@ -49,6 +49,7 @@ let kernelPath: string;
 let context!: vscode.ExtensionContext;
 let cursorFile: String = "";
 let outputChannel!: vscode.OutputChannel;
+let kernelOutputChannel!: vscode.OutputChannel;
 let clients: Map<string, (LanguageClient | undefined)[]> = new Map();
 let processes: cp.ChildProcess[] = [];
 
@@ -79,6 +80,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
     outputChannel = outputChannel0;
+    kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.command = 'wolfram.restart';
     wolframStatusBar.show();
@@ -222,6 +224,7 @@ export async function restart(): Promise<void> {
     evaluationQueue = [];
     withProgressCancellation?.cancel()
     wolframStatusBar.text = "Wolfram ?"
+    wolframStatusBar.show();
 
     clients.forEach((client, key) => {
         if (client) {
@@ -955,13 +958,13 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
             let backgroundColor = "editor.background";
             let foregroundColor = "editor.foreground";
-            let hoverMessage = result["params"]["hover"];
+            let hoverMessage = result["params"]["output"];
 
             // is <img> tags in hoverMessage string
 
-            if (hoverMessage.length > 8192 * 100 && !hoverMessage.includes("<img")) {
+            if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
                 hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "..."
-            }
+            } 
             if (result["params"]["messages"].length > 0) {
                 backgroundColor = "red";
                 hoverMessage += "\n" + result["params"]["messages"];
@@ -983,7 +986,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 ),
                 "renderOptions": {
                     "after": {
-                        "contentText": result["params"]["decoration"],
+                        "contentText": resultString,
                         "backgroundColor": new vscode.ThemeColor("editor.foreground"),
                         "color": new vscode.ThemeColor("editor.background"),
                         "margin": "10px 0 0 10px",
@@ -1207,7 +1210,7 @@ function clearPlots() {
 
 function updateOutputPanel() {
     let out = "";
-
+    let reversed = printResults.slice().reverse();
     printResults.forEach((row) => {
         let data = "";
         try {
@@ -1238,7 +1241,7 @@ function updateOutputPanel() {
     plotsProvider.updateView(out)
 }
 
-async function startWLSP(id: number): Promise<void> {
+async function startWLSPIO(id: number): Promise<void> {
     let serverOptions: ServerOptions = {
         run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl'))) ], transport: TransportKind.stdio
         },
@@ -1248,7 +1251,8 @@ async function startWLSP(id: number): Promise<void> {
     let clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'wolfram' }],
         diagnosticCollectionName: 'Wolfram Language',
-        outputChannel: outputChannel
+        outputChannel: outputChannel,
+        revealOutputChannelOn: 1
     }
 
     wolframClient = new LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions);
@@ -1284,7 +1288,7 @@ async function startWLSP(id: number): Promise<void> {
 
 let console_outputs: string[] = []
 let socketsClosed = 0;
-async function startWLSPOld(id: number): Promise<void> {
+async function startWLSP(id: number): Promise<void> {
     let timeout: any;
 
     let serverOptions: ServerOptions = function () {
@@ -1412,7 +1416,7 @@ async function startWLSPKernel(id: number): Promise<void> {
             debuggerPort: 7777
         },
         diagnosticCollectionName: 'wolfram-lsp',
-        outputChannel: vscode.window.createOutputChannel("Wolfram Kernel")
+        outputChannel: kernelOutputChannel
     };
 
     return new Promise(async (resolve) => {
@@ -1900,7 +1904,6 @@ function didChangeWindowState(state: vscode.WindowState) {
         }
     }
 }
-
 
 function startWolframTerminal() {
     let cmd: string;

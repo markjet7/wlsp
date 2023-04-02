@@ -44,6 +44,7 @@ let kernelPath;
 let context;
 let cursorFile = "";
 let outputChannel;
+let kernelOutputChannel;
 let clients = new Map();
 let processes = [];
 var wolfram;
@@ -58,6 +59,7 @@ function startLanguageServer(context0, outputChannel0) {
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         outputChannel = outputChannel0;
+        kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
         wolframStatusBar.text = "Wolfram ?";
         wolframStatusBar.command = 'wolfram.restart';
         wolframStatusBar.show();
@@ -164,6 +166,7 @@ function restart() {
         evaluationQueue = [];
         withProgressCancellation === null || withProgressCancellation === void 0 ? void 0 : withProgressCancellation.cancel();
         wolframStatusBar.text = "Wolfram ?";
+        wolframStatusBar.show();
         clients.forEach((client, key) => {
             var _a, _b;
             if (client) {
@@ -783,9 +786,9 @@ function updateResults(e, result, print, input = "") {
             // showOutput();
             let backgroundColor = "editor.background";
             let foregroundColor = "editor.foreground";
-            let hoverMessage = result["params"]["hover"];
+            let hoverMessage = result["params"]["output"];
             // is <img> tags in hoverMessage string
-            if (hoverMessage.length > 8192 * 100 && !hoverMessage.includes("<img")) {
+            if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
                 hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "...";
             }
             if (result["params"]["messages"].length > 0) {
@@ -801,7 +804,7 @@ function updateResults(e, result, print, input = "") {
                 "range": new vscode.Range(result["params"]["position"]["line"] - 1, startChar + 10, result["params"]["position"]["line"] - 1, startChar + 200),
                 "renderOptions": {
                     "after": {
-                        "contentText": result["params"]["decoration"],
+                        "contentText": resultString,
                         "backgroundColor": new vscode.ThemeColor("editor.foreground"),
                         "color": new vscode.ThemeColor("editor.background"),
                         "margin": "10px 0 0 10px",
@@ -983,6 +986,7 @@ function clearPlots() {
 }
 function updateOutputPanel() {
     let out = "";
+    let reversed = printResults.slice().reverse();
     printResults.forEach((row) => {
         let data = "";
         try {
@@ -1009,7 +1013,7 @@ function updateOutputPanel() {
     });
     plotsProvider.updateView(out);
 }
-function startWLSP(id) {
+function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let serverOptions = {
             run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
@@ -1019,7 +1023,8 @@ function startWLSP(id) {
         let clientOptions = {
             documentSelector: [{ scheme: 'file', language: 'wolfram' }],
             diagnosticCollectionName: 'Wolfram Language',
-            outputChannel: outputChannel
+            outputChannel: outputChannel,
+            revealOutputChannelOn: 1
         };
         exports.wolframClient = new node_1.LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions);
         exports.wolframClient.registerProposedFeatures();
@@ -1046,7 +1051,7 @@ function startWLSP(id) {
 }
 let console_outputs = [];
 let socketsClosed = 0;
-function startWLSPOld(id) {
+function startWLSP(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         let serverOptions = function () {
@@ -1156,7 +1161,7 @@ function startWLSPKernel(id) {
                 debuggerPort: 7777
             },
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: vscode.window.createOutputChannel("Wolfram Kernel")
+            outputChannel: kernelOutputChannel
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);

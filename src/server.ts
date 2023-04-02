@@ -44,6 +44,8 @@ let hasDiagnosticRelatedInformationCapability = false;
 let wolfram:cp.ChildProcess;
 let wolframReady = false;
 let wolframLaunching = false;
+
+let requestResponses:Map<number, any> = new Map();
 async function loadWolfram():Promise<void> {
 	return new Promise((resolve, reject) => {
     // wolfram = cp.spawnSync( 'wolframscript', ['-file', '/Users/markmw/Github/wlsp/wolfram/wolfram-kernel-io.wl'],
@@ -81,7 +83,6 @@ async function loadWolfram():Promise<void> {
 		// console.log(`data: ${data}`);
 		wolframReady = true;
 		// console.log('wolfram ready');
-
 		let chunk:string = "";
 		wolfram?.stdout?.on('data', (data:any) => {
 			// console.log(`stdout: ${data}`);
@@ -94,10 +95,21 @@ async function loadWolfram():Promise<void> {
 					let messages = chunk.split("(*---*)");
 					chunk = chunk.split("(*---*)").pop() as string;
 					for (let message of messages) {
+						// console.log(message);
+						if (message.trim() == "") {
+							continue;
+						}
+						// console.log(message.substring(0, 100));
 						let json = JSON.parse(message);
+						// console.log(Object.keys(json));
+
 						if (Object.keys(json).includes("method")) {
 							// console.log("method: " + json.method);
 							connection.sendNotification(json.method, json.params);
+						}
+						if (Object.keys(json).includes("id")) {
+							// console.log("id: " + json.id);
+							requestResponses.set(json.id, json);
 						}
 						else {
 							// console.log("message: " + data.toString());
@@ -105,7 +117,7 @@ async function loadWolfram():Promise<void> {
 					}			
 				}
 			} catch (e) {
-				// console.error("Error parsing kernel output: " + e);
+				console.error("Error parsing kernel output: " + e?.toString());
 			}
 		});
 
@@ -159,7 +171,6 @@ connection.onInitialized(() => {
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-		console.log('registered for config changes');
 	}
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders(_event => {
@@ -226,9 +237,11 @@ function onDidOpen(change:TextDocumentChangeEvent<TextDocument>) {
 	// console.log("on did open");
 	wolfram.stdin?.write(JSON.stringify(["textDocument/didOpen", 
 	{
-		"textDocument": {
-			"uri": change.document.uri,
-			"text": change.document.getText()
+		params:{
+			"textDocument": {
+				"uri": change.document.uri,
+				"text": change.document.getText()
+			}
 		}
 	}
 ]) + "\n");
@@ -271,6 +284,7 @@ connection.listen();
 
 // let requestListener:any;
 let id = 0;
+let requestListener:(data:any) =>  {};
 connection.onRequest((request, params:any) => {
 	// console.log("Received: " + request)
 	// console.log(wolfram);
@@ -278,26 +292,29 @@ connection.onRequest((request, params:any) => {
 	// wolfram.stdin?.write(JSON.stringify([request, params]), (msg:any) => {console.log(msg)});
 	if (wolframReady) {
 		id += 1;
-		params["id"] = id;
+		params["id"] = id; 
+
 		// console.log("sending: " + JSON.stringify([request, params]))
-		wolfram.stdin?.write(JSON.stringify([request, params]) + "\n");
+		wolfram.stdin?.write(JSON.stringify([request, {params:params}]) + "\n");
 
-		let requestListener = (data:any) => {
-			try {
-				let parsed = JSON.parse(data.toString());
-				if (parsed["id"] == id) {
-					// console.log("received: " + data);
-					wolfram.stdout?.removeListener('data', requestListener);
-					// console.log("removed listener")
-					return parsed["result"];
+		return new Promise((resolve, reject) => {
+			// check if the requestResponse is already there every 100ms and resolve if it is
+			let attemps = 0;
+			let check = setInterval(() => {
+				attemps += 1;
+				if (requestResponses.get(params.id) !== undefined) {
+					// console.log("resolving")
+					resolve(requestResponses.get(params.id));
+					// console.log(requestResponses.get(params.id))
+					requestResponses.delete(params.id);
+					clearInterval(check);
 				}
-			} catch (e) {
-				// console.log("error parsing: " + e);
-				return "error"
-			}
-		}
-
-		wolfram.stdout?.on('data', requestListener)
+				if (attemps > 300) {
+					clearInterval(check);
+					reject("timeout");
+				}
+			}, 100);
+		});
 	} 
 
 	if (wolframReady == false && wolframLaunching == false) {
@@ -306,6 +323,7 @@ connection.onRequest((request, params:any) => {
 		loadWolfram();
 	}
 });
+
 
 connection.onNotification((notification, params) => {
 	// console.log("params: " + JSON.stringify(params))
@@ -327,7 +345,7 @@ connection.onNotification((notification, params) => {
 	
 	if (wolframReady) {
 		// console.log("sending: " + JSON.stringify([notification, params]))
-		wolfram.stdin?.write(JSON.stringify([notification, params]) + "\n");
+		wolfram.stdin?.write(JSON.stringify([notification, {params:params}]) + "\n");
 	} 
 	if (wolframReady == false && wolframLaunching == false) {
 		// console.log("not ready")

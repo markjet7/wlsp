@@ -149,7 +149,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Check[getCode[src, range], <|"code"->"Failed", "range"-><|
+		code = Check[getCode[src, range], <|"code"->"Get code failed", "range"-><|
 			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
 			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
 		|>|>];
@@ -164,11 +164,15 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 
 handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPosition, r, output, result},
 	Check[
+
+		Unprotect[NotebookDirectory];
+		NotebookDirectory[] = FileNameJoin[
+			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
 		start = Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Check[getCode[src, range], <|"code"->"Failed", "range"-><|
+		code = Check[getCode[src, range], <|"code"->"Get code failed", "range"-><|
 			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
 			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
 		|>|>];
@@ -181,20 +185,18 @@ handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPositi
 			"params" -> <|
 				"output" -> output,
 				"input" -> code["code"],
+				"result" -> ToString[ReleaseHold[r["Result"]], InputForm],
 				"load" -> False,
-				"result" -> myShort[ReleaseHold[r["Result"]]],
 				"position" -> newPosition,
 				"print" -> json["params", "print"],
-				"hover" -> output,
 				"messages" -> Lookup[r, "FormattedMessages", {}],
-				"time" -> Lookup[r, "AbsoluteTiming"],
-				"decoration" -> myShort[ReleaseHold[r["Result"]]],
+				"time" -> Lookup[r, "AbsoluteTiming", 0],
 				"document" -> json["params", "textDocument", "uri"]
 				|>
 			|>;
 		sendResponse[result];,
 
-		sendResponse[<|"method" -> "onRunInWolframIO", "params" -> <|"output" -> "Failed", "input" -> code["code"], "result" -> "Failed", "load" -> False, "position" -> newPosition, "print" -> json["params", "print"], "hover" -> "Failed", "messages" -> {}, "time" -> 0, "decoration" -> "Failed", "document" -> json["params", "textDocument", "uri"]|>|>];
+		sendResponse[<|"method" -> "onRunInWolframIO", "params" -> <|"output" -> ToString[$MessageList, InputForm], "input" -> code["code"], "result" -> "Run failed", "load" -> False, "position" -> newPosition, "print" -> json["params", "print"], "hover" -> "Run failed", "messages" -> {}, "time" -> 0, "decoration" -> "Run failed", "document" -> json["params", "textDocument", "uri"]|>|>];
 	]
 ];
 
@@ -283,7 +285,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> myShort[result],
+			"decoration" -> ToString@time <> ": " <> myShort[result],
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
@@ -295,7 +297,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> myShort[result],
+			"decoration" -> ToString@time <> ": " <> myShort[result],
 			"document" ->  ""|>
 		|>,
 		<|
@@ -310,7 +312,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> myShort[result],
+			"decoration" -> ToString@time <> ": " <> myShort[result],
 			"document" -> json["params", "textDocument"]["uri"]
 			|>
 		|>
@@ -555,8 +557,6 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	evaluateFromQueue[code, json, position];
 	,
 	(
-		Print["Error evaluating expression"];
-		Print[json];
 		response = <|"id" -> json["id"], "result" -> <|"error" -> "Error evaluating expression"|>|>;
 		sendResponse[response];
 	)
@@ -614,11 +614,15 @@ handle["textDocument/didSave", json_]:=Module[{},
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
 		position = json["params", "position"];
-		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
+
 		symbol = ToExpression@getWordAtPosition[src, position];
-		If[symbol === Null,
-			sendResponse[<|"id"->json["id"], "result"->""|>];
+		If[Or[symbol === Null, src === ""],
+			sendResponse[<|"id"->Lookup[json["params"], "id", 0], "result"-><|"contents"-><|
+				"kind" -> "markdown",
+				"value" ->  "No value for symbol: " <> ToString@symbol 
+				|>
+			|>|>];
 			Return[]
 		];
 		value = TimeConstrained[
@@ -632,14 +636,18 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			|>
 		|>;
 
-		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
+		response = <|"id"->Lookup[json["params"], "id", 0], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 
-		response = <|"id"->json["id"], "result"->""|>;
-		sendResponse[response];
-		
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[symbol, InputForm, TotalWidth -> 1000] |> |>];
-	];
+		(
+			response = <|"id" -> Lookup[json, "id", 0], "result" -> <|"contents"-><|
+				"kind" -> "markdown",
+				"value" ->  "Error getting hover" 
+				|>
+			|>|>;
+			sendResponse[response];
+		)
+	]
 ];
 
 (* ToDO Fix getChildren for general symbols *)
@@ -826,7 +834,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 			CheckAbort[
 				$res = EvaluationData[ToExpression[string]],
 
-				$res = <|"Result" :> "Failed", "Success" -> False, "FailureType" -> None, 
+				$res = <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
 						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
 						"AbsoluteTiming" -> 0.`, 
@@ -856,28 +864,8 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				msgStr = Quiet@StringTake[Table[
 					msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
 				{m, msgs}], {1, UpTo@8912}];
-
 				
-				errorFile = CreateFile[];
-				CheckAbort[
-					Export[errorFile, msgStr, "JSON"], 
-					Export[errorFile, {"Errors were generated"}, "JSON"]
-				];
-
-				
-				sendResponse[<|"method"->"errorMessages", "params"-><|"file"->errorFile, "input"->string|>|>];
-				
-				(*
-
-				Table[
-					sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 1, "message" -> ToString[r2, InputForm, TotalWidth->5000] |>|>];
-					sendResponse[<|"method" -> "window/logMessage", "params" -><|"type" -> 4, "message" -> ToString[r2, InputForm, TotalWidth->5000]|>|>];,
-				{r2, Take[msgs, UpTo[3]]}];
-				$res["FormattedMessages"] = msgStr;
-
-				*)
-
-				$res["FormattedMessages"] = Map[ToString[Short[#,4]] &, Take[$res["MessagesText"], UpTo[5]]];
+				$res["FormattedMessages"] = Map[ToString[Short[#,4]] &, Take[$res["MessagesText"], UpTo[3]]];
 
 				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
 					"message" -> StringTake[StringRiffle[$res["FormattedMessages"], "\n"], UpTo[100]]|>|>];
@@ -1015,6 +1003,8 @@ getFunctionAtPosition[src_, position_]:=Module[{symbol, p},
 	symbol
 ];
 
+getWordAtPosition["", position_]:= "";
+
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
 	line = StringTrim@srcLines[[position["line"]+1]];
@@ -1089,7 +1079,6 @@ cellToSymbol[node_, uri_]:=Module[{astStr,name,loc,kind,rhs},
 
 handle["getSymbols", json_]:=Module[{},
 	(* ToExpression[json["params"]] *)
-	Print[json];
 	sendResponse[<|"id" -> json["id"], "params" -> <||>|>]
 ];
 

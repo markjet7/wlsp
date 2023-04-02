@@ -360,9 +360,9 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
             const outputDiv = document.getElementById('outputs');
             outputDiv.innerHTML = message.text;
 
-            outputDiv.scrollTop = outputDiv.scrollHeight;
+            // outputDiv.scrollTop = outputDiv.scrollHeight;
 
-            scrollToBottom()
+            // scrollToBottom()
 
         })
         </script>

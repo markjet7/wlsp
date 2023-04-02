@@ -15,7 +15,11 @@ sendResponse[res_Association]:=Module[{byteResponse},
 		Print["response error"];
 		Print[res];
 	] *)
-	Print[Replace[ExportString[res, "JSON", "Compact" -> True], $Failed -> "{\"message\":\"Failure\"}"] <> "\n(*---*)\n"];
+	Print["\n(*---*)\n" <> 
+		Replace[
+			ExportString[res, "JSON", "Compact" -> True], 
+			$Failed -> ExportString[<|"error" -> ToString[res, InputForm]|>, "RawJSON", Compact -> True]] 
+		<> "\n(*---*)\n"];
 ];
 
 handle["textDocument/completion", msg_]:=Module[{res},
@@ -33,7 +37,7 @@ handle["textDocument/completion", msg_]:=Module[{res},
 (* $MessagePrePrint = InputForm; *)
 
 $MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); 
-$PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> Infinity]) &); 
+$PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> 8192]) &); 
 
 
 If[Length[$ScriptCommandLine]>1,kernelport=ToExpression@Part[$ScriptCommandLine,2],port=6589];
@@ -103,7 +107,7 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 1.5;
+handlerWait = 0.05;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
@@ -132,7 +136,7 @@ Get[DirectoryName[path] <> "lsp-kernels.wl"];
 ] // socketHandler;
 
 handle["path", msg_] := (
-	path0 = msg["params"];
+	path0 = msg;
 	Print["Setting path to " <> path0];
 
 	Get[path0 <> "/lsp-kernels.wl"];
@@ -163,7 +167,7 @@ ioHandler[state_]:=Module[{msg},
 	Check[msg = ImportString[raw, "RawJSON"], (Print["Parsing failed: " <> raw];{"unknown", "unknown"})]);
 	Which[		
 		Head@msg === List,
-		(handle[msg[[1]], <|"params" -> msg[[2]]|>];),
+		(handle[msg[[1]],msg[[2]]];),
 		raw === "[Quit, []]",
 		Print["Closing kernel connection..."];
 		Quit[];,

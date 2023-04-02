@@ -29,6 +29,7 @@ let hasDiagnosticRelatedInformationCapability = false;
 let wolfram;
 let wolframReady = false;
 let wolframLaunching = false;
+let requestResponses = new Map();
 function loadWolfram() {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
@@ -73,10 +74,20 @@ function loadWolfram() {
                             let messages = chunk.split("(*---*)");
                             chunk = chunk.split("(*---*)").pop();
                             for (let message of messages) {
+                                // console.log(message);
+                                if (message.trim() == "") {
+                                    continue;
+                                }
+                                // console.log(message.substring(0, 100));
                                 let json = JSON.parse(message);
+                                // console.log(Object.keys(json));
                                 if (Object.keys(json).includes("method")) {
                                     // console.log("method: " + json.method);
                                     connection.sendNotification(json.method, json.params);
+                                }
+                                if (Object.keys(json).includes("id")) {
+                                    // console.log("id: " + json.id);
+                                    requestResponses.set(json.id, json);
                                 }
                                 else {
                                     // console.log("message: " + data.toString());
@@ -85,7 +96,7 @@ function loadWolfram() {
                         }
                     }
                     catch (e) {
-                        // console.error("Error parsing kernel output: " + e);
+                        console.error("Error parsing kernel output: " + (e === null || e === void 0 ? void 0 : e.toString()));
                     }
                 });
                 (_b = wolfram.stdin) === null || _b === void 0 ? void 0 : _b.write(JSON.stringify(["path", path.join(extensionPath, "wolfram")]) + "\n");
@@ -129,7 +140,6 @@ connection.onInitialized(() => {
         if (hasConfigurationCapability) {
             // Register for all configuration changes.
             connection.client.register(node_1.DidChangeConfigurationNotification.type, undefined);
-            console.log('registered for config changes');
         }
         if (hasWorkspaceFolderCapability) {
             connection.workspace.onDidChangeWorkspaceFolders(_event => {
@@ -185,9 +195,11 @@ function onDidOpen(change) {
     // console.log("on did open");
     (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify(["textDocument/didOpen",
         {
-            "textDocument": {
-                "uri": change.document.uri,
-                "text": change.document.getText()
+            params: {
+                "textDocument": {
+                    "uri": change.document.uri,
+                    "text": change.document.getText()
+                }
             }
         }
     ]) + "\n");
@@ -223,8 +235,9 @@ documents.listen(connection);
 connection.listen();
 // let requestListener:any;
 let id = 0;
+let requestListener;
 connection.onRequest((request, params) => {
-    var _a, _b;
+    var _a;
     // console.log("Received: " + request)
     // console.log(wolfram);
     // console.log("sending request")
@@ -233,24 +246,25 @@ connection.onRequest((request, params) => {
         id += 1;
         params["id"] = id;
         // console.log("sending: " + JSON.stringify([request, params]))
-        (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify([request, params]) + "\n");
-        let requestListener = (data) => {
-            var _a;
-            try {
-                let parsed = JSON.parse(data.toString());
-                if (parsed["id"] == id) {
-                    // console.log("received: " + data);
-                    (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.removeListener('data', requestListener);
-                    // console.log("removed listener")
-                    return parsed["result"];
+        (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify([request, { params: params }]) + "\n");
+        return new Promise((resolve, reject) => {
+            // check if the requestResponse is already there every 100ms and resolve if it is
+            let attemps = 0;
+            let check = setInterval(() => {
+                attemps += 1;
+                if (requestResponses.get(params.id) !== undefined) {
+                    // console.log("resolving")
+                    resolve(requestResponses.get(params.id));
+                    console.log(requestResponses.get(params.id));
+                    requestResponses.delete(params.id);
+                    clearInterval(check);
                 }
-            }
-            catch (e) {
-                // console.log("error parsing: " + e);
-                return "error";
-            }
-        };
-        (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('data', requestListener);
+                if (attemps > 300) {
+                    clearInterval(check);
+                    reject("timeout");
+                }
+            }, 100);
+        });
     }
     if (wolframReady == false && wolframLaunching == false) {
         // console.log("not ready")
@@ -277,7 +291,7 @@ connection.onNotification((notification, params) => {
     }
     if (wolframReady) {
         // console.log("sending: " + JSON.stringify([notification, params]))
-        (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify([notification, params]) + "\n");
+        (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify([notification, { params: params }]) + "\n");
     }
     if (wolframReady == false && wolframLaunching == false) {
         // console.log("not ready")

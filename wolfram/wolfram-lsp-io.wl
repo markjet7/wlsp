@@ -2,6 +2,7 @@ BeginPackage["wolframLSP`"];
 
 log = OpenWrite["/Users/mark/Downloads/porttest2.txt", TotalWidth->Infinity];
 $Output = log;
+$process = StartProcess[$SystemShell];
 contentPattern = "Content-Length: " ~~ x:DigitCharacter.. ~~ "\r\n\r\n";
 
 sendResponse[res_Association]:=Module[{byteResponse, json, header, msg},
@@ -10,13 +11,13 @@ sendResponse[res_Association]:=Module[{byteResponse, json, header, msg},
 	msg = header <> json;
 
 	(*Write[stro, msg];*)
-	Write["stderr", Streams[]];
 	Write[log, msg];
 	
 	byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
 
-	Write["stderr", BinaryWrite[OutputStream["stdout", 1], #]] &/@ byteResponse;
-	
+	str = OpenWrite["!cat"];
+	Write["stderr", BinaryWrite[str, #]] &/@ byteResponse;
+	Close[str];
 ];
 
 sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
