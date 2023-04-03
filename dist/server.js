@@ -64,7 +64,7 @@ function loadWolfram() {
                 // console.log('wolfram ready');
                 let chunk = "";
                 (_a = wolfram === null || wolfram === void 0 ? void 0 : wolfram.stdout) === null || _a === void 0 ? void 0 : _a.on('data', (data) => {
-                    // console.log(`stdout: ${data}`);
+                    // console.log(`${data}`);
                     chunk += data.toString();
                     try {
                         if (!chunk.includes("(*---*)")) {
@@ -210,12 +210,12 @@ documents.onDidChangeContent((change) => {
     var _a;
     if (wolframReady) {
         (_a = wolfram.stdin) === null || _a === void 0 ? void 0 : _a.write(JSON.stringify(["textDocument/didChange",
-            {
-                "textDocument": {
-                    "uri": change.document.uri
-                },
-                "contentChanges": [{ "text": change.document.getText() }]
-            }
+            { params: {
+                    "textDocument": {
+                        "uri": change.document.uri
+                    },
+                    "contentChanges": [{ "text": change.document.getText() }]
+                } }
         ]) + "\n");
     }
     if (wolframReady == false && wolframLaunching == false) {
@@ -255,7 +255,7 @@ connection.onRequest((request, params) => {
                 if (requestResponses.get(params.id) !== undefined) {
                     // console.log("resolving")
                     resolve(requestResponses.get(params.id));
-                    console.log(requestResponses.get(params.id));
+                    // console.log(requestResponses.get(params.id))
                     requestResponses.delete(params.id);
                     clearInterval(check);
                 }

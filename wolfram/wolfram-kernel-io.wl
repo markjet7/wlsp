@@ -35,8 +35,12 @@ handle["textDocument/completion", msg_]:=Module[{res},
 
 (* Off[General::stop]; *)
 (* $MessagePrePrint = InputForm; *)
+$myShort[str_String]:=If[
+	StringLength[str]>201,
+	ToString[StringTake[str,100]<>"..."<> StringTake[str,{-100,-1}], InputForm],
+	ToString[str, InputForm]];
 
-$MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; InputForm@# &); 
+$MessagePrePrint = (sendResponse[<| "method" -> "window/showMessage", "params" -> <| "type" -> 4, "message" -> ToString[ReleaseHold@#, InputForm, TotalWidth -> 1000] |> |>]; $myShort@# &); 
 $PrePrint = ((sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> ToString[#, InputForm] |> |>]; ToString[#, InputForm, TotalWidth -> 8192]) &); 
 
 

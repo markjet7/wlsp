@@ -27,11 +27,13 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this._view.show(true)
         this._text = "In: ..."
-        this._view.onDidChangeVisibility((e) => {
-            if (this._view?.visible) {
-                this._view?.webview.postMessage({text: (this._text)})
-            }
-        })
+        this._view?.webview.postMessage({text: [["",""]]});
+
+        // this._view.onDidChangeVisibility((e) => {
+        //     if (this._view?.visible) {
+        //         this._view?.webview.postMessage({text: (this._text)})
+        //     }
+        // })
 
         this._view.onDidDispose(
             () => {
@@ -45,15 +47,15 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
 
 
-    public updateView(out:string) {
-        this._text = out;
+    public updateView(out:any) {
+        // this._text = out;
         this._view?.webview.postMessage({text: (out)})
         
         if (this._view) {
-            console.log("Getting data view")
+            // console.log("Getting data view")
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         } else {
-            console.log("No data view")
+            // console.log("No data view")
         }
     }
 
@@ -161,6 +163,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             <title>Plots</title>
             <script>
                 const vscode = acquireVsCodeApi();
+                var results = vscode.getState() || [["",""]];
                 function scrollToBottom() {
                     window.scrollTo(0,document.body.scrollHeight);
     
@@ -193,13 +196,21 @@ export class PlotsViewProvider implements WebviewViewProvider {
     
             window.addEventListener('message', event => {
                 const message = event.data;
+                results.splice(0, 0, event.data.text).slice(0, 20);
+                results = results.filter(v => v !== ["",""]);
+                vscode.setState(results);
     
                 const outputDiv = document.getElementById('outputs');
-                outputDiv.innerHTML = message.text;
+
+                let newHTML = "";
+                for (let i = 0; i < results.length; i++) {
+                    newHTML += "<hr>In[" + (results.length-i) +"]: " + results[i][0] + "<hr><br>" + results[i][1];
+                }
+                outputDiv.innerHTML = newHTML;
     
                 outputDiv.scrollTop = outputDiv.scrollHeight;
     
-                scrollToBottom()
+                // scrollToBottom()
     
             })
             </script>

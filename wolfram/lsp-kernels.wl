@@ -178,6 +178,10 @@ handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPositi
 		|>|>];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
 		
+		If[!SyntaxQ@code["code"],
+			sendResponse[<|"method" -> "onRunInWolframIO", "params" -> <|"output" -> "Syntax error", "input" -> code["code"], "result" -> "Syntax error", "load" -> False, "position" -> newPosition, "print" -> json["params", "print"], "hover" -> "Syntax error", "messages" -> {}, "time" -> 0, "decoration" -> "Syntax error", "document" -> json["params", "textDocument", "uri"]|>|>];
+			Return[];
+		];
 		r = evaluateString[code["code"]];
 		output = transformsIO[ReleaseHold[r["Result"]], Lookup[r,"FormattedMessages",{}]];
 		result = <|
@@ -185,7 +189,7 @@ handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPositi
 			"params" -> <|
 				"output" -> output,
 				"input" -> code["code"],
-				"result" -> ToString[ReleaseHold[r["Result"]], InputForm],
+				"result" -> $myShort[ToString@ReleaseHold[r["Result"]]],
 				"load" -> False,
 				"position" -> newPosition,
 				"print" -> json["params", "print"],
@@ -583,6 +587,7 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 	lastChange = Now;
 	
 	oldtext = Lookup[documents, json["params","textDocument","uri"], ""];
+	Print[oldtext];
 
 	newtext = FoldWhile[StringJoin, 
 		StringSplit[json["params","contentChanges"][[1]]["text"], "\n"->"\n", All],
@@ -850,7 +855,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 			),
 
 			(
-				
+				(*
 				msgs = $res["MessagesExpressions"];
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
@@ -864,8 +869,11 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				msgStr = Quiet@StringTake[Table[
 					msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
 				{m, msgs}], {1, UpTo@8912}];
+				*)
 				
-				$res["FormattedMessages"] = Map[ToString[Short[#,4]] &, Take[$res["MessagesText"], UpTo[3]]];
+				$res["FormattedMessages"] = Map[
+					$myShort[#] &, 
+					Take[$res["MessagesText"], UpTo[5]]];
 
 				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
 					"message" -> StringTake[StringRiffle[$res["FormattedMessages"], "\n"], UpTo[100]]|>|>];

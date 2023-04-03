@@ -85,7 +85,7 @@ async function loadWolfram():Promise<void> {
 		// console.log('wolfram ready');
 		let chunk:string = "";
 		wolfram?.stdout?.on('data', (data:any) => {
-			// console.log(`stdout: ${data}`);
+			// console.log(`${data}`);
 			chunk += data.toString();
 
 			try {
@@ -253,12 +253,12 @@ function onDidOpen(change:TextDocumentChangeEvent<TextDocument>) {
 documents.onDidChangeContent((change:TextDocumentChangeEvent<TextDocument>) => {
 	if (wolframReady) {
 		wolfram.stdin?.write(JSON.stringify(["textDocument/didChange", 
-		{
+		{params:{
 			"textDocument": {
 				"uri": change.document.uri
 			},
 			"contentChanges": [{"text":change.document.getText()}]
-		}
+		}}
 	]) + "\n");
 
 	} 

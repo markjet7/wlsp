@@ -769,7 +769,7 @@ function updateResults(e, result, print, input = "") {
                 output = fs.readFileSync(result["params"]["output"]);
             }
             else {
-                output = result["params"]["output"];
+                output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
             }
             if (printResults.length > maxPrintResults) {
                 printResults.shift();
@@ -985,33 +985,31 @@ function clearPlots() {
     updateOutputPanel();
 }
 function updateOutputPanel() {
-    let out = "";
-    let reversed = printResults.slice().reverse();
-    printResults.forEach((row) => {
-        let data = "";
-        try {
-            data += row[1];
-        }
-        catch (e) {
-            console.log(e.message);
-            data += "Error reading result";
-        }
-        if (data !== "") {
-            let inputString = "";
-            if (row[0].length > 500) {
-                inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
-            }
-            else {
-                inputString = row[0];
-            }
-            out += "<div id='result-header'>In: " + inputString +
-                "</div>" +
-                "<div id='result'>" +
-                data +
-                "</div>";
-        }
-    });
-    plotsProvider.updateView(out);
+    // let out = "";
+    // let reversed = printResults.slice().reverse();
+    // printResults.forEach((row) => {
+    //     let data = "";
+    //     try {
+    //         data += row[1];
+    //     } catch (e) {
+    //         console.log((e as Error).message);
+    //         data += "Error reading result";
+    //     }
+    //     if (data !== "") {
+    //         let inputString = "";
+    //         if (row[0].length > 500) {
+    //             inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
+    //         } else {
+    //             inputString = row[0];
+    //         }
+    //         out += "<div id='result-header'>In: " + inputString +
+    //             "</div>" +
+    //             "<div id='result'>" +
+    //             data +
+    //             "</div>";
+    //     }
+    // })
+    plotsProvider.updateView(printResults.reverse());
 }
 function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {

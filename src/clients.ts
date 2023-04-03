@@ -937,7 +937,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             if (result["params"]["load"]) {
                 output = fs.readFileSync(result["params"]["output"])
             } else {
-                output = result["params"]["output"];
+                output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
             }
 
             if (printResults.length > maxPrintResults) {
@@ -1209,36 +1209,36 @@ function clearPlots() {
 
 
 function updateOutputPanel() {
-    let out = "";
-    let reversed = printResults.slice().reverse();
-    printResults.forEach((row) => {
-        let data = "";
-        try {
-            data += row[1];
-        } catch (e) {
-            console.log((e as Error).message);
-            data += "Error reading result";
-        }
+    // let out = "";
+    // let reversed = printResults.slice().reverse();
+    // printResults.forEach((row) => {
+    //     let data = "";
+    //     try {
+    //         data += row[1];
+    //     } catch (e) {
+    //         console.log((e as Error).message);
+    //         data += "Error reading result";
+    //     }
 
-        if (data !== "") {
+    //     if (data !== "") {
 
-            let inputString = "";
-            if (row[0].length > 500) {
-                inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
-            } else {
-                inputString = row[0];
-            }
+    //         let inputString = "";
+    //         if (row[0].length > 500) {
+    //             inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
+    //         } else {
+    //             inputString = row[0];
+    //         }
 
-            out += "<div id='result-header'>In: " + inputString +
-                "</div>" +
+    //         out += "<div id='result-header'>In: " + inputString +
+    //             "</div>" +
 
-                "<div id='result'>" +
-                data +
-                "</div>";
-        }
-    })
+    //             "<div id='result'>" +
+    //             data +
+    //             "</div>";
+    //     }
+    // })
 
-    plotsProvider.updateView(out)
+    plotsProvider.updateView(printResults.reverse())
 }
 
 async function startWLSPIO(id: number): Promise<void> {

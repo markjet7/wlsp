@@ -4,6 +4,7 @@ exports.showPlotPanel = exports.PlotsViewProvider = void 0;
 const vscode_1 = require("vscode");
 class PlotsViewProvider {
     resolveWebviewView(webviewView, context, _token) {
+        var _a;
         this._view = webviewView;
         this._view.webview.options = {
             enableScripts: true,
@@ -12,12 +13,12 @@ class PlotsViewProvider {
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         this._view.show(true);
         this._text = "In: ...";
-        this._view.onDidChangeVisibility((e) => {
-            var _a, _b;
-            if ((_a = this._view) === null || _a === void 0 ? void 0 : _a.visible) {
-                (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ text: (this._text) });
-            }
-        });
+        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: [["", ""]] });
+        // this._view.onDidChangeVisibility((e) => {
+        //     if (this._view?.visible) {
+        //         this._view?.webview.postMessage({text: (this._text)})
+        //     }
+        // })
         this._view.onDidDispose(() => {
             this._view = undefined;
         }, null);
@@ -25,14 +26,14 @@ class PlotsViewProvider {
     }
     updateView(out) {
         var _a;
-        this._text = out;
+        // this._text = out;
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out) });
         if (this._view) {
-            console.log("Getting data view");
+            // console.log("Getting data view")
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         }
         else {
-            console.log("No data view");
+            // console.log("No data view")
         }
     }
     constructor(_extensionUri0) {
@@ -138,6 +139,7 @@ class PlotsViewProvider {
             <title>Plots</title>
             <script>
                 const vscode = acquireVsCodeApi();
+                var results = vscode.getState() || [["",""]];
                 function scrollToBottom() {
                     window.scrollTo(0,document.body.scrollHeight);
     
@@ -170,13 +172,21 @@ class PlotsViewProvider {
     
             window.addEventListener('message', event => {
                 const message = event.data;
+                results.splice(0, 0, event.data.text).slice(0, 20);
+                results = results.filter(v => v !== ["",""]);
+                vscode.setState(results);
     
                 const outputDiv = document.getElementById('outputs');
-                outputDiv.innerHTML = message.text;
+
+                let newHTML = "";
+                for (let i = 0; i < results.length; i++) {
+                    newHTML += "<hr>In[" + (results.length-i) +"]: " + results[i][0] + "<hr>" + results[i][1];
+                }
+                outputDiv.innerHTML = newHTML;
     
                 outputDiv.scrollTop = outputDiv.scrollHeight;
     
-                scrollToBottom()
+                // scrollToBottom()
     
             })
             </script>
