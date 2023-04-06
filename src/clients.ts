@@ -13,7 +13,8 @@ import {
     TransportKind,
     NotificationType,
     State,
-    StateChangeEvent
+    StateChangeEvent,
+    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
 } from 'vscode-LanguageClient/node';
 import { resolve } from 'path';
 import { deactivate } from './notebook';
@@ -1366,6 +1367,7 @@ async function startWLSP(id: number): Promise<void> {
         })
     };
 
+    let clientErrorHandler = new ClientErrorHandler();
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
             "wolfram"
@@ -1374,7 +1376,8 @@ async function startWLSP(id: number): Promise<void> {
             debuggerPort: 7777
         },
         diagnosticCollectionName: 'wolfram-lsp',
-        outputChannel: outputChannel
+        outputChannel: outputChannel,
+        errorHandler: clientErrorHandler
     };
 
     return new Promise(async (resolve) => {
@@ -1388,12 +1391,13 @@ async function startWLSP(id: number): Promise<void> {
 
         setTimeout(() => {
             let disposible: vscode.Disposable | undefined;
+
             wolframClient?.start();
             outputChannel.appendLine("Client Started")
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             resolve()
-        }, 100)
+        }, 1000)
 
     });
 }
@@ -1408,6 +1412,7 @@ async function startWLSPKernel(id: number): Promise<void> {
         debug: { module: context.asAbsolutePath('dist/server.js'), transport: TransportKind.ipc, options: { execArgv: ["--nolazy", "--inspect=6009"] } }
     };
 
+    let kernelErrorHandler = new ClientErrorHandler();
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
             "wolfram"
@@ -1416,7 +1421,8 @@ async function startWLSPKernel(id: number): Promise<void> {
             debuggerPort: 7777
         },
         diagnosticCollectionName: 'wolfram-lsp',
-        outputChannel: kernelOutputChannel
+        outputChannel: kernelOutputChannel,
+        errorHandler: kernelErrorHandler
     };
 
     return new Promise(async (resolve) => {
@@ -2277,3 +2283,20 @@ class WLSPConfigurationProvider implements vscode.DebugConfigurationProvider {
     }
 }
 
+
+class ClientErrorHandler implements ErrorHandler {
+    error(error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult {
+        console.log("Error: " + error.message)
+        return {
+            action: ErrorAction.Continue
+        }
+    }
+
+    closed(): CloseHandlerResult {
+        console.log("Closed")
+        return {
+            action: CloseAction.DoNotRestart
+        }
+    }
+
+}

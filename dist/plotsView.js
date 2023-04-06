@@ -180,7 +180,7 @@ class PlotsViewProvider {
 
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
-                    newHTML += "<hr>In[" + (results.length-i) +"]: " + results[i][0] + "<hr>" + results[i][1];
+                    newHTML += "<hr>In[" + (results.length-i) +"]: " + results[i][0] + "<hr><br>" + results[i][1];
                 }
                 outputDiv.innerHTML = newHTML;
     

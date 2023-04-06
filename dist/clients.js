@@ -1115,6 +1115,7 @@ function startWLSP(id) {
                 }));
             }));
         };
+        let clientErrorHandler = new ClientErrorHandler();
         let clientOptions = {
             documentSelector: [
                 "wolfram"
@@ -1123,7 +1124,8 @@ function startWLSP(id) {
                 debuggerPort: 7777
             },
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: outputChannel
+            outputChannel: outputChannel,
+            errorHandler: clientErrorHandler
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
@@ -1138,7 +1140,7 @@ function startWLSP(id) {
                 // outputChannel.appendLine(new Date().toLocaleTimeString())
                 // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
-            }, 100);
+            }, 1000);
         }));
     });
 }
@@ -1151,6 +1153,7 @@ function startWLSPKernel(id) {
             run: { module: context.asAbsolutePath('dist/server.js'), transport: node_1.TransportKind.ipc },
             debug: { module: context.asAbsolutePath('dist/server.js'), transport: node_1.TransportKind.ipc, options: { execArgv: ["--nolazy", "--inspect=6009"] } }
         };
+        let kernelErrorHandler = new ClientErrorHandler();
         let clientOptions = {
             documentSelector: [
                 "wolfram"
@@ -1159,7 +1162,8 @@ function startWLSPKernel(id) {
                 debuggerPort: 7777
             },
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: kernelOutputChannel
+            outputChannel: kernelOutputChannel,
+            errorHandler: kernelErrorHandler
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);
@@ -1863,6 +1867,20 @@ class WLSPConfigurationProvider {
             });
         }
         return config;
+    }
+}
+class ClientErrorHandler {
+    error(error, message, count) {
+        console.log("Error: " + error.message);
+        return {
+            action: node_1.ErrorAction.Continue
+        };
+    }
+    closed() {
+        console.log("Closed");
+        return {
+            action: node_1.CloseAction.DoNotRestart
+        };
     }
 }
 //# sourceMappingURL=clients.js.map
