@@ -140,7 +140,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     // )
 
     startWLSP(0);
-    startWLSPKernel(0);
+    startWLSPKernelSocket(0);
 
     vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
     vscode.commands.registerCommand('wolfram.runToLine', runToLine);
@@ -245,7 +245,7 @@ export async function restart(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     startWLSP(0);
-    startWLSPKernel(0);
+    startWLSPKernelSocket(0);
 
     return new Promise((resolve) => {
         vscode.workspace.textDocuments.forEach(didOpenTextDocument);
@@ -771,7 +771,7 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
                 title: "Wolfram (" + (evalNext.range.start.line + 1) + ")",
                 cancellable: true
             }, (prog, withProgressCancellation) => {
-                return new Promise(resolve => {
+                return new Promise((resolve, reject) => {
 
                     withProgressCancellation.onCancellationRequested(ev => {
                         console.log("Aborting Wolfram evaluation");
@@ -791,12 +791,19 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
                         resolve(true)
                     })
 
-
                     // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
                     // wolframStatusBar.show();
                     starttime = Date.now();
 
+                    if (wolframKernelClient?.state === 3 || wolframKernelClient?.state === 1) {
+                        console.log("Kernel is not running")
+                        resolve(false)
+                    }
+
                     wolframKernelClient?.sendNotification("runInWolfram", evalNext)
+                }).catch((err) => {
+                    console.log(err);
+                    restart()
                 })
 
             })
@@ -936,7 +943,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
             let output;
             if (result["params"]["load"]) {
-                output = fs.readFileSync(result["params"]["output"])
+                output = fs.readFileSync(result["params"]["output"]).toString()
             } else {
                 output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
             }
@@ -1403,7 +1410,7 @@ async function startWLSP(id: number): Promise<void> {
 }
 
 let attempts = 0;
-async function startWLSPKernel(id: number): Promise<void> {
+async function startWLSPKernelIO(id: number): Promise<void> {
     attempts += 1;
     console.log("Starting WLSP Kernel: " + attempts)
 
@@ -1444,7 +1451,7 @@ async function startWLSPKernel(id: number): Promise<void> {
 }
 
 
-async function startWLSPKernelOld(id: number): Promise<void> {
+async function startWLSPKernelSocket(id: number): Promise<void> {
     let timeout: any;
 
     let serverOptions: ServerOptions = function () {
@@ -1537,6 +1544,7 @@ async function startWLSPKernelOld(id: number): Promise<void> {
         })
     };
 
+    let kernelErrorHandler = new ClientErrorHandler();
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
             "wolfram"
@@ -1546,7 +1554,8 @@ async function startWLSPKernelOld(id: number): Promise<void> {
         markdown: {
             isTrusted: true,
             supportHtml: true
-        }
+        },
+        errorHandler: kernelErrorHandler
     };
 
     return new Promise(async (resolve) => {

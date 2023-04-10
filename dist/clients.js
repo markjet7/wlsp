@@ -93,7 +93,7 @@ function startLanguageServer(context0, outputChannel0) {
         //     wlspdebugger
         // )
         startWLSP(0);
-        startWLSPKernel(0);
+        startWLSPKernelSocket(0);
         vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
         vscode.commands.registerCommand('wolfram.runToLine', runToLine);
         vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
@@ -182,7 +182,7 @@ function restart() {
         // sleep for 1 second to allow the kernel to shut down
         yield new Promise(resolve => setTimeout(resolve, 5000));
         startWLSP(0);
-        startWLSPKernel(0);
+        startWLSPKernelSocket(0);
         return new Promise((resolve) => {
             vscode.workspace.textDocuments.forEach(didOpenTextDocument);
             resolve();
@@ -621,7 +621,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                 title: "Wolfram (" + (evalNext.range.start.line + 1) + ")",
                 cancellable: true
             }, (prog, withProgressCancellation) => {
-                return new Promise(resolve => {
+                return new Promise((resolve, reject) => {
                     withProgressCancellation.onCancellationRequested(ev => {
                         console.log("Aborting Wolfram evaluation");
                         // stopWolfram(undefined, wolframKernel);
@@ -639,7 +639,14 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
                     // wolframStatusBar.show();
                     starttime = Date.now();
+                    if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 3 || (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
+                        console.log("Kernel is not running");
+                        resolve(false);
+                    }
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
+                }).catch((err) => {
+                    console.log(err);
+                    restart();
                 });
             });
         }
@@ -766,7 +773,7 @@ function updateResults(e, result, print, input = "") {
             }
             let output;
             if (result["params"]["load"]) {
-                output = fs.readFileSync(result["params"]["output"]);
+                output = fs.readFileSync(result["params"]["output"]).toString();
             }
             else {
                 output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
@@ -1145,7 +1152,7 @@ function startWLSP(id) {
     });
 }
 let attempts = 0;
-function startWLSPKernel(id) {
+function startWLSPKernelIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
         console.log("Starting WLSP Kernel: " + attempts);
@@ -1179,7 +1186,7 @@ function startWLSPKernel(id) {
         }));
     });
 }
-function startWLSPKernelOld(id) {
+function startWLSPKernelSocket(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         let serverOptions = function () {
@@ -1259,6 +1266,7 @@ function startWLSPKernelOld(id) {
                 }));
             }));
         };
+        let kernelErrorHandler = new ClientErrorHandler();
         let clientOptions = {
             documentSelector: [
                 "wolfram"
@@ -1268,7 +1276,8 @@ function startWLSPKernelOld(id) {
             markdown: {
                 isTrusted: true,
                 supportHtml: true
-            }
+            },
+            errorHandler: kernelErrorHandler
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);

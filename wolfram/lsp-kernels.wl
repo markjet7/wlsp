@@ -208,7 +208,7 @@ resultPatterns = {x_Failure :> x[[1]] <> ": " <> ToString@(x[[2,3,2]])};
 
 Inputs = {};
 Outputs = {};
-myShort[expr_, n_:50] := (
+$myShort[expr_, n_:50] := (
 	If[StringLength[ToString[expr]] > 2*n,
 		StringTake[ToString[expr], n] <> "..." <> StringTake[ToString[expr], -n],
 		ToString[expr]
@@ -289,7 +289,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> ToString@time <> ": " <> myShort[result],
+			"decoration" -> ToString@time <> ": " <> $myShort[result],
 			"document" ->  ""|>,
 		"params"-><|
 			"input" -> string,
@@ -301,7 +301,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> ToString@time <> ": " <> myShort[result],
+			"decoration" -> ToString@time <> ": " <> $myShort[result],
 			"document" ->  ""|>
 		|>,
 		<|
@@ -316,7 +316,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"hover" -> StringTake[hoverMessage, 1;;-1],
 			"messages" -> r["FormattedMessages"],
 			"time" -> time,
-			"decoration" -> ToString@time <> ": " <> myShort[result],
+			"decoration" -> ToString@time <> ": " <> $myShort[result],
 			"document" -> json["params", "textDocument"]["uri"]
 			|>
 		|>
