@@ -130,7 +130,7 @@ Get[DirectoryName[path] <> "lsp-handler.wl"];
 ] // socketHandler;
 
 Check[
-SERVER=SocketOpen[port,"TCP"];
+	SERVER=SocketOpen[port,"TCP"];
 	Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
 	Print["LSP ", SERVER, ": ", port];,
 

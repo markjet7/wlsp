@@ -5,7 +5,7 @@ Manipulate[
     Plot[Sin[x], {x, 1, a}],
     {a, 2, 10}]
 
-1+5
+1+3
 
 
 Plot[Sin[x], {x, 1, 10}]

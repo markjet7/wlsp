@@ -23,11 +23,10 @@ export class PlotsViewProvider implements WebviewViewProvider {
             localResourceRoots: [Uri.joinPath(this._extensionUri, "media")]
         };
 
-        this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
-
-        this._view.show(true)
         this._text = "In: ..."
-        this._view?.webview.postMessage({text: [["",""]]});
+        this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
+        this._view.show(true)
+        // this._view?.webview.postMessage({text: [["In: ...",""]]});
 
         // this._view.onDidChangeVisibility((e) => {
         //     if (this._view?.visible) {
@@ -163,7 +162,8 @@ export class PlotsViewProvider implements WebviewViewProvider {
             <title>Plots</title>
             <script>
                 const vscode = acquireVsCodeApi();
-                var results = vscode.getState() || [["",""]];
+                var results = vscode.getState() || [];
+                results = [];
                 function scrollToBottom() {
                     window.scrollTo(0,document.body.scrollHeight);
     
@@ -193,18 +193,21 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     }
                 }
             }
-    
+            
+            var index = 0;
             window.addEventListener('message', event => {
                 const message = event.data;
-                results.splice(0, 0, event.data.text).slice(0, 20);
-                results = results.filter(v => v !== ["",""]);
+                // results.splice(0, 0, event.data.text[0]).slice(0, 20);
+                results.splice(0, 0, event.data.text[0]);
+                results = results.slice(0, 20);
                 vscode.setState(results);
     
                 const outputDiv = document.getElementById('outputs');
 
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
-                    newHTML += "<hr>In[" + (results.length-i) +"]: " + results[i][0] + "<hr><br>" + results[i][1];
+                    index += 1;
+                    newHTML += "<hr>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
                 }
                 outputDiv.innerHTML = newHTML;
     

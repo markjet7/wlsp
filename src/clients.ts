@@ -1367,7 +1367,7 @@ async function startWLSP(id: number): Promise<void> {
                 await load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
                     wolfram = r
                     socket.connect(clientPort, "127.0.0.1", () => {
-                        socket.setKeepAlive(true);
+                        outputChannel.appendLine("Client Socket connected")
                     });
                 });
             })
@@ -1396,15 +1396,16 @@ async function startWLSP(id: number): Promise<void> {
         //     onclientReady();
         // })
 
-        setTimeout(() => {
-            let disposible: vscode.Disposable | undefined;
 
-            wolframClient?.start();
+        wolframClient?.start().then((value) => {
             outputChannel.appendLine("Client Started")
-            // outputChannel.appendLine(new Date().toLocaleTimeString())
-            // if (disposible) {context.subscriptions.push(disposible)};
-            resolve()
-        }, 1000)
+            resolve();
+        }, (reason) => {
+            outputChannel.appendLine("Client Start Error: " + reason)
+        });
+        // outputChannel.appendLine(new Date().toLocaleTimeString())
+        // if (disposible) {context.subscriptions.push(disposible)};
+
 
     });
 }

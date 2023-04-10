@@ -50,7 +50,7 @@ export class DataViewProvider implements WebviewViewProvider {
         if (this._view) {
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         } else {
-            console.log("No data view")
+            // console.log("No data view")
         }
     }
 

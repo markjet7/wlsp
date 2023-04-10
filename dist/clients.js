@@ -1116,7 +1116,7 @@ function startWLSP(id) {
                     yield load(wolfram, lspPath, clientPort, outputChannel).then((r) => {
                         wolfram = r;
                         socket.connect(clientPort, "127.0.0.1", () => {
-                            socket.setKeepAlive(true);
+                            outputChannel.appendLine("Client Socket connected");
                         });
                     });
                 }));
@@ -1140,14 +1140,14 @@ function startWLSP(id) {
             // wolframClient.onReady().then(() => {
             //     onclientReady();
             // })
-            setTimeout(() => {
-                let disposible;
-                exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start();
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start().then((value) => {
                 outputChannel.appendLine("Client Started");
-                // outputChannel.appendLine(new Date().toLocaleTimeString())
-                // if (disposible) {context.subscriptions.push(disposible)};
                 resolve();
-            }, 1000);
+            }, (reason) => {
+                outputChannel.appendLine("Client Start Error: " + reason);
+            });
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
+            // if (disposible) {context.subscriptions.push(disposible)};
         }));
     });
 }
