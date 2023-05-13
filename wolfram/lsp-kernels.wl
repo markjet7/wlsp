@@ -167,7 +167,7 @@ handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPositi
 
 		Unprotect[NotebookDirectory];
 		NotebookDirectory[] = FileNameJoin[
-			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
+			URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
 		start = Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
@@ -219,7 +219,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
-		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]];
+		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
 	string = code2["code"];
 
 	Which[
@@ -271,7 +271,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ExportString[Rasterize@Short[result,10], {"Base64", "PNG"}, ImageSize->5*72] <> 
 				"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
 
-				Quantity[10, "Seconds"],
+				Quantity[5, "Seconds"],
 
 				ToString[Short[result,7], InputForm]
 				],
@@ -587,7 +587,6 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 	lastChange = Now;
 	
 	oldtext = Lookup[documents, json["params","textDocument","uri"], ""];
-	Print[oldtext];
 
 	newtext = FoldWhile[StringJoin, 
 		StringSplit[json["params","contentChanges"][[1]]["text"], "\n"->"\n", All],
@@ -872,7 +871,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				*)
 				
 				$res["FormattedMessages"] = Map[
-					$myShort[#] &, 
+					$myShort[OutputForm[#], 200] &, 
 					Take[$res["MessagesText"], UpTo[5]]];
 
 				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 

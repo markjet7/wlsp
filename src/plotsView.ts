@@ -26,13 +26,13 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._text = "In: ..."
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
         this._view.show(true)
-        // this._view?.webview.postMessage({text: [["In: ...",""]]});
+        // this._view?.webview.postMessage({text: []});
 
-        // this._view.onDidChangeVisibility((e) => {
-        //     if (this._view?.visible) {
-        //         this._view?.webview.postMessage({text: (this._text)})
-        //     }
-        // })
+        this._view.onDidChangeVisibility((e) => {
+            if (this._view?.visible) {
+                this._view?.webview.postMessage({text: []})
+            }
+        })
 
         this._view.onDidDispose(
             () => {
@@ -68,7 +68,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
             "media",
             "toolkit.js"
         ]);
-    
        
         let result = `<!DOCTYPE html>
         <html lang="en">
@@ -135,6 +134,12 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     overflow-y:hidden;
                     image-rendering:auto;
                 }
+
+                #errors {
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: var(--vscode-editor-font-size);
+                    color: #801f01;
+                }
     
                 #result img{
                     width:90vw;
@@ -163,7 +168,8 @@ export class PlotsViewProvider implements WebviewViewProvider {
             <script>
                 const vscode = acquireVsCodeApi();
                 var results = vscode.getState() || [];
-                results = [];
+                
+                
                 function scrollToBottom() {
                     window.scrollTo(0,document.body.scrollHeight);
     
@@ -193,15 +199,19 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     }
                 }
             }
-            
+
             var index = 0;
             window.addEventListener('message', event => {
                 const message = event.data;
+                var results = vscode.getState() || [];
                 // results.splice(0, 0, event.data.text[0]).slice(0, 20);
-                results.splice(0, 0, event.data.text[0]);
-                results = results.slice(0, 20);
-                vscode.setState(results);
-    
+                if (event.data.text.length > 1) {
+                    results.splice(0, 0, event.data.text[0]);
+                
+                    results = results.slice(0, 20);
+                    vscode.setState(results);
+                }
+        
                 const outputDiv = document.getElementById('outputs');
 
                 let newHTML = "";
@@ -213,9 +223,55 @@ export class PlotsViewProvider implements WebviewViewProvider {
     
                 outputDiv.scrollTop = outputDiv.scrollHeight;
     
+                // Add a download button for each image element
+                for (const imageElement of imageElements) {
+                    createDownloadButton(imageElement);
+                }
+
+                // for (var i = 0; i < imageElements.length; i++) {
+                //     imageElements[i].addEventListener('click', handleImageClick);
+                // };
                 // scrollToBottom()
     
-            })
+            });
+
+            // Get all image elements on the page
+            const imageElements = document.getElementsByTagName("img");
+
+            // Create a function to handle the click event
+            const handleImageClick = (imageElement) => {
+                // Create an anchor element
+                const link = document.createElement("a");
+
+                // Set the image source as the link's href and specify the download attribute
+                link.href = imageElement.src;
+                link.download = "image.png";
+
+                // Trigger the click event on the link element to start the download
+                link.click();
+            };
+
+            // Function to create a download button for the given image element
+            const createDownloadButton = (imageElement) => {
+                console.log("Adding download button");
+                // Create a button element
+                const button = document.createElement("button");
+
+                // Set the button's text
+                button.textContent = "Download";
+
+                // Add a click event listener to the button
+                button.addEventListener("click", () => handleImageClick(imageElement));
+
+                // Insert the button after the image element
+                imageElement.insertAdjacentElement("afterend", button);
+            };
+
+
+
+
+
+
             </script>
         </head>
         <body>
