@@ -820,15 +820,10 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
 
                     if (wolframKernelClient?.state === 3 || wolframKernelClient?.state === 1) {
                         console.log("Kernel is not running")
-                        restartKernel().then((r: any) => {
-                            wolframBusyQ = false;
-                            sendToWolfram(printOutput, sel)
-                        }).catch((err: any) => {
-                            resolve(false)
-                        })
-                    } else {
-                        wolframKernelClient?.sendNotification("runInWolfram", evalNext)
+                        resolve(false)
                     }
+
+                    wolframKernelClient?.sendNotification("runInWolfram", evalNext)
                 }).catch((err) => {
                     console.log(err);
                     restart()
@@ -862,13 +857,13 @@ function onRunInWolframIO(result: any) {
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
 
-    setDecorations({ params: result })
+    setDecorations({params:result})
     const editors: readonly vscode.TextEditor[] = vscode.window.visibleTextEditors;
     let e = editors.filter((e) => {
         return e.document.uri.path === result["document"]["path"]
     })[0];
 
-    updateResults(e, { params: result }, result["print"], result["input"])
+    updateResults(e, {params:result}, result["print"], result["input"])
 }
 
 let evaluationResults: { [key: string]: string } = {}
@@ -1006,7 +1001,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             // is <img> tags in hoverMessage string
 
             if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
-                hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "..."
+                hoverMessage = "Large output: " + hoverMessage.substring(0, 100) + "..."
             } 
             if (result["params"]["messages"].length > 0) {
                 backgroundColor = "red";
@@ -1286,10 +1281,9 @@ function updateOutputPanel() {
 
 async function startWLSPIO(id: number): Promise<void> {
     let serverOptions: ServerOptions = {
-        run: {
-            command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: TransportKind.stdio
+        run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl'))) ], transport: TransportKind.stdio
         },
-        debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: TransportKind.stdio }
+        debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl'))) ], transport: TransportKind.stdio}
     };
 
     let clientOptions: LanguageClientOptions = {
@@ -1640,7 +1634,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 
             wolfram.stdout?.once('data', (data: any) => {
                 outputChannel.appendLine("WLSP Loading: " + data.toString())
-                setTimeout(() => { resolve(wolfram) }, 1000)
+                setTimeout(() => {resolve(wolfram)}, 1000)
                 // resolve(wolfram)
             });
 
