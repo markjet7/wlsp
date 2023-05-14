@@ -820,6 +820,9 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
 
                     if (wolframKernelClient?.state === 3 || wolframKernelClient?.state === 1) {
                         console.log("Kernel is not running")
+                        restartKernel().then((m:any) => {
+                            sendToWolfram(printOutput, sel)
+                        });
                         resolve(false)
                     }
 
