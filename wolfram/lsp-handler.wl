@@ -1266,7 +1266,7 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 	word=StringTake[line,
 		Replace[
 			First@Nearest[
-				StringPosition[line,TextWords[line]],
+				StringPosition[line, Replace[TextWords[line], {} -> {""}]],
 				{position["character"],position["character"]}],
 			Rule[{},{0,0}]]];
 	word

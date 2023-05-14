@@ -57,13 +57,13 @@ graphicsQ =
 
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
-transforms[output_, errors_]:=Module[{f},
+transforms[output_, errors_]:=Module[{f, k},
 
 		f = CreateFile[];
-		
+		OpenWrite[f, BinaryFormat->True];
 		BinaryWrite[f, 
 				ExportString[
-					Rasterize@Short[Echo@output, 10],
+					Rasterize[Short[output, 10]],
 					"HTMLFragment",
 					"GraphicsOutput"->Automatic]
 		];
@@ -104,14 +104,18 @@ transforms[output_, errors_]:=Module[{f},
 
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
-		
-		BinaryWrite[f, 
-				ExportString[
-					Rasterize@Short[Echo@output, 10],
-					"HTMLFragment",
-					"GraphicsOutput"->Automatic]
+		Print["Submitting Parallel"];
+		SetSharedVariable[f];
+		SetSharedVariable[output];
+		ParallelSubmit[
+			BinaryWrite[f, 
+					ExportString[
+						Rasterize@Short[output, 10],
+						"HTMLFragment",
+						"GraphicsOutput"->Automatic]
+			];
+			Close[f];
 		];
-		Close[f];
 		Return[f];
 
 

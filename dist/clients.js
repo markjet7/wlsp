@@ -161,9 +161,12 @@ function updateConfiguration() {
 }
 function restartKernel() {
     return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve, reject) => {
-            stopWolfram(undefined, wolframKernel);
-            startWLSPKernelSocket(0);
+        evaluationQueue = [];
+        wolframBusyQ = false;
+        stopWolfram(undefined, wolframKernel);
+        yield new Promise(resolve => setTimeout(resolve, 2000));
+        startWLSPKernelSocket(0);
+        return new Promise((resolve) => {
             resolve();
         });
     });
@@ -613,8 +616,11 @@ function sendToWolfram(printOutput = false, sel = undefined) {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", { range: sel, textDocument: e.document, print: false });
         }
         catch (err) {
-            console.log(err);
-            restart();
+            vscode.window.showErrorMessage("Wolfram kernel not running", "Restart kernel?").then((selection) => {
+                if (selection === "Restart kernel?") {
+                    restartKernel();
+                }
+            });
         }
     }
     else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
@@ -624,17 +630,25 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         if (!wolframBusyQ) {
             wolframBusyQ = true;
             let evalNext = evaluationQueue.pop();
-            withProgressCancellation = new vscode.CancellationTokenSource();
+            // withProgressCancellation = new vscode.CancellationTokenSource();
             progressStatus = vscode.window.withProgress({
-                location: vscode.ProgressLocation.Window,
-                title: "Wolfram (" + (evalNext.range.start.line + 1) + ")",
+                location: vscode.ProgressLocation.Notification,
+                title: "Running line " + (evalNext.range.start.line + 1) + " in Wolfram",
                 cancellable: true
             }, (prog, withProgressCancellation) => {
                 return new Promise((resolve, reject) => {
+                    // withProgressCancellation = new vscode.CancellationTokenSource();
                     withProgressCancellation.onCancellationRequested(ev => {
                         console.log("Aborting Wolfram evaluation");
+                        // withProgressCancellation?.dispose();
                         // stopWolfram(undefined, wolframKernel);
-                        restart();
+                        let notification = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+                        notification.text = "$(alert) Wolfram evaluation aborted";
+                        setTimeout(() => {
+                            notification.dispose();
+                        }, 2000);
+                        // progressStatus.dispose();
+                        restartKernel();
                         resolve(false);
                     });
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
@@ -794,14 +808,19 @@ function updateResults(e, result, print, input = "") {
             else {
                 output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
             }
+            if (result["params"]["messages"].length > 0) {
+                output += "<div id='errors'>" +
+                    result["params"]["messages"].reduce((acc, cur) => {
+                        return acc + "<br>" + cur;
+                    }, "") +
+                    "</div>";
+            }
             if (printResults.length > maxPrintResults) {
                 printResults.shift();
             }
             printResults.push([input,
                 output]);
-            if (output.includes("<img")) {
-            }
-            else {
+            if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
             }
             // let out = console_outputs.pop();
@@ -809,16 +828,16 @@ function updateResults(e, result, print, input = "") {
             // showOutput();
             let backgroundColor = "editor.background";
             let foregroundColor = "editor.foreground";
-            let hoverMessage = result["params"]["output"];
+            let hoverMessage = output; // result["params"]["output"];
             // is <img> tags in hoverMessage string
             if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
-                hoverMessage = "Large output: " + hoverMessage.slice(0, 200) + "...";
+                hoverMessage = "Large output: " + hoverMessage.substring(0, 100) + "...";
             }
             if (result["params"]["messages"].length > 0) {
                 backgroundColor = "red";
                 hoverMessage += "\n" + result["params"]["messages"];
             }
-            let resultString = result["params"]["result"];
+            let resultString = result["params"]["time"].toString().slice(0, 5) + " ms: " + result["params"]["result"];
             if (resultString.length > 300) {
                 resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
@@ -1289,11 +1308,11 @@ function startWLSPKernelSocket(id) {
                 "wolfram"
             ],
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: outputChannel,
             markdown: {
                 isTrusted: true,
                 supportHtml: true
             },
+            outputChannel: kernelOutputChannel,
             errorHandler: kernelErrorHandler
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
