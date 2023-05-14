@@ -159,6 +159,15 @@ function updateConfiguration() {
     }
     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("updateConfiguration", { "abortOnError": vscode.workspace.getConfiguration().get("wlsp.abortOnError") });
 }
+function restartKernel() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            stopWolfram(undefined, wolframKernel);
+            startWLSPKernelSocket(0);
+            resolve();
+        });
+    });
+}
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
         let e = vscode.window.activeTextEditor;
@@ -641,9 +650,16 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     starttime = Date.now();
                     if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 3 || (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
                         console.log("Kernel is not running");
-                        resolve(false);
+                        restartKernel().then((r) => {
+                            wolframBusyQ = false;
+                            sendToWolfram(printOutput, sel);
+                        }).catch((err) => {
+                            resolve(false);
+                        });
                     }
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
+                    else {
+                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
+                    }
                 }).catch((err) => {
                     console.log(err);
                     restart();
@@ -1021,7 +1037,8 @@ function updateOutputPanel() {
 function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let serverOptions = {
-            run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
+            run: {
+                command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
             },
             debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
         };
