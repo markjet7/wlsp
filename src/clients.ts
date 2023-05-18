@@ -808,7 +808,6 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
                         resolve(true)
                     })
 
-
                     wolframKernelClient?.onNotification("onRunInWolframIO", (result: any) => {
                         onRunInWolframIO(result)
                         resolve(true)
@@ -1549,7 +1548,7 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
                         reader: socket,
                         writer: socket
                     }),
-                        100
+                        1000
                 })
             })
 
@@ -1635,13 +1634,6 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
                 wolfram = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path], { detached: true });
             }
 
-            wolfram.stdout?.once('data', (data: any) => {
-                outputChannel.appendLine("WLSP Loading: " + data.toString())
-                setTimeout(() => {resolve(wolfram)}, 1000)
-                // resolve(wolfram)
-            });
-
-
             if (wolfram.pid != undefined) {
                 // console.log("Launching wolframscript: " + wolfram.pid.toString());
                 processes.push(wolfram)
@@ -1661,6 +1653,12 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
             });
 
             wolfram.stdout?.on('data', (data) => {
+
+
+                if (data.toString().includes("SocketObject")) {
+                    setTimeout(() => {resolve(wolfram)}, 1000)
+                }
+
                 outputChannel.appendLine("WLSP: " + data.toString())
                 // vscode.window.showInformationMessage(data.toString().slice(0, 1000))
             });

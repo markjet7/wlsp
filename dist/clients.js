@@ -664,16 +664,12 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     starttime = Date.now();
                     if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 3 || (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
                         console.log("Kernel is not running");
-                        restartKernel().then((r) => {
-                            wolframBusyQ = false;
+                        restartKernel().then((m) => {
                             sendToWolfram(printOutput, sel);
-                        }).catch((err) => {
-                            resolve(false);
                         });
+                        resolve(false);
                     }
-                    else {
-                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
-                    }
+                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
                 }).catch((err) => {
                     console.log(err);
                     restart();
@@ -837,7 +833,7 @@ function updateResults(e, result, print, input = "") {
                 backgroundColor = "red";
                 hoverMessage += "\n" + result["params"]["messages"];
             }
-            let resultString = result["params"]["time"].toString().slice(0, 5) + " ms: " + result["params"]["result"];
+            let resultString = result["params"]["time"].toString().slice(0, 5) + " s: " + result["params"]["result"];
             if (resultString.length > 300) {
                 resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
@@ -1056,8 +1052,7 @@ function updateOutputPanel() {
 function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let serverOptions = {
-            run: {
-                command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
+            run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
             },
             debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
         };
@@ -1279,7 +1274,7 @@ function startWLSPKernelSocket(id) {
                             reader: socket,
                             writer: socket
                         }),
-                            100;
+                            1000;
                     });
                 });
                 socket.on('drain', () => {
@@ -1345,7 +1340,7 @@ function connectKernelClient(outputChannel, context) {
 function load(wolfram, path, port, outputChannel) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve) => {
-            var _a, _b, _c;
+            var _a, _b;
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
             try {
                 if (process.platform === "win32") {
@@ -1354,11 +1349,6 @@ function load(wolfram, path, port, outputChannel) {
                 else {
                     wolfram = cp.spawn(executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), ['-file', path, port.toString(), path], { detached: true });
                 }
-                (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.once('data', (data) => {
-                    outputChannel.appendLine("WLSP Loading: " + data.toString());
-                    setTimeout(() => { resolve(wolfram); }, 1000);
-                    // resolve(wolfram)
-                });
                 if (wolfram.pid != undefined) {
                     // console.log("Launching wolframscript: " + wolfram.pid.toString());
                     processes.push(wolfram);
@@ -1369,10 +1359,13 @@ function load(wolfram, path, port, outputChannel) {
                 wolfram.on('SIGPIPE', (data) => {
                     console.log("SIGPIPE");
                 });
-                (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('error', (data) => {
+                (_a = wolfram.stdout) === null || _a === void 0 ? void 0 : _a.on('error', (data) => {
                     console.log("STDOUT Error" + data.toString());
                 });
-                (_c = wolfram.stdout) === null || _c === void 0 ? void 0 : _c.on('data', (data) => {
+                (_b = wolfram.stdout) === null || _b === void 0 ? void 0 : _b.on('data', (data) => {
+                    if (data.toString().includes("SocketObject")) {
+                        setTimeout(() => { resolve(wolfram); }, 1000);
+                    }
                     outputChannel.appendLine("WLSP: " + data.toString());
                     // vscode.window.showInformationMessage(data.toString().slice(0, 1000))
                 });
