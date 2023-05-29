@@ -460,6 +460,7 @@ function moveCursor() {
     // }
     let e = vscode.window.activeTextEditor;
     fs.readFile(cursorFile, "utf8", (err, data) => {
+        var _a, _b;
         if (err) {
             console.log(err);
             return;
@@ -487,6 +488,13 @@ function moveCursor() {
             // cursorMoved = true;
             e === null || e === void 0 ? void 0 : e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             decorateRunningLine(new vscode.Position(top["line"], top["character"]));
+            let newEditorDecorations = [];
+            let selection = e.selection.active;
+            newEditorDecorations = ((_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : []).filter((d) => {
+                return d.range.start.line < selection.line;
+            });
+            editorDecorations.set(e.document.uri.toString(), newEditorDecorations);
+            e.setDecorations(variableDecorationType, ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []));
         }
     });
 }
@@ -585,7 +593,7 @@ function runInWolfram(printOutput = false, trace = false) {
     evaluationQueue.push(evaluationData);
     // showPlots();
     // check if is undefined
-    if (typeof exports.wolframKernelClient === 'undefined') {
+    if (exports.wolframKernelClient == undefined) {
         restart().then(() => {
             evaluationQueue.push(evaluationData);
             sendToWolfram(printOutput);
@@ -603,10 +611,15 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         sel = e.selection;
     }
     ;
-    let outputPosition = new vscode.Position(sel.active.line + 1, 0);
+    let outputPosition = new vscode.Position(sel.active.line, 0);
     if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == outputPosition.line) {
         e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
             editBuilder.insert(outputPosition, "\n");
+            if (!sel) {
+                sel = e.selection;
+            }
+            ;
+            outputPosition = new vscode.Position(sel.active.line + 1, 0);
         });
     }
     if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'vscode-notebook-cell') {
@@ -814,7 +827,11 @@ function updateResults(e, result, print, input = "") {
             if (printResults.length > maxPrintResults) {
                 printResults.shift();
             }
-            printResults.push([input,
+            let inputSnippet = input;
+            if (input.length > 1000) {
+                inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
+            }
+            printResults.push([inputSnippet,
                 output]);
             if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
@@ -1440,7 +1457,7 @@ let kill = function (pid) {
 };
 function runTextCell(location) {
     let e = vscode.window.activeTextEditor;
-    let sel = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, location.end.character));
+    let sel = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line - 1, location.end.character));
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: false, output: true, trace: false };
     evaluationQueue.push(evaluationData);
     sendToWolfram(false);

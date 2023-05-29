@@ -65,7 +65,7 @@ transforms[output_, errors_]:=Module[{f, k},
 				ExportString[
 					Rasterize[Short[output, 10]],
 					"HTMLFragment",
-					"GraphicsOutput"->Automatic]
+					"GraphicsOutput"->Automatic] <> If[Length@errors>0, "<pre>" <> ToString[errors, InputForm, TotalWidth -> 3500] <> "</pre>", ""]
 		];
 		Close[f];
 		Return[f];

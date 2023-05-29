@@ -4,6 +4,7 @@ exports.showPlotPanel = exports.PlotsViewProvider = void 0;
 const vscode_1 = require("vscode");
 class PlotsViewProvider {
     resolveWebviewView(webviewView, context, _token) {
+        var _a;
         this._view = webviewView;
         this._view.webview.options = {
             enableScripts: true,
@@ -11,14 +12,13 @@ class PlotsViewProvider {
         };
         this._text = "In: ...";
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
+        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: [] });
         this._view.show(true);
-        // this._view?.webview.postMessage({text: []});
-        this._view.onDidChangeVisibility((e) => {
-            var _a, _b;
-            if ((_a = this._view) === null || _a === void 0 ? void 0 : _a.visible) {
-                (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ text: [] });
-            }
-        });
+        // this._view.onDidChangeVisibility((e) => {
+        //     if (this._view?.visible) {
+        //         this._view?.webview.postMessage({text: []})
+        //     }
+        // })
         this._view.onDidDispose(() => {
             this._view = undefined;
         }, null);
@@ -131,6 +131,16 @@ class PlotsViewProvider {
                     margin-right: auto;
                     display: block;
                 }
+
+                #download-link {
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: var(--vscode-editor-font-size);
+                    color: #801f01;
+                    display: block;
+                    margin-top: 5px;
+                    padding: 5px;
+
+                }
     
     
             </style>
@@ -146,6 +156,26 @@ class PlotsViewProvider {
             <script>
                 const vscode = acquireVsCodeApi();
                 var results = vscode.getState() || [];
+                
+                function loaded() {
+                    results = vscode.getState() || [];
+                    
+                    const outputDiv = document.getElementById('outputs');
+
+                    let newHTML = "";
+                    for (let i = 0; i < results.length; i++) {
+                        index += 1;
+                        newHTML += "<hr>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
+                    }
+                    outputDiv.innerHTML = newHTML;
+        
+                    outputDiv.scrollTop = outputDiv.scrollHeight;
+        
+                    // Add a download button for each image element
+                    for (const imageElement of imageElements) {
+                        createDownloadButton(imageElement);
+                    }
+                }
                 
                 
                 function scrollToBottom() {
@@ -181,9 +211,13 @@ class PlotsViewProvider {
             var index = 0;
             window.addEventListener('message', event => {
                 const message = event.data;
-                var results = vscode.getState() || [];
+                if (message.text.length == 0) {
+                    console.log("Empty message")
+                    return
+                };
+                results = vscode.getState() || [];
                 // results.splice(0, 0, event.data.text[0]).slice(0, 20);
-                if (event.data.text.length > 1) {
+                if (event.data.text.length > 0) {
                     results.splice(0, 0, event.data.text[0]);
                 
                     results = results.slice(0, 20);
@@ -216,10 +250,10 @@ class PlotsViewProvider {
             // Get all image elements on the page
             const imageElements = document.getElementsByTagName("img");
 
-            // Create a function to handle the click event
+            // Create a function to handle the click event 
             const handleImageClick = (imageElement) => {
                 // Create an anchor element
-                const link = document.createElement("a");
+                const link = document.createElement("a"); 
 
                 // Set the image source as the link's href and specify the download attribute
                 link.href = imageElement.src;
@@ -231,9 +265,9 @@ class PlotsViewProvider {
 
             // Function to create a download button for the given image element
             const createDownloadButton = (imageElement) => {
-                console.log("Adding download button");
                 // Create a button element
                 const button = document.createElement("button");
+                button.id = "download-link";
 
                 // Set the button's text
                 button.textContent = "Download";
@@ -245,14 +279,19 @@ class PlotsViewProvider {
                 imageElement.insertAdjacentElement("afterend", button);
             };
 
-
-
-
-
+            var clearButton = document.getElementById('btn_clear');
+            function clearOutputs() {
+                results = [];
+                index = 0;
+                vscode.setState(results);
+                const outputDiv = document.getElementById('outputs');
+                outputDiv.innerHTML = "";
+            };
 
             </script>
         </head>
-        <body>
+        <body onload="loaded()">
+            <div><button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button></div>
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>

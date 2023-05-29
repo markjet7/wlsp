@@ -834,10 +834,12 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
-        Begin["VSCode`"];
+        (* Begin["VSCode`"]; *)
 			CheckAbort[
 				$res = EvaluationData[ToExpression[string]],
 
+				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
+					"message" -> "Aborted"|>|>];
 				$res = <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
 						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
@@ -845,7 +847,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 						"InputString" :> string|> 
 			];
 			If[$res["Result"] === Null, $res["Result"] = $res["Result"] /. Null -> "null", Null];
-		End[];
+		(* End[]; *)
 		If[
 			$res["Success"], 
 			(

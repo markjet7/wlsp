@@ -614,6 +614,14 @@ function moveCursor() {
             // cursorMoved = true;
             e?.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             decorateRunningLine(new vscode.Position(top["line"], top["character"]));
+
+            let newEditorDecorations = [];
+            let selection = e.selection.active;
+            newEditorDecorations = (editorDecorations.get(e.document.uri.toString()) ?? []).filter((d: vscode.DecorationOptions) => {
+                return d.range.start.line < selection.line
+            })
+            editorDecorations.set(e.document.uri.toString(), newEditorDecorations);
+            e.setDecorations(variableDecorationType, (editorDecorations.get(e.document.uri.toString()) ?? []))
         }
     })
 }
@@ -729,7 +737,7 @@ function runInWolfram(printOutput = false, trace = false) {
     // check if is undefined
 
 
-    if (typeof wolframKernelClient === 'undefined') {
+    if (wolframKernelClient == undefined) {
         restart().then(() => {
             evaluationQueue.push(evaluationData);
             sendToWolfram(printOutput);
@@ -748,11 +756,13 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
 
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     if (!sel) { sel = e!.selection };
-    let outputPosition: vscode.Position = new vscode.Position(sel.active.line + 1, 0);
+    let outputPosition: vscode.Position = new vscode.Position(sel.active.line, 0);
 
     if (e?.document.lineCount == outputPosition.line) {
         e?.edit(editBuilder => {
             editBuilder.insert(outputPosition!, "\n")
+            if (!sel) { sel = e!.selection };
+            outputPosition = new vscode.Position(sel.active.line+1, 0)
         })
     }
 
@@ -984,9 +994,12 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             if (printResults.length > maxPrintResults) {
                 printResults.shift();
             }
-
+            let inputSnippet = input;
+            if (input.length > 1000) {
+                inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
+            } 
             printResults.push(
-                [input,
+                [inputSnippet,
                     output]
             )
             if (!output.includes("<img")) {
@@ -1742,7 +1755,7 @@ function runTextCell(location: vscode.Range) {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     let sel: vscode.Selection = new vscode.Selection(
         new vscode.Position(location.start.line, location.start.character),
-        new vscode.Position(location.end.line, location.end.character)
+        new vscode.Position(location.end.line-1, location.end.character)
     );
     let evaluationData = { range: sel, textDocument: e?.document, print: false, output: true, trace: false };
     evaluationQueue.push(evaluationData);

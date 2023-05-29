@@ -778,6 +778,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{position, v, uri, src, symbol, value, result, response, f},
 	Check[
 		position = json["params", "position"];
+		position["character"] = position["character"]+1;
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 		symbol = ToString@getWordAtPosition[src, position];
@@ -1254,7 +1255,7 @@ getWordAtPosition[_,_]:="";
 getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 
 	srcLines =StringSplit[src, EndOfLine, All];
-	line = StringTrim@Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
+	line = Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
 	If[line === "", Return[""]];
 	(*
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
@@ -1262,7 +1263,6 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 		Interval[
 				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""]; 
 	*)
-	
 	word=StringTake[line,
 		Replace[
 			First@Nearest[
