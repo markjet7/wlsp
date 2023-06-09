@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onkernelReady = exports.stop = exports.restart = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.interactiveNotebookSerializer = exports.interactiveController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.onkernelReady = exports.stop = exports.restart = exports.restartKernel = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.interactiveNotebookSerializer = exports.interactiveController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const vscode_1 = require("vscode");
 const path = require("path");
@@ -79,8 +79,13 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-interactive', exports.interactiveNotebookSerializer));
         dataProvider = new dataPanel_1.DataViewProvider(context.extensionUri);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
-        plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri);
+        plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
+        // plotsProvider._view?.webview.onDidReceiveMessage((data:any) => {
+        //     if (data.text === "restart") {
+        //         restartKernel();
+        //     }
+        // }, undefined, context.subscriptions);
         context.subscriptions.push(exports.notebookcontroller);
         context.subscriptions.push(exports.scriptController);
         context.subscriptions.push(exports.interactiveController);
@@ -171,6 +176,7 @@ function restartKernel() {
         });
     });
 }
+exports.restartKernel = restartKernel;
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
         let e = vscode.window.activeTextEditor;

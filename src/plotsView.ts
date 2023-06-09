@@ -4,12 +4,16 @@ import { Uri,
     WebviewView, 
     WebviewViewProvider,
     WebviewViewResolveContext,
-    CancellationToken } from "vscode";
+    CancellationToken, 
+    ExtensionContext} from "vscode";
+
+import { restartKernel } from "./clients";
 
 export class PlotsViewProvider implements WebviewViewProvider {
     public _view?: WebviewView;
     private _extensionUri: Uri;
     private _text: string = "";
+    private _context: ExtensionContext|undefined;
 
     public static readonly viewType = "wolfram.plotsView";
 
@@ -25,6 +29,14 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this._text = "In: ..."
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
+
+        this._view.webview.onDidReceiveMessage(data => {
+            if (data.text === "restart") {
+                restartKernel();
+            }
+        }, undefined, this._context?.subscriptions);
+
+
         this._view?.webview.postMessage({text: []});
         this._view.show(true)
 
@@ -58,8 +70,15 @@ export class PlotsViewProvider implements WebviewViewProvider {
         }
     }
 
-    constructor(private readonly _extensionUri0: Uri) {
+    constructor(private readonly _extensionUri0: Uri, context:ExtensionContext|undefined) {
         this._extensionUri = _extensionUri0;
+        this._context = context;
+
+        // this._view?.webview.onDidReceiveMessage(data => {
+        //     if (data.text === "restart") {
+        //         restartKernel();
+        //     }
+        // }, undefined);
     }
 
     getOutputContent(webview: any, extensionUri: Uri) {
@@ -310,10 +329,22 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 outputDiv.innerHTML = "";
             };
 
+            var restartButton = document.getElementById('btn_restart');
+            function restart() {
+                console.log("Restarting kernel 1");
+                test = vscode.postMessage({
+                    text: "restart"
+                });
+                console.log(test);
+            };
+
             </script>
         </head>
         <body onload="loaded()">
-            <div><button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button></div>
+            <div>
+            <button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button>
+            <button type="button" id="btn_restart" onclick="restart()">Restart</button>
+            </div>
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>
@@ -465,6 +496,8 @@ export function showPlotPanel(webview: any, extensionUri: Uri) {
 
         window.addEventListener('message', event => {
             const message = event.data;
+
+            console.log(message);
 
             const outputDiv = document.getElementById('outputs');
             outputDiv.innerHTML = message.text;

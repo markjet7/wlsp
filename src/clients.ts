@@ -116,10 +116,16 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
         vscode.window.registerWebviewViewProvider(DataViewProvider.viewType, dataProvider)
     )
 
-    plotsProvider = new PlotsViewProvider(context.extensionUri);
+    plotsProvider = new PlotsViewProvider(context.extensionUri, context);
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(PlotsViewProvider.viewType, plotsProvider)
     )
+
+    // plotsProvider._view?.webview.onDidReceiveMessage((data:any) => {
+    //     if (data.text === "restart") {
+    //         restartKernel();
+    //     }
+    // }, undefined, context.subscriptions);
 
     context.subscriptions.push(notebookcontroller);
     context.subscriptions.push(scriptController);
@@ -219,7 +225,7 @@ function updateConfiguration() {
         { "abortOnError": vscode.workspace.getConfiguration().get("wlsp.abortOnError") });
 }
 
-async function  restartKernel(): Promise<void> {
+export async function  restartKernel(): Promise<void> {
     evaluationQueue = [];
     wolframBusyQ = false;
     stopWolfram(undefined, wolframKernel);

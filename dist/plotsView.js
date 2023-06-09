@@ -2,9 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.showPlotPanel = exports.PlotsViewProvider = void 0;
 const vscode_1 = require("vscode");
+const clients_1 = require("./clients");
 class PlotsViewProvider {
     resolveWebviewView(webviewView, context, _token) {
-        var _a;
+        var _a, _b;
         this._view = webviewView;
         this._view.webview.options = {
             enableScripts: true,
@@ -12,7 +13,12 @@ class PlotsViewProvider {
         };
         this._text = "In: ...";
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
-        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: [] });
+        this._view.webview.onDidReceiveMessage(data => {
+            if (data.text === "restart") {
+                (0, clients_1.restartKernel)();
+            }
+        }, undefined, (_a = this._context) === null || _a === void 0 ? void 0 : _a.subscriptions);
+        (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ text: [] });
         this._view.show(true);
         // this._view.onDidChangeVisibility((e) => {
         //     if (this._view?.visible) {
@@ -36,10 +42,16 @@ class PlotsViewProvider {
             // console.log("No data view")
         }
     }
-    constructor(_extensionUri0) {
+    constructor(_extensionUri0, context) {
         this._extensionUri0 = _extensionUri0;
         this._text = "";
         this._extensionUri = _extensionUri0;
+        this._context = context;
+        // this._view?.webview.onDidReceiveMessage(data => {
+        //     if (data.text === "restart") {
+        //         restartKernel();
+        //     }
+        // }, undefined);
     }
     getOutputContent(webview, extensionUri) {
         let timeNow = new Date().getTime();
@@ -288,10 +300,22 @@ class PlotsViewProvider {
                 outputDiv.innerHTML = "";
             };
 
+            var restartButton = document.getElementById('btn_restart');
+            function restart() {
+                console.log("Restarting kernel 1");
+                test = vscode.postMessage({
+                    text: "restart"
+                });
+                console.log(test);
+            };
+
             </script>
         </head>
         <body onload="loaded()">
-            <div><button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button></div>
+            <div>
+            <button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button>
+            <button type="button" id="btn_restart" onclick="restart()">Restart</button>
+            </div>
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>
@@ -440,6 +464,8 @@ function showPlotPanel(webview, extensionUri) {
 
         window.addEventListener('message', event => {
             const message = event.data;
+
+            console.log(message);
 
             const outputDiv = document.getElementById('outputs');
             outputDiv.innerHTML = message.text;
