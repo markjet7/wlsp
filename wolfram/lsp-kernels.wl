@@ -271,9 +271,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ExportString[Rasterize@Short[result,10], {"Base64", "PNG"}, ImageSize->5*72] <> 
 				"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
 
-				Quantity[5, "Seconds"],
+				Quantity[2, "Seconds"],
 
-				ToString[Short[result,7], InputForm]
+				ToString[result, InputForm, TotalWidth -> 100]
 				],
 					StringRiffle[Map[ToString[Short[#, 3], InputForm] &, r["FormattedMessages"]], "\n"]];
 	maxWidth = 8192;
@@ -448,8 +448,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 storageUri = "";
 handle["storageUri", json_]:=Module[{},
+	storageUri = DirectoryName[CreateFile[]];
 	sendResponse[
-		<|"id" -> json["id"], "result" -> DirectoryName[CreateFile[]] |>
+		<|"id" -> json["id"], "result" -> storageUri |>
 	]
 ];
 
@@ -631,8 +632,8 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		];
 		value = TimeConstrained[
 			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
-			Quantity[5, "Seconds"],
-			"Large output"];
+			Quantity[2, "Seconds"],
+			ToString[symbol, TotalWidth->50]];
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",

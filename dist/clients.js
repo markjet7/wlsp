@@ -363,10 +363,10 @@ function runToLine() {
     //     output = true;
     // }
     let evaluationData = { range: r, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: false };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
     if (!exports.wolframKernelClient) {
         restart().then(() => {
-            evaluationQueue.push(evaluationData);
+            evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return;
         });
@@ -596,12 +596,12 @@ function runInWolfram(printOutput = false, trace = false) {
     //     output = true;
     // }
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: trace };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
     // showPlots();
     // check if is undefined
     if (exports.wolframKernelClient == undefined) {
         restart().then(() => {
-            evaluationQueue.push(evaluationData);
+            evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return;
         });
@@ -652,7 +652,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
             // withProgressCancellation = new vscode.CancellationTokenSource();
             progressStatus = vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: "Running line " + (evalNext.range.start.line + 1) + " in Wolfram",
+                title: "Running line " + ((evalNext === null || evalNext === void 0 ? void 0 : evalNext.range.start.line) + 1) + " in Wolfram",
                 cancellable: true
             }, (prog, withProgressCancellation) => {
                 return new Promise((resolve, reject) => {
@@ -779,7 +779,7 @@ function onRunInWolfram(file) {
             }
             else {
                 // inputs.push(file["input"])
-                updateResults(e, result, result["params"]["print"], file["input"]);
+                updateResults(e, result, result["params"]["print"], file["input"], file);
             }
         }
         catch (err) {
@@ -802,7 +802,7 @@ let maxPrintResults = 20;
 let printResults = [];
 let editorDecorations = new Map();
 // let printResults: Map<string, string> = new Map();
-function updateResults(e, result, print, input = "") {
+function updateResults(e, result, print, input = "", file = "") {
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
             var _a, _b, _c, _d;
@@ -818,10 +818,11 @@ function updateResults(e, result, print, input = "") {
             }
             let output;
             if (result["params"]["load"]) {
-                output = fs.readFileSync(result["params"]["output"]).toString();
+                output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
             }
             else {
-                output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
+                // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
+                output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
             }
             if (result["params"]["messages"].length > 0) {
                 output += "<div id='errors'>" +
@@ -837,8 +838,14 @@ function updateResults(e, result, print, input = "") {
             if (input.length > 1000) {
                 inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
             }
+            let outputSnippet = output;
+            if (output.length > 1000 && !output.includes("<img")) {
+                outputSnippet = output.slice(0, 250) + "..." + output.slice(-250);
+            }
             printResults.push([inputSnippet,
-                output]);
+                outputSnippet,
+                result["params"]["output"]
+            ]);
             if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
             }
@@ -1465,7 +1472,7 @@ function runTextCell(location) {
     let e = vscode.window.activeTextEditor;
     let sel = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line - 1, location.end.character));
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: false, output: true, trace: false };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
     sendToWolfram(false);
 }
 function printInWolfram(print = true) {

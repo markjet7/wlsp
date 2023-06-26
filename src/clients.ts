@@ -260,6 +260,7 @@ export async function restart(): Promise<void> {
 
     // sleep for 1 second to allow the kernel to shut down
     await new Promise(resolve => setTimeout(resolve, 5000));
+    connectingKernel = false;
 
     startWLSP(0);
     startWLSPKernelSocket(0);
@@ -464,11 +465,11 @@ function runToLine() {
     //     output = true;
     // }
     let evaluationData = { range: r, textDocument: e?.document, print: printOutput, output: output, trace: false };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
 
     if (!wolframKernelClient) {
         restart().then(() => {
-            evaluationQueue.push(evaluationData);
+            evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return
         })
@@ -736,7 +737,7 @@ function runInWolfram(printOutput = false, trace = false) {
     // }
 
     let evaluationData = { range: sel, textDocument: e?.document, print: printOutput, output: output, trace: trace };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
 
     // showPlots();
 
@@ -745,7 +746,7 @@ function runInWolfram(printOutput = false, trace = false) {
 
     if (wolframKernelClient == undefined) {
         restart().then(() => {
-            evaluationQueue.push(evaluationData);
+            evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return
         })
@@ -799,7 +800,7 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
             // withProgressCancellation = new vscode.CancellationTokenSource();
             progressStatus = vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: "Running line " + (evalNext.range.start.line + 1) + " in Wolfram",
+                title: "Running line " + (evalNext?.range.start.line + 1) + " in Wolfram",
                 cancellable: true
             }, (prog, withProgressCancellation) => {
                 return new Promise((resolve, reject) => {
@@ -943,7 +944,7 @@ function onRunInWolfram(file: any) {
 
             } else {
                 // inputs.push(file["input"])
-                updateResults(e, result, result["params"]["print"], file["input"]);
+                updateResults(e, result, result["params"]["print"], file["input"], file);
             }
 
         } catch (err) {
@@ -967,7 +968,7 @@ let maxPrintResults = 20;
 let printResults: any[] = [];
 let editorDecorations: Map<string, vscode.DecorationOptions[]> = new Map();
 // let printResults: Map<string, string> = new Map();
-function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "") {
+function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file:any="") {
 
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
@@ -984,9 +985,10 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
             let output;
             if (result["params"]["load"]) {
-                output = fs.readFileSync(result["params"]["output"]).toString()
+                output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
             } else {
-                output = result["params"]["output"] + "<br>" + result["params"]["messages"].join("<br>");
+                // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
+                output = `${result["params"]["output"]}` + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
             }
 
             if (result["params"]["messages"].length > 0) {
@@ -1004,9 +1006,15 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             if (input.length > 1000) {
                 inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
             } 
+            let outputSnippet = output;
+            if (output.length > 1000 && !output.includes("<img")) {
+                outputSnippet = output.slice(0, 250) + "..." + output.slice(-250);
+            }
             printResults.push(
                 [inputSnippet,
-                    output]
+                    outputSnippet,
+                    result["params"]["output"]
+                ]
             )
             if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
@@ -1502,10 +1510,11 @@ async function startWLSPKernelIO(id: number): Promise<void> {
     });
 }
 
-
+let connectingKernel = false;
 async function startWLSPKernelSocket(id: number): Promise<void> {
     let timeout: any;
-
+    if (connectingKernel) { return }
+    connectingKernel = true;
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
             let socket = new net.Socket();
@@ -1520,6 +1529,7 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
 
             socket.on('connect', () => {
                 clearTimeout(timeout);
+                connectingKernel = false
                 setTimeout(() => {
                     resolve({
                         reader: socket,
@@ -1628,7 +1638,7 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
             });
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
-        }, 100)
+        }, 1000)
 
     });
 }
@@ -1764,7 +1774,7 @@ function runTextCell(location: vscode.Range) {
         new vscode.Position(location.end.line-1, location.end.character)
     );
     let evaluationData = { range: sel, textDocument: e?.document, print: false, output: true, trace: false };
-    evaluationQueue.push(evaluationData);
+    evaluationQueue.unshift(evaluationData);
     sendToWolfram(false)
 }
 
