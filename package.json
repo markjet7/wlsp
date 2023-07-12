@@ -374,7 +374,47 @@
                     "contextualTitle": "Symbols"
                 }
             ]
-        }
+        },
+        "walkthroughs": [
+            {
+                "id": "wolfram.wolframWalkthrough",
+                "title": "WLSP Walkthrough",
+                "description": "Learn how to use WLSP in VS Code.",
+                "steps": [
+                    {
+                        "title": "Welcome",
+                        "description": "WLSP is a VS Code extension that allows you to run Wolfram Language code in VS Code. This walkthrough will show you how to use it."
+                    },
+                    {
+                        "title": "Setup",
+                        "description": "WLSP uses wolframscript to run. Make sure that wolframscript is avaialable in your system path or set the path to wolframscript in the settings."
+                    },
+                    {
+                        "title": "Run code",
+                        "description": "There are several ways to run code in wolfram script (*.wl) files with WLSP. The most common way is to press Shift+Enter. This will run the current line or selection in the Wolfram Language kernel. You can also run code by right-clicking and selecting one of the various run options (e.g. Run to Line, Run in Wolfram, etc.). You can also run code by clicking on the code lenses that appear above each section (3 empty lines mark each section) of code. ",
+                        "media": {
+                            "path": "wlsp-print-output.gif"
+                        }
+                    },
+                    {
+                        "title": "View results",
+                        "description": "The results of running code will appear as a decoration snippet at the end of the code, and in the Wolfram Language Output tab. You can also view the variables in the Wolfram Language Variables tab. You can clear the results by clicking the clear button in the top left of the Wolfram Language Output tab. "
+                    },
+                    {
+                        "title": "Debugging",
+                        "description": "You can debug your code by setting breakpoints and running the code in the Wolfram Language kernel. You can also use the Wolfram Language Output tab to view the results of running code in the Wolfram Language kernel. "
+                    },
+                    {
+                        "title": "Help",
+                        "description": "You can get help on Wolfram Language symbols by selecting text, right-clicking and selecting 'Wolfram: Help'. This will open the Wolfram Language Documentation Center in your default browser. "
+                    },
+                    {
+                        "title": "Troubleshooting",
+                        "description": "If you are having trouble with WLSP, check the Output tab for any error messages. You can restart the Wolfram Language kernel by clicking the Wolfram text in the bottom left of the status bar, or by pressing Alt+., or by running the 'Wolfram: Restart' command. Post a message on Github if you are still having trouble."
+                    }
+                ]
+            }
+        ]
     },
     "typings": "vscode.d.ts",
     "devDependencies": {
