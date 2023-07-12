@@ -54,6 +54,20 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     vscode.window.showTextDocument(document);
                 });
             }
+
+            if (data.text === "paste") {
+                // paste content of data.output
+                // console.log(data.output)
+                let editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    let selection = editor.selection;
+                    let position = new vscode.Position(selection.end.line+1, 0);
+                    editor.edit((editBuilder) => {
+                        editBuilder.insert(position, data.data + "\n");
+                    }
+                    );
+                }
+            }
         }, undefined, this._context?.subscriptions);
 
 
@@ -289,7 +303,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
                     index += 1;
-                    newHTML += "<hr><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button> <br>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
+                    newHTML += "<hr> <br>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Paste</button>";
                 }
                 outputDiv.innerHTML = newHTML;
     
@@ -360,11 +374,25 @@ export class PlotsViewProvider implements WebviewViewProvider {
             
             function openOutputInNewDocument(output)  {
                 // console.log(output);
+                var div1 = document.createElement("div");
+                div1.innerHTML = output;
+                var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "open",
-                    data: output
+                    data: span1.textContent || span1.innerText
                 });
-                console.log(test);
+            };
+
+            function pasteOutput(output) {
+                // console.log(output);
+                var div1 = document.createElement("div");
+                div1.innerHTML = output;
+                var span1 = div1.getElementsByTagName("span")[0];
+                test = vscode.postMessage({
+                    text: "paste",
+                    data: span1.textContent || span1.innerText
+                });
+
             };
 
             </script>

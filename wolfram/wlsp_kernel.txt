@@ -1,1 +1,1 @@
-<|"jsonrpc" -> "2.0", "method" -> "updateConfiguration", "params" -> <|"abortOnError" -> False|>|>
+<|"jsonrpc" -> "2.0", "method" -> "runInWolfram", "params" -> {Null}|>

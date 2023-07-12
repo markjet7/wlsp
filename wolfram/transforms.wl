@@ -59,7 +59,7 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 
 transforms[output_, errors0_]:=Module[{f, k},
 	errors = "<br>" <> StringRiffle[errors0, "\n"];
-	If[ByteCount[output] > 1*^7,
+	If[ByteCount[output] > 100*^7,
 		f = CreateFile[];
 		Export[f, 
 			Rasterize@"Loading...",

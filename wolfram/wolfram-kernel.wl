@@ -9,9 +9,9 @@ $HistoryLength = 100;
 (**)
 
 
-sendResponse[res_Association]:=Module[{byteResponse},
+sendResponse[response_Association]:=Module[{byteResponse},
 	Check[
-		byteResponse = constructRPCBytes[Prepend[Replace[res, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
+		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
 				If[Head[client] === SocketObject, 
@@ -21,7 +21,7 @@ sendResponse[res_Association]:=Module[{byteResponse},
 			KERNELSERVER["ConnectedClients"]
 		],
 		Print["response error"];
-		Print[res];
+		Print[response];
 	]
 ];
 
@@ -84,7 +84,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 
 ReadMessages[x_]:={"Continue", "Continue"};
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
-ReadMessagesImpl[client_SocketObject,{{0,{}},msgs:{__Association}}]:=msgs;
+ReadMessagesImpl[client_SocketObject,{{0,_ByteArray|{}},msgs:{__Association}}]:=msgs;
 ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
 
 

@@ -836,35 +836,32 @@ evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
         (* Begin["VSCode`"]; *)
-			CheckAbort[
-				$res = EvaluationData[ToExpression[string]],
 
-				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
-					"message" -> "Aborted"|>|>];
-				$res = <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
+			$result = Replace[EvaluationData[ToExpression[string]], $Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
 						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
 						"AbsoluteTiming" -> 0.`, 
-						"InputString" :> string|> 
-			];
-			If[$res["Result"] === Null, $res["Result"] = $res["Result"] /. Null -> "null", Null];
+						"InputString" :> string|>];
+			
+
+			If[$result["Result"] === Null, $result["Result"] = $result["Result"] /. Null -> "null", Null];
 		(* End[]; *)
 		If[
-			$res["Success"], 
+			$result["Success"], 
 			(
-				$res["FormattedMessages"] = {};
-				$res
+				$result["FormattedMessages"] = {};
+				$result
 			),
 
 			(
 				(*
-				msgs = $res["MessagesExpressions"];
+				msgs = $result["MessagesExpressions"];
 				msgToStr[name_MessageName, params___]:=Apply[
 				StringTemplate[
 					If[
 						Head@name === MessageName,
 						name/.Messages[Evaluate[First[name,General]]],
-						First[$res["MessagesText"], "Unknown error"]
+						First[$result["MessagesText"], "Unknown error"]
 					]],params];
 
 				msgToStr[_,_]:="An unknown error was generated";
@@ -873,14 +870,14 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 				{m, msgs}], {1, UpTo@8912}];
 				*)
 				
-				$res["FormattedMessages"] = Map[
+				$result["FormattedMessages"] = Map[
 					$myShort[OutputForm[#], 200] &, 
-					Take[$res["MessagesText"], UpTo[5]]];
+					Take[$result["MessagesText"], UpTo[5]]];
 
 				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
-					"message" -> StringTake[StringRiffle[$res["FormattedMessages"], "\n"], UpTo[100]]|>|>];
+					"message" -> StringTake[StringRiffle[$result["FormattedMessages"], "\n"], UpTo[500]]|>|>];
 
-				$res
+				$result
 			)
 		]
 ];

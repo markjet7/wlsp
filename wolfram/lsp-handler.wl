@@ -48,7 +48,7 @@ ServerCapabilities=<|
 	|>
 |>;
 
-handle["initialize",json_]:=Module[{response, builtins},
+handle["initialize",json_]:=Module[{response2, builtins},
     CONTINUE = True;
 
 	labels = COMPLETIONS[[All, "label"]];
@@ -56,8 +56,8 @@ handle["initialize",json_]:=Module[{response, builtins},
 	nearestLabel = Nearest[labels];
     
 	documents = <||>;
-	response = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
-	sendResponse[response];	
+	response2 = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
+	sendResponse[response2];	
 	workspaceLintDecorationsFile = CreateFile[];
 	
 	builtinSymbols = {};
