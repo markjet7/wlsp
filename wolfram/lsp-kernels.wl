@@ -222,6 +222,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
 	string = code2["code"];
 
+
 	Which[
 		string == "",
 		r = <|
@@ -941,12 +942,11 @@ getCode[src_, range_]:=Module[{},
 			|>
 		|>
 	]
-]
+];
 
-(* getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1}, *)
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
 	Check[
-		tree = CodeParse[src]; 
+		tree = CheckAbort[CodeParse[src], Return[<|"code"->"\"input error\"", "range"->{{position["line"],0}, {position["line"],0}}|>]];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
 		call = First[Cases[tree, ((x_LeafNode /; 
@@ -970,7 +970,7 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 		];
 		result1,
 
-		<|"code"->"input error", "range"->{{pos["line"],0}, {pos["line"],0}}|>
+		<|"code"->"\"input error\"", "range"->{{position["line"],0}, {position["line"],0}}|>
 	]
 ];
 

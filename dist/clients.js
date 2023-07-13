@@ -621,8 +621,8 @@ function runInWolfram(printOutput = false, trace = false) {
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: trace };
     evaluationQueue.unshift(evaluationData);
     // showPlots();
-    // check if is undefined
-    if (exports.wolframKernelClient == undefined) {
+    // check if wolframkernelclient is undefined
+    if (exports.wolframKernelClient == undefined || (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == 1) {
         restartKernel().then(() => {
             // evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
@@ -672,6 +672,9 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         if (!wolframBusyQ) {
             wolframBusyQ = true;
             let evalNext = evaluationQueue.pop();
+            if (evalNext == undefined) {
+                return;
+            }
             // withProgressCancellation = new vscode.CancellationTokenSource();
             progressStatus = vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -704,17 +707,31 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
                     // wolframStatusBar.show();
                     starttime = Date.now();
-                    if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 3 || (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
+                    if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
                         console.log("Kernel is not running");
                         setTimeout(() => {
+                            console.log("Restarting kernel");
                             restartKernel().then((m) => {
+                                console.log("Kernel restarted. State: ");
+                                console.log(exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state);
                                 sendToWolfram(printOutput, sel);
                             });
                             resolve(false);
                         }, 1000);
                     }
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext);
+                    console.log("Sending to Wolfram");
+                    console.log(evalNext);
+                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+                        console.log("runInWolfram result");
+                        console.log(result);
+                        resolve(true);
+                    }).catch((err) => {
+                        console.log("Error in runInWolfram");
+                        console.log(err);
+                        restart();
+                    });
                 }).catch((err) => {
+                    console.log("Error in sendToWolfram");
                     console.log(err);
                     restart();
                 });
@@ -1343,11 +1360,18 @@ function startWLSPKernelSocket(id) {
                 socket.on('drain', () => {
                     // outputChannel.appendLine("Kernel Socket is draining")
                 });
-                socket.on("end", () => __awaiter(this, void 0, void 0, function* () {
+                socket.on("end", (msg) => __awaiter(this, void 0, void 0, function* () {
                     outputChannel.appendLine("Kernel Socket end");
+                    console.log("Kernel Socket end");
+                    console.log(msg);
                     // attempt to revive the kernel
-                    yield new Promise(resolve => setTimeout(resolve, 2000));
+                    // await new Promise(resolve => setTimeout(resolve, 1000));
                     // stopWolfram(undefined, wolframKernel)  
+                    vscode.window.showErrorMessage("Wolfram Kernel disconnected.", "Restart kernel?").then((selection) => {
+                        if (selection === "Restart kernel?") {
+                            restartKernel();
+                        }
+                    });
                 }));
                 fp(kernelPort).then(([freePort]) => __awaiter(this, void 0, void 0, function* () {
                     kernelPort = freePort + id;

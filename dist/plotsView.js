@@ -148,6 +148,10 @@ class PlotsViewProvider {
                     image-rendering:auto;
                 }
 
+                .input_row {
+                    background: var(--vscode-tree-tableOddRowsBackground);
+                }
+
                 #errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
@@ -266,7 +270,7 @@ class PlotsViewProvider {
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
                     index += 1;
-                    newHTML += "<hr> <br>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Paste</button>";
+                    newHTML += "<div class='input_row'><hr>In[" + (index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Paste</button><br>";
                 }
                 outputDiv.innerHTML = newHTML;
     
