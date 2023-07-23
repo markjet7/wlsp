@@ -143,7 +143,7 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 	evaluateFromQueue[code, json, position];
 ];
 
-handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
+handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
 	Check[
 		start = Now;
 		range = json["params", "range"];
@@ -155,8 +155,24 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		|>|>];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
 
-		(* Add the evaluation to the evaluation queue *)
-		evaluateFromQueue[code, json, newPosition];
+		(* Split string into code blocks *)
+		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
+			CallNode[LeafNode[Symbol,(_),_],___] |
+			LeafNode[_,_,_]
+		),{2}];
+
+		Table[
+			s = StringTake[code["code"], c[[-1]][Source]];
+			codeBlock = <|
+				"code" -> s, "range" -> <|
+					"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
+					"end" -> <|"line" -> range["start"]["line"] + StringCount[StringTake[code["code"], {1, c[[-1]][Source][[2]]}], "\n"], "character" -> 100 |>
+				|>
+			|>;
+			newPosition = <|"line"->codeBlock["range"][[2,1]]+1, "character"->1|>;
+			(* Add each code block to the evaluation queue *)
+			evaluateFromQueue[codeBlock, json, newPosition];,
+			{c, codeBlocks}];
 		,
 		workingfolder = DirectoryName[StringReplace[URLDecode@uri, "file:" -> ""]];
 	];
@@ -216,7 +232,7 @@ $myShort[expr_, n_:50] := (
 );
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack, hoverMessage, file},
 	$busy = True;
-	(* sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True |>|>]; *)
+	sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition |>|>];
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
@@ -374,8 +390,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 							ToString@time <> 
 							"s: " <> 
 							ToString[output /. Null ->"-", InputForm, TotalWidth->150, CharacterEncoding -> "ASCII"],
-						"backgroundColor" -> If[Length[r["FormattedMessages"]] == 0,"editor.background", "red"],
-						"foregroundColor" -> "editor.foreground",
+						"backgroundColor" -> If[Length[r["FormattedMessages"]] == 0,"white", "red"],
+						"foregroundColor" -> "editorInfo.foreground",
 						"margin" -> "0 0 0 10px",
 						"borderRadius" -> "2px",
 						"border" -> If[Length[r["FormattedMessages"]] == 0, "2px solid blue", "2px solid red"],
@@ -444,7 +460,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		result
 	]; 
 	$busy = False;
-	(* sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>]; *)
+	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>];
 ];
 
 storageUri = "";

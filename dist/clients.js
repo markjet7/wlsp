@@ -59,7 +59,7 @@ function startLanguageServer(context0, outputChannel0) {
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         outputChannel = outputChannel0;
-        kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
+        kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel", "wolfram");
         wolframStatusBar.text = "Wolfram ?";
         wolframStatusBar.command = 'wolfram.restart';
         wolframStatusBar.show();
@@ -318,6 +318,10 @@ function promiseWithTimeout(ms, promise) {
 }
 function pulse() {
     promiseWithTimeout(1000 * 60 * 10, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
+        wolframStatusBar.color = "red";
+        setTimeout(() => {
+            wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
+        }, 1000 * 30);
         (0, path_1.resolve)("true");
     })).then((a) => {
         setTimeout(pulse, 1000 * 60 * 10);
@@ -675,66 +679,11 @@ function sendToWolfram(printOutput = false, sel = undefined) {
             if (evalNext == undefined) {
                 return;
             }
-            // withProgressCancellation = new vscode.CancellationTokenSource();
-            progressStatus = vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Running line " + ((evalNext === null || evalNext === void 0 ? void 0 : evalNext.range.start.line) + 1) + " in Wolfram",
-                cancellable: true
-            }, (prog, withProgressCancellation) => {
-                return new Promise((resolve, reject) => {
-                    // withProgressCancellation = new vscode.CancellationTokenSource();
-                    withProgressCancellation.onCancellationRequested(ev => {
-                        console.log("Aborting Wolfram evaluation");
-                        // withProgressCancellation?.dispose();
-                        // stopWolfram(undefined, wolframKernel);
-                        let notification = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-                        notification.text = "$(alert) Wolfram evaluation aborted";
-                        setTimeout(() => {
-                            notification.dispose();
-                        }, 2000);
-                        // progressStatus.dispose();
-                        restartKernel();
-                        resolve(false);
-                    });
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
-                        onRunInWolfram(result);
-                        resolve(true);
-                    });
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolframIO", (result) => {
-                        onRunInWolframIO(result);
-                        resolve(true);
-                    });
-                    // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
-                    // wolframStatusBar.show();
-                    starttime = Date.now();
-                    if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) === 1) {
-                        console.log("Kernel is not running");
-                        setTimeout(() => {
-                            console.log("Restarting kernel");
-                            restartKernel().then((m) => {
-                                console.log("Kernel restarted. State: ");
-                                console.log(exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state);
-                                sendToWolfram(printOutput, sel);
-                            });
-                            resolve(false);
-                        }, 1000);
-                    }
-                    console.log("Sending to Wolfram");
-                    console.log(evalNext);
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
-                        console.log("runInWolfram result");
-                        console.log(result);
-                        resolve(true);
-                    }).catch((err) => {
-                        console.log("Error in runInWolfram");
-                        console.log(err);
-                        restart();
-                    });
-                }).catch((err) => {
-                    console.log("Error in sendToWolfram");
-                    console.log(err);
-                    restart();
-                });
+            starttime = Date.now();
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+            }).catch((err) => {
+                console.log("Error in runInWolfram");
+                restart();
             });
         }
     }
@@ -894,8 +843,8 @@ function updateResults(e, result, print, input = "", file = "") {
             // let out = console_outputs.pop();
             // printResults.push(out);
             // showOutput();
-            let backgroundColor = "editor.background";
-            let foregroundColor = "editor.foreground";
+            let backgroundColor = "editorInfo.background";
+            let foregroundColor = "editorInfo.foreground";
             let hoverMessage = output; // result["params"]["output"];
             // is <img> tags in hoverMessage string
             if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
@@ -914,11 +863,11 @@ function updateResults(e, result, print, input = "", file = "") {
                 "range": new vscode.Range(result["params"]["position"]["line"] - 1, startChar + 10, result["params"]["position"]["line"] - 1, startChar + 200),
                 "renderOptions": {
                     "after": {
-                        "contentText": resultString,
-                        "backgroundColor": new vscode.ThemeColor("editor.foreground"),
-                        "color": new vscode.ThemeColor("editor.background"),
-                        "margin": "10px 0 0 10px",
-                        "border": "2px solid blue",
+                        "contentText": " " + resultString,
+                        "backgroundColor": new vscode.ThemeColor("editorInfo.background"),
+                        "color": new vscode.ThemeColor("editorInfo.foreground"),
+                        "margin": "10px 10px 10px 10px",
+                        "border": "4px solid blue",
                         "textDecoration": "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
                     }
                 },
@@ -956,12 +905,65 @@ function wolframBusy(params) {
         wolframBusyQ = true;
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
         wolframStatusBar.show();
+        let outputPosition = new vscode.Position(0, 0);
+        if (params.position) {
+            outputPosition = new vscode.Position(params.position.line, params.position.character);
+        }
+        progressStatus = vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Running line " + (outputPosition.line + 1) + " in Wolfram",
+            cancellable: true
+        }, (prog, withProgressCancellation) => {
+            return new Promise((resolve, reject) => {
+                // withProgressCancellation = new vscode.CancellationTokenSource();
+                withProgressCancellation.onCancellationRequested(ev => {
+                    console.log("Aborting Wolfram evaluation");
+                    // withProgressCancellation?.dispose();
+                    // stopWolfram(undefined, wolframKernel);
+                    let notification = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+                    notification.text = "$(alert) Wolfram evaluation aborted";
+                    setTimeout(() => {
+                        notification.dispose();
+                    }, 2000);
+                    // progressStatus.dispose();
+                    restartKernel();
+                    resolve(false);
+                });
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
+                    onRunInWolfram(result);
+                    resolve(true);
+                });
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolframIO", (result) => {
+                    onRunInWolframIO(result);
+                    resolve(true);
+                });
+                // wolframStatusBar.text = "$(extensions-sync-enabled~spin) Wolfram Running";
+                // wolframStatusBar.show();
+                // starttime = Date.now();
+                // if (wolframKernelClient?.state === 1) {
+                //     console.log("Kernel is not running")
+                //     setTimeout(() => {
+                //         console.log("Restarting kernel")
+                //         restartKernel().then((m:any) => {
+                //             console.log("Kernel restarted. State: ")
+                //             sendToWolfram(printOutput, sel)
+                //         });
+                //         resolve(false)
+                //     }, 1000);
+                // }
+            }).catch((err) => {
+                console.log("Error in sendToWolfram");
+                console.log(err);
+                restart();
+            });
+        });
     }
     else {
         //kernelStatusBar.color = "yellow";
         wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
+        progressStatus === null || progressStatus === void 0 ? void 0 : progressStatus.resolve();
     }
 }
 let workspaceDecorations = {};
@@ -1057,10 +1059,10 @@ function updateLintDecorations(decorationfile) {
 }
 let variableDecorationType = vscode.window.createTextEditorDecorationType({
     // light: {
-    //     color: new vscode.ThemeColor("editor.background")
+    //     color: new vscode.ThemeColor("editorInfo.background")
     // },
     // dark: {
-    //     color: new vscode.ThemeColor("editor.background")
+    //     color: new vscode.ThemeColor("editorInfo.background")
     // },
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 });

@@ -307,7 +307,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
                     index += 1;
-                    newHTML += "<div class='input_row'><hr>In[" + (index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Paste</button><br>";
+                    newHTML += "<div class='input_row'><hr>In[" + (index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Insert</button><br>";
                 }
                 outputDiv.innerHTML = newHTML;
     
