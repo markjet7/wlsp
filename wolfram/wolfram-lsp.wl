@@ -2,13 +2,11 @@
 
 BeginPackage["wolframLSP`"];
 
-
-
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
-sendResponse[res_Association]:=Module[{byteResponse},
+sendResponse[response_Association]:=Module[{byteResponse},
 	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		byteResponse = constructRPCBytes[Prepend[response,<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
 				If[Head[client] === SocketObject, 
@@ -18,16 +16,16 @@ sendResponse[res_Association]:=Module[{byteResponse},
 			SERVER["ConnectedClients"]
 		],
 		Print["response error"];
-		Print[res];
+		Print[response];
 	]
 ];
 
-sendResponse[res_Association, client_SocketObject]:=Module[{byteResponse},
+sendResponse[response_Association, client_SocketObject]:=Module[{byteResponse},
 	Check[
-		byteResponse = constructRPCBytes[Prepend[res,<|"jsonrpc"->"2.0"|>]];
+		byteResponse = constructRPCBytes[Prepend[response,<|"jsonrpc"->"2.0"|>]];
 		BinaryWrite[client, # , "Character32"] &/@ byteResponse;
 		Print["response error"];
-		Print[res];
+		Print[response];
 	]
 ];
 
@@ -57,6 +55,7 @@ FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,
 Protect[FoldWhile];
 
 handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
+handleMessageList[{"Continue", "Continue"}, state_]:={"Continue", state};
 
 lastChange = Now;
 
@@ -66,7 +65,7 @@ logfile = DirectoryName[path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
-		handle[msg["method"],msg],
+		handle[msg["method"], msg],
 		(*Print["LSP error handling message"];
 		Export[logfile, msg];*)
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
@@ -76,7 +75,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 
 handleMessage[msg_Association, state_, client_]:=Module[{},
 	Check[
-		handle[msg["method"],msg, client],
+		handle[msg["method"], msg, client],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>, client]
 	];
 	{"Continue", state}
@@ -84,7 +83,7 @@ handleMessage[msg_Association, state_, client_]:=Module[{},
 
 ReadMessages[_]:={"Continue", "Continue"};
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
-ReadMessagesImpl[client_SocketObject,{{0,{}}, msgs:{__Association}}]:=msgs;
+ReadMessagesImpl[client_SocketObject,{{0,_ByteArray|{}}, msgs:{__Association}}]:=msgs;
 ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~SocketReadMessage[client]]},{msgs}})}]])];
 
 getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
@@ -101,23 +100,24 @@ socketHandler[{stop_, state_}]:=Module[{},
 
 Get[DirectoryName[path] <> "lsp-handler.wl"];
 handlerWait = 0.01;
+handlerWait = 0.05;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
-$timeout = Now;
+timeout = Now;
 Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 Get[DirectoryName[path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
-Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&
-		Now - $timeout > Quantity[20, "Minutes"],
+		((Now - timeout) > Quantity[20, "Minutes"]),
 		Print["Closing kernel connection..."]; Quit[];
 	];
 
 	If[Length@SERVER["ConnectedClients"] > 0,
-		$timeout = Now;
+		timeout = Now;
 	];
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
@@ -130,6 +130,7 @@ Get[DirectoryName[path] <> "lsp-handler.wl"];
 ] // socketHandler;
 
 Check[
+	Print[port];
 	SERVER=SocketOpen[port,"TCP"];
 	Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
 	Print["LSP ", SERVER, ": ", port];,

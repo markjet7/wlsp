@@ -1,9 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.showPlotPanel = exports.PlotsViewProvider = void 0;
+exports.PlotsViewProvider = void 0;
 const vscode_1 = require("vscode");
+const vscode = require("vscode");
 const clients_1 = require("./clients");
+const fs = require("fs");
 class PlotsViewProvider {
+    constructor(_extensionUri0, context) {
+        this._extensionUri0 = _extensionUri0;
+        this._text = "";
+        this._extensionUri = _extensionUri0;
+        this._context = context;
+    }
     resolveWebviewView(webviewView, context, _token) {
         var _a, _b;
         this._view = webviewView;
@@ -13,9 +21,29 @@ class PlotsViewProvider {
         };
         this._text = "In: ...";
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
-        this._view.webview.onDidReceiveMessage(data => {
+        this._view.webview.onDidReceiveMessage((data) => {
             if (data.text === "restart") {
                 (0, clients_1.restartKernel)();
+            }
+            if (data.text === "open") {
+                // open new untitled document with content of data.output
+                // console.log(data.output)
+                // new document
+                vscode.workspace.openTextDocument({ content: data.data }).then((document) => {
+                    vscode.window.showTextDocument(document);
+                });
+            }
+            if (data.text === "paste") {
+                // paste content of data.output
+                // console.log(data.output)
+                let editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    let selection = editor.selection;
+                    let position = new vscode.Position(selection.end.line + 1, 0);
+                    editor.edit((editBuilder) => {
+                        editBuilder.insert(position, data.data + "\n");
+                    });
+                }
             }
         }, undefined, (_a = this._context) === null || _a === void 0 ? void 0 : _a.subscriptions);
         (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({ text: [] });
@@ -33,7 +61,13 @@ class PlotsViewProvider {
     updateView(out) {
         var _a;
         // this._text = out;
-        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out) });
+        let out2 = [];
+        for (let i = 0; i < out.length; i++) {
+            let img = fs.readFileSync(out[i][2]).toString();
+            let o = [out[i][0], out[i][1], img];
+            out2.push(o);
+        }
+        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out2) });
         if (this._view) {
             // console.log("Getting data view")
             // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
@@ -41,17 +75,6 @@ class PlotsViewProvider {
         else {
             // console.log("No data view")
         }
-    }
-    constructor(_extensionUri0, context) {
-        this._extensionUri0 = _extensionUri0;
-        this._text = "";
-        this._extensionUri = _extensionUri0;
-        this._context = context;
-        // this._view?.webview.onDidReceiveMessage(data => {
-        //     if (data.text === "restart") {
-        //         restartKernel();
-        //     }
-        // }, undefined);
     }
     getOutputContent(webview, extensionUri) {
         let timeNow = new Date().getTime();
@@ -125,6 +148,10 @@ class PlotsViewProvider {
                     image-rendering:auto;
                 }
 
+                .input_row {
+                    background: var(--vscode-tree-tableOddRowsBackground);
+                }
+
                 #errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
@@ -158,19 +185,21 @@ class PlotsViewProvider {
             </style>
             <meta charset="UTF-8">
     
-            <!-- <meta
+            <meta
                 http-equiv="Content-Security-Policy"
-                content="default-src 'none'; img-src ${webview.cspSource} https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
-                /> -->
+                content="default-src 'none'; img-src data: ${webview.cspSource} file: vscode-resource: https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
+                /> 
                 <script type="module" src="${toolkitUri}"></script>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Plots</title>
             <script>
                 const vscode = acquireVsCodeApi();
                 var results = vscode.getState() || [];
+                // results = [];
                 
                 function loaded() {
                     results = vscode.getState() || [];
+                    // results = [];
                     
                     const outputDiv = document.getElementById('outputs');
 
@@ -241,7 +270,7 @@ class PlotsViewProvider {
                 let newHTML = "";
                 for (let i = 0; i < results.length; i++) {
                     index += 1;
-                    newHTML += "<hr>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
+                    newHTML += "<div class='input_row'><hr>In[" + (index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Insert</button><br>";
                 }
                 outputDiv.innerHTML = newHTML;
     
@@ -291,6 +320,7 @@ class PlotsViewProvider {
                 imageElement.insertAdjacentElement("afterend", button);
             };
 
+
             var clearButton = document.getElementById('btn_clear');
             function clearOutputs() {
                 results = [];
@@ -307,6 +337,29 @@ class PlotsViewProvider {
                     text: "restart"
                 });
                 console.log(test);
+            };
+            
+            function openOutputInNewDocument(output)  {
+                // console.log(output);
+                var div1 = document.createElement("div");
+                div1.innerHTML = output;
+                var span1 = div1.getElementsByTagName("span")[0];
+                test = vscode.postMessage({
+                    text: "open",
+                    data: span1.textContent || span1.innerText
+                });
+            };
+
+            function pasteOutput(output) {
+                // console.log(output);
+                var div1 = document.createElement("div");
+                div1.innerHTML = output;
+                var span1 = div1.getElementsByTagName("span")[0];
+                test = vscode.postMessage({
+                    text: "paste",
+                    data: span1.textContent || span1.innerText
+                });
+
             };
 
             </script>
@@ -334,160 +387,139 @@ function invalidator() {
     // for repeated plots. Attaching a meaningless and random script snippet fixes that.
     return `<script>(function(){${Math.random()}})()</script>`;
 }
-function showPlotPanel(webview, extensionUri) {
-    let timeNow = new Date().getTime();
-    const toolkitUri = getUri(webview, extensionUri, [
-        "media",
-        "toolkit.js"
-    ]);
-    let result = `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <style type="text/css">
-
-            body{
-                overflow-y:scroll;
-                overflow-x:hidden;
-                height:100%;
-            }
-
-            body.vscode-light {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            body.vscode-dark {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            body.vscode-high-contrast {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-            }
-
-            #expression {
-                background: var(--vscode-editor-background);
-                color: var(--vscode-editor-foreground);
-                font: var(--vscode-editor-font-family);
-                width: 100%;
-            }
-
-            .outer {
-                height:100vh;
-                display:block;
-                position:relative;
-                top:5vh;
-            }
-
-            #result-header {
-                display:block;
-                margin-top: 5px;
-                padding: 5px;
-                font-family: var(--vscode-editor-font-family);
-                font-size: var(--vscode-editor-font-size);
-            }
-
-            #result {
-                font-family: var(--vscode-editor-font-family);
-                font-size: var(--vscode-editor-font-size);
-                border-bottom: var(--vscode-editor-foreground) 2px solid;
-                margin-top: 5px;
-                padding: 5px;
-                display: block;
-                margin:0px;
-                width:95vw;
-                max-height:95vh;
-                object-fit:cover;
-                overflow-y:hidden;
-                image-rendering:auto;
-            }
-
-            #result img{
-                width:95vw;
-                max-height:95vh;
-                object-fit:cover;
-                /* margin: 0; */
-                /* min-height: 200px; */
-                width: auto;
-                margin-bottom: 5px;
-                margin-left: auto;
-                margin-right: auto;
-                display: block;
-            }
-
-
-        </style>
-        <meta charset="UTF-8">
-
-        <!-- <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src 'none'; img-src ${webview.cspSource} https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
-            /> -->
-            <script type="module" src="${toolkitUri}"></script>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Plots</title>
-        <script>
-            const vscode = acquireVsCodeApi();
-            function scrollToBottom() {
-                window.scrollTo(0,document.body.scrollHeight);
-
-                var color = '';
-                var fontFamily = '';
-                var fontSize = '';
-                var theme = '';
-                var fontWeight = '';
-                try {
-                    computedStyle = window.getComputedStyle(document.body);
-                    color = computedStyle.color + '';
-                    backgroundColor = computedStyle.backgroundColor + '';
-                    fontFamily = computedStyle.fontFamily;
-                    fontSize = computedStyle.fontSize;
-                    fontWeight = computedStyle.fontWeight;
-                    theme = document.body.className;
-                } catch(ex) { }
-            }
-
-        function run(input) {
-            if(event.key === 'Enter') {
-                if(event.shiftKey) {
-                    vscode.postMessage({
-                        text: input.value
-                    });
-                    input.value = ""
-                }
-            }
-        }
-
-        window.addEventListener('message', event => {
-            const message = event.data;
-
-            console.log(message);
-
-            const outputDiv = document.getElementById('outputs');
-            outputDiv.innerHTML = message.text;
-
-            // outputDiv.scrollTop = outputDiv.scrollHeight;
-
-            // scrollToBottom()
-
-        })
-        </script>
-    </head>
-    <body>
-        <div class="outer">
-            <div class="inner" id='outputs'>
-                <p>No plots yet... try running some code!</p>
-            </div>
-        </div>
-    </body>
-    </html>` + invalidator();
-    return result;
-}
-exports.showPlotPanel = showPlotPanel;
+// export function showPlotPanel(webview: any, extensionUri: Uri) {
+//     let timeNow = new Date().getTime();    
+//     const toolkitUri = getUri(webview, extensionUri, [
+//         "media",
+//         "toolkit.js"
+//     ]);
+//     let result = `<!DOCTYPE html>
+//     <html lang="en">
+//     <head>
+//         <style type="text/css">
+//             body{
+//                 overflow-y:scroll;
+//                 overflow-x:hidden;
+//                 height:100%;
+//             }
+//             body.vscode-light {
+//                 background: var(--vscode-editor-background);
+//                 color: var(--vscode-editor-foreground);
+//                 font: var(--vscode-editor-font-family);
+//             }
+//             body.vscode-dark {
+//                 background: var(--vscode-editor-background);
+//                 color: var(--vscode-editor-foreground);
+//                 font: var(--vscode-editor-font-family);
+//             }
+//             body.vscode-high-contrast {
+//                 background: var(--vscode-editor-background);
+//                 color: var(--vscode-editor-foreground);
+//                 font: var(--vscode-editor-font-family);
+//             }
+//             #expression {
+//                 background: var(--vscode-editor-background);
+//                 color: var(--vscode-editor-foreground);
+//                 font: var(--vscode-editor-font-family);
+//                 width: 100%;
+//             }
+//             .outer {
+//                 height:100vh;
+//                 display:block;
+//                 position:relative;
+//                 top:5vh;
+//             }
+//             #result-header {
+//                 display:block;
+//                 margin-top: 5px;
+//                 padding: 5px;
+//                 font-family: var(--vscode-editor-font-family);
+//                 font-size: var(--vscode-editor-font-size);
+//             }
+//             #result {
+//                 font-family: var(--vscode-editor-font-family);
+//                 font-size: var(--vscode-editor-font-size);
+//                 border-bottom: var(--vscode-editor-foreground) 2px solid;
+//                 margin-top: 5px;
+//                 padding: 5px;
+//                 display: block;
+//                 margin:0px;
+//                 width:95vw;
+//                 max-height:95vh;
+//                 object-fit:cover;
+//                 overflow-y:hidden;
+//                 image-rendering:auto;
+//             }
+//             #result img{
+//                 width:95vw;
+//                 max-height:95vh;
+//                 object-fit:cover;
+//                 /* margin: 0; */
+//                 /* min-height: 200px; */
+//                 width: auto;
+//                 margin-bottom: 5px;
+//                 margin-left: auto;
+//                 margin-right: auto;
+//                 display: block;
+//             }
+//         </style>
+//         <meta charset="UTF-8">
+//         <meta
+//             http-equiv="Content-Security-Policy"
+//             content="default-src 'none'; img-src self ${webview.cspSource} file: vscode-resource: https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
+//             /> 
+//             <script type="module" src="${toolkitUri}"></script>
+//         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//         <title>Plots</title>
+//         <script>
+//             const vscode = acquireVsCodeApi();
+//             function scrollToBottom() {
+//                 window.scrollTo(0,document.body.scrollHeight);
+//                 var color = '';
+//                 var fontFamily = '';
+//                 var fontSize = '';
+//                 var theme = '';
+//                 var fontWeight = '';
+//                 try {
+//                     computedStyle = window.getComputedStyle(document.body);
+//                     color = computedStyle.color + '';
+//                     backgroundColor = computedStyle.backgroundColor + '';
+//                     fontFamily = computedStyle.fontFamily;
+//                     fontSize = computedStyle.fontSize;
+//                     fontWeight = computedStyle.fontWeight;
+//                     theme = document.body.className;
+//                 } catch(ex) { }
+//             }
+//         function run(input) {
+//             if(event.key === 'Enter') {
+//                 if(event.shiftKey) {
+//                     vscode.postMessage({
+//                         text: input.value
+//                     });
+//                     input.value = ""
+//                 }
+//             }
+//         }
+//         window.addEventListener('message', event => {
+//             const message = event.data;
+//             console.log(message);
+//             const outputDiv = document.getElementById('outputs');
+//             outputDiv.innerHTML = message.text;
+//             // outputDiv.scrollTop = outputDiv.scrollHeight;
+//             // scrollToBottom()
+//         })
+//         </script>
+//     </head>
+//     <body>
+//         <div class="outer">
+//             <div class="inner" id='outputs'>
+//                 <p>No plots yet... try running some code!</p>
+//             </div>
+//         </div>
+//     </body>
+//     </html>` + invalidator();
+//     return result;
+// }
 function getUri(webview, extensionUri, pathList) {
     return webview.asWebviewUri(vscode_1.Uri.joinPath(extensionUri, ...pathList));
 }
