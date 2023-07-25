@@ -18,6 +18,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
     private _extensionUri: Uri;
     private _text: string = "";
     private _context: ExtensionContext|undefined;
+    private _allOutputs: Map<string, string> = new Map();
 
     public static readonly viewType = "wolfram.plotsView";
 
@@ -50,7 +51,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 // console.log(data.output)
 
                 // new document
-                vscode.workspace.openTextDocument({ content: data.data }).then((document) => {
+                vscode.workspace.openTextDocument({ content: this._allOutputs.get(data.data) }).then((document) => {
                     vscode.window.showTextDocument(document);
                 });
             }
@@ -63,7 +64,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     let selection = editor.selection;
                     let position = new vscode.Position(selection.end.line+1, 0);
                     editor.edit((editBuilder) => {
-                        editBuilder.insert(position, data.data + "\n");
+                        editBuilder.insert(position, this._allOutputs.get(data.data)?.toString() + "\n");
                     }
                     );
                 }
@@ -96,9 +97,16 @@ export class PlotsViewProvider implements WebviewViewProvider {
     public updateView(out:any[]) {
         // this._text = out;
         let out2:any[] = []
+        let index = 0
         for (let i = 0; i < out.length; i++) {
+            index = this._allOutputs.size;
             let img = fs.readFileSync(out[i][2]).toString();
-            let o = [out[i][0], out[i][1], img]
+
+            img = img.replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "");
+            img = img.replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
+
+            let o = [out[i][0], out[i][1], index]
+            this._allOutputs.set(index.toString(), img);
             out2.push(o)
         }
 
@@ -378,23 +386,25 @@ export class PlotsViewProvider implements WebviewViewProvider {
             
             function openOutputInNewDocument(output)  {
                 // console.log(output);
-                var div1 = document.createElement("div");
-                div1.innerHTML = output;
-                var span1 = div1.getElementsByTagName("span")[0];
+                // var div1 = document.createElement("div");
+                // div1.innerHTML = output;
+                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "open",
-                    data: span1.textContent || span1.innerText
+                    // data: span1.textContent || span1.innerText
+                    data: output
                 });
             };
 
             function pasteOutput(output) {
                 // console.log(output);
-                var div1 = document.createElement("div");
-                div1.innerHTML = output;
-                var span1 = div1.getElementsByTagName("span")[0];
+                // var div1 = document.createElement("div");
+                // div1.innerHTML = output;
+                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "paste",
-                    data: span1.textContent || span1.innerText
+                    // data: span1.textContent || span1.innerText
+                    data: output
                 });
 
             };

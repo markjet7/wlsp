@@ -831,7 +831,7 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
             wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
             }).catch((err) => {
                 console.log("Error in runInWolfram")
-                restart()
+                // restart()
             })
         }
     }
@@ -856,7 +856,7 @@ function onRunInWolframIO(result: any) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
 
-    wolframBusyQ = false;
+    // wolframBusyQ = false;
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
 
@@ -874,7 +874,7 @@ function onRunInWolfram(file: any) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
 
-    wolframBusyQ = false;
+    // wolframBusyQ = false;
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
 
@@ -952,6 +952,7 @@ let maxPrintResults = 20;
 let printResults: any[] = [];
 let editorDecorations: Map<string, vscode.DecorationOptions[]> = new Map();
 // let printResults: Map<string, string> = new Map();
+
 function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file:any="") {
 
     if (typeof (e) !== "undefined") {
@@ -1099,7 +1100,7 @@ function wolframBusy(params: any) {
 
         progressStatus = vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Running line " + (outputPosition.line + 1) + " in Wolfram",
+            title: "Running line " + (outputPosition.line) + " in Wolfram",
             cancellable: true
         }, (prog, withProgressCancellation) => {
             return new Promise((resolve, reject) => {

@@ -228,5 +228,25 @@
 			"line":134,
 			"character":3
 		}
+	},
+	{
+		"start":{
+			"line":136,
+			"character":0
+		},
+		"end":{
+			"line":136,
+			"character":26
+		}
+	},
+	{
+		"start":{
+			"line":138,
+			"character":0
+		},
+		"end":{
+			"line":138,
+			"character":3
+		}
 	}
 ]

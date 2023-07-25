@@ -9,6 +9,7 @@ class PlotsViewProvider {
     constructor(_extensionUri0, context) {
         this._extensionUri0 = _extensionUri0;
         this._text = "";
+        this._allOutputs = new Map();
         this._extensionUri = _extensionUri0;
         this._context = context;
     }
@@ -29,7 +30,7 @@ class PlotsViewProvider {
                 // open new untitled document with content of data.output
                 // console.log(data.output)
                 // new document
-                vscode.workspace.openTextDocument({ content: data.data }).then((document) => {
+                vscode.workspace.openTextDocument({ content: this._allOutputs.get(data.data) }).then((document) => {
                     vscode.window.showTextDocument(document);
                 });
             }
@@ -41,7 +42,8 @@ class PlotsViewProvider {
                     let selection = editor.selection;
                     let position = new vscode.Position(selection.end.line + 1, 0);
                     editor.edit((editBuilder) => {
-                        editBuilder.insert(position, data.data + "\n");
+                        var _a;
+                        editBuilder.insert(position, ((_a = this._allOutputs.get(data.data)) === null || _a === void 0 ? void 0 : _a.toString()) + "\n");
                     });
                 }
             }
@@ -62,9 +64,14 @@ class PlotsViewProvider {
         var _a;
         // this._text = out;
         let out2 = [];
+        let index = 0;
         for (let i = 0; i < out.length; i++) {
+            index = this._allOutputs.size;
             let img = fs.readFileSync(out[i][2]).toString();
-            let o = [out[i][0], out[i][1], img];
+            img = img.replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "");
+            img = img.replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
+            let o = [out[i][0], out[i][1], index];
+            this._allOutputs.set(index.toString(), img);
             out2.push(o);
         }
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out2) });
@@ -341,23 +348,25 @@ class PlotsViewProvider {
             
             function openOutputInNewDocument(output)  {
                 // console.log(output);
-                var div1 = document.createElement("div");
-                div1.innerHTML = output;
-                var span1 = div1.getElementsByTagName("span")[0];
+                // var div1 = document.createElement("div");
+                // div1.innerHTML = output;
+                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "open",
-                    data: span1.textContent || span1.innerText
+                    // data: span1.textContent || span1.innerText
+                    data: output
                 });
             };
 
             function pasteOutput(output) {
                 // console.log(output);
-                var div1 = document.createElement("div");
-                div1.innerHTML = output;
-                var span1 = div1.getElementsByTagName("span")[0];
+                // var div1 = document.createElement("div");
+                // div1.innerHTML = output;
+                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "paste",
-                    data: span1.textContent || span1.innerText
+                    // data: span1.textContent || span1.innerText
+                    data: output
                 });
 
             };

@@ -382,7 +382,7 @@ function runToLine() {
             return;
         });
     }
-    if (evaluationQueue.length == 1 || wolframBusyQ == false) {
+    if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
 }
@@ -633,7 +633,7 @@ function runInWolfram(printOutput = false, trace = false) {
             return;
         });
     }
-    if (evaluationQueue.length == 1 || wolframBusyQ == false) {
+    if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
 }
@@ -674,7 +674,6 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         // e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
         if (!wolframBusyQ) {
-            wolframBusyQ = true;
             let evalNext = evaluationQueue.pop();
             if (evalNext == undefined) {
                 return;
@@ -683,7 +682,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
             }).catch((err) => {
                 console.log("Error in runInWolfram");
-                restart();
+                // restart()
             });
         }
     }
@@ -704,7 +703,7 @@ function setDecorations(result) {
 function onRunInWolframIO(result) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
-    wolframBusyQ = false;
+    // wolframBusyQ = false;
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
     setDecorations({ params: result });
@@ -718,7 +717,7 @@ let evaluationResults = {};
 function onRunInWolfram(file) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
-    wolframBusyQ = false;
+    // wolframBusyQ = false;
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
     let result;
@@ -911,7 +910,7 @@ function wolframBusy(params) {
         }
         progressStatus = vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Running line " + (outputPosition.line + 1) + " in Wolfram",
+            title: "Running line " + (outputPosition.line) + " in Wolfram",
             cancellable: true
         }, (prog, withProgressCancellation) => {
             return new Promise((resolve, reject) => {
