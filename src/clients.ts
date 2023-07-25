@@ -486,7 +486,7 @@ function runToLine() {
         })
     }
 
-    if (evaluationQueue.length == 1 || wolframBusyQ == false) {
+    if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
 }
@@ -779,7 +779,7 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
         })
     }
 
-    if (evaluationQueue.length == 1 || wolframBusyQ == false) {
+    if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
 
@@ -822,7 +822,6 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
 
         if (!wolframBusyQ) {
-            wolframBusyQ = true;
             let evalNext = evaluationQueue.pop();
             if (evalNext == undefined) {
                 return
