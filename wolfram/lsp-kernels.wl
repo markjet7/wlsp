@@ -166,10 +166,10 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 			codeBlock = <|
 				"code" -> s, "range" -> <|
 					"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
-					"end" -> <|"line" -> range["start"]["line"] + StringCount[StringTake[code["code"], {1, c[[-1]][Source][[2]]}], "\n"], "character" -> 100 |>
+					"end" -> <|"line" -> range["start"]["line"] + StringCount[StringTrim@StringTake[code["code"], {1, c[[-1]][Source][[2]]}], "\n"], "character" -> 100 |>
 				|>
 			|>;
-			newPosition = <|"line"->codeBlock["range"][[2,1]]+1, "character"->1|>;
+			newPosition = <|"line"->codeBlock["range"][[2,1]]+1, "character"->500|>;
 			(* Add each code block to the evaluation queue *)
 			evaluateFromQueue[codeBlock, json, newPosition];,
 			{c, codeBlocks}];

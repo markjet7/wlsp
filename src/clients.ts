@@ -1160,7 +1160,7 @@ function wolframBusy(params: any) {
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
 
-        progressStatus?.resolve();
+        // progressStatus?.resolve();
     }
 }
 

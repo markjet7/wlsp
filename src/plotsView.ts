@@ -19,6 +19,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
     private _text: string = "";
     private _context: ExtensionContext|undefined;
     private _allOutputs: Map<string, string> = new Map();
+    private _out: any[]= [];
 
     public static readonly viewType = "wolfram.plotsView";
 
@@ -72,9 +73,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
         }, undefined, this._context?.subscriptions);
 
 
-        this._view?.webview.postMessage({text: []});
+        this.updateView(this._out);
+        // this._view?.webview.postMessage({text: []});
         this._view.show(true)
-
         // this._view.onDidChangeVisibility((e) => {
         //     if (this._view?.visible) {
         //         this._view?.webview.postMessage({text: []})
@@ -91,33 +92,24 @@ export class PlotsViewProvider implements WebviewViewProvider {
         return
     }
 
-
-
-
     public updateView(out:any[]) {
         // this._text = out;
+        this._out = out;
         let out2:any[] = []
         let index = 0
-        for (let i = 0; i < out.length; i++) {
+        for (let i = 0; i < this._out.length; i++) {
             index = this._allOutputs.size;
-            let img = fs.readFileSync(out[i][2]).toString();
+            let img = fs.readFileSync(this._out[i][2]).toString();
 
             img = img.replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "");
             img = img.replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
 
-            let o = [out[i][0], out[i][1], index]
+            let o = [this._out[i][0], this._out[i][1], index]
             this._allOutputs.set(index.toString(), img);
             out2.push(o)
         }
 
         this._view?.webview.postMessage({text: (out2)})
-        
-        if (this._view) {
-            // console.log("Getting data view")
-            // this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
-        } else {
-            // console.log("No data view")
-        }
     }
 
     getOutputContent(webview: any, extensionUri: Uri) {
@@ -241,18 +233,22 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 const vscode = acquireVsCodeApi();
                 var results = vscode.getState() || [];
                 // results = [];
+                var index = 0;
                 
                 function loaded() {
+                    index = results.length;
                     results = vscode.getState() || [];
                     // results = [];
                     
                     const outputDiv = document.getElementById('outputs');
 
                     let newHTML = "";
+                    index = results.length;
                     for (let i = 0; i < results.length; i++) {
-                        index += 1;
+                        index -= 1;
                         newHTML += "<hr>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
                     }
+                    index = results.length;
                     outputDiv.innerHTML = newHTML;
         
                     outputDiv.scrollTop = outputDiv.scrollHeight;
@@ -294,7 +290,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 }
             }
 
-            var index = 0;
             window.addEventListener('message', event => {
                 const message = event.data;
                 if (message.text.length == 0) {
@@ -313,9 +308,11 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 const outputDiv = document.getElementById('outputs');
 
                 let newHTML = "";
+                index += 1;
+                var new_index = index;
                 for (let i = 0; i < results.length; i++) {
-                    index += 1;
-                    newHTML += "<div class='input_row'><hr>In[" + (index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Insert</button><br>";
+                    new_index -= 1;
+                    newHTML += "<div class='input_row'><hr>In[" + (new_index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Insert</button><br>";
                 }
                 outputDiv.innerHTML = newHTML;
     

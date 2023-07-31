@@ -962,7 +962,7 @@ function wolframBusy(params) {
         wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
-        progressStatus === null || progressStatus === void 0 ? void 0 : progressStatus.resolve();
+        // progressStatus?.resolve();
     }
 }
 let workspaceDecorations = {};
