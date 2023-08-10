@@ -230,19 +230,23 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 		Return[]
 	];
 
+	src = Check[documents[json["params"]["textDocument"]["uri"]], ""];
+	If[StringCases[src, "RGBColor"] == {},
+		sendResponse[<|"id"->json["id"], "result" -> {} |>];
+		Return[]
+	];
+
 	TimeConstrained[
-		src = Check[documents[json["params"]["textDocument"]["uri"]], ""];
 		rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
 		colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
 		result = Map[
-			If[FailureQ@#,
+			If[AnyTrue[#, FailureQ],
 				Nothing,
-
 			<|
 				"range"-><|
-				"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
-				"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
-			|>,
+					"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
+					"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
+				|>,
 			"color"-><|
 				"red"->#[[3,1,1]],
 				"green"->#[[3,1,2]],
@@ -250,7 +254,7 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 				"alpha"->If[Length@#[[3,1]] >3, #[[3,1,4]] ,1]
 				|>
 			|>]&,
-		colors
+			colors
 		];
 		sendResponse[<|"id"->json["id"], "result" -> result |>];,
 
@@ -558,7 +562,6 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 ];
 
 handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response, position, missingCloser, functionArguments, candidates},
-		Print["textDocument/completion"];
 		TimeConstrained[
 			src = documents[json["params","textDocument","uri"]];
 			pos = json["params","position"];

@@ -158,11 +158,12 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		(* Split string into code blocks *)
 		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
 			CallNode[LeafNode[Symbol,(_),_],___] |
+			CallNode[CallNode[_, (_), _], ___] |
 			LeafNode[_,_,_]
 		),{2}];
 
 		Table[
-			s = StringTake[code["code"], c[[-1]][Source]];
+			s = Echo@StringTake[code["code"], c[[-1]][Source]];
 			codeBlock = <|
 				"code" -> s, "range" -> <|
 					"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
