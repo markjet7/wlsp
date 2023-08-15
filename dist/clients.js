@@ -175,10 +175,10 @@ function restartKernel() {
         evaluationQueue = [];
         wolframBusyQ = false;
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            stopWolfram(undefined, wolframKernel);
-            yield new Promise(resolve => setTimeout(resolve, 1500));
-            startWLSPKernelSocket(0);
-            resolve();
+            stopWolfram(undefined, wolframKernel).then(() => {
+                startWLSPKernelSocket(0);
+                resolve();
+            });
         }));
     });
 }
@@ -470,39 +470,43 @@ function cursorBlock() {
 }
 let cursorMoved = false;
 let cursorLocations = [];
-function moveCursor() {
+function moveCursor(selection) {
     // if (cursorMoved == true) {
     //     cursorMoved = false;
     //     return
     // }
     let e = vscode.window.activeTextEditor;
     fs.readFile(cursorFile, "utf8", (err, data) => {
-        var _a, _b;
+        var _a, _b, _c;
         if (err) {
             console.log(err);
             return;
         }
-        cursorLocations = JSON.parse(data);
-        let top = new vscode.Position(0, 0);
-        let bottom = (e === null || e === void 0 ? void 0 : e.selection.active.line) || 0;
+        let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
+        cursorLocations = (_a = JSON.parse(data)[uri]) !== null && _a !== void 0 ? _a : [];
+        let top = selection.active;
+        let bottom = (e === null || e === void 0 ? void 0 : e.selection.active.line) + 1 || 0;
         for (let i = 0; i < cursorLocations.length; i++) {
             if (e) {
                 // This is the current block being executed
-                if ((cursorLocations[i]["start"]["line"] <= (e === null || e === void 0 ? void 0 : e.selection.active.line)) && (cursorLocations[i]["end"]["line"] >= (e === null || e === void 0 ? void 0 : e.selection.active.line))) {
+                if ((cursorLocations[i]["start"]["line"] <= selection.active.line) && (cursorLocations[i]["end"]["line"] >= selection.active.line)) {
                     // There is a block after this one
                     if (cursorLocations.length > i + 1) {
                         top = cursorLocations[i]["end"];
                         bottom = cursorLocations[i + 1]["start"]["line"];
+                        console.log("1", top, bottom);
                         break;
                     }
                     else {
                         top = cursorLocations[i]["end"];
                         bottom = top.line + 1;
+                        console.log("2", top, bottom);
                         break;
                     }
                 }
             }
         }
+        console.log(selection.active.line, bottom);
         let outputPosition = new vscode.Position(bottom, 0);
         if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line + 1) && ((e === null || e === void 0 ? void 0 : e.document.lineAt(outputPosition.line).text.trim.length) == 0)) {
             e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
@@ -516,11 +520,11 @@ function moveCursor() {
             decorateRunningLine(new vscode.Position(top["line"], top["character"]));
             let newEditorDecorations = [];
             let selection = e.selection.active;
-            newEditorDecorations = ((_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : []).filter((d) => {
+            newEditorDecorations = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []).filter((d) => {
                 return d.range.start.line < selection.line;
             });
             editorDecorations.set(e.document.uri.toString(), newEditorDecorations);
-            e.setDecorations(variableDecorationType, ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []));
+            e.setDecorations(variableDecorationType, ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []));
         }
     });
 }
@@ -614,10 +618,7 @@ function runInWolfram(printOutput = false, trace = false) {
     // vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
     //     cursorMoved = true;
     // })
-    // if (!unsavedDocumentsQ) {
-    //     moveCursor()
-    // }
-    moveCursor();
+    moveCursor(sel);
     let output = true;
     // if (plotsPanel?.visible == true) {
     //     output = true;

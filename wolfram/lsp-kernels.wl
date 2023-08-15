@@ -163,7 +163,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		),{2}];
 
 		Table[
-			s = Echo@StringTake[code["code"], c[[-1]][Source]];
+			s = StringTake[code["code"], c[[-1]][Source]];
 			codeBlock = <|
 				"code" -> s, "range" -> <|
 					"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
@@ -265,7 +265,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ToString[ReleaseHold[r["Result"]], InputForm, TotalWidth -> 1000]
 			], 
 			
-			"Output evaluation aborted"
+			Print@"Output evaluation aborted"
 
 		];
 		output,
@@ -1072,8 +1072,23 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 
 ];
 
-cellToSymbol[node_, uri_]:=Module[{astStr,name,loc,kind,rhs},
-	astStr=ToFullFormString[Check[node[[2,1]], Print[node]; ""]];
+cellToSymbol[node_, uri_]:=Module[{astStr,name,loc,kind,rhs, n},
+	n = Check[node[[2,1]], Print[node]; ""];
+	If[Head@n === String, 
+		Return[<|
+			"label"->"na",
+			"definition"->"Failed",
+			"tooltip"->"Failed",
+			"location"->{{0, 0}, {0, 0}},
+			"kind"->"symbol-struct", 
+			"resourceUri" -> uri,
+			"icon" -> "symbol-struct",
+			"children" -> {},
+			"lazyload" -> "symbolToTreeItem2[" <> "na" <> "]",
+			"uri" -> uri
+		|>]
+	];
+	astStr=ToFullFormString[];
 	name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
 	loc=FirstCase[node, <|CodeParser`Source -> x_, ___|>:>x, {{0, 0}, {0, 0}}, Infinity];
 	

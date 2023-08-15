@@ -63,6 +63,7 @@ handle["initialize",json_]:=Module[{response2, builtins},
 	builtinSymbols = {};
 	symbolListFile = scriptPath <> "symbolList.js";
 	cursorLocationsFile = scriptPath <> "cursorLocations.js";
+	Export[cursorLocationsFile, <||>, "JSON"];
 
 	messageHandler = If[Last[#],
 		Save["/tmp/lsphandler.wl", Stack[]],
@@ -238,6 +239,7 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 
 	TimeConstrained[
 		rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
+		If[Unequal[Head@rgbPattern, String], rgbPattern = ""]; 
 		colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
 		result = Map[
 			If[AnyTrue[#, FailureQ],
@@ -533,6 +535,8 @@ handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, 
 
 handle["textDocument/didOpen",json_]:=Module[{file},
 	file = json["params"]["textDocument"]["uri"];
+	updateCursorLocations[json];
+
 	(* Import[URLDecode@StringReplace[file, "file://"->""],"Text"] *)
 ];
 
@@ -683,6 +687,7 @@ handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbo
 ];
 
 updateCursorLocations[json_]:=Module[{src, ast, functions, l},
+	locations = Import[cursorLocationsFile, "RawJSON"];
 	src = documents[json["params","textDocument","uri"]];
 	ast = CodeParse[src];
 	functions = Cases[ast, (
@@ -690,7 +695,7 @@ updateCursorLocations[json_]:=Module[{src, ast, functions, l},
 		_LeafNode
 	),{2}];
 
-	locations = DeleteCases[Table[
+	locations[json["params","textDocument","uri"]] = DeleteCases[Table[
 		l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
 		<|
 			"start" -> <|"line"->l[[1,1]]-1, "character" -> l[[1,2]]-1|>,
@@ -1335,6 +1340,7 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 
 	f[node_]:=Module[{astStr,name,loc,kind,rhs},
 		astStr=ToFullFormString[node[[2,1]]];
+		If[Head@astStr===String, astStr, astStr = ""];
 		name=First[StringCases[astStr,"$"... ~~ WordCharacter...],""];
 		loc=FirstCase[node, <|Source -> x_, ___|> :> x, {{0,0},{0,0}}, 3];
 		rhs=FirstCase[{node},CallNode[LeafNode[Symbol, ("Set"|"SetDelayed"),___],{_,x_,___},___]:>x,Infinity];
@@ -1345,7 +1351,7 @@ getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 		definition=getStringAtRange[src,loc+{{0,0},{0,0}}];
 		<|"name"->name,"definition"->StringTrim[definition],"loc"->loc,"kind"->kind, "uri" -> uri|>];
 
-	symbols = f /@Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
+	symbols = f /@ Cases[ast, CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
 	symbols
 ];
 
