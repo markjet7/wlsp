@@ -956,7 +956,7 @@ handle["openNotebook", json_]:=Module[{jupyterfile, response},
 handle["windowFocused", json_]:=Module[{},
 	If[First[json["params"], True],
 		handlerWait = 0.01,
-		handlerWait = 0.1
+		handlerWait = 1.0
 	]
 ];
 

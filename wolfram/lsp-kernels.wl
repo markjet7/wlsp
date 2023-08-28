@@ -77,6 +77,14 @@ handle["pulse", json_]:=Module[{},
 	sendResponse[<|"id" -> json["id"], "result"->1|>];
 ];
 
+
+handle["windowFocused", json_]:=Module[{},
+	If[First[json["params"], True],
+		handlerWait = 0.01,
+		handlerWait = 1.0
+	];
+];
+
 handle["shutdown", json_]:=Module[{},
 	Print["Stopping Kernels"];
 	state = "Stop";

@@ -111,7 +111,7 @@ Get[DirectoryName[path] <> "lsp-kernels.wl"];
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&
-		Now - $timeout > Quantity[20, "Minutes"],
+		Now - $timeout > Quantity[10, "Minutes"],
 		Print["Closing kernel connection..."]; Quit[];
 	];
 

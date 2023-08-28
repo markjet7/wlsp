@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.63",
+    "version": "0.0.64",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -17,9 +17,7 @@
         "Programming Languages"
     ],
     "main": "./dist/extension",
-    "activationEvents": [
-        "onDebug"
-    ],
+    "activationEvents": [],
     "contributes": {
         "capabilities": {
             "untrustedWorkspaces": {
