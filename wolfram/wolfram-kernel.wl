@@ -10,7 +10,7 @@ $HistoryLength = 100;
 
 
 sendResponse[response_Association]:=Module[{byteResponse},
-	Check[
+	CheckAbort[
 		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
@@ -20,6 +20,7 @@ sendResponse[response_Association]:=Module[{byteResponse},
 			],
 			KERNELSERVER["ConnectedClients"]
 		],
+		<|"method"->"window/showMessage", "params"-><|"type"-> 1, "message" -> "The kernel tried to abort."|>|>;
 		Print["response error"];
 		Print[response];
 	]
@@ -64,7 +65,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 			If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
 				Check[
 					handle[msg["method"],msg], 
-				Export[logfile, msg, "Text"];
 					sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "Kernel error", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 				],
  

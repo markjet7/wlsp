@@ -236,10 +236,10 @@ export async function restartKernel(): Promise<void> {
     evaluationQueue = [];
     wolframBusyQ = false;
     return new Promise(async (resolve) => {
-        stopWolfram(undefined, wolframKernel);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        startWLSPKernelSocket(0);
-        resolve();
+        stopWolfram(undefined, wolframKernel).then(() => {
+            startWLSPKernelSocket(0);
+            resolve();
+        });
     });
 }
 
@@ -593,7 +593,7 @@ function cursorBlock() {
 
 let cursorMoved = false;
 let cursorLocations: any[] = [];
-function moveCursor() {
+function moveCursor(selection: vscode.Selection) {
     // if (cursorMoved == true) {
     //     cursorMoved = false;
     //     return
@@ -605,14 +605,15 @@ function moveCursor() {
             console.log(err)
             return
         }
-        cursorLocations = JSON.parse(data);
+        let uri: string | undefined = e?.document.uri.toString() as string;
+        cursorLocations = JSON.parse(data)[uri] ?? [];
 
-        let top: any = new vscode.Position(0, 0);
-        let bottom: any = e?.selection.active.line || 0;
+        let top: any = selection.active;
+        let bottom: any = e?.selection.active.line! + 1 || 0;
         for (let i: any = 0; i < cursorLocations.length; i++) {
             if (e) {
                 // This is the current block being executed
-                if ((cursorLocations[i]["start"]["line"] <= e?.selection.active.line) && (cursorLocations[i]["end"]["line"] >= e?.selection.active.line)) {
+                if ((cursorLocations[i]["start"]["line"] <= selection.active.line) && (cursorLocations[i]["end"]["line"] >= selection.active.line)) {
                     // There is a block after this one
                     if (cursorLocations.length > i + 1) {
                         top = cursorLocations[i]["end"];
@@ -626,7 +627,7 @@ function moveCursor() {
                 }
             }
         }
-
+        console.log(selection.active.line, bottom)
         let outputPosition: vscode.Position = new vscode.Position(bottom, 0);
 
         if (e?.document.lineCount == (outputPosition.line + 1) && (e?.document.lineAt(outputPosition.line).text.trim.length == 0)) {
@@ -752,11 +753,7 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
     //     cursorMoved = true;
     // })
 
-
-    // if (!unsavedDocumentsQ) {
-    //     moveCursor()
-    // }
-    moveCursor()
+    moveCursor(sel)
     let output = true;
     // if (plotsPanel?.visible == true) {
     //     output = true;
