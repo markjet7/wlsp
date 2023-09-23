@@ -8,8 +8,8 @@ Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspec
 Needs["CodeParser`Scoping`"];
 
 
-COMPLETIONS = Import[DirectoryName[path] <> "completions.json", "RawJSON"]; 
-DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[path] <> "details.json","RawJSON"]];
+COMPLETIONS = Import[DirectoryName[$path] <> "completions.json", "RawJSON"]; 
+DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[$path] <> "details.json","RawJSON"]];
  
 scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; 
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
@@ -514,10 +514,10 @@ handle["textDocument/rename", json_]:=Module[{pos, src, newName, str, renames, e
 	sendResponse[response3];
 ];
 
+Needs["CodeFormatter`"];
 handle["textDocument/formatting", json_]:=Module[{src, prn, out, lines, result, response}, 
 	src = Check[documents[json["params","textDocument","uri"]],""];
-    prn = Cell[BoxData[#], "Input"] &;
-    out = UsingFrontEnd[First[FrontEndExecute[FrontEnd`ExportPacket[prn@CodeFormatter`FullCodeFormat@src, "InputText"]]]];
+    out = CodeFormat[src, Airiness->0.25, NewlinesBetweenOperators->"Delete"];
 
 	lines = Length@StringSplit[src, EndOfLine, All];
 	result = {<|
@@ -956,7 +956,7 @@ handle["textDocument/didSave", json_]:=Module[{},
 ];
 
 handle["openNotebook", json_]:=Module[{jupyterfile, response},
-	jupyterfile = First[Notebook2Jupyter[json["params"]["path"]["path"]]];
+	jupyterfile = First[Notebook2Jupyter[json["params"]["$path"]["$path"]]];
 	response = <|"id"->json["id"],"result"-><|"output"->jupyterfile|>|>;
 	sendResponse[response];
 ];

@@ -494,13 +494,11 @@ function moveCursor(selection) {
                     if (cursorLocations.length > i + 1) {
                         top = cursorLocations[i]["end"];
                         bottom = cursorLocations[i + 1]["start"]["line"];
-                        console.log("1", top, bottom);
                         break;
                     }
                     else {
                         top = cursorLocations[i]["end"];
                         bottom = top.line + 1;
-                        console.log("2", top, bottom);
                         break;
                     }
                 }
@@ -508,7 +506,7 @@ function moveCursor(selection) {
         }
         console.log(selection.active.line, bottom);
         let outputPosition = new vscode.Position(bottom, 0);
-        if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line + 1) && ((e === null || e === void 0 ? void 0 : e.document.lineAt(outputPosition.line).text.trim.length) == 0)) {
+        if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line)) {
             e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
                 editBuilder.insert(new vscode.Position(outputPosition.line + 1, 0), "\n");
             });
@@ -1126,7 +1124,8 @@ function updateOutputPanel() {
 function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
         let serverOptions = {
-            run: { command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
+            run: {
+                command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
             },
             debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
         };
@@ -1692,9 +1691,11 @@ function didChangeWindowState(state) {
     if (exports.wolframClient !== undefined && exports.wolframClient.initializeResult !== undefined) {
         if (state.focused === true) {
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("windowFocused", true);
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("windowFocused", true);
         }
         else {
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("windowFocused", false);
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("windowFocused", false);
         }
     }
 }

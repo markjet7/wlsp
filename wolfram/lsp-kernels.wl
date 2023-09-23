@@ -1,10 +1,8 @@
-
-
 BeginPackage["WolframKernel`"];
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
 (* ::Package:: *)
-Get[DirectoryName[path] <> "transforms.wl"];
+Get[DirectoryName[$path] <> "transforms.wl"];
  
 
 scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; 
@@ -130,6 +128,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 ];
 
 handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
+	Print[1];
 	id = json["id"];
 	html = ImportString[nb2html[ImportString[json["params", "document"], "Notebook"]], {"HTML", "XMLObject"}];
 	inputID = json["params", "input"];
@@ -595,10 +594,18 @@ handle["runExpression", json_]:=Module[{expr, range, position, newPosition, code
 	
 ];
 
+modified = <||>;
 handle["didChangeWorkspaceFolders", json_]:=Module[{dir, files},
 	files = json["params"][[1]];
 	Table[
-		documents[f["external"]] = Import[f["path"], "Text"],
+		If[
+			!KeyMemberQ[modified, f["external"]] || 
+			(modified[f["external"]] < Information[f]["LastModificationDate"]),
+			(
+				modified[f["external"]] = Information[f]["LastModificationDate"];
+				documents[f["external"]] = Import[f["path"], "Text"];
+			)
+		],
 		{f, files}
 	];
 ];

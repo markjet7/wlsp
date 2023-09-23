@@ -34,10 +34,10 @@ sendResponse[response_Association]:=Module[{byteResponse},
 
 
 If[Length[$ScriptCommandLine]>1,kernelport=ToExpression@Part[$ScriptCommandLine,2],port=6589];
-If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
-(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "CodeFormatter.m"];
-Get[DirectoryName[path] <> "lsp-kernels.wl"];
+If[Length[$ScriptCommandLine]>1,$path=Part[$ScriptCommandLine,1],$path=""];
+(* Get[DirectoryName[$path] <> "lsp-handler.wl"]; *)
+Get[DirectoryName[$path] <> "CodeFormatter.m"];
+Get[DirectoryName[$path] <> "lsp-kernels.wl"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
@@ -57,8 +57,8 @@ lastChange = Now;
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False]; 
 
-logfile = DirectoryName[path] <> "kernel-wlsp.log";
-logfile = DirectoryName[path] <> "wlsp_kernel.txt";
+logfile = DirectoryName[$path] <> "kernel-wlsp.log";
+logfile = DirectoryName[$path] <> "wlsp_kernel.txt";
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
 		If[KeyMemberQ[msg, "method"],
@@ -105,9 +105,9 @@ flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
 $timeout = Now;
-Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-Get[DirectoryName[path] <> "lsp-kernels.wl"]; 
+Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

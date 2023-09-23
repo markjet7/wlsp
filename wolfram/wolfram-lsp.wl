@@ -37,11 +37,11 @@ sendResponse[response_Association, client_SocketObject]:=Module[{byteResponse},
 
 
 If[Length[$ScriptCommandLine]>1,port=ToExpression@Part[$ScriptCommandLine,2],port=6589];
-If[Length[$ScriptCommandLine]>1,path=Part[$ScriptCommandLine,1],path=""];
-(* Get[DirectoryName[path] <> "lsp-handler.wl"]; *)
-Get[DirectoryName[path] <> "lsp-handler.wl"];
-Get[DirectoryName[path] <> "CodeFormatter.m"];
-Get[DirectoryName[path] <> "notebook2jupyter.m"];
+If[Length[$ScriptCommandLine]>1,$path=Part[$ScriptCommandLine,1],$path=""];
+(* Get[DirectoryName[$path] <> "lsp-handler.wl"]; *)
+Get[DirectoryName[$path] <> "lsp-handler.wl"];
+Get[DirectoryName[$path] <> "CodeFormatter.m"];
+Get[DirectoryName[$path] <> "notebook2jupyter.m"];
 
 (* log = OpenWrite["/Users/mark/Downloads/porttest.txt"];
 Write[log, port];
@@ -61,7 +61,7 @@ lastChange = Now;
 
 SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 120.];
 SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True]; 
-logfile = DirectoryName[path] <> "wlsp.txt";
+logfile = DirectoryName[$path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
 	Check[
@@ -98,17 +98,17 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-Get[DirectoryName[path] <> "lsp-handler.wl"];
+Get[DirectoryName[$path] <> "lsp-handler.wl"];
 handlerWait = 0.01;
 handlerWait = 0.05;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
 timeout = Now;
-Get[DirectoryName[path] <> "lsp-handler.wl"]; 
-Get[DirectoryName[path] <> "file-transforms.wl"]; 
+Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
+Get[DirectoryName[$path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[path] <> "lsp-handler.wl"]; 
+	Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&

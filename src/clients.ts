@@ -630,7 +630,7 @@ function moveCursor(selection: vscode.Selection) {
         console.log(selection.active.line, bottom)
         let outputPosition: vscode.Position = new vscode.Position(bottom, 0);
 
-        if (e?.document.lineCount == (outputPosition.line + 1) && (e?.document.lineAt(outputPosition.line).text.trim.length == 0)) {
+        if (e?.document.lineCount == (outputPosition.line)) {
             e?.edit(editBuilder => {
                 editBuilder.insert(new vscode.Position(outputPosition.line + 1, 0), "\n")
             })
