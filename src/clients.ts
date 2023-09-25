@@ -1218,7 +1218,7 @@ function updateDecorations(decorationfile: string) {
 
                 // runningLines = [];
                 editor.setDecorations(variableDecorationType, editorDecorations);
-                editor.setDecorations(runningDecorationType, Array.from(runningLines.values());
+                editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
             }
         })
 
