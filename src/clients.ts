@@ -1866,7 +1866,7 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
 
         // Remove old running lines and decorations
         let newrunninglines = new Map();
-        runningLines.forEach((d: vscode.DecorationOptions, key: number) => {
+        runningLines.forEach((d: vscode.DecorationOptions, key: vscode.Range) => {
             if (d.range.start.line < selection?.line) {
                 newrunninglines.set(key, d)
             }
