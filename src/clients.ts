@@ -346,6 +346,7 @@ export async function onkernelReady(): Promise<void> {
             // wolframKernelClient?.onNotification("updateTreeItems", updateTreeItems);
             wolframKernelClient?.onNotification("pulse", pulse);
             wolframKernelClient?.onNotification("errorMessages", errorMessages)
+            wolframKernelClient?.onNotification("updateInputs", updateInputs)
 
 
             if (vscode.window.activeTextEditor) {
@@ -536,7 +537,7 @@ function updateVarTable(vars: any) {
     })
 }
 
-let runningLines: any[] = []
+let runningLines: Map<vscode.Range, vscode.DecorationOptions> = new Map();
 function moveCursor2(position: vscode.Position) {
     let e = vscode.window.activeTextEditor;
     let uri = e?.document.uri.toString();
@@ -627,7 +628,7 @@ function moveCursor(selection: vscode.Selection) {
                 }
             }
         }
-        console.log(selection.active.line, bottom)
+        // console.log(selection.active.line, bottom)
         let outputPosition: vscode.Position = new vscode.Position(bottom, 0);
 
         if (e?.document.lineCount == (outputPosition.line)) {
@@ -678,8 +679,9 @@ function decorateRunningLine(outputPosition: vscode.Position) {
             }
         }
 
-        runningLines.push(d);
-        e.setDecorations(runningDecorationType, runningLines);
+        runningLines.set(range, d);
+
+        e.setDecorations(runningDecorationType, Array.from(runningLines.values()));
 
         let documentDecorations = editorDecorations.get(e.document.uri.toString()) ?? [];
 
@@ -717,7 +719,7 @@ function updateRunningLines() {
                                 d["renderOptions"]!["after"]!["contentText"] = "."
                             }
         })
-        editor?.setDecorations(runningDecorationType, runningLines)
+        editor?.setDecorations(runningDecorationType, Array.from(runningLines.values()));
 
         setTimeout(updateRunningLines, 500)
     } else {
@@ -776,9 +778,11 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
         })
     }
 
-    if (evaluationQueue.length == 1) {
-        sendToWolfram(printOutput);
-    }
+    sendToWolfram(printOutput);
+
+    // if (evaluationQueue.length == 1) {
+    //     sendToWolfram(printOutput);
+    // }
 
 }
 
@@ -818,7 +822,8 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
 
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
 
-        if (!wolframBusyQ) {
+        // if (!wolframBusyQ) {
+        if( true) {
             let evalNext = evaluationQueue.pop();
             if (evalNext == undefined) {
                 return
@@ -840,11 +845,11 @@ function setDecorations(result: any) {
         return e.document.uri.path === result["params"]["document"]["path"]
     })[0];
 
-    for (let i = 0; i < runningLines.length; i++) {
-        const d = runningLines[i];
+    for (let i = 0; i < Array.from(runningLines.values()).length; i++) {
+        const d = Array.from(runningLines.values())[i];
         if (d.range.start.line == result["params"]["position"]["line"] - 1) {
-            runningLines.splice(i, 1)
-            e.setDecorations(runningDecorationType, runningLines)
+            runningLines.delete(d.range);
+            e.setDecorations(runningDecorationType, Array.from(runningLines.values()))
         }
     }
 }
@@ -950,6 +955,10 @@ let printResults: any[] = [];
 let editorDecorations: Map<string, vscode.DecorationOptions[]> = new Map();
 // let printResults: Map<string, string> = new Map();
 
+function updateInputs(params:any) {
+    plotsProvider.newInput(params["input"])
+}
+
 function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file: any = "") {
 
     if (typeof (e) !== "undefined") {
@@ -992,12 +1001,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             if (output.length > 2000 && !output.includes("<img")) {
                 outputSnippet = output.slice(0, 500) + " ... " + output.slice(-500);
             }
-            printResults.push(
-                [inputSnippet,
-                    outputSnippet,
-                    result["params"]["output"]
-                ]
-            )
+
             if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
             }
@@ -1067,7 +1071,8 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
             e.setDecorations(variableDecorationType,
                 editorDecorations.get(e.document.uri.toString())!);
-            updateOutputPanel();
+            
+            plotsProvider.newOutput(outputSnippet)
         })
     };
 
@@ -1211,9 +1216,9 @@ function updateDecorations(decorationfile: string) {
                     editorDecorations.push(workspaceDecorations[uri][d]);
                 });
 
-                runningLines = [];
+                // runningLines = [];
                 editor.setDecorations(variableDecorationType, editorDecorations);
-                editor.setDecorations(runningDecorationType, runningLines);
+                editor.setDecorations(runningDecorationType, Array.from(runningLines.values());
             }
         })
 
@@ -1252,9 +1257,9 @@ function updateLintDecorations(decorationfile: string) {
                     editorLintDecorations.push(workspaceLintDecorations[uri][d]);
                 });
 
-                runningLines = [];
+                // runningLines = [];
                 editor.setDecorations(lintDecorationType, editorLintDecorations);
-                editor.setDecorations(runningDecorationType, runningLines);
+                editor.setDecorations(runningDecorationType, []);
             }
         })
 
@@ -1322,36 +1327,7 @@ function clearPlots() {
 
 
 function updateOutputPanel() {
-    // let out = "";
-    // let reversed = printResults.slice().reverse();
-    // printResults.forEach((row) => {
-    //     let data = "";
-    //     try {
-    //         data += row[1];
-    //     } catch (e) {
-    //         console.log((e as Error).message);
-    //         data += "Error reading result";
-    //     }
-
-    //     if (data !== "") {
-
-    //         let inputString = "";
-    //         if (row[0].length > 500) {
-    //             inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
-    //         } else {
-    //             inputString = row[0];
-    //         }
-
-    //         out += "<div id='result-header'>In: " + inputString +
-    //             "</div>" +
-
-    //             "<div id='result'>" +
-    //             data +
-    //             "</div>";
-    //     }
-    // })
-
-    plotsProvider.updateView(printResults.reverse())
+    // plotsProvider.updateView(printResults.reverse())
 }
 
 async function startWLSPIO(id: number): Promise<void> {
@@ -1883,13 +1859,21 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
         }
 
         clearDecorations();
+        // let newrunninglines = [];
+        // newrunninglines = runningLines.filter((d: vscode.DecorationOptions) => {
+        //     return d.range.start.line < selection?.line
+        // })
+
         // Remove old running lines and decorations
-        let newrunninglines = [];
-        newrunninglines = runningLines.filter((d: vscode.DecorationOptions) => {
-            return d.range.start.line < selection?.line
-        })
+        let newrunninglines = new Map();
+        runningLines.forEach((d: vscode.DecorationOptions, key: number) => {
+            if (d.range.start.line < selection?.line) {
+                newrunninglines.set(key, d)
+            }
+        });
+
         runningLines = newrunninglines;
-        editor.setDecorations(runningDecorationType, runningLines)
+        editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
 
         let newEditorDecorations = [];
         newEditorDecorations = (editorDecorations.get(editor.document.uri.toString()) ?? []).filter((d: vscode.DecorationOptions) => {

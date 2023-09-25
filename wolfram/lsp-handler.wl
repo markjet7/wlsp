@@ -155,10 +155,8 @@ symbolToTreeItem[symbol_Association]:=Module[{},
 ];
 
 handle["symbolList", json_]:=Module[{response, symbols, builtins, result1, result2, files, file},
-	Print["symbol list"];
 	files = DeleteDuplicates@Flatten@Join[FileNames[{"*.wl", "*.wls", "*.nb0"}, workspaceFolders], StringReplace[FileNameJoin[Rest@URLParse[URLDecode[#], "Path"]], ("#"~~___ ->"")] & /@ Keys@documents];
 	sources = Check[Import[First@StringSplit[#, "#"], "Text"], ""] & /@ files;
-	Print["symbol list"];
 	symbols = SortBy[Flatten@MapThread[getSymbols[#1, URLBuild[<|"Scheme" -> "file", "Path" -> Join[{""}, FileNameSplit[#2]]|>]] &, {sources, files}], #1["name"] &];
 	
 

@@ -112,6 +112,26 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._view?.webview.postMessage({text: (out2)})
     }
 
+    public newInput(input:string) {
+        this._view?.webview.postMessage({
+            text: [],
+            input: input,
+            output: ""
+        })
+    }
+
+    public newOutput(output:string) {
+        let img = output
+            .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
+            .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
+
+        this._view?.webview.postMessage({
+            text: [],
+            input: "",
+            output: img
+        })
+    }
+
     getOutputContent(webview: any, extensionUri: Uri) {
         let timeNow = new Date().getTime();    
         const toolkitUri = getUri(webview, extensionUri, [
@@ -159,7 +179,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     height:100vh;
                     display:block;
                     position:relative;
-                    top:5vh;
                 }
     
                 #result-header {
@@ -231,32 +250,22 @@ export class PlotsViewProvider implements WebviewViewProvider {
             <title>Plots</title>
             <script>
                 const vscode = acquireVsCodeApi();
-                var results = vscode.getState() || [];
+                var viewState = vscode.getState() || [];
                 // results = [];
                 var index = 0;
                 
                 function loaded() {
-                    index = results.length;
-                    results = vscode.getState() || [];
+                    index = 0; // results.length;
+                    // results = vscode.getState() || [];
                     // results = [];
                     
                     const outputDiv = document.getElementById('outputs');
-
-                    let newHTML = "";
-                    index = results.length;
-                    for (let i = 0; i < results.length; i++) {
-                        index -= 1;
-                        newHTML += "<hr>In[" + (index) + "]: " + results[i][0] + "<hr><br>" + results[i][1];
-                    }
-                    index = results.length;
-                    outputDiv.innerHTML = newHTML;
+                    outputDiv.innerHTML = viewState;
         
                     outputDiv.scrollTop = outputDiv.scrollHeight;
         
                     // Add a download button for each image element
-                    for (const imageElement of imageElements) {
-                        createDownloadButton(imageElement);
-                    }
+                    updateImageElements();
                 }
                 
                 
@@ -291,47 +300,47 @@ export class PlotsViewProvider implements WebviewViewProvider {
             }
 
             window.addEventListener('message', event => {
-                const message = event.data;
-                if (message.text.length == 0) {
-                    console.log("Empty message")
-                    return
-                };
-                results = vscode.getState() || [];
-                // results.splice(0, 0, event.data.text[0]).slice(0, 20);
-                if (event.data.text.length > 0) {
-                    results.splice(0, 0, event.data.text[0]);
-                
-                    results = results.slice(0, 20);
-                    vscode.setState(results);
-                }
-        
+                const message = event.data;        
                 const outputDiv = document.getElementById('outputs');
 
-                let newHTML = "";
-                index += 1;
-                var new_index = index;
-                for (let i = 0; i < results.length; i++) {
-                    new_index -= 1;
-                    newHTML += "<div class='input_row'><hr>In[" + (new_index) + "]: " + results[i][0] + "<hr></div>" + results[i][1] + "<button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + results[i][2] + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + results[i][2] + "\`)'>Insert</button><br>";
+                if (message.input.length > 0) {
+                    index += 1;
+                    outputDiv.innerHTML += "<div class='input_row'><hr>In[" + index + "]: " + message.input + "<hr></div>";
                 }
-                outputDiv.innerHTML = newHTML;
+
+                if (message.output.length > 0) {
+                    outputDiv.innerHTML += message.output + "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + message.output + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + message.output + "\`)'>Insert</button><br>";
+
+                    
+                }
+
+                vscode.setState(outputDiv.innerHTML);
     
                 outputDiv.scrollTop = outputDiv.scrollHeight;
     
                 // Add a download button for each image element
-                for (const imageElement of imageElements) {
-                    createDownloadButton(imageElement);
-                }
-
-                // for (var i = 0; i < imageElements.length; i++) {
-                //     imageElements[i].addEventListener('click', handleImageClick);
-                // };
-                // scrollToBottom()
+                updateImageElements();
     
             });
 
             // Get all image elements on the page
-            const imageElements = document.getElementsByTagName("img");
+            // const imageElements = document.getElementsByTagName("img");
+
+            const updateImageElements = () => {
+                
+                var downloadlinks = document.querySelectorAll("#download-link");
+                for (const downloadlink of downloadlinks2) {
+                    downloadlink.remove();
+                }
+
+                // Get all image elements on the page
+                var imageElements = document.getElementsByTagName("img");
+
+                // Add a download button for each image element
+                for (const imageElement of imageElements) {
+                    createDownloadButton(imageElement);
+                }
+            };
 
             // Create a function to handle the click event 
             const handleImageClick = (imageElement) => {
@@ -365,9 +374,8 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
             var clearButton = document.getElementById('btn_clear');
             function clearOutputs() {
-                results = [];
                 index = 0;
-                vscode.setState(results);
+                vscode.setState("");
                 const outputDiv = document.getElementById('outputs');
                 outputDiv.innerHTML = "";
             };
@@ -382,10 +390,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
             };
             
             function openOutputInNewDocument(output)  {
-                // console.log(output);
-                // var div1 = document.createElement("div");
-                // div1.innerHTML = output;
-                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "open",
                     // data: span1.textContent || span1.innerText
@@ -394,10 +398,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
             };
 
             function pasteOutput(output) {
-                // console.log(output);
-                // var div1 = document.createElement("div");
-                // div1.innerHTML = output;
-                // var span1 = div1.getElementsByTagName("span")[0];
                 test = vscode.postMessage({
                     text: "paste",
                     // data: span1.textContent || span1.innerText

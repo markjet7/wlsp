@@ -274,6 +274,7 @@ function onkernelReady() {
                 // wolframKernelClient?.onNotification("updateTreeItems", updateTreeItems);
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("pulse", pulse);
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
                 if (vscode.window.activeTextEditor) {
                     let workspacefolder = vscode.workspace.getWorkspaceFolder((_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.document.uri);
                     if (workspacefolder) {
@@ -419,7 +420,7 @@ function updateVarTable(vars) {
         dataProvider.updateView(vars);
     });
 }
-let runningLines = [];
+let runningLines = new Map();
 function moveCursor2(position) {
     let e = vscode.window.activeTextEditor;
     let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
@@ -504,7 +505,7 @@ function moveCursor(selection) {
                 }
             }
         }
-        console.log(selection.active.line, bottom);
+        // console.log(selection.active.line, bottom)
         let outputPosition = new vscode.Position(bottom, 0);
         if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line)) {
             e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
@@ -547,8 +548,8 @@ function decorateRunningLine(outputPosition) {
                 }
             }
         };
-        runningLines.push(d);
-        e.setDecorations(runningDecorationType, runningLines);
+        runningLines.set(range, d);
+        e.setDecorations(runningDecorationType, Array.from(runningLines.values()));
         let documentDecorations = (_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
         for (let i = 0; i < ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []).length; i++) {
             const d1 = ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : [])[i];
@@ -583,7 +584,7 @@ function updateRunningLines() {
                 d["renderOptions"]["after"]["contentText"] = ".";
             }
         });
-        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, runningLines);
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
         setTimeout(updateRunningLines, 500);
     }
     else {
@@ -632,9 +633,10 @@ function runInWolfram(printOutput = false, trace = false) {
             return;
         });
     }
-    if (evaluationQueue.length == 1) {
-        sendToWolfram(printOutput);
-    }
+    sendToWolfram(printOutput);
+    // if (evaluationQueue.length == 1) {
+    //     sendToWolfram(printOutput);
+    // }
 }
 let evaluationQueue = [];
 function sendToWolfram(printOutput = false, sel = undefined) {
@@ -672,7 +674,8 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         // e.selection = new vscode.Selection(outputPosition, outputPosition);
         // e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-        if (!wolframBusyQ) {
+        // if (!wolframBusyQ) {
+        if (true) {
             let evalNext = evaluationQueue.pop();
             if (evalNext == undefined) {
                 return;
@@ -691,11 +694,11 @@ function setDecorations(result) {
     let e = editors.filter((e) => {
         return e.document.uri.path === result["params"]["document"]["path"];
     })[0];
-    for (let i = 0; i < runningLines.length; i++) {
-        const d = runningLines[i];
+    for (let i = 0; i < Array.from(runningLines.values()).length; i++) {
+        const d = Array.from(runningLines.values())[i];
         if (d.range.start.line == result["params"]["position"]["line"] - 1) {
-            runningLines.splice(i, 1);
-            e.setDecorations(runningDecorationType, runningLines);
+            runningLines.delete(d.range);
+            e.setDecorations(runningDecorationType, Array.from(runningLines.values()));
         }
     }
 }
@@ -791,6 +794,9 @@ let maxPrintResults = 20;
 let printResults = [];
 let editorDecorations = new Map();
 // let printResults: Map<string, string> = new Map();
+function updateInputs(params) {
+    plotsProvider.newInput(params["input"]);
+}
 function updateResults(e, result, print, input = "", file = "") {
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
@@ -831,10 +837,6 @@ function updateResults(e, result, print, input = "", file = "") {
             if (output.length > 2000 && !output.includes("<img")) {
                 outputSnippet = output.slice(0, 500) + " ... " + output.slice(-500);
             }
-            printResults.push([inputSnippet,
-                outputSnippet,
-                result["params"]["output"]
-            ]);
             if (!output.includes("<img")) {
                 outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
             }
@@ -886,7 +888,7 @@ function updateResults(e, result, print, input = "", file = "") {
             }
             (_d = editorDecorations.get(e.document.uri.toString())) === null || _d === void 0 ? void 0 : _d.push(decoration);
             e.setDecorations(variableDecorationType, editorDecorations.get(e.document.uri.toString()));
-            updateOutputPanel();
+            plotsProvider.newOutput(outputSnippet);
         });
     }
     ;
@@ -1006,9 +1008,9 @@ function updateDecorations(decorationfile) {
                     decoration.hoverMessage = h;
                     editorDecorations.push(workspaceDecorations[uri][d]);
                 });
-                runningLines = [];
+                // runningLines = [];
                 editor.setDecorations(variableDecorationType, editorDecorations);
-                editor.setDecorations(runningDecorationType, runningLines);
+                editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
             }
         });
         // try{
@@ -1042,9 +1044,9 @@ function updateLintDecorations(decorationfile) {
                 Object.keys(workspaceLintDecorations[uri]).forEach((d) => {
                     editorLintDecorations.push(workspaceLintDecorations[uri][d]);
                 });
-                runningLines = [];
+                // runningLines = [];
                 editor.setDecorations(lintDecorationType, editorLintDecorations);
-                editor.setDecorations(runningDecorationType, runningLines);
+                editor.setDecorations(runningDecorationType, []);
             }
         });
         // try{
@@ -1095,31 +1097,7 @@ function clearPlots() {
     updateOutputPanel();
 }
 function updateOutputPanel() {
-    // let out = "";
-    // let reversed = printResults.slice().reverse();
-    // printResults.forEach((row) => {
-    //     let data = "";
-    //     try {
-    //         data += row[1];
-    //     } catch (e) {
-    //         console.log((e as Error).message);
-    //         data += "Error reading result";
-    //     }
-    //     if (data !== "") {
-    //         let inputString = "";
-    //         if (row[0].length > 500) {
-    //             inputString = row[0].substring(0, 100) + " <<...>> " + row[0].substring(row[0].length - 100, row[0].length);
-    //         } else {
-    //             inputString = row[0];
-    //         }
-    //         out += "<div id='result-header'>In: " + inputString +
-    //             "</div>" +
-    //             "<div id='result'>" +
-    //             data +
-    //             "</div>";
-    //     }
-    // })
-    plotsProvider.updateView(printResults.reverse());
+    // plotsProvider.updateView(printResults.reverse())
 }
 function startWLSPIO(id) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1567,13 +1545,19 @@ function didChangeTextDocument(event) {
                 return;
             }
             clearDecorations();
+            // let newrunninglines = [];
+            // newrunninglines = runningLines.filter((d: vscode.DecorationOptions) => {
+            //     return d.range.start.line < selection?.line
+            // })
             // Remove old running lines and decorations
-            let newrunninglines = [];
-            newrunninglines = runningLines.filter((d) => {
-                return d.range.start.line < (selection === null || selection === void 0 ? void 0 : selection.line);
+            let newrunninglines = new Map();
+            runningLines.forEach((d, key) => {
+                if (d.range.start.line < (selection === null || selection === void 0 ? void 0 : selection.line)) {
+                    newrunninglines.set(key, d);
+                }
             });
             runningLines = newrunninglines;
-            editor.setDecorations(runningDecorationType, runningLines);
+            editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
             let newEditorDecorations = [];
             newEditorDecorations = ((_b = editorDecorations.get(editor.document.uri.toString())) !== null && _b !== void 0 ? _b : []).filter((d) => {
                 return d.range.start.line < selection.line;

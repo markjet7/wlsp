@@ -128,7 +128,6 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 ];
 
 handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, position, code},
-	Print[1];
 	id = json["id"];
 	html = ImportString[nb2html[ImportString[json["params", "document"], "Notebook"]], {"HTML", "XMLObject"}];
 	inputID = json["params", "input"];
@@ -868,6 +867,8 @@ handle["abort", json_]:=Module[{},
 evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
+
+		sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
         (* Begin["VSCode`"]; *)
 
 			$result = Replace[EvaluationData[ToExpression[string]], $Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
@@ -1088,7 +1089,7 @@ constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
 ];
 
 cellToSymbol[node_, uri_]:=Module[{astStr,name,loc,kind,rhs, n},
-	n = Check[node[[2,1]], Print[node]; ""];
+	n = Check[node[[2,1]], ""];
 	If[Head@n === String, 
 		Return[<|
 			"label"->"na",
