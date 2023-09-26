@@ -144,7 +144,6 @@ class PlotsViewProvider {
                     height:100vh;
                     display:block;
                     position:relative;
-                    top:5vh;
                 }
     
                 #result-header {
@@ -294,9 +293,9 @@ class PlotsViewProvider {
 
             const updateImageElements = () => {
                 
-                var downloadlinks2 = document.querySelectorAll("#download-link");
-                for (const downloadlink2 of downloadlinks2) {
-                    downloadlink2.remove();
+                var downloadlinks = document.querySelectorAll("#download-link");
+                for (const downloadlink of downloadlinks2) {
+                    downloadlink.remove();
                 }
 
                 // Get all image elements on the page

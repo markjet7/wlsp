@@ -81,7 +81,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
     outputChannel = outputChannel0;
-    kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel", "wolfram");
+    kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.command = 'wolfram.restart';
     wolframStatusBar.show();

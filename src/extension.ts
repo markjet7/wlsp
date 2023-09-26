@@ -12,7 +12,7 @@ import {
 import { EEXIST } from 'constants';
 const fs = require('fs')
 
-let outputChannel = vscode.window.createOutputChannel('wolf-lsp', "wolfram");
+let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let context:vscode.ExtensionContext;
 
 import {startLanguageServer, stop} from './clients'
