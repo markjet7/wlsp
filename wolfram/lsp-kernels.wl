@@ -870,7 +870,11 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 		sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
         (* Begin["VSCode`"]; *)
 
-			$result = Replace[EvaluationData[ToExpression[string]], $Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
+			$result = Replace[
+						
+						Check[EvaluationData[ToExpression[string]], Stack[_]; Break[]],
+						
+						$Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
 						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
 						"AbsoluteTiming" -> 0.`, 
