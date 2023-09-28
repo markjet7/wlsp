@@ -62,6 +62,10 @@ class PlotsViewProvider {
         }, null);
         return;
     }
+    clearResults() {
+        var _a;
+        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "clear", text: [] });
+    }
     updateView(out) {
         var _a;
         // this._text = out;
@@ -265,7 +269,14 @@ class PlotsViewProvider {
             }
 
             window.addEventListener('message', event => {
+
                 const message = event.data;        
+
+                if ("command" in message && message.command === "clear") {
+                    clearOutputs();
+                    return;
+                }
+
                 const outputDiv = document.getElementById('outputs');
 
                 if (message.input.length > 0) {

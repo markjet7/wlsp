@@ -2,6 +2,7 @@
 
 BeginPackage["wolframLSP`"];
 
+$SyntaxHandler = Function[Null, Null, HoldAllComplete];
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[response_Association]:=Module[{byteResponse},

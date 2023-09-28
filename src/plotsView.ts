@@ -91,6 +91,10 @@ export class PlotsViewProvider implements WebviewViewProvider {
         
         return
     }
+    
+    public clearResults() {
+        this._view?.webview.postMessage({command: "clear", text: []})
+    }
 
     public updateView(out:any[]) {
         // this._text = out;
@@ -300,7 +304,14 @@ export class PlotsViewProvider implements WebviewViewProvider {
             }
 
             window.addEventListener('message', event => {
+
                 const message = event.data;        
+
+                if ("command" in message && message.command === "clear") {
+                    clearOutputs();
+                    return;
+                }
+
                 const outputDiv = document.getElementById('outputs');
 
                 if (message.input.length > 0) {
@@ -329,7 +340,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             const updateImageElements = () => {
                 
                 var downloadlinks = document.querySelectorAll("#download-link");
-                for (const downloadlink of downloadlinks2) {
+                for (const downloadlink of downloadlinks) {
                     downloadlink.remove();
                 }
 

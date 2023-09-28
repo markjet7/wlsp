@@ -437,10 +437,7 @@ function newFunction() {
 }
 
 function clearResults() {
-    // while(printResults.pop) {
-    // }
-    printResults = [];
-    updateOutputPanel()
+    plotsProvider.clearResults();
 }
 
 // function updateTreeItems(result:any) {
@@ -823,7 +820,7 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
 
         // if (!wolframBusyQ) {
-        if( true) {
+        if (true) {
             let evalNext = evaluationQueue.pop();
             if (evalNext == undefined) {
                 return
@@ -955,7 +952,7 @@ let printResults: any[] = [];
 let editorDecorations: Map<string, vscode.DecorationOptions[]> = new Map();
 // let printResults: Map<string, string> = new Map();
 
-function updateInputs(params:any) {
+function updateInputs(params: any) {
     plotsProvider.newInput(params["input"])
 }
 
@@ -1071,7 +1068,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
 
             e.setDecorations(variableDecorationType,
                 editorDecorations.get(e.document.uri.toString())!);
-            
+
             plotsProvider.newOutput(outputSnippet)
         })
     };
@@ -1619,24 +1616,26 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
                 // await new Promise(resolve => setTimeout(resolve, 1000));
                 // stopWolfram(undefined, wolframKernel)  
 
-                vscode.window.showErrorMessage("Wolfram Kernel disconnected.",
-                    "Restart kernel?").then((selection) => {
-                        if (selection === "Restart kernel?") {
-                            restartKernel()
-                        }
-                    });
+                // vscode.window.showErrorMessage("Wolfram Kernel disconnected.",
+                //     "Restart kernel?").then((selection) => {
+                //         if (selection === "Restart kernel?") {
+                //             restartKernel()
+                //         }
+                //     });
             })
 
 
             fp(kernelPort).then(async ([freePort]: number[]) => {
                 kernelPort = freePort + id;
-                await load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                    wolframKernel = r
-                    setTimeout(() => {
-                        socket.connect(kernelPort, "127.0.0.1", () => {
-                            socket.setKeepAlive(true);
-                        });
-                    }, 500)
+                await stopWolfram(undefined, wolframKernel).then((a: any) => {
+                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
+                        wolframKernel = r
+                        setTimeout(() => {
+                            socket.connect(kernelPort, "127.0.0.1", () => {
+                                socket.setKeepAlive(true);
+                            });
+                        }, 500)
+                    });
                 });
             })
         })

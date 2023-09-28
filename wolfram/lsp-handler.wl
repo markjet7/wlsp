@@ -7,7 +7,6 @@ Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
 Needs["CodeParser`Scoping`"];
 
-
 COMPLETIONS = Import[DirectoryName[$path] <> "completions.json", "RawJSON"]; 
 DETAILS =  Association[StringReplace[#["detail"]," details"->""]-># &/@Import[DirectoryName[$path] <> "details.json","RawJSON"]];
  

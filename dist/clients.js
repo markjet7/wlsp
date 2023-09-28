@@ -346,10 +346,7 @@ function newFunction() {
     exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();
 }
 function clearResults() {
-    // while(printResults.pop) {
-    // }
-    printResults = [];
-    updateOutputPanel();
+    plotsProvider.clearResults();
 }
 // function updateTreeItems(result:any) {
 //     treeDataProvider?.getSymbols(result["file"])
@@ -1346,21 +1343,24 @@ function startWLSPKernelSocket(id) {
                     // attempt to revive the kernel
                     // await new Promise(resolve => setTimeout(resolve, 1000));
                     // stopWolfram(undefined, wolframKernel)  
-                    vscode.window.showErrorMessage("Wolfram Kernel disconnected.", "Restart kernel?").then((selection) => {
-                        if (selection === "Restart kernel?") {
-                            restartKernel();
-                        }
-                    });
+                    // vscode.window.showErrorMessage("Wolfram Kernel disconnected.",
+                    //     "Restart kernel?").then((selection) => {
+                    //         if (selection === "Restart kernel?") {
+                    //             restartKernel()
+                    //         }
+                    //     });
                 }));
                 fp(kernelPort).then(([freePort]) => __awaiter(this, void 0, void 0, function* () {
                     kernelPort = freePort + id;
-                    yield load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r) => {
-                        wolframKernel = r;
-                        setTimeout(() => {
-                            socket.connect(kernelPort, "127.0.0.1", () => {
-                                socket.setKeepAlive(true);
-                            });
-                        }, 500);
+                    yield stopWolfram(undefined, wolframKernel).then((a) => {
+                        load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r) => {
+                            wolframKernel = r;
+                            setTimeout(() => {
+                                socket.connect(kernelPort, "127.0.0.1", () => {
+                                    socket.setKeepAlive(true);
+                                });
+                            }, 500);
+                        });
                     });
                 }));
             }));

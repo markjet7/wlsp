@@ -1,113 +1,43 @@
 {
-	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/maps\/maps.wl":[
-		{
-			"start":{
-				"line":2,
-				"character":0
-			},
-			"end":{
-				"line":2,
-				"character":34
-			}
-		},
-		{
-			"start":{
-				"line":3,
-				"character":0
-			},
-			"end":{
-				"line":3,
-				"character":38
-			}
-		},
-		{
-			"start":{
-				"line":4,
-				"character":0
-			},
-			"end":{
-				"line":4,
-				"character":40
-			}
-		},
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/maps\/region_data_august_15.wl":[
 		{
 			"start":{
 				"line":5,
 				"character":0
 			},
 			"end":{
+				"line":5,
+				"character":34
+			}
+		},
+		{
+			"start":{
 				"line":6,
-				"character":74
+				"character":0
+			},
+			"end":{
+				"line":6,
+				"character":28
 			}
 		},
 		{
 			"start":{
-				"line":19,
+				"line":7,
 				"character":0
 			},
 			"end":{
-				"line":19,
-				"character":79
+				"line":7,
+				"character":17
 			}
 		},
 		{
 			"start":{
-				"line":20,
+				"line":11,
 				"character":0
 			},
 			"end":{
-				"line":20,
-				"character":73
-			}
-		},
-		{
-			"start":{
-				"line":21,
-				"character":0
-			},
-			"end":{
-				"line":21,
-				"character":80
-			}
-		},
-		{
-			"start":{
-				"line":22,
-				"character":0
-			},
-			"end":{
-				"line":22,
-				"character":74
-			}
-		},
-		{
-			"start":{
-				"line":24,
-				"character":0
-			},
-			"end":{
-				"line":25,
-				"character":61
-			}
-		},
-		{
-			"start":{
-				"line":27,
-				"character":0
-			},
-			"end":{
-				"line":27,
-				"character":64
-			}
-		},
-		{
-			"start":{
-				"line":29,
-				"character":0
-			},
-			"end":{
-				"line":29,
-				"character":83
+				"line":30,
+				"character":40
 			}
 		},
 		{
@@ -116,68 +46,68 @@
 				"character":0
 			},
 			"end":{
-				"line":41,
-				"character":2
+				"line":35,
+				"character":10
 			}
 		},
 		{
 			"start":{
-				"line":43,
+				"line":36,
 				"character":0
 			},
 			"end":{
-				"line":43,
+				"line":38,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":40,
+				"character":0
+			},
+			"end":{
+				"line":76,
+				"character":6
+			}
+		},
+		{
+			"start":{
+				"line":79,
+				"character":0
+			},
+			"end":{
+				"line":84,
+				"character":60
+			}
+		},
+		{
+			"start":{
+				"line":86,
+				"character":0
+			},
+			"end":{
+				"line":90,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":92,
+				"character":0
+			},
+			"end":{
+				"line":93,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":94,
+				"character":0
+			},
+			"end":{
+				"line":96,
 				"character":63
-			}
-		},
-		{
-			"start":{
-				"line":52,
-				"character":0
-			},
-			"end":{
-				"line":52,
-				"character":62
-			}
-		},
-		{
-			"start":{
-				"line":53,
-				"character":0
-			},
-			"end":{
-				"line":53,
-				"character":44
-			}
-		},
-		{
-			"start":{
-				"line":90,
-				"character":0
-			},
-			"end":{
-				"line":90,
-				"character":53
-			}
-		},
-		{
-			"start":{
-				"line":91,
-				"character":0
-			},
-			"end":{
-				"line":101,
-				"character":2
-			}
-		},
-		{
-			"start":{
-				"line":103,
-				"character":0
-			},
-			"end":{
-				"line":103,
-				"character":62
 			}
 		},
 		{
@@ -186,188 +116,1150 @@
 				"character":0
 			},
 			"end":{
+				"line":104,
+				"character":62
+			}
+		},
+		{
+			"start":{
 				"line":105,
-				"character":47
+				"character":0
+			},
+			"end":{
+				"line":109,
+				"character":96
 			}
 		},
 		{
 			"start":{
-				"line":107,
+				"line":112,
 				"character":0
 			},
 			"end":{
-				"line":173,
-				"character":2
+				"line":121,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":177,
+				"line":123,
 				"character":0
 			},
 			"end":{
-				"line":189,
-				"character":2
+				"line":136,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":193,
+				"line":138,
 				"character":0
 			},
 			"end":{
-				"line":193,
-				"character":53
+				"line":172,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":194,
+				"line":174,
 				"character":0
 			},
 			"end":{
-				"line":194,
-				"character":174
+				"line":217,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":199,
+				"line":219,
 				"character":0
 			},
 			"end":{
-				"line":199,
+				"line":280,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":282,
+				"character":0
+			},
+			"end":{
+				"line":441,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":443,
+				"character":0
+			},
+			"end":{
+				"line":471,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":473,
+				"character":0
+			},
+			"end":{
+				"line":566,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":568,
+				"character":0
+			},
+			"end":{
+				"line":669,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":671,
+				"character":0
+			},
+			"end":{
+				"line":738,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":740,
+				"character":0
+			},
+			"end":{
+				"line":749,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":751,
+				"character":0
+			},
+			"end":{
+				"line":911,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":913,
+				"character":0
+			},
+			"end":{
+				"line":934,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":936,
+				"character":0
+			},
+			"end":{
+				"line":1064,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1066,
+				"character":0
+			},
+			"end":{
+				"line":1085,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":1087,
+				"character":0
+			},
+			"end":{
+				"line":1121,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1123,
+				"character":0
+			},
+			"end":{
+				"line":1150,
+				"character":54
+			}
+		},
+		{
+			"start":{
+				"line":1152,
+				"character":0
+			},
+			"end":{
+				"line":1177,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1181,
+				"character":0
+			},
+			"end":{
+				"line":1181,
+				"character":34
+			}
+		},
+		{
+			"start":{
+				"line":1189,
+				"character":0
+			},
+			"end":{
+				"line":1189,
 				"character":41
 			}
 		},
 		{
 			"start":{
-				"line":200,
+				"line":1190,
 				"character":0
 			},
 			"end":{
-				"line":200,
-				"character":124
+				"line":1192,
+				"character":48
 			}
 		},
 		{
 			"start":{
-				"line":201,
+				"line":1193,
 				"character":0
 			},
 			"end":{
-				"line":204,
-				"character":49
+				"line":1205,
+				"character":51
 			}
 		},
 		{
 			"start":{
-				"line":223,
+				"line":1209,
 				"character":0
 			},
 			"end":{
-				"line":229,
-				"character":249
+				"line":1209,
+				"character":44
 			}
 		},
 		{
 			"start":{
-				"line":232,
+				"line":1210,
 				"character":0
 			},
 			"end":{
-				"line":232,
-				"character":22
+				"line":1211,
+				"character":72
 			}
 		},
 		{
 			"start":{
-				"line":235,
+				"line":1212,
 				"character":0
 			},
 			"end":{
-				"line":235,
-				"character":39
+				"line":1213,
+				"character":71
 			}
 		},
 		{
 			"start":{
-				"line":238,
+				"line":1214,
 				"character":0
 			},
 			"end":{
-				"line":316,
+				"line":1215,
+				"character":59
+			}
+		},
+		{
+			"start":{
+				"line":1216,
+				"character":0
+			},
+			"end":{
+				"line":1216,
+				"character":14
+			}
+		},
+		{
+			"start":{
+				"line":1217,
+				"character":0
+			},
+			"end":{
+				"line":1217,
+				"character":13
+			}
+		}
+	],
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/National%20Getting%20to%20Negative\/maps\/region_data.wl":[
+		{
+			"start":{
+				"line":5,
+				"character":0
+			},
+			"end":{
+				"line":5,
+				"character":34
+			}
+		},
+		{
+			"start":{
+				"line":6,
+				"character":0
+			},
+			"end":{
+				"line":6,
+				"character":28
+			}
+		},
+		{
+			"start":{
+				"line":7,
+				"character":0
+			},
+			"end":{
+				"line":7,
+				"character":17
+			}
+		},
+		{
+			"start":{
+				"line":11,
+				"character":0
+			},
+			"end":{
+				"line":30,
+				"character":40
+			}
+		},
+		{
+			"start":{
+				"line":32,
+				"character":0
+			},
+			"end":{
+				"line":35,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":36,
+				"character":0
+			},
+			"end":{
+				"line":38,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":40,
+				"character":0
+			},
+			"end":{
+				"line":76,
+				"character":6
+			}
+		},
+		{
+			"start":{
+				"line":79,
+				"character":0
+			},
+			"end":{
+				"line":84,
+				"character":60
+			}
+		},
+		{
+			"start":{
+				"line":86,
+				"character":0
+			},
+			"end":{
+				"line":90,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":92,
+				"character":0
+			},
+			"end":{
+				"line":93,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":94,
+				"character":0
+			},
+			"end":{
+				"line":96,
+				"character":63
+			}
+		},
+		{
+			"start":{
+				"line":104,
+				"character":0
+			},
+			"end":{
+				"line":104,
+				"character":62
+			}
+		},
+		{
+			"start":{
+				"line":105,
+				"character":0
+			},
+			"end":{
+				"line":109,
+				"character":96
+			}
+		},
+		{
+			"start":{
+				"line":111,
+				"character":0
+			},
+			"end":{
+				"line":111,
+				"character":112
+			}
+		},
+		{
+			"start":{
+				"line":113,
+				"character":0
+			},
+			"end":{
+				"line":115,
+				"character":40
+			}
+		},
+		{
+			"start":{
+				"line":117,
+				"character":0
+			},
+			"end":{
+				"line":126,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":128,
+				"character":0
+			},
+			"end":{
+				"line":141,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":143,
+				"character":0
+			},
+			"end":{
+				"line":177,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":179,
+				"character":0
+			},
+			"end":{
+				"line":222,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":224,
+				"character":0
+			},
+			"end":{
+				"line":285,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":287,
+				"character":0
+			},
+			"end":{
+				"line":440,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":442,
+				"character":0
+			},
+			"end":{
+				"line":469,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":471,
+				"character":0
+			},
+			"end":{
+				"line":564,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":566,
+				"character":0
+			},
+			"end":{
+				"line":666,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":668,
+				"character":0
+			},
+			"end":{
+				"line":735,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":737,
+				"character":0
+			},
+			"end":{
+				"line":746,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":748,
+				"character":0
+			},
+			"end":{
+				"line":907,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":909,
+				"character":0
+			},
+			"end":{
+				"line":930,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":932,
+				"character":0
+			},
+			"end":{
+				"line":1062,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1064,
+				"character":0
+			},
+			"end":{
+				"line":1083,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":1085,
+				"character":0
+			},
+			"end":{
+				"line":1118,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1120,
+				"character":0
+			},
+			"end":{
+				"line":1148,
+				"character":54
+			}
+		},
+		{
+			"start":{
+				"line":1150,
+				"character":0
+			},
+			"end":{
+				"line":1176,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1180,
+				"character":0
+			},
+			"end":{
+				"line":1180,
+				"character":33
+			}
+		},
+		{
+			"start":{
+				"line":1184,
+				"character":0
+			},
+			"end":{
+				"line":1184,
+				"character":41
+			}
+		},
+		{
+			"start":{
+				"line":1185,
+				"character":0
+			},
+			"end":{
+				"line":1187,
+				"character":48
+			}
+		},
+		{
+			"start":{
+				"line":1188,
+				"character":0
+			},
+			"end":{
+				"line":1200,
+				"character":51
+			}
+		},
+		{
+			"start":{
+				"line":1205,
+				"character":0
+			},
+			"end":{
+				"line":1205,
+				"character":65
+			}
+		},
+		{
+			"start":{
+				"line":1206,
+				"character":0
+			},
+			"end":{
+				"line":1209,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1210,
+				"character":0
+			},
+			"end":{
+				"line":1210,
+				"character":71
+			}
+		},
+		{
+			"start":{
+				"line":1211,
+				"character":0
+			},
+			"end":{
+				"line":1212,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":1213,
+				"character":0
+			},
+			"end":{
+				"line":1213,
+				"character":78
+			}
+		},
+		{
+			"start":{
+				"line":1214,
+				"character":0
+			},
+			"end":{
+				"line":1214,
+				"character":62
+			}
+		},
+		{
+			"start":{
+				"line":1215,
+				"character":0
+			},
+			"end":{
+				"line":1220,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1221,
+				"character":0
+			},
+			"end":{
+				"line":1221,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":1224,
+				"character":0
+			},
+			"end":{
+				"line":1224,
+				"character":53
+			}
+		},
+		{
+			"start":{
+				"line":1225,
+				"character":0
+			},
+			"end":{
+				"line":1228,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1229,
+				"character":0
+			},
+			"end":{
+				"line":1229,
+				"character":70
+			}
+		},
+		{
+			"start":{
+				"line":1231,
+				"character":0
+			},
+			"end":{
+				"line":1232,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":1233,
+				"character":0
+			},
+			"end":{
+				"line":1235,
+				"character":63
+			}
+		},
+		{
+			"start":{
+				"line":1237,
+				"character":0
+			},
+			"end":{
+				"line":1240,
+				"character":71
+			}
+		},
+		{
+			"start":{
+				"line":1241,
+				"character":0
+			},
+			"end":{
+				"line":1246,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1248,
 				"character":1
+			},
+			"end":{
+				"line":1248,
+				"character":14
 			}
 		},
 		{
 			"start":{
-				"line":319,
+				"line":1253,
 				"character":0
 			},
 			"end":{
-				"line":364,
-				"character":2
+				"line":1253,
+				"character":53
 			}
 		},
 		{
 			"start":{
-				"line":366,
+				"line":1254,
 				"character":0
 			},
 			"end":{
-				"line":366,
-				"character":37
+				"line":1257,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":367,
+				"line":1258,
 				"character":0
 			},
 			"end":{
-				"line":367,
-				"character":87
-			}
-		},
-		{
-			"start":{
-				"line":368,
-				"character":0
-			},
-			"end":{
-				"line":368,
-				"character":80
-			}
-		},
-		{
-			"start":{
-				"line":369,
-				"character":0
-			},
-			"end":{
-				"line":369,
+				"line":1258,
 				"character":70
 			}
 		},
 		{
 			"start":{
-				"line":373,
+				"line":1260,
 				"character":0
 			},
 			"end":{
-				"line":373,
-				"character":37
+				"line":1260,
+				"character":62
 			}
 		},
 		{
 			"start":{
-				"line":374,
+				"line":1261,
 				"character":0
 			},
 			"end":{
-				"line":374,
+				"line":1266,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1268,
+				"character":0
+			},
+			"end":{
+				"line":1268,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":1273,
+				"character":0
+			},
+			"end":{
+				"line":1273,
+				"character":53
+			}
+		},
+		{
+			"start":{
+				"line":1274,
+				"character":0
+			},
+			"end":{
+				"line":1277,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1278,
+				"character":0
+			},
+			"end":{
+				"line":1278,
 				"character":70
+			}
+		},
+		{
+			"start":{
+				"line":1280,
+				"character":0
+			},
+			"end":{
+				"line":1280,
+				"character":62
+			}
+		},
+		{
+			"start":{
+				"line":1281,
+				"character":0
+			},
+			"end":{
+				"line":1286,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1288,
+				"character":0
+			},
+			"end":{
+				"line":1288,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":1291,
+				"character":0
+			},
+			"end":{
+				"line":1291,
+				"character":60
+			}
+		},
+		{
+			"start":{
+				"line":1292,
+				"character":0
+			},
+			"end":{
+				"line":1295,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":1296,
+				"character":0
+			},
+			"end":{
+				"line":1296,
+				"character":70
+			}
+		},
+		{
+			"start":{
+				"line":1298,
+				"character":0
+			},
+			"end":{
+				"line":1298,
+				"character":62
+			}
+		},
+		{
+			"start":{
+				"line":1299,
+				"character":0
+			},
+			"end":{
+				"line":1304,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1306,
+				"character":0
+			},
+			"end":{
+				"line":1306,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":1311,
+				"character":0
+			},
+			"end":{
+				"line":1311,
+				"character":44
+			}
+		},
+		{
+			"start":{
+				"line":1312,
+				"character":0
+			},
+			"end":{
+				"line":1313,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":1314,
+				"character":0
+			},
+			"end":{
+				"line":1315,
+				"character":71
+			}
+		},
+		{
+			"start":{
+				"line":1316,
+				"character":0
+			},
+			"end":{
+				"line":1317,
+				"character":59
+			}
+		},
+		{
+			"start":{
+				"line":1318,
+				"character":0
+			},
+			"end":{
+				"line":1318,
+				"character":14
+			}
+		},
+		{
+			"start":{
+				"line":1319,
+				"character":0
+			},
+			"end":{
+				"line":1319,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":1325,
+				"character":0
+			},
+			"end":{
+				"line":1351,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":1354,
+				"character":4
+			},
+			"end":{
+				"line":1370,
+				"character":9
+			}
+		},
+		{
+			"start":{
+				"line":1372,
+				"character":4
+			},
+			"end":{
+				"line":1373,
+				"character":57
+			}
+		},
+		{
+			"start":{
+				"line":1374,
+				"character":4
+			},
+			"end":{
+				"line":1374,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":1376,
+				"character":4
+			},
+			"end":{
+				"line":1377,
+				"character":56
+			}
+		},
+		{
+			"start":{
+				"line":1379,
+				"character":4
+			},
+			"end":{
+				"line":1396,
+				"character":9
+			}
+		},
+		{
+			"start":{
+				"line":1399,
+				"character":4
+			},
+			"end":{
+				"line":1400,
+				"character":69
+			}
+		},
+		{
+			"start":{
+				"line":1401,
+				"character":4
+			},
+			"end":{
+				"line":1404,
+				"character":28
 			}
 		}
 	]

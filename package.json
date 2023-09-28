@@ -320,6 +320,28 @@
                     "group": "z_commands",
                     "when": "editorHasSelection"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "wolfram.clearResults",
+                    "group": "navigation",
+                    "icon": {
+                      "light": "$(clear-all)",
+                      "dark": "$(clear-all)"
+                    },
+                    "when": "view == wolfram.plotsView",
+                    "title": "Clear"
+                },
+                {
+                    "command": "wolfram.restart",
+                    "group": "navigation",
+                    "icon": {
+                      "light": "$(debug-restart)",
+                      "dark": "$(debug-restart)"
+                    },
+                    "when": "view == wolfram.plotsView",
+                    "title": "Restart"
+                }
             ]
         },
         "keybindings": [

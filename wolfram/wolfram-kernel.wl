@@ -3,7 +3,8 @@
 BeginPackage["WolframKernel`"];
 (* Kernel Start Section *)
 $HistoryLength = 100;
-
+ 
+$SyntaxHandler = Function[Null, Null, HoldAllComplete];
 
 (* ::Package:: *)
 (**)

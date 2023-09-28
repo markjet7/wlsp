@@ -3,7 +3,6 @@ Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
 (* ::Package:: *)
 Get[DirectoryName[$path] <> "transforms.wl"];
- 
 
 scriptPath = DirectoryName@ExpandFileName[First[$ScriptCommandLine]]; 
 (* Get[scriptPath <> "/CodeFormatter.m"]; *)
