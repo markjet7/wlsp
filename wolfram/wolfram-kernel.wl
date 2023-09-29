@@ -2,9 +2,9 @@
 
 BeginPackage["WolframKernel`"];
 (* Kernel Start Section *)
-$HistoryLength = 100;
+(*$HistoryLength = 100;*)
  
-$SyntaxHandler = Function[Null, Null, HoldAllComplete];
+(* $SyntaxHandler = Function[Null, Null, HoldAllComplete]; *)
 
 (* ::Package:: *)
 (**)
@@ -108,7 +108,7 @@ connected2 = False;
 $timeout = Now;
 Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
+	Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

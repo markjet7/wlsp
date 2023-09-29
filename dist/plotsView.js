@@ -305,7 +305,7 @@ class PlotsViewProvider {
             const updateImageElements = () => {
                 
                 var downloadlinks = document.querySelectorAll("#download-link");
-                for (const downloadlink of downloadlinks2) {
+                for (const downloadlink of downloadlinks) {
                     downloadlink.remove();
                 }
 

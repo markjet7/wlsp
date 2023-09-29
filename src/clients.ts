@@ -336,7 +336,7 @@ async function onclientReady(): Promise<void> {
 let temporaryDir = "";
 export async function onkernelReady(): Promise<void> {
     function checkKernel(cb: any) {
-        if (wolframKernelClient !== undefined && wolframKernelClient.initializeResult !== undefined) {
+        if (wolframKernelClient !== undefined && wolframKernelClient.state === 2) {
 
             // wolframKernelClient?.onNotification("onRunInWolfram", onRunInWolfram);
             wolframKernelClient?.onNotification("wolframBusy", wolframBusy);
@@ -361,10 +361,11 @@ export async function onkernelReady(): Promise<void> {
 
             }
             wolframKernelClient?.sendRequest("storageUri").then((result: any) => {
+                outputChannel.appendLine("storageUri: " + result);
                 temporaryDir = result;
             });
-            treeDataProvider.getSymbols(undefined);
-            pulse();
+            // treeDataProvider.getSymbols(undefined);
+            // pulse();
             cb()
 
         } else {
@@ -401,34 +402,39 @@ function promiseWithTimeout(ms: number, promise: Promise<any> | undefined) {
 
 function pulse() {
 
-    promiseWithTimeout(1000 * 60 * 10, wolframKernelClient?.sendRequest("pulse").then((a: any) => {
-        wolframStatusBar.color = "red";
-        setTimeout(() => {
-            wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
-        }, 1000 * 30)
-        resolve("true")
-    })).then(
-        (a: any) => {
-            setTimeout(pulse, 1000 * 60 * 10)
-        }
-    ).catch(error => {
-        console.log(error)
-        outputChannel.appendLine("ping failed")
+    if (wolframKernelClient !== undefined && wolframKernelClient?.state == 2) {
+        promiseWithTimeout(1000 * 60 * 10,
 
-        vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
-            "Yes", "No").then((result) => {
-                if (result === "Yes") {
-                    restart()
-                }
-                if (result === "No") {
+
+            wolframKernelClient?.sendRequest("pulse").then((a: any) => {
+                wolframStatusBar.color = "red";
+                setTimeout(() => {
+                    wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
+                }, 1000 * 30)
+                resolve("true")
+            })).then(
+                (a: any) => {
                     setTimeout(pulse, 1000 * 60 * 10)
-                } else {
-
                 }
+            ).catch(error => {
+                console.log(error)
+                outputChannel.appendLine("ping failed")
+
+                vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
+                    "Yes", "No").then((result) => {
+                        if (result === "Yes") {
+                            restart()
+                        }
+                        if (result === "No") {
+                            setTimeout(pulse, 1000 * 60 * 10)
+                        } else {
+
+                        }
+                    })
             })
-    })
 
 
+    }
     // pulseInterval = setInterval(ping, 60000)
 }
 
@@ -784,7 +790,7 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
 }
 
 let evaluationQueue: any[] = [];
-function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = undefined) {
+async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = undefined) {
 
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     if (!sel) { sel = e!.selection };
@@ -827,11 +833,20 @@ function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = 
             }
 
             starttime = Date.now();
-            wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
-            }).catch((err) => {
-                console.log("Error in runInWolfram")
-                // restart()
-            })
+            console.log(wolframKernelClient?.state)
+            outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
+
+            if (wolframKernelClient?.state !== 2) {
+                vscode.window.showInformationMessage("Kernel is not running... restarting")
+                await restartKernel()
+            } else {
+
+                wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                }).catch((err) => {
+                    console.log("Error in runInWolfram")
+                    // restart()
+                })
+            }
         }
     }
 }
@@ -2019,14 +2034,12 @@ function createNotebookScript() {
 
 
 function didChangeWindowState(state: vscode.WindowState) {
-    if (wolframClient !== undefined && wolframClient.initializeResult !== undefined) {
-        if (state.focused === true) {
-            wolframClient?.sendNotification("windowFocused", true);
-            wolframKernelClient?.sendNotification("windowFocused", true);
-        } else {
-            wolframClient?.sendNotification("windowFocused", false);
-            wolframKernelClient?.sendNotification("windowFocused", false);
-        }
+    if (wolframClient !== undefined && wolframClient.state === 2) {
+        wolframClient.sendNotification("windowFocused", state.focused);
+    }
+    if (wolframKernelClient !== undefined && wolframKernelClient.state === 2) {
+        outputChannel.appendLine("Sending windowFocused to kernel")
+        wolframKernelClient.sendNotification("windowFocused", state.focused);
     }
 }
 

@@ -51,13 +51,20 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	workspaceDecorations =  <||>;
 	symbolDefinitions = <||>;
 
+	Echo@"Testing";
+	Echo@"Testing 2";
+	Print[ToString@CodeParse["Table[i, {i,10}]"]];
+	Echo@"Testing 3";
+
+	(*sendResponse[<|"method"->"pulse", "params"->"1"|>];*)
+
 	(*
 		LocalSubmit[
 			ScheduledTask[
 				If[responded === True,
 					responded = False;
 					Print["pulse"];
-					sendResponse[<|"method"->"pulse", "params"->1|>],
+					sendResponse[<|"method"->"pulse", "params"->"1"|>],
 
 					Quit[1]
 				],
@@ -149,16 +156,16 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 ];
 
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
+
 	Check[
-		start = Now;
+		start = Echo@Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		code = Check[getCode[src, range], <|"code"->"Get code failed", "range"-><|
-			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
-			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
-		|>|>];
-		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
+		Echo@CodeParse[src];
+		code = getCode[src, range];
+		Print["Got code"];
+		newPosition = Echo@<|"line"->code["range"][[2,1]], "character"->1|>;
 
 		(* Split string into code blocks *)
 		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
@@ -871,8 +878,8 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
         (* Begin["VSCode`"]; *)
 
 			$result = Replace[
-						
-						Check[EvaluationData[ToExpression[string]], Stack[_]; Break[]],
+	
+						EvaluationData[ToExpression[string]],
 						
 						$Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
@@ -981,11 +988,15 @@ getCode[src_, range_]:=Module[{},
 ];
 
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
-	Check[
-		tree = CheckAbort[CodeParse[src], Return[<|"code"->"\"input error\"", "range"->{{position["line"],0}, {position["line"],0}}|>]];
+	Print[src];
+	Print[position];
+		Print["Getting code at position"];
+		(*tree = Echo@CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];*)
+		tree = CodeParse[src];
+		Print["Getting code at position 2"];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
-		call = First[Cases[tree, ((x_LeafNode /; 
+		call = Echo@First[Cases[tree, ((x_LeafNode /; 
 			inCodeRangeQ[
 			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
 			pos]) | (x_CallNode /; 
@@ -998,16 +1009,10 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 			<|"code"->"null", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
 			
 			str = Check[getStringAtRange[src, FirstCase[call, <|Source -> s_, ___|> :> s, {{0, 0}, {0, 0}}, 1]], ToFullFormString[call]];
-			(* <|"code"->StringReplace[str, {
- 				Shortest[StartOfLine ~~ "(*" ~~ WhitespaceCharacter .. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter .. ~~ "*)"] -> "",
- 				Shortest["(*" ~~ ___ ~~ "*)"] -> ""}], "range"->call[[-1]][Source]|> *)
 
-			<|"code"->If[Head@str === String, StringTrim[str], "\"Failed\""], "range"->call[[3]][Source]|>
+			<|"code"->If[Head@str === String, StringTrim[str], "Failed"], "range"->call[[3]][Source]|>
 		];
-		result1,
-
-		<|"code"->"\"input error\"", "range"->{{position["line"],0}, {position["line"],0}}|>
-	]
+		result1
 ];
 
 inCodeRangeQ[source_, pos_] := Module[{start, end},
