@@ -361,11 +361,10 @@ export async function onkernelReady(): Promise<void> {
 
             }
             wolframKernelClient?.sendRequest("storageUri").then((result: any) => {
-                outputChannel.appendLine("storageUri: " + result);
                 temporaryDir = result;
             });
-            // treeDataProvider.getSymbols(undefined);
-            // pulse();
+            treeDataProvider.getSymbols(undefined);
+            pulse();
             cb()
 
         } else {
@@ -838,8 +837,15 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
 
             if (wolframKernelClient?.state !== 2) {
                 vscode.window.showInformationMessage("Kernel is not running... restarting")
-                await restartKernel()
-            } else {
+                await restartKernel().then(() => {
+                    wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                    }).catch((err) => {
+                        console.log("Error in runInWolfram")
+                        // restart()
+                    })
+                });
+            }
+            else {
 
                 wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
                 }).catch((err) => {
@@ -1708,9 +1714,9 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
         try {
             if (process.platform === "win32") {
-                wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path], { detached: false });
+                wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path, "-noinit"], { detached: false });
             } else {
-                wolfram = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path], { detached: true });
+                wolfram = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path, "-noinit"], { detached: true });
             }
 
             wolfram.on("error", (err) => {
@@ -2038,7 +2044,7 @@ function didChangeWindowState(state: vscode.WindowState) {
         wolframClient.sendNotification("windowFocused", state.focused);
     }
     if (wolframKernelClient !== undefined && wolframKernelClient.state === 2) {
-        outputChannel.appendLine("Sending windowFocused to kernel")
+        // outputChannel.appendLine("Sending windowFocused to kernel")
         wolframKernelClient.sendNotification("windowFocused", state.focused);
     }
 }

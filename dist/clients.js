@@ -284,11 +284,10 @@ function onkernelReady() {
                     }
                 }
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("storageUri").then((result) => {
-                    outputChannel.appendLine("storageUri: " + result);
                     temporaryDir = result;
                 });
-                // treeDataProvider.getSymbols(undefined);
-                // pulse();
+                exports.treeDataProvider.getSymbols(undefined);
+                pulse();
                 cb();
             }
             else {
@@ -686,7 +685,13 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                 outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"]);
                 if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) !== 2) {
                     vscode.window.showInformationMessage("Kernel is not running... restarting");
-                    yield restartKernel();
+                    yield restartKernel().then(() => {
+                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+                        }).catch((err) => {
+                            console.log("Error in runInWolfram");
+                            // restart()
+                        });
+                    });
                 }
                 else {
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
@@ -1425,10 +1430,10 @@ function load(wolfram, path, port, outputChannel) {
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
             try {
                 if (process.platform === "win32") {
-                    wolfram = cp.spawn('cmd.exe', ['/c', executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), '-file', path, port.toString(), path], { detached: false });
+                    wolfram = cp.spawn('cmd.exe', ['/c', executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), '-file', path, port.toString(), path, "-noinit"], { detached: false });
                 }
                 else {
-                    wolfram = cp.spawn(executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), ['-file', path, port.toString(), path], { detached: true });
+                    wolfram = cp.spawn(executablePath === null || executablePath === void 0 ? void 0 : executablePath.toString(), ['-file', path, port.toString(), path, "-noinit"], { detached: true });
                 }
                 wolfram.on("error", (err) => {
                     outputChannel.appendLine("Wolframscript error: " + err);
@@ -1689,7 +1694,7 @@ function didChangeWindowState(state) {
         exports.wolframClient.sendNotification("windowFocused", state.focused);
     }
     if (exports.wolframKernelClient !== undefined && exports.wolframKernelClient.state === 2) {
-        outputChannel.appendLine("Sending windowFocused to kernel");
+        // outputChannel.appendLine("Sending windowFocused to kernel")
         exports.wolframKernelClient.sendNotification("windowFocused", state.focused);
     }
 }
