@@ -114,7 +114,6 @@ transforms[output_, errors0_]:=Module[{f, k},
 		Return[f];
 
 
-		
 		If[!(graphicsQ@output) && (!MemberQ[graphicHeads, Head@output]),
 			BinaryWrite[f, 
 					ExportString[
@@ -147,9 +146,9 @@ transforms[output_, errors0_]:=Module[{f, k},
 
 transforms[output_]:=Module[{f, txt}, 
 		f = CreateFile[];
-		Print["Submitting Parallel"];
 		SetSharedVariable[f];
 		SetSharedVariable[output];
+
 		ParallelSubmit[
 			BinaryWrite[f, 
 					ExportString[
@@ -193,6 +192,7 @@ transforms[output_]:=Module[{f, txt},
 ];
 
 transformsIO[output_, errors_]:=Module[{out},
+	Print["Transforming"];
 	If[Length@erros > 0,
 		out = Rasterize@GraphicsColumn[
 			{Short[output, 10],

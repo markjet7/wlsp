@@ -385,10 +385,6 @@ class PlotsViewProvider {
             </script>
         </head>
         <body onload="loaded()">
-            <div>
-            <button type="button" id="btn_clear" onclick="clearOutputs()">Clear</button>
-            <button type="button" id="btn_restart" onclick="restart()">Restart</button>
-            </div>
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>

@@ -32,7 +32,7 @@ ServerCapabilities=<|
 handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	(*Print["Initializing Kernel"];*)
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
-	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
+	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
     CONTINUE = True;
     
 	documents = <||>;
@@ -50,11 +50,6 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	varTableFile = scriptPath <> "varTable.js";
 	workspaceDecorations =  <||>;
 	symbolDefinitions = <||>;
-
-	Echo@"Testing";
-	Echo@"Testing 2";
-	Print[ToString@CodeParse["Table[i, {i,10}]"]];
-	Echo@"Testing 3";
 
 	(*sendResponse[<|"method"->"pulse", "params"->"1"|>];*)
 
@@ -158,14 +153,12 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
 
 	Check[
-		start = Echo@Now;
+		start = Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
-		Echo@CodeParse[src];
 		code = getCode[src, range];
-		Print["Got code"];
-		newPosition = Echo@<|"line"->code["range"][[2,1]], "character"->1|>;
+		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
 
 		(* Split string into code blocks *)
 		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
@@ -484,9 +477,10 @@ handle["storageUri", json_]:=Module[{},
 	]
 ];
 
-handle["updateConfiguration", json_]:=Module[{},
+handle["updateConfiguration", json_]:=Module[{messageHandler},
 	(* https://mathematica.stackexchange.com/questions/1512/how-to-abort-on-any-message-generated *)
-	Print["Updating kernel configuration"];
+	Internal`AddHandler["Message", (# &)];
+	
 	messageHandler = If[Last[#], 
 		Abort[];Exit[1]
 		] &;
@@ -874,56 +868,59 @@ evaluateString["", width_:10000]:={"Failed", False};
 
 evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
 
-		sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
-        (* Begin["VSCode`"]; *)
+	sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
+	(* Begin["VSCode`"]; *)
 
-			$result = Replace[
-	
-						EvaluationData[ToExpression[string]],
-						
-						$Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
-						"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
-						"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
-						"AbsoluteTiming" -> 0.`, 
-						"InputString" :> string|>];
+		$result = Replace[
+
+					EvaluationData[Trace[ToExpression[string], TraceDepth -> 3]],
+					
+					$Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
+					"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
+					"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
+					"AbsoluteTiming" -> 0.`, 
+					"InputString" :> string|>];
+		
+
+
+		(*$result["Result"] = ($result["Result"] /. Null -> "null"); *)
+	(* End[]; *)
+	If[
+		$result["Success"], 
+		(
+			$result["FormattedMessages"] = {};
+			$result["Result"] = Last[$result["Result"]];
+			$result
+		),
+
+		(
+			(*
+			msgs = $result["MessagesExpressions"];
+			msgToStr[name_MessageName, params___]:=Apply[
+			StringTemplate[
+				If[
+					Head@name === MessageName,
+					name/.Messages[Evaluate[First[name,General]]],
+					First[$result["MessagesText"], "Unknown error"]
+				]],params];
+
+			msgToStr[_,_]:="An unknown error was generated";
+			msgStr = Quiet@StringTake[Table[
+				msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
+			{m, msgs}], {1, UpTo@8912}];
+			*)
 			
+			$result["FormattedMessages"] = Map[
+				$myShort[OutputForm[#], 200] &, 
+				Take[$result["MessagesText"], UpTo[5]]];
 
-			If[$result["Result"] === Null, $result["Result"] = $result["Result"] /. Null -> "null", Null];
-		(* End[]; *)
-		If[
-			$result["Success"], 
-			(
-				$result["FormattedMessages"] = {};
-				$result
-			),
+			(*sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
+				"message" -> StringTake[StringRiffle[$result["FormattedMessages"], "\n"], UpTo[500]]|>|>];*)
 
-			(
-				(*
-				msgs = $result["MessagesExpressions"];
-				msgToStr[name_MessageName, params___]:=Apply[
-				StringTemplate[
-					If[
-						Head@name === MessageName,
-						name/.Messages[Evaluate[First[name,General]]],
-						First[$result["MessagesText"], "Unknown error"]
-					]],params];
 
-				msgToStr[_,_]:="An unknown error was generated";
-				msgStr = Quiet@StringTake[Table[
-					msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
-				{m, msgs}], {1, UpTo@8912}];
-				*)
-				
-				$result["FormattedMessages"] = Map[
-					$myShort[OutputForm[#], 200] &, 
-					Take[$result["MessagesText"], UpTo[5]]];
-
-				sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
-					"message" -> StringTake[StringRiffle[$result["FormattedMessages"], "\n"], UpTo[500]]|>|>];
-
-				$result
-			)
-		]
+			$result
+		)
+	]
 ];
 
 rangeToStartEnd[range_List]:=Module[{},
@@ -988,15 +985,11 @@ getCode[src_, range_]:=Module[{},
 ];
 
 getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
-	Print[src];
-	Print[position];
-		Print["Getting code at position"];
-		(*tree = Echo@CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];*)
-		tree = CodeParse[src];
-		Print["Getting code at position 2"];
+
+		tree = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
-		call = Echo@First[Cases[tree, ((x_LeafNode /; 
+		call = First[Cases[tree, ((x_LeafNode /; 
 			inCodeRangeQ[
 			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
 			pos]) | (x_CallNode /; 
