@@ -873,9 +873,13 @@ function updateResults(e, result, print, input = "", file = "") {
             if (resultString.length > 300) {
                 resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
-            let startChar = e.document.lineAt(result["params"]["position"]["line"] - 1).range.end.character;
+            let nextline = result["params"]["position"]["line"] - 1;
+            if (nextline >= e.document.lineCount) {
+                nextline = e.document.lineCount - 1;
+            }
+            let startChar = e.document.lineAt(nextline).range.end.character;
             let decoration = {
-                "range": new vscode.Range(result["params"]["position"]["line"] - 1, startChar + 10, result["params"]["position"]["line"] - 1, startChar + 200),
+                "range": new vscode.Range(nextline, startChar + 10, nextline, startChar + 200),
                 "renderOptions": {
                     "after": {
                         "contentText": " " + resultString,

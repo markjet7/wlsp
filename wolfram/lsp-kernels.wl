@@ -150,7 +150,7 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 	evaluateFromQueue[code, json, position];
 ];
 
-handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration},
+handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration, newLines, codeLines},
 
 	Check[
 		start = Now;
@@ -158,7 +158,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = documents[json["params","textDocument","uri", "external"]];
 		code = getCode[src, range];
-		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
+		newPosition = <|"line"->code["range"][[2,1]]+1, "character"->1|>;
 
 		(* Split string into code blocks *)
 		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
@@ -167,15 +167,18 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 			LeafNode[_,_,_]
 		),{2}];
 
+		newLines = 0;
 		Table[
 			s = StringTake[code["code"], c[[-1]][Source]];
+			codeLines = StringCount[StringTrim@StringTake[code["code"],{1,c[[-1]][Source][[2]]}],"\n"];
 			codeBlock = <|
 				"code" -> s, "range" -> <|
-					"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
-					"end" -> <|"line" -> range["start"]["line"] + StringCount[StringTrim@StringTake[code["code"], {1, c[[-1]][Source][[2]]}], "\n"], "character" -> 100 |>
+					"start" -> <|"line" -> code["range"][[1,1]] + newLines, "character" -> code["range"][[1,2]]+1 |>,
+					"end" -> <|"line" -> code["range"][[1,1]] + newLines + codeLines, "character" -> 100 |>
 				|>
 			|>;
-			newPosition = <|"line"->codeBlock["range"][[2,1]]+1, "character"->500|>;
+			newLines += codeLines;
+			newPosition = Echo@<|"line"->codeBlock["range"][[2,1]], "character"->1|>;
 			(* Add each code block to the evaluation queue *)
 			evaluateFromQueue[codeBlock, json, newPosition];,
 			{c, codeBlocks}];

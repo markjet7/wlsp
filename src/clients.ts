@@ -1046,13 +1046,17 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
                 resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
 
-            let startChar = e.document.lineAt(result["params"]["position"]["line"] - 1).range.end.character;
+            let nextline = result["params"]["position"]["line"] - 1;
+            if (nextline >= e.document.lineCount) {
+                nextline = e.document.lineCount -1
+            }
+            let startChar = e.document.lineAt(nextline).range.end.character;
 
             let decoration: vscode.DecorationOptions = {
                 "range": new vscode.Range(
-                    result["params"]["position"]["line"] - 1,
+                    nextline,
                     startChar + 10,
-                    result["params"]["position"]["line"] - 1,
+                    nextline,
                     startChar + 200,
                 ),
                 "renderOptions": {
