@@ -161,24 +161,31 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		newPosition = <|"line"->code["range"][[2,1]]+1, "character"->1|>;
 
 		(* Split string into code blocks *)
-		codeBlocks = Cases[CodeParse[code["code"], SourceConvention -> "SourceCharacterIndex"], (
-			CallNode[LeafNode[Symbol,(_),_],___] |
-			CallNode[CallNode[_, (_), _], ___] |
-			LeafNode[_,_,_]
-		),{2}];
+		codeBlocks = Select[
+			Cases[CodeParse[src 
+				(*, SourceConvention -> "SourceCharacterIndex" *)
+				],
+				(
+				CallNode[LeafNode[Symbol,(_),_],___] |
+				CallNode[CallNode[_, (_), _], ___] |
+				LeafNode[_,_,_]
+			),{2}],
+			#[[-1]][Source][[1,1]] >= code["range"][[1,1]] && #[[-1]][Source][[2,1]] <= code["range"][[2,1]] &
+		];
 
-		newLines = 0;
+		(* Evaluate each code block *)
+
 		Table[
-			s = StringTake[code["code"], c[[-1]][Source]];
-			codeLines = StringCount[StringTrim@StringTake[code["code"],{1,c[[-1]][Source][[2]]}],"\n"];
+			s = StringTake[src, {charIndexFromLineColumn[src, c[[-1]][Source][[1]]], charIndexFromLineColumn[src, c[[-1]][Source][[2]]]}];
+			codeLines = StringCount[StringTrim@s,"\n"];
 			codeBlock = <|
 				"code" -> s, "range" -> <|
-					"start" -> <|"line" -> code["range"][[1,1]] + newLines, "character" -> code["range"][[1,2]]+1 |>,
-					"end" -> <|"line" -> code["range"][[1,1]] + newLines + codeLines, "character" -> 100 |>
+					"start" -> <|"line" ->c[[-1]][Source][[1,1]], "character" -> 1 |>,
+					"end" -> <|"line" -> c[[-1]][Source][[2,1]], "character" -> 100 |>
 				|>
 			|>;
-			newLines += codeLines;
-			newPosition = Echo@<|"line"->codeBlock["range"][[2,1]], "character"->1|>;
+
+			newPosition = <|"line"->c[[-1]][Source][[2,1]], "character"->1|>;
 			(* Add each code block to the evaluation queue *)
 			evaluateFromQueue[codeBlock, json, newPosition];,
 			{c, codeBlocks}];
@@ -1083,6 +1090,11 @@ lineRange[line_,start_,end_]:= {line, Which[
 	line != start[[1]] && line!=end[[1]], All,
 	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]]}
 ]};
+
+charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},
+	sLines = StringSplit[src, EndOfLine, All];
+	charIndex = Total[StringLength/@Take[sLines, line-1]] + column
+];
 
 constructRPCBytes[_Missing]:= Module[{}, ""];
 constructRPCBytes[msg_Association]:=Module[{headerBytes,jsonBytes},
