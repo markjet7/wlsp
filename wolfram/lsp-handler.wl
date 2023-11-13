@@ -409,76 +409,34 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 		sendResponse[<|"id"->json["id"], "result"->{}|>];,
 
 		Check[
-			(* sectionPattern = Shortest["(*" ~~ WhitespaceCharacter.. ~~ "::" ~~ ___ ~~ "::" ~~ WhitespaceCharacter.. ~~ "*)"];
-			lines = StringCount[Check[StringTake[src, {1, #[[2]]}], ""], "\n"] & /@ Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]];
-			sections = BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]; 
-			sections = StringPosition[src, "\n\n\n", Overlaps -> False];*)
+			createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends,"character"->0|>|>}|>|>;
 
-			src = ImportString[documents[json["params","textDocument","uri"]],"Lines"];
-			breaks=BlockMap[Identity,Join[{1},SequencePosition[src,{"","", Except[""]}][[All,2]], {Length@src}+1],2,1];
-			sections = Map[StringRiffle[src[[#[[1]];;#[[2]]-1]],"\n"]&,breaks];
-			starts = Map[<|"line" -> #[[1]], "character" -> 0|> &, breaks];
-			ends = MapThread[<|
-				"line" -> #1[[1]] + StringCount[StringTrim@#2, "\n"],
-				"character" -> StringLength@Last[StringSplit[#2, "\n"] /. {} -> {""}]+1|> &, 
-				{breaks, sections}];
+			src = documents[json["params","textDocument","uri"]];
+			ast=CodeParse[StringReplace[src,";"->" "]];
+			functions=Cases[ast,(CallNode[LeafNode[Symbol,(_),_],___]|LeafNode[_,_,_]),{2}];
 
-			If[sections != {},
-				lens = Flatten@Table[
-					{
-						<|
-							"range" -> 
-								<|
-									"start" -><|"line"->starts[[i, "line"]]-1, "character"->0|>,
-									"end" -><|"line"->ends[[i, "line"]]-1, "character"->0|>
-								|>,
-							"command" -> <|
-								"title" -> "Run cell (" <> ToString[ends[[i, "line"]] - starts[[i, "line"]]+1] <> " line(s))",
-								"command" -> "wolfram.runTextCell",
-								"arguments" -> {<|
-									"start" -><|"line"->starts[[i, "line"]]-1, "character"->0|>,
-									"end" -><|"line"->ends[[i, "line"]]-1, "character"->ends[[i, "character"]]|>
-								|>}
-							|>
-						|>,
-						<|
-							"range" -> 
-								<|
-									"start" -><|"line"->starts[[i, "line"]]-1, "character"->0|>,
-									"end" -><|"line"->ends[[i, "line"]]-1, "character"->0|>
-								|>,
-							"command" -> <|
-								"title" -> "Run above "(* <> ToString[starts[[i, "line"]]] <> " line(s))"*),
-								"command" -> "wolfram.runTextCell",
-								"arguments" -> {<|
-									"start" -><|"line"->0, "character"->0|>,
-									"end" -><|"line"->starts[[i, "line"]], "character"->starts[[i, "character"]]|>
-								|>}
-							|>
-						|>,
-						<|
-							"range" -> 
-								<|
-									"start" -><|"line"->starts[[i, "line"]]-1, "character"->0|>,
-									"end" -><|"line"->ends[[i, "line"]]-1, "character"->0|>
-								|>,
-							"command" -> <|
-								"title" -> "Run below " (* <> ToString[Length[src] - starts[[i, "line"]]] <> " line(s))" *),
-								"command" -> "wolfram.runTextCell",
-								"arguments" -> {<|
-									"start" -><|"line"->starts[[i, "line"]]-1, "character"->0|>,
-									"end" -><|"line"->Length[src], "character"-> ends[[-1, "character"]]|>
-								|>}
-							|>
-						|>
+			start = 1;
+			lens = BlockMap[
+			Function[{f},
+				gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
+				If[
+					gap>=3,
+					c = createCell[
+						start,
+						f[[2]][[-1]][Source][[1,1]]-3];
+						start = f[[2]][[-1]][Source][[1,1]];
+					c,
+				Nothing
+				]
+			],
+			functions,
+			2,
+			1];
+			sendResponse[<|"id"->json["id"], "result"->lens|>],
 
-					},
-					{i, Length@starts}
-				];,
-				lens = {}
-			];
-			sendResponse[<|"id"->json["id"], "result"->lens|>];,
-		sendResponse[<|"id"->json["id"], "result"->{}|>];]
+			lens = {}
+			sendResponse[<|"id"->json["id"], "result"->{}|>];
+		]
 	];
 	updateCursorLocations[json];
 ];

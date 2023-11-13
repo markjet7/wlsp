@@ -303,6 +303,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 }
             }
 
+            var lastInput = "";
             window.addEventListener('message', event => {
 
                 const message = event.data;        
@@ -313,21 +314,25 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 }
 
                 const outputDiv = document.getElementById('outputs');
-
+                console.log(message);
                 if (message.input.length > 0) {
                     index += 1;
-                    outputDiv.innerHTML += "<div class='input_row'><hr>In[" + index + "]: " + message.input + "<hr></div>";
+                    console.log("index: " + index);
+                    lastInput = "<div class='input_row'><hr>In[" + index + "]: " + message.input + "<hr></div><div class='output_row'>Loading...</div>";
+                    outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
                 }
 
                 if (message.output.length > 0) {
-                    outputDiv.innerHTML += message.output + "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + message.output + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + message.output + "\`)'>Insert</button><br>";
+                    outputDiv.innerHTML = outputDiv.innerHTML.replace('<div class="output_row">Loading...</div>',  message.output + "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + message.output + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + message.output + "\`)'>Insert</button><br>")
+                    // + outputDiv.innerHTML;
+                    // outputDiv.innerHTML = lastInput;
 
                     
                 }
 
                 vscode.setState(outputDiv.innerHTML);
     
-                outputDiv.scrollTop = outputDiv.scrollHeight;
+                // outputDiv.scrollTop = outputDiv.scrollHeight;
     
                 // Add a download button for each image element
                 updateImageElements();
