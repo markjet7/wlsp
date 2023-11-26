@@ -85,8 +85,6 @@ transforms[output_, errors0_]:=Module[{f, k},
 		Return[f];
 	];
 
-
-
 		(*
 		f = CreateFile[];
 		OpenWrite[f, BinaryFormat->True];

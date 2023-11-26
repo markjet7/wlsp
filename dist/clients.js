@@ -275,6 +275,7 @@ function onkernelReady() {
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("pulse", pulse);
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
                 exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onResult", onResult);
                 if (vscode.window.activeTextEditor) {
                     let workspacefolder = vscode.workspace.getWorkspaceFolder((_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.document.uri);
                     if (workspacefolder) {
@@ -809,6 +810,9 @@ let maxPrintResults = 20;
 let printResults = [];
 let editorDecorations = new Map();
 // let printResults: Map<string, string> = new Map();
+function onResult(result) {
+    console.log(result);
+}
 function updateInputs(params) {
     plotsProvider.newInput(params["input"]);
 }
@@ -1696,10 +1700,6 @@ function createNotebookScript() {
 function didChangeWindowState(state) {
     if (exports.wolframClient !== undefined && exports.wolframClient.state === 2) {
         exports.wolframClient.sendNotification("windowFocused", state.focused);
-    }
-    if (exports.wolframKernelClient !== undefined && exports.wolframKernelClient.state === 2) {
-        // outputChannel.appendLine("Sending windowFocused to kernel")
-        exports.wolframKernelClient.sendNotification("windowFocused", state.focused);
     }
 }
 function startWolframTerminal() {

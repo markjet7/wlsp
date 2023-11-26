@@ -347,6 +347,7 @@ export async function onkernelReady(): Promise<void> {
             wolframKernelClient?.onNotification("pulse", pulse);
             wolframKernelClient?.onNotification("errorMessages", errorMessages)
             wolframKernelClient?.onNotification("updateInputs", updateInputs)
+            wolframKernelClient?.onNotification("onResult", onResult)
 
 
             if (vscode.window.activeTextEditor) {
@@ -972,6 +973,10 @@ let maxPrintResults = 20;
 let printResults: any[] = [];
 let editorDecorations: Map<string, vscode.DecorationOptions[]> = new Map();
 // let printResults: Map<string, string> = new Map();
+
+function onResult(result:any) {
+    console.log(result)
+}
 
 function updateInputs(params: any) {
     plotsProvider.newInput(params["input"])
@@ -2046,10 +2051,6 @@ function createNotebookScript() {
 function didChangeWindowState(state: vscode.WindowState) {
     if (wolframClient !== undefined && wolframClient.state === 2) {
         wolframClient.sendNotification("windowFocused", state.focused);
-    }
-    if (wolframKernelClient !== undefined && wolframKernelClient.state === 2) {
-        // outputChannel.appendLine("Sending windowFocused to kernel")
-        wolframKernelClient.sendNotification("windowFocused", state.focused);
     }
 }
 
