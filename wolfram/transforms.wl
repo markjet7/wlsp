@@ -76,7 +76,6 @@ transforms[output_, errors0_]:=Module[{f, k},
 		Return[f];
 		,
 
-
 		f = CreateFile[];
 		Export[f, 
 			Column@{output, errors},
@@ -190,7 +189,6 @@ transforms[output_]:=Module[{f, txt},
 ];
 
 transformsIO[output_, errors_]:=Module[{out},
-	Print["Transforming"];
 	If[Length@erros > 0,
 		out = Rasterize@GraphicsColumn[
 			{Short[output, 10],
@@ -199,4 +197,19 @@ transformsIO[output_, errors_]:=Module[{out},
 	];
 
 	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
+];
+
+transformsCell[output_, errors_]:=Module[{out},
+
+	If[ByteCount[output] > 100*^7,
+		out ="<img src=\"data:image/png;base64," <> ExportString[Rasterize[Short[output, 10], RasterSize->15*72], {"Base64", "PNG"}] <> 	"\" />" <> "<br><img src=\"data:image/png;base64," <> ExportString[Rasterize[Replace[errors, {}->""]], {"Base64", "PNG"}] <> 	"\" />";
+		Return[out]
+	];
+
+	out = ExportString[
+		Column@{output, ReplaceAll[errors, {} -> ""]},
+		"HTMLFragment", "GraphicsOutput"->Automatic
+	];
+
+	out
 ];

@@ -30,7 +30,7 @@ ServerCapabilities=<|
 
 
 handle["initialize",json_]:=Module[{response, response2, messageHandler},
-	(*Print["Initializing Kernel"];*)
+	Print["Initializing Kernel"];
 	SetSystemOptions["ParallelOptions" -> "MathLinkTimeout" -> 15.];
 	SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
     CONTINUE = True;
@@ -273,9 +273,11 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 			Which[
 				And[Lookup[json["params"], "output", False], KeyExistsQ[r, "FormattedMessages"]],
-				transforms[ReleaseHold[r["Result"]], r["FormattedMessages"]],
-				Lookup[json["params"], "output", False],
-				transforms@ReleaseHold[r["Result"]],
+				(* transforms[ReleaseHold[r["Result"]], r["FormattedMessages"]],*)
+				transformsCell[ReleaseHold[r["Result"]], r["FormattedMessages"]],
+				Lookup[json["params"], "output", False], 
+				transformsCell[ReleaseHold[r["Result"]], {}],
+				(* transforms@ReleaseHold[r["Result"]],*)
 				True,
 				ToString[ReleaseHold[r["Result"]], InputForm, TotalWidth -> 1000]
 			], 
@@ -342,7 +344,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"params"-><|
 			"input" -> string,
 			"output"-> output,  
-			"load" -> Lookup[json["params"], "output", False], (*If[json["params", "output"], True, False],*)
+			"load" -> False, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
 			"result"-> ToString[result, InputForm, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
@@ -375,9 +377,10 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			|>|>],
 
 		True,
-		sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
+		(*sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
 		"input" -> string,
-		"file"->ToString@file|>|>]
+		"file"->ToString@file|>|>]*)
+		sendResponse[response]
 	];
 
 	(*
@@ -900,7 +903,8 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 		(
 			response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
 			If[response === $Failed, response = "Failed"];
-			sendResponse[<|"method"->"onResult", "params"-><|"result"->response|>|>];
+			Print[response];
+			(*sendResponse[<|"method"->"onResult", "params"-><||>|>];*)
 			$result["FormattedMessages"] = {};
 			$result["Result"] = Last[$result["Result"]];
 			$result

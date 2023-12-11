@@ -11,7 +11,6 @@ BeginPackage["WolframKernel`"];
 
 
 sendResponse[response_Association]:=Module[{byteResponse},
-	CheckAbort[
 		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
@@ -20,11 +19,7 @@ sendResponse[response_Association]:=Module[{byteResponse},
 				]
 			],
 			KERNELSERVER["ConnectedClients"]
-		],
-		<|"method"->"window/showMessage", "params"-><|"type"-> 1, "message" -> "The kernel tried to abort."|>|>;
-		Print["response error"];
-		Print[response];
-	]
+		]
 ];
 
 (* Off[General::stop]; *)
@@ -71,13 +66,13 @@ handleMessage[msg_Association, state_]:=Module[{},
  
 				Check[handle[msg["method"], msg],
 
-				Export[logfile, msg, "Text"];
 					sendRespose@<|"id"->msg["id"], "result"-> "Kernel error" |>
 				]
 			]
 		];,
+		Print["Kernel error handling message"];
 		Nothing
-		(*Print["Kernel error handling message"];
+		(*
 		Export[logfile, msg];*)
 	];
 	If[state === "Continue", {"Continue",state}, {"Continue", state}]
@@ -86,7 +81,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 ReadMessages[x_]:={"Continue", "Continue"};
 ReadMessages[client_SocketObject]:=ReadMessagesImpl[client,{{0,{}},{}}];
 ReadMessagesImpl[client_SocketObject,{{0,_ByteArray|{}},msgs:{__Association}}]:=msgs;
-ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~Check[SocketReadMessage[client], ByteArray[{}]]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~(SocketReadMessage[client]/.x_Failure -> {})]},{msgs}})}]])];
+ReadMessagesImpl[client_SocketObject,{{remainingLength_Integer,remainingByte:(_ByteArray|{})},{msgs___Association}}]:=ReadMessagesImpl[client,(If[remainingLength>0,(*Read Content*)If[Length[remainingByte]>=remainingLength,{{0,Drop[remainingByte,remainingLength]},{msgs,ImportByteArray[Take[remainingByte,remainingLength],"RawJSON"]}},(*Read more*){{remainingLength,ByteArray[remainingByte~Join~Check[SocketReadMessage[client], ByteArray[{}]]]},{msgs}}],(*New header*)Replace[SequencePosition[Normal@remainingByte,RPCPatterns["SequenceSplitPattern"],1],{{{end1_,end2_}}:>({{getContentLength[Take[remainingByte,end1-1]],Drop[remainingByte,end2]},{msgs}}),{}:>((*Read more*){{0,ByteArray[remainingByte~Join~(SocketReadMessage[client]/.{x_Failure -> {}, $Aborted -> "Aborted"})]},{msgs}})}]])];
 
 
 getContentLength[header_ByteArray]:=getContentLength[ByteArrayToString[header,"ASCII"]];
@@ -101,14 +96,14 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.02;
+handlerWait = 0.01;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
 $timeout = Now;
 Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
+	(* Get[DirectoryName[$path] <> "lsp-kernels.wl"]; *)
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&
@@ -119,6 +114,7 @@ socketHandler[state_]:=Module[{},
 	If[Length@KERNELSERVER["ConnectedClients"] > 0,
 		$timeout = Now;
 	];
+
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{

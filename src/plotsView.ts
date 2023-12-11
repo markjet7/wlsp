@@ -212,6 +212,16 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     background: var(--vscode-tree-tableOddRowsBackground);
                 }
 
+                .output_row {
+                    background: var(--vscode-tree-tableEvenRowsBackground);
+                    overflow-x: scroll;
+                }
+
+                .output_row img{
+                    min-width: 900px;
+                    width: 90vw;
+                }
+
                 #errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
@@ -221,7 +231,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 #result img{
                     width:90vw;
                     max-height:95vh;
-                    object-fit:cover;
+                    object-fit:contain;
                     /* margin: 0; */
                     /* min-height: 200px; */
                     width: auto;
@@ -314,16 +324,14 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 }
 
                 const outputDiv = document.getElementById('outputs');
-                console.log(message);
                 if (message.input.length > 0) {
                     index += 1;
-                    console.log("index: " + index);
                     lastInput = "<div class='input_row'><hr>In[" + index + "]: " + message.input + "<hr></div><div class='output_row'>Loading...</div>";
                     outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
                 }
 
                 if (message.output.length > 0) {
-                    outputDiv.innerHTML = outputDiv.innerHTML.replace('<div class="output_row">Loading...</div>',  message.output + "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + message.output + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + message.output + "\`)'>Insert</button><br>")
+                    outputDiv.innerHTML = outputDiv.innerHTML.replace('<div class="output_row">Loading...</div>', '<div class="output_row">' +  message.output + '</div>' + "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(\`" + message.output + "\`)'>Open</button>" + "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(\`" + message.output + "\`)'>Insert</button><br>")
                     // + outputDiv.innerHTML;
                     // outputDiv.innerHTML = lastInput;
 
