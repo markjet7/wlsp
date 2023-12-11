@@ -898,8 +898,9 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 	If[
 		$result["Success"], 
 		(
-			(*response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
-			sendResponse[<|"method"->"onResult", "params"-><|"result"->response|>|>];*)
+			response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
+			If[response === $Failed, response = "Failed"];
+			sendResponse[<|"method"->"onResult", "params"-><|"result"->response|>|>];
 			$result["FormattedMessages"] = {};
 			$result["Result"] = Last[$result["Result"]];
 			$result
