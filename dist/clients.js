@@ -320,27 +320,27 @@ function promiseWithTimeout(ms, promise) {
 }
 function pulse() {
     if (exports.wolframKernelClient !== undefined && (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == 2) {
-        promiseWithTimeout(1000 * 60 * 10, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
+        promiseWithTimeout(1000 * 60 * 2, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
             wolframStatusBar.color = "red";
             setTimeout(() => {
                 wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
             }, 1000 * 30);
             (0, path_1.resolve)("true");
         })).then((a) => {
-            setTimeout(pulse, 1000 * 60 * 10);
+            setTimeout(pulse, 1000 * 60 * 2);
         }).catch(error => {
             console.log(error);
-            outputChannel.appendLine("ping failed");
-            vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?", "Yes", "No").then((result) => {
-                if (result === "Yes") {
-                    restart();
-                }
-                if (result === "No") {
-                    setTimeout(pulse, 1000 * 60 * 10);
-                }
-                else {
-                }
-            });
+            outputChannel.appendLine("The Wolfram kernel has not responded in >2 minutes");
+            // vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
+            //     "Yes", "No").then((result) => {
+            //         if (result === "Yes") {
+            //             restart()
+            //         }
+            //         if (result === "No") {
+            //             setTimeout(pulse, 1000 * 60 * 10)
+            //         } else {
+            //         }
+            //     })
         });
     }
     // pulseInterval = setInterval(ping, 60000)
@@ -1384,14 +1384,11 @@ function startWLSPKernelSocket(id) {
                     console.log("Kernel Socket end");
                     console.log(msg);
                     // attempt to revive the kernel
-                    // await new Promise(resolve => setTimeout(resolve, 1000));
-                    // stopWolfram(undefined, wolframKernel)  
-                    // vscode.window.showErrorMessage("Wolfram Kernel disconnected.",
-                    //     "Restart kernel?").then((selection) => {
-                    //         if (selection === "Restart kernel?") {
-                    //             restartKernel()
-                    //         }
-                    //     });
+                    setTimeout(() => {
+                        socket.connect(kernelPort, "127.0.0.1", () => {
+                            socket.setKeepAlive(true);
+                        });
+                    }, 500);
                 }));
                 fp(kernelPort).then(([freePort]) => __awaiter(this, void 0, void 0, function* () {
                     kernelPort = freePort + id;

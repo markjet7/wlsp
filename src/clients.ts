@@ -1664,15 +1664,11 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
                 console.log("Kernel Socket end");
                 console.log(msg);
                 // attempt to revive the kernel
-                // await new Promise(resolve => setTimeout(resolve, 1000));
-                // stopWolfram(undefined, wolframKernel)  
-
-                // vscode.window.showErrorMessage("Wolfram Kernel disconnected.",
-                //     "Restart kernel?").then((selection) => {
-                //         if (selection === "Restart kernel?") {
-                //             restartKernel()
-                //         }
-                //     });
+                setTimeout(() => {
+                    socket.connect(kernelPort, "127.0.0.1", () => {
+                        socket.setKeepAlive(true);
+                    });
+                }, 500)
             })
 
 

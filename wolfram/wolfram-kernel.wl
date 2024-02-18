@@ -125,18 +125,39 @@ socketHandler[state_]:=Module[{},
 	] & /@ KERNELSERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
+connectWithExponentialRetry[]:=Module[{i=0},
+	While[!connected2,
+		i++;
+		Print["Connecting to kernel..."];
+		KERNELSERVER=SocketOpen[kernelport,"TCP"];
+		connected2 = !MatchQ[KERNELSERVER, $Failed];
+		If[i > 10, Quit[]];
+		If[!connected2,
+			Pause[Min[2^i, 60]];
+		]
+	];
+
+	Print["Kernel ", KERNELSERVER, ": ", kernelport];
+
+	Block[{$IterationLimit = Infinity}, 
+		CheckAbort[
+			socketHandler[state],
+			connectWithExponentialRetry[]
+		];
+	];
+];
+
+connectWithExponentialRetry[];
+
+(*
 Check[
 	KERNELSERVER=SocketOpen[kernelport,"TCP"];
 	Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];,
 
 	Quit[]];
-(* Print[KERNELSERVER];
+ Print[KERNELSERVER];
 Print[kernelport]; *)
-Print["Kernel ", KERNELSERVER, ": ", kernelport];
 
-Block[{$IterationLimit = Infinity}, 
-	socketHandler[state]
-];
 
 CloseKernels[];
 

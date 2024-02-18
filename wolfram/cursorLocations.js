@@ -1,5 +1,5 @@
 {
-	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-SharedLibraries-IowaStateUniversity\/PlasmaPHA%20-%20General\/Plasma%20Plastic\/Plastic%20plasma\/plots.wl":[
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Teaching\/GradingTools\/main.wl":[
 		{
 			"start":{
 				"line":0,
@@ -7,467 +7,107 @@
 			},
 			"end":{
 				"line":0,
-				"character":33
-			}
-		},
-		{
-			"start":{
-				"line":1,
-				"character":0
-			},
-			"end":{
-				"line":1,
-				"character":35
-			}
-		},
-		{
-			"start":{
-				"line":3,
-				"character":0
-			},
-			"end":{
-				"line":3,
-				"character":125
-			}
-		},
-		{
-			"start":{
-				"line":5,
-				"character":0
-			},
-			"end":{
-				"line":5,
-				"character":24
-			}
-		},
-		{
-			"start":{
-				"line":6,
-				"character":0
-			},
-			"end":{
-				"line":6,
 				"character":61
 			}
 		},
 		{
 			"start":{
-				"line":8,
+				"line":2,
 				"character":0
 			},
 			"end":{
-				"line":8,
-				"character":62
+				"line":2,
+				"character":113
 			}
 		},
 		{
 			"start":{
-				"line":9,
+				"line":4,
 				"character":0
 			},
 			"end":{
-				"line":9,
-				"character":46
-			}
-		},
-		{
-			"start":{
-				"line":11,
-				"character":0
-			},
-			"end":{
-				"line":24,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":26,
-				"character":0
-			},
-			"end":{
-				"line":26,
+				"line":4,
 				"character":43
 			}
 		},
 		{
 			"start":{
-				"line":29,
+				"line":6,
 				"character":0
 			},
 			"end":{
-				"line":29,
-				"character":36
+				"line":25,
+				"character":182
 			}
 		},
 		{
 			"start":{
-				"line":30,
+				"line":27,
 				"character":0
 			},
 			"end":{
-				"line":30,
-				"character":50
+				"line":27,
+				"character":64
 			}
 		},
 		{
 			"start":{
-				"line":32,
+				"line":31,
 				"character":0
 			},
 			"end":{
-				"line":32,
-				"character":16
-			}
-		},
-		{
-			"start":{
-				"line":34,
-				"character":0
-			},
-			"end":{
-				"line":34,
-				"character":55
-			}
-		},
-		{
-			"start":{
-				"line":36,
-				"character":0
-			},
-			"end":{
-				"line":36,
-				"character":76
-			}
-		},
-		{
-			"start":{
-				"line":38,
-				"character":0
-			},
-			"end":{
-				"line":43,
-				"character":63
-			}
-		},
-		{
-			"start":{
-				"line":45,
-				"character":0
-			},
-			"end":{
-				"line":45,
-				"character":24
-			}
-		},
-		{
-			"start":{
-				"line":47,
-				"character":0
-			},
-			"end":{
-				"line":59,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":61,
-				"character":0
-			},
-			"end":{
-				"line":61,
-				"character":43
-			}
-		},
-		{
-			"start":{
-				"line":63,
-				"character":0
-			},
-			"end":{
-				"line":63,
-				"character":43
-			}
-		},
-		{
-			"start":{
-				"line":64,
-				"character":0
-			},
-			"end":{
-				"line":64,
-				"character":41
-			}
-		},
-		{
-			"start":{
-				"line":66,
-				"character":0
-			},
-			"end":{
-				"line":92,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":94,
-				"character":0
-			},
-			"end":{
-				"line":94,
+				"line":31,
 				"character":34
 			}
 		},
 		{
 			"start":{
-				"line":97,
+				"line":32,
 				"character":0
 			},
 			"end":{
-				"line":97,
-				"character":29
+				"line":32,
+				"character":27
 			}
 		},
 		{
 			"start":{
-				"line":98,
+				"line":34,
 				"character":0
 			},
 			"end":{
-				"line":98,
-				"character":33
+				"line":37,
+				"character":53
 			}
 		},
 		{
 			"start":{
-				"line":100,
+				"line":39,
 				"character":0
 			},
 			"end":{
-				"line":100,
-				"character":56
+				"line":79,
+				"character":2
 			}
 		},
 		{
 			"start":{
-				"line":101,
+				"line":81,
 				"character":0
 			},
 			"end":{
-				"line":101,
-				"character":72
+				"line":81,
+				"character":78
 			}
 		},
 		{
 			"start":{
-				"line":103,
+				"line":83,
 				"character":0
 			},
 			"end":{
-				"line":103,
-				"character":143
-			}
-		},
-		{
-			"start":{
-				"line":105,
-				"character":0
-			},
-			"end":{
-				"line":105,
-				"character":52
-			}
-		},
-		{
-			"start":{
-				"line":106,
-				"character":0
-			},
-			"end":{
-				"line":106,
-				"character":41
-			}
-		},
-		{
-			"start":{
-				"line":108,
-				"character":0
-			},
-			"end":{
-				"line":108,
-				"character":72
-			}
-		},
-		{
-			"start":{
-				"line":110,
-				"character":0
-			},
-			"end":{
-				"line":110,
-				"character":12
-			}
-		},
-		{
-			"start":{
-				"line":112,
-				"character":0
-			},
-			"end":{
-				"line":112,
-				"character":55
-			}
-		},
-		{
-			"start":{
-				"line":114,
-				"character":0
-			},
-			"end":{
-				"line":114,
-				"character":30
-			}
-		},
-		{
-			"start":{
-				"line":115,
-				"character":0
-			},
-			"end":{
-				"line":115,
-				"character":22
-			}
-		},
-		{
-			"start":{
-				"line":116,
-				"character":0
-			},
-			"end":{
-				"line":116,
-				"character":11
-			}
-		},
-		{
-			"start":{
-				"line":118,
-				"character":0
-			},
-			"end":{
-				"line":118,
-				"character":60
-			}
-		},
-		{
-			"start":{
-				"line":119,
-				"character":0
-			},
-			"end":{
-				"line":130,
-				"character":5
-			}
-		},
-		{
-			"start":{
-				"line":131,
-				"character":0
-			},
-			"end":{
-				"line":131,
-				"character":52
-			}
-		},
-		{
-			"start":{
-				"line":134,
-				"character":0
-			},
-			"end":{
-				"line":134,
-				"character":23
-			}
-		},
-		{
-			"start":{
-				"line":136,
-				"character":0
-			},
-			"end":{
-				"line":136,
-				"character":62
-			}
-		},
-		{
-			"start":{
-				"line":137,
-				"character":0
-			},
-			"end":{
-				"line":137,
-				"character":26
-			}
-		},
-		{
-			"start":{
-				"line":138,
-				"character":0
-			},
-			"end":{
-				"line":138,
-				"character":32
-			}
-		},
-		{
-			"start":{
-				"line":140,
-				"character":0
-			},
-			"end":{
-				"line":155,
-				"character":20
-			}
-		},
-		{
-			"start":{
-				"line":157,
-				"character":0
-			},
-			"end":{
-				"line":159,
-				"character":30
-			}
-		},
-		{
-			"start":{
-				"line":160,
-				"character":0
-			},
-			"end":{
-				"line":160,
-				"character":41
-			}
-		},
-		{
-			"start":{
-				"line":162,
-				"character":0
-			},
-			"end":{
-				"line":175,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":177,
-				"character":0
-			},
-			"end":{
-				"line":177,
-				"character":43
+				"line":83,
+				"character":3
 			}
 		}
 	]
