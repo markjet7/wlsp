@@ -403,7 +403,7 @@ function promiseWithTimeout(ms: number, promise: Promise<any> | undefined) {
 function pulse() {
 
     if (wolframKernelClient !== undefined && wolframKernelClient?.state == 2) {
-        promiseWithTimeout(1000 * 60 * 10,
+        promiseWithTimeout(1000 * 60 * 2,
 
 
             wolframKernelClient?.sendRequest("pulse").then((a: any) => {
@@ -414,23 +414,23 @@ function pulse() {
                 resolve("true")
             })).then(
                 (a: any) => {
-                    setTimeout(pulse, 1000 * 60 * 10)
+                    setTimeout(pulse, 1000 * 60 * 2)
                 }
             ).catch(error => {
                 console.log(error)
-                outputChannel.appendLine("ping failed")
+                outputChannel.appendLine("The Wolfram kernel has not responded in >2 minutes")
 
-                vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
-                    "Yes", "No").then((result) => {
-                        if (result === "Yes") {
-                            restart()
-                        }
-                        if (result === "No") {
-                            setTimeout(pulse, 1000 * 60 * 10)
-                        } else {
+                // vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
+                //     "Yes", "No").then((result) => {
+                //         if (result === "Yes") {
+                //             restart()
+                //         }
+                //         if (result === "No") {
+                //             setTimeout(pulse, 1000 * 60 * 10)
+                //         } else {
 
-                        }
-                    })
+                //         }
+                //     })
             })
 
 

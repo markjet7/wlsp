@@ -197,7 +197,7 @@ transformsIO[output_, errors_]:=Module[{out},
 	];
 
 	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
-];
+];i
 
 transformsCell[output_, errors_]:=Module[{out},
 
