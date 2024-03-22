@@ -150,7 +150,7 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 	evaluateFromQueue[code, json, position];
 ];
 
-handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration, newLines, codeLines},
+handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, c, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration, newLines, codeLines},
 
 	Check[
 		start = Now;
