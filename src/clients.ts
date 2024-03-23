@@ -61,6 +61,7 @@ let withProgressCancellation: vscode.CancellationTokenSource | undefined;
 
 let dataProvider: DataViewProvider;
 let plotsProvider: PlotsViewProvider;
+let debugging: boolean = false;
 
 wolframClient = undefined;
 wolframKernelClient = undefined;
@@ -86,6 +87,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     wolframStatusBar.command = 'wolfram.restart';
     wolframStatusBar.show();
     vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
+    debugging = (vscode.env.machineId === "someValue.machineId");
 
     scriptserializer = new WolframScriptSerializer()
     notebookSerializer = new WolframNotebookSerializer()
@@ -1739,6 +1741,8 @@ function connectKernelClient(outputChannel: any, context: any) {
 async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess> {
     return new Promise((resolve) => {
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
+
+
         try {
             if (process.platform === "win32") {
                 wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path, "-noinit"], { detached: false });

@@ -58,6 +58,9 @@ graphicsQ =
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
 transforms[output_, errors0_]:=Module[{f, k},
+	If[Head@output === List,
+		output = Grid@output
+	];
 	errors = "<br>" <> StringRiffle[errors0, "\n"];
 	If[ByteCount[output] > 100*^7,
 		f = CreateFile[];
@@ -142,9 +145,16 @@ transforms[output_, errors0_]:=Module[{f, k},
 ];
 
 transforms[output_]:=Module[{f, txt}, 
+
+		If[Head@output === List,
+			output = Grid@output
+		];
+
 		f = CreateFile[];
 		SetSharedVariable[f];
 		SetSharedVariable[output];
+
+	
 
 		ParallelSubmit[
 			BinaryWrite[f, 
@@ -200,7 +210,10 @@ transformsIO[output_, errors_]:=Module[{out},
 ];i
 
 transformsCell[output_, errors_]:=Module[{out},
-
+Print["transform cell"];
+		If[Head@output === List,
+			output = Grid@output
+		];
 	If[ByteCount[output] > 100*^7,
 		out ="<img src=\"data:image/png;base64," <> ExportString[Rasterize[Short[output, 10], RasterSize->15*72], {"Base64", "PNG"}] <> 	"\" />" <> "<br><img src=\"data:image/png;base64," <> ExportString[Rasterize[Replace[errors, {}->""]], {"Base64", "PNG"}] <> 	"\" />";
 		Return[out]
