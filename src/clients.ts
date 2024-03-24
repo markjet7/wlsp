@@ -1676,7 +1676,12 @@ async function startWLSPKernelSocket(id: number): Promise<void> {
 
             fp(kernelPort).then(async ([freePort]: number[]) => {
                 kernelPort = freePort + id;
-                kernelPort = 7910;
+                if (debugging) {
+                    kernelPort = 7919;
+                }
+                else {
+                    kernelPort = 7910;
+                }
                 await stopWolfram(undefined, wolframKernel).then((a: any) => {
                     load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
                         wolframKernel = r

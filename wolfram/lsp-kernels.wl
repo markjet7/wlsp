@@ -498,9 +498,7 @@ handle["updateConfiguration", json_]:=Module[{messageHandler},
 		Abort[];Exit[1]
 		] &;
 	If[json["params", "abortOnError"],
-		Print["adding message handler"];
 		Internal`AddHandler["Message", messageHandler];,
-		Print["removing message handler"];
 		Internal`RemoveHandler["Message", messageHandler]
 	]
 ];
@@ -903,7 +901,13 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 		(
 			response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
 			If[response === $Failed, response = "Failed"];
-			Print[response];
+			If[ByteCount[response] > 1*^6, 
+				Print@"Output too large to display",
+				Print[response];
+			];
+			
+			
+			
 			(*sendResponse[<|"method"->"onResult", "params"-><||>|>];*)
 			$result["FormattedMessages"] = {};
 			$result["Result"] = Last[$result["Result"]];

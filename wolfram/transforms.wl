@@ -210,12 +210,19 @@ transformsIO[output_, errors_]:=Module[{out},
 ];i
 
 transformsCell[output_, errors_]:=Module[{out},
-Print["transform cell"];
-		If[Head@output === List,
-			output = Grid@output
-		];
+
+	(*
 	If[ByteCount[output] > 100*^7,
 		out ="<img src=\"data:image/png;base64," <> ExportString[Rasterize[Short[output, 10], RasterSize->15*72], {"Base64", "PNG"}] <> 	"\" />" <> "<br><img src=\"data:image/png;base64," <> ExportString[Rasterize[Replace[errors, {}->""]], {"Base64", "PNG"}] <> 	"\" />";
+		Return[out]
+	];
+	*)
+
+	If[ByteCount[output] > 100*^7,
+		out = ExportString[
+			"Large output. Memory Size: "<> ToString[ByteCount[output]/1*^6] <> " MB",
+			"HTMLFragment", "GraphicsOutput"->Automatic
+		];
 		Return[out]
 	];
 
