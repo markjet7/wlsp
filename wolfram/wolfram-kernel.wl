@@ -9,13 +9,13 @@ BeginPackage["WolframKernel`"];
 (* ::Package:: *)
 (**)
 
-
 sendResponse[response_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
 				If[Head[client] === SocketObject, 
 					BinaryWrite[client, # , "Character32"] &/@ byteResponse;
+					(*BinaryWrite[client, Flatten@byteResponse, "Character32"];*)
 				]
 			],
 			KERNELSERVER["ConnectedClients"]
@@ -103,7 +103,7 @@ connected2 = False;
 $timeout = Now;
 Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
-	(* Get[DirectoryName[$path] <> "lsp-kernels.wl"]; *)
+	Get[DirectoryName[$path] <> "lsp-kernels.wl"];
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

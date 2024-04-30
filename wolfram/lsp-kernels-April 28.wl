@@ -306,7 +306,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ExportString[Rasterize@Short[result,10], {"Base64", "PNG"}, ImageSize->5*72] <> 
 				"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
 
-				Quantity[1, "Seconds"],
+				Quantity[2, "Seconds"],
 
 				ToString[result, InputForm, TotalWidth -> 100]
 				],
@@ -344,8 +344,8 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"params"-><|
 			"input" -> string,
 			"output"-> output,  
-			"load" -> True, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
-			"result"-> "", (* ToString[result, InputForm, CharacterEncoding -> "ASCII"], *)
+			"load" -> False, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
+			"result"-> ToString[result, InputForm, CharacterEncoding -> "ASCII"], 
 			"position"-> newPosition,
 			"print" -> json["params", "print"],
 			"hover" -> StringTake[hoverMessage, 1;;-1],
@@ -358,10 +358,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	];
 	evalnumber = evalnumber + 1;
 	file = CreateFile[];
-	
 	Check[BinaryWrite[file, ExportString[response , "JSON"]], Print["Error saving result"]];
-	
 	Close[file];
+
 	Which[
 		KeyMemberQ[json["params"], "expression"],
 		sendResponse[<|"id"->json["id"], "result" -> <|

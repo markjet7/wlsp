@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.66",
+    "version": "0.0.71",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -27,7 +27,7 @@
         "configuration": {
             "title": "WLSP",
             "properties": {
-                "wlsp.liveDocument": {
+                "wlsp.liveDocument": {      
                     "type": "boolean",
                     "description": "Enable live document",
                     "default": false
@@ -252,10 +252,12 @@
             },
             {
                 "command": "wolfram.restart",
+                "icon": "$(debug-restart)",
                 "title": "Wolfram: Restart"
             },
             {
                 "command": "wolfram.clearResults",
+                "icon": "$(clear-all)",
                 "title": "Wolfram: Clear Results"
             },
             {
@@ -325,20 +327,12 @@
                 {
                     "command": "wolfram.clearResults",
                     "group": "navigation",
-                    "icon": {
-                      "light": "$(clear-all)",
-                      "dark": "$(clear-all)"
-                    },
                     "when": "view == wolfram.plotsView",
                     "title": "Clear"
                 },
                 {
                     "command": "wolfram.restart",
                     "group": "navigation",
-                    "icon": {
-                      "light": "$(debug-restart)",
-                      "dark": "$(debug-restart)"
-                    },
                     "when": "view == wolfram.plotsView",
                     "title": "Restart"
                 }

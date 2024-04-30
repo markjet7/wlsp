@@ -209,7 +209,7 @@ transformsIO[output_, errors_]:=Module[{out},
 	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
 ];i
 
-transformsCell[output_, errors_]:=Module[{out},
+transformsCell[output_, errors_]:=Module[{out, file},
 
 	(*
 	If[ByteCount[output] > 100*^7,
@@ -226,10 +226,25 @@ transformsCell[output_, errors_]:=Module[{out},
 		Return[out]
 	];
 
-	out = ExportString[
-		Column@{output, ReplaceAll[errors, {} -> ""]},
-		"HTMLFragment", "GraphicsOutput"->Automatic
+	file = CreateFile[];
+	(*
+	out = Export[
+		file,
+		Column@{output, errors /. {} -> ""},
+		"HTMLFragment", 
+		"GraphicsOutput"->"SVG"
 	];
-
+	*)
+	out = If[Length@errors > 1, Export[
+		file,
+		Column@{output, errors /. {} -> ""},
+		"HTMLFragment", 
+		"GraphicsOutput"->"SVG"
+	],Export[
+		file,
+		output,
+		"HTMLFragment", 
+		"GraphicsOutput"->"SVG"
+	]];
 	out
 ];

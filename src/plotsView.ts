@@ -127,7 +127,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
     public newOutput(output:string) {
         let img = output
             .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
-            .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
+            .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
+            // .replace(`<?xml version="1.0" encoding="UTF-8"?>`,"");
+        console.log(img)
 
         this._view?.webview.postMessage({
             text: [],
@@ -148,6 +150,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
         <head>
             <style type="text/css">
     
+                svg {
+                    width:100%;
+                }
                 body{
                     overflow-y:scroll;
                     overflow-x:hidden;
@@ -218,8 +223,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 }
 
                 .output_row img{
-                    min-width: 900px;
-                    width: 90vw;
+                    width: 98vw;
                 }
 
                 #errors {
@@ -257,7 +261,11 @@ export class PlotsViewProvider implements WebviewViewProvider {
     
             <meta
                 http-equiv="Content-Security-Policy"
-                content="default-src 'none'; img-src data: ${webview.cspSource} file: vscode-resource: https:; script-src ${webview.cspSource} 'unsafe-inline'; style-src ${webview.cspSource} 'unsafe-inline';"
+                content="default-src 'none'; 
+                img-src 'self' data: ${webview.cspSource} file: vscode-resource: https:; 
+                script-src 'self' ${webview.cspSource} 'unsafe-inline'; 
+                style-src 'self' ${webview.cspSource} 'unsafe-inline';
+                object-src 'self' ${webview.cspSource} 'unsafe-inline';"
                 /> 
                 <script type="module" src="${toolkitUri}"></script>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
