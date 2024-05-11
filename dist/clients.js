@@ -808,24 +808,18 @@ function updateResults(e, result, print, input = "", file = "") {
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
             var _a, _b, _c, _d;
-            if (print) {
-                let sel = e.selection;
-                let outputPosition = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
-                try {
-                    editBuilder.insert(outputPosition, (result["params"]["result"] + "\n\n").slice(0, 8192));
-                }
-                catch (error) {
-                    console.log("Error: " + error);
-                }
-            }
             let output;
+            let rawoutput;
             if (result["params"]["load"]) {
                 output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
+                rawoutput = output;
             }
             else {
                 // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
                 // output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
                 output = `${result["params"]["output"]}`;
+                rawoutput = output;
+                ;
             }
             if (result["params"]["messages"].length > 0) {
                 output += "<div id='errors'>" +
@@ -862,7 +856,7 @@ function updateResults(e, result, print, input = "", file = "") {
                 backgroundColor = "red";
                 hoverMessage += "\n" + result["params"]["messages"];
             }
-            let resultString = result["params"]["time"].toString().slice(0, 5) + " s: " + result["params"]["result"];
+            let resultString = result["params"]["time"].toString().slice(0, 5) + " s: " + rawoutput;
             if (resultString.length > 300) {
                 resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
             }
@@ -871,6 +865,16 @@ function updateResults(e, result, print, input = "", file = "") {
                 nextline = e.document.lineCount - 1;
             }
             let startChar = e.document.lineAt(nextline).range.end.character;
+            if (print) {
+                let sel = e.selection;
+                let outputPosition = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
+                try {
+                    editBuilder.insert(outputPosition, (rawoutput + "\n\n").slice(0, 8192));
+                }
+                catch (error) {
+                    console.log("Error: " + error);
+                }
+            }
             let decoration = {
                 "range": new vscode.Range(nextline, startChar + 10, nextline, startChar + 200),
                 "renderOptions": {

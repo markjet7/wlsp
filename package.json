@@ -47,6 +47,11 @@
                     "description": "Abort on error",
                     "default": false
                 },
+                "wlsp.fontSize": {
+                    "type": "number",
+                    "description": "Font size",
+                    "default": 12
+                },
                 "comments.blockComment": {
                     "type": "string",
                     "default": [

@@ -20,6 +20,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
     private _context: ExtensionContext|undefined;
     private _allOutputs: Map<string, string> = new Map();
     private _out: any[]= [];
+    private _fontSize: string = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
 
     public static readonly viewType = "wolfram.plotsView";
 
@@ -88,12 +89,19 @@ export class PlotsViewProvider implements WebviewViewProvider {
             },
             null
         );
+
+        // change the plotsView text css format when the configuration changes
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            this._fontSize = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
+            this._view?.webview.postMessage({command: "fontSize", size:this._fontSize, text: [], input:"", output:[]})
+        });
+
         
         return
     }
     
     public clearResults() {
-        this._view?.webview.postMessage({command: "clear", text: []})
+        this._view?.webview.postMessage({command: "clear", text: [], input:"", output:[]})
     }
 
     public updateView(out:any[]) {
@@ -200,7 +208,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
     
                 #result {
                     font-family: var(--vscode-editor-font-family);
-                    font-size: var(--vscode-editor-font-size);
+                    font-size: ${this._fontSize}px;
                     border-bottom: var(--vscode-editor-foreground) 2px solid;
                     margin-top: 5px;
                     padding: 10px;
@@ -220,6 +228,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 .output_row {
                     background: var(--vscode-tree-tableEvenRowsBackground);
                     overflow-x: scroll;
+                    font-size: ${this._fontSize}px;
                 }
 
                 .output_row img{
@@ -324,10 +333,19 @@ export class PlotsViewProvider implements WebviewViewProvider {
             var lastInput = "";
             window.addEventListener('message', event => {
 
-                const message = event.data;        
+                const message = event.data;    
 
                 if ("command" in message && message.command === "clear") {
                     clearOutputs();
+                    return;
+                }
+
+                if ("command" in message && message.command === "fontSize") {
+
+                    const outputDivs = document.getElementsByClassName('output_row');
+                    for (const outputDiv of outputDivs) {
+                        outputDiv.style.fontSize = message.size + "px";
+                    }
                     return;
                 }
 

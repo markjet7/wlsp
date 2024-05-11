@@ -11,6 +11,7 @@ class PlotsViewProvider {
         this._text = "";
         this._allOutputs = new Map();
         this._out = [];
+        this._fontSize = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
         this._extensionUri = _extensionUri0;
         this._context = context;
     }
@@ -60,11 +61,17 @@ class PlotsViewProvider {
         this._view.onDidDispose(() => {
             this._view = undefined;
         }, null);
+        // change the plotsView text css format when the configuration changes
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            var _a;
+            this._fontSize = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
+            (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "fontSize", size: this._fontSize, text: [], input: "", output: [] });
+        });
         return;
     }
     clearResults() {
         var _a;
-        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "clear", text: [] });
+        (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "clear", text: [], input: "", output: [] });
     }
     updateView(out) {
         var _a;
@@ -165,7 +172,7 @@ class PlotsViewProvider {
     
                 #result {
                     font-family: var(--vscode-editor-font-family);
-                    font-size: var(--vscode-editor-font-size);
+                    font-size: ${this._fontSize}px;
                     border-bottom: var(--vscode-editor-foreground) 2px solid;
                     margin-top: 5px;
                     padding: 10px;
@@ -185,6 +192,7 @@ class PlotsViewProvider {
                 .output_row {
                     background: var(--vscode-tree-tableEvenRowsBackground);
                     overflow-x: scroll;
+                    font-size: ${this._fontSize}px;
                 }
 
                 .output_row img{
@@ -289,10 +297,19 @@ class PlotsViewProvider {
             var lastInput = "";
             window.addEventListener('message', event => {
 
-                const message = event.data;        
+                const message = event.data;    
 
                 if ("command" in message && message.command === "clear") {
                     clearOutputs();
+                    return;
+                }
+
+                if ("command" in message && message.command === "fontSize") {
+
+                    const outputDivs = document.getElementsByClassName('output_row');
+                    for (const outputDiv of outputDivs) {
+                        outputDiv.style.fontSize = message.size + "px";
+                    }
                     return;
                 }
 

@@ -136,7 +136,6 @@ function startWLSPKernelSocket(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         kernelPath = path;
-        console.log("Starting Kernel:  " + kernelConnecting);
         if (kernelConnecting) {
             yield new Promise(resolve => setTimeout(resolve, 2000));
             return undefined;

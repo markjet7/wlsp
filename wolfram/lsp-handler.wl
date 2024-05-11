@@ -520,7 +520,7 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 	sendResponse[response];
 ];
 
-handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response, position, missingCloser, functionArguments, candidates},
+handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response, position, missingCloser, functionArguments, candidates, keys, labels, ast, function,  defaultItems},
 		TimeConstrained[
 			src = documents[json["params","textDocument","uri"]];
 			pos = json["params","position"];
@@ -530,6 +530,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
 			];
+			labels = {};
 
 			position = <|"line" -> pos["line"], "character" -> pos["character"]|>;
 			missingCloser = FirstCase[ast,
@@ -545,12 +546,12 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 
 			(* names = Nearest[Select[Join[keys,labels], StringLength@#>3&], symbol,20,DistanceFunction-> (EditDistance[#1,#2, IgnoreCase->True] &)]; *)
 
-			If[StringTrim@symbol === "",
-				candidates = {"Table", "Module", "Block", "With", "ListPlot", "Association"},
-				candidates = Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&]
-			];
+			candidates = Join[
+				{"Table", "Module", "Block", "With", "ListPlot", "Association"},
+				Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&]];
 
-			names = PadRight[Join[functionArguments, candidates],
+			names = PadRight[
+				Join[functionArguments, candidates],
 				20,
 				Select[Join[keys,labels],EditDistance[ StringTake[#, UpTo[StringLength@symbol]],symbol,IgnoreCase->True] <=2&]];
 
@@ -559,7 +560,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 						"label" -> ToString@n,
 						"kind" -> If[ValueQ@n, 12, 13],
 						"commitCharacters" -> {"[", "\t"},
-						"detail" -> "test" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
+						"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
 					|>, 
 					{n,names}];
 			
@@ -567,13 +568,22 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				"items" -> items,
 				"isIncomplete" -> True
 				|>;
-
 			response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
-			sendResponse[response];,
+			sendResponse[response];
+			(*Print[result];*),
 
-			Quantity[5, "Seconds"],
+			Quantity[0.5, "Seconds"],
 			(
-				response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> {}|>|>;
+			defaultItems = Table[
+				<|
+					"label" -> ToString@n,
+					"kind" -> 13,
+					"commitCharacters" -> {"[", "\t"},
+					"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
+				|>, 
+				{n, {"Table", "Module", "Block", "With", "ListPlot", "Association"}}];
+				(*Print[defaultItems];*)
+				response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> defaultItems|>|>;
 				sendResponse[response];
 			)
 		]
