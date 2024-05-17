@@ -104,6 +104,7 @@ export async function startWLSP(id: number, path:string): Promise<LanguageClient
 
             socket.on("end", () => {
                 outputChannel.appendLine("Client Socket end");
+                stopWolfram(undefined, wolfram)
             })
 
 
@@ -212,6 +213,7 @@ export async function startWLSPKernelSocket(id: number, path:string): Promise<La
             socket.on('timeout', () => {
                 outputChannel.appendLine("Kernel Socket timeout")
             });
+            
 
             socket.on('ready', () => {
                 // clearTimeout(timeout);
@@ -231,6 +233,7 @@ export async function startWLSPKernelSocket(id: number, path:string): Promise<La
 
             socket.on("end", async (msg: any) => {
                 outputChannel.appendLine("Kernel Socket end");
+                stopWolfram(undefined, wolframKernel)
                 // console.log("Kernel Socket end");
                 // console.log(msg);
                 // attempt to revive the kernel

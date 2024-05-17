@@ -89,6 +89,7 @@ function startWLSP(id, path) {
                 });
                 socket.on("end", () => {
                     outputChannel.appendLine("Client Socket end");
+                    stopWolfram(undefined, wolfram);
                 });
                 fp(clientPort).then(([freePort]) => __awaiter(this, void 0, void 0, function* () {
                     // clientPort = freePort + id;
@@ -202,6 +203,7 @@ function startWLSPKernelSocket(id, path) {
                 });
                 socket.on("end", (msg) => __awaiter(this, void 0, void 0, function* () {
                     outputChannel.appendLine("Kernel Socket end");
+                    stopWolfram(undefined, wolframKernel);
                     // console.log("Kernel Socket end");
                     // console.log(msg);
                     // attempt to revive the kernel

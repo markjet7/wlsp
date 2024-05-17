@@ -193,6 +193,8 @@ class PlotsViewProvider {
                     background: var(--vscode-tree-tableEvenRowsBackground);
                     overflow-x: scroll;
                     font-size: ${this._fontSize}px;
+                    max-height:50vh;
+                    overflow-y: scroll;
                 }
 
                 .output_row img{

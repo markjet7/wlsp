@@ -1,3 +1,6 @@
+SetAttributes[accountingFormat, HoldFirst];
+accountingFormat[expr_] := expr /. x_Real | x_Integer :> NumberForm[x, ScientificNotationThreshold -> {-9, 12}];
+
 (*
 transforms[output_Graphics]:=Module[{}, 
 	(*imageToPNG[output];*)
@@ -218,6 +221,9 @@ transformsCell[output_, errors_]:=Module[{out, file},
 	];
 	*)
 
+	file = CreateFile[];
+
+	(*
 	If[ByteCount[output] > 100*^7,
 		out = ExportString[
 			"Large output. Memory Size: "<> ToString[ByteCount[output]/1*^6] <> " MB",
@@ -225,26 +231,23 @@ transformsCell[output_, errors_]:=Module[{out, file},
 		];
 		Return[out]
 	];
-
-	file = CreateFile[];
-	(*
-	out = Export[
-		file,
-		Column@{output, errors /. {} -> ""},
-		"HTMLFragment", 
-		"GraphicsOutput"->"SVG"
-	];
 	*)
-	out = If[Length@errors > 1, Export[
-		file,
-		Column@{output, errors /. {} -> ""},
-		"HTMLFragment", 
-		"GraphicsOutput"->"SVG"
-	],Export[
-		file,
-		output,
-		"HTMLFragment", 
-		"GraphicsOutput"->"SVG"
-	]];
+
+	out = If[Length@errors > 1, 
+		Export[
+			file,
+			Column@{
+				output,
+				errors /. {} -> ""},
+			"HTMLFragment", 
+			"GraphicsOutput"->"SVG"
+		],
+		Export[
+			file,
+			output, 
+			"HTMLFragment", 
+			"GraphicsOutput"->"SVG"
+		]
+	];
 	out
 ];

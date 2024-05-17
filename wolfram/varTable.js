@@ -1,3 +1,3 @@
 {
-	"upper":"{44.8, 44.8, 43.6, 45.2, 45.8, 41.9, 33.7, 56.5, 58.5, 64.7}"
+	"p1":"Legended[Legended[Legended[GeoGraphics[Graphics[{{Annotation[Style[Polygon[{{<<2>>}, <<3>>, {<<2>>}}], <<1>>], <<2>>], {<<2>>}}, Annotation[<<3>>]}, {<<7>>}], <<14>>], <<1>>], <<1>>], Placed[<<3>>]]"
 }

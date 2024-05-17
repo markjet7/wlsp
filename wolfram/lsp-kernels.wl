@@ -902,7 +902,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 		(
 			response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
 			If[response === $Failed, response = "Failed"];
-			If[ByteCount[response] > 1*^6, 
+			If[ByteCount[response] > 1*^4, 
 				Print@"Output too large to display",
 				Print[response];
 			];
