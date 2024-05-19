@@ -696,6 +696,7 @@ function onRunInWolframIO(result) {
     updateResults(e, { params: result }, result["print"], result["input"]);
 }
 let evaluationResults = {};
+let now = Date.now();
 function onRunInWolfram(file) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
@@ -720,6 +721,7 @@ function onRunInWolfram(file) {
         }
         else {
             // inputs.push(file["input"])
+            now = Date.now();
             updateResults(e, result, result["params"]["print"], file["input"], file);
         }
         if (evaluationQueue.length > 0) {
@@ -805,109 +807,117 @@ function updateInputs(params) {
     plotsProvider.newInput(params["input"]);
 }
 function updateResults(e, result, print, input = "", file = "") {
-    if (typeof (e) !== "undefined") {
-        e.edit(editBuilder => {
-            var _a, _b, _c, _d;
-            let output;
-            let rawoutput;
-            if (result["params"]["load"]) {
-                output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
-                rawoutput = output;
-            }
-            else {
-                // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
-                // output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
-                output = `${result["params"]["output"]}`;
-                rawoutput = output;
-                ;
-            }
-            if (result["params"]["messages"].length > 0) {
-                output += "<div id='errors'>" +
-                    result["params"]["messages"].reduce((acc, cur) => {
-                        return acc + "<br>" + cur;
-                    }, "") +
-                    "</div>";
-            }
-            if (printResults.length > maxPrintResults) {
-                printResults.shift();
-            }
-            let inputSnippet = input;
-            if (input.length > 1000) {
-                inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
-            }
-            let outputSnippet = output;
-            // if (output.length > 2000 && !output.includes("<img")) {
-            //     outputSnippet = output.slice(0, 500) + " ... " + output.slice(-500);
-            // }
-            if (!output.includes("<img")) {
-                outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
-            }
-            // let out = console_outputs.pop();
-            // printResults.push(out);
-            // showOutput();
-            let backgroundColor = "editorInfo.background";
-            let foregroundColor = "editorInfo.foreground";
-            let hoverMessage = output; // result["params"]["output"];
-            // is <img> tags in hoverMessage string
-            if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
-                hoverMessage = "Large output: " + hoverMessage.substring(0, 100) + "...";
-            }
-            if (result["params"]["messages"].length > 0) {
-                backgroundColor = "red";
-                hoverMessage += "\n" + result["params"]["messages"];
-            }
-            let resultString = result["params"]["time"].toString().slice(0, 5) + " s: " + rawoutput;
-            if (resultString.length > 300) {
-                resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
-            }
-            let nextline = result["params"]["position"]["line"] - 1;
-            if (nextline >= e.document.lineCount) {
-                nextline = e.document.lineCount - 1;
-            }
-            let startChar = e.document.lineAt(nextline).range.end.character;
-            if (print) {
-                let sel = e.selection;
-                let outputPosition = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
-                try {
-                    editBuilder.insert(outputPosition, (rawoutput + "\n\n").slice(0, 8192));
-                }
-                catch (error) {
-                    console.log("Error: " + error);
-                }
-            }
-            let decoration = {
-                "range": new vscode.Range(nextline, startChar + 10, nextline, startChar + 200),
-                "renderOptions": {
-                    "after": {
-                        "contentText": " " + resultString,
-                        "backgroundColor": new vscode.ThemeColor("editorInfo.background"),
-                        "color": new vscode.ThemeColor("editorInfo.foreground"),
-                        "margin": "10px 10px 10px 10px",
-                        "border": "4px solid blue",
-                        "textDecoration": "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
+    return __awaiter(this, void 0, void 0, function* () {
+        if (typeof (e) !== "undefined") {
+            e.edit(editBuilder => {
+                var _a, _b, _c, _d;
+                let output;
+                let rawoutput;
+                if (result["params"]["load"]) {
+                    output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
+                    outputChannel.appendLine("Time to read file: " + (Date.now() - now) + " ms");
+                    if (output === '') {
+                        output = " ";
                     }
-                },
-                "hoverMessage": hoverMessage
-            };
-            let h = new vscode.MarkdownString(decoration.hoverMessage, false);
-            h.isTrusted = true;
-            h.supportHtml = true;
-            decoration.hoverMessage = h;
-            for (let i = 0; i < ((_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : []).length; i++) {
-                const d = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : [])[i];
-                if (d.range.start.line == result["params"]["position"]["line"] - 1) {
-                    ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []).splice(i, 1);
+                    rawoutput = output;
                 }
-            }
-            if (editorDecorations.get(e.document.uri.toString()) == undefined) {
-                editorDecorations.set(e.document.uri.toString(), []);
-            }
-            (_d = editorDecorations.get(e.document.uri.toString())) === null || _d === void 0 ? void 0 : _d.push(decoration);
-            e.setDecorations(variableDecorationType, editorDecorations.get(e.document.uri.toString()));
-            plotsProvider.newOutput(outputSnippet);
-        });
-    }
-    ;
+                else {
+                    // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
+                    // output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
+                    output = `${result["params"]["output"]}`;
+                    rawoutput = output;
+                    ;
+                }
+                if (result["params"]["messages"].length > 0) {
+                    output += "<div id='errors'>" +
+                        result["params"]["messages"].reduce((acc, cur) => {
+                            return acc + "<br>" + cur;
+                        }, "") +
+                        "</div>";
+                }
+                if (printResults.length > maxPrintResults) {
+                    printResults.shift();
+                }
+                let inputSnippet = input;
+                if (input.length > 1000) {
+                    inputSnippet = input.slice(0, 250) + "..." + input.slice(-250);
+                }
+                let outputSnippet = output;
+                // if (output.length > 2000 && !output.includes("<img")) {
+                //     outputSnippet = output.slice(0, 500) + " ... " + output.slice(-500);
+                // }
+                if (!output.includes("<img")) {
+                    outputChannel.appendLine(result["params"]["result"].slice(0, 8192));
+                }
+                // let out = console_outputs.pop();
+                // printResults.push(out);
+                // showOutput();
+                let backgroundColor = "editorInfo.background";
+                let foregroundColor = "editorInfo.foreground";
+                let hoverMessage = output; // result["params"]["output"];
+                // is <img> tags in hoverMessage string
+                if (hoverMessage.length > 8192 && !hoverMessage.includes("<img")) {
+                    hoverMessage = "Large output: " + hoverMessage.substring(0, 100) + "...";
+                }
+                if (result["params"]["messages"].length > 0) {
+                    backgroundColor = "red";
+                    hoverMessage += "\n" + result["params"]["messages"];
+                }
+                let resultString = result["params"]["time"].toString().slice(0, 5) + " s: " + rawoutput;
+                if (resultString.length > 300) {
+                    resultString = resultString.slice(0, 100) + "..." + resultString.slice(-100);
+                }
+                let nextline = result["params"]["position"]["line"] - 1;
+                if (nextline >= e.document.lineCount) {
+                    nextline = e.document.lineCount - 1;
+                }
+                let startChar = e.document.lineAt(nextline).range.end.character;
+                plotsProvider.newOutput(outputSnippet);
+                outputChannel.appendLine("Time to update plots: " + (Date.now() - now) + " ms");
+                if (print) {
+                    let sel = e.selection;
+                    let outputPosition = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
+                    try {
+                        editBuilder.insert(outputPosition, (rawoutput + "\n\n").slice(0, 8192));
+                    }
+                    catch (error) {
+                        console.log("Error: " + error);
+                    }
+                }
+                let decoration = {
+                    "range": new vscode.Range(nextline, startChar + 10, nextline, startChar + 200),
+                    "renderOptions": {
+                        "after": {
+                            "contentText": " " + resultString,
+                            "backgroundColor": new vscode.ThemeColor("editorInfo.background"),
+                            "color": new vscode.ThemeColor("editorInfo.foreground"),
+                            "margin": "10px 10px 10px 10px",
+                            "border": "4px solid blue",
+                            "textDecoration": "none; white-space: pre; border-top: 0px; border-right: 0px; border-bottom: 0px; border-radius: 2px"
+                        }
+                    },
+                    "hoverMessage": hoverMessage
+                };
+                let h = new vscode.MarkdownString(decoration.hoverMessage, false);
+                h.isTrusted = true;
+                h.supportHtml = true;
+                decoration.hoverMessage = h;
+                for (let i = 0; i < ((_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : []).length; i++) {
+                    const d = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : [])[i];
+                    if (d.range.start.line == result["params"]["position"]["line"] - 1) {
+                        ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []).splice(i, 1);
+                    }
+                }
+                if (editorDecorations.get(e.document.uri.toString()) == undefined) {
+                    editorDecorations.set(e.document.uri.toString(), []);
+                }
+                (_d = editorDecorations.get(e.document.uri.toString())) === null || _d === void 0 ? void 0 : _d.push(decoration);
+                e.setDecorations(variableDecorationType, editorDecorations.get(e.document.uri.toString()));
+                outputChannel.appendLine("Time to update decorations: " + (Date.now() - now) + " ms");
+            });
+        }
+        ;
+    });
 }
 function runExpression(expression, line, end) {
     let e = (vscode.window.activeTextEditor == null) ? vscode.window.visibleTextEditors[0] : vscode.window.activeTextEditor;

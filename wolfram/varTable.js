@@ -1,3 +1,3 @@
 {
-	"p1":"Legended[Legended[Legended[GeoGraphics[Graphics[{{Annotation[Style[Polygon[{{<<2>>}, <<3>>, {<<2>>}}], <<1>>], <<2>>], {<<2>>}}, Annotation[<<3>>]}, {<<7>>}], <<14>>], <<1>>], <<1>>], Placed[<<3>>]]"
+	"states":"{Polygon[Entity[\"AdministrativeDivision\", {\"Alabama\", \"UnitedStates\"}]], Polygon[Entity[<<2>>]], Polygon[<<1>>], <<47>>, Polygon[Entity[\"AdministrativeDivision\", {\"Wyoming\", \"UnitedStates\"}]]}"
 }

@@ -210,41 +210,31 @@ transformsIO[output_, errors_]:=Module[{out},
 	];
 
 	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
-];i
+];
 
-transformsCell[output_, errors_]:=Module[{out, file},
+lowerResolution =.;
+lowerResolution[g_]:=Rasterize[g, ImageResolution->72];
+(*lowerResolution[g_Graphics]:=g;*)
 
-	(*
-	If[ByteCount[output] > 100*^7,
-		out ="<img src=\"data:image/png;base64," <> ExportString[Rasterize[Short[output, 10], RasterSize->15*72], {"Base64", "PNG"}] <> 	"\" />" <> "<br><img src=\"data:image/png;base64," <> ExportString[Rasterize[Replace[errors, {}->""]], {"Base64", "PNG"}] <> 	"\" />";
-		Return[out]
-	];
-	*)
-
+transformsCell[output_, errors_]:=Module[{out, file, processed},
+	now = Now;
 	file = CreateFile[];
 
-	(*
-	If[ByteCount[output] > 100*^7,
-		out = ExportString[
-			"Large output. Memory Size: "<> ToString[ByteCount[output]/1*^6] <> " MB",
-			"HTMLFragment", "GraphicsOutput"->Automatic
-		];
-		Return[out]
-	];
-	*)
+	processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
+
 
 	out = If[Length@errors > 1, 
 		Export[
 			file,
 			Column@{
-				output,
+				processed,
 				errors /. {} -> ""},
 			"HTMLFragment", 
 			"GraphicsOutput"->"SVG"
 		],
 		Export[
 			file,
-			output, 
+			processed, 
 			"HTMLFragment", 
 			"GraphicsOutput"->"SVG"
 		]

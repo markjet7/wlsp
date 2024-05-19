@@ -846,6 +846,7 @@ function onRunInWolframIO(result: any) {
 }
 
 let evaluationResults: { [key: string]: string } = {}
+let now = Date.now();
 function onRunInWolfram(file: any) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
@@ -874,6 +875,7 @@ function onRunInWolfram(file: any) {
 
         } else {
             // inputs.push(file["input"])
+            now = Date.now();
             updateResults(e, result, result["params"]["print"], file["input"], file);
         }
 
@@ -964,7 +966,7 @@ function updateInputs(params: any) {
     plotsProvider.newInput(params["input"])
 }
 
-function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file: any = "") {
+async function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file: any = "") {
 
     if (typeof (e) !== "undefined") {
         e.edit(editBuilder => {
@@ -974,6 +976,10 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             let rawoutput;
             if (result["params"]["load"]) {
                 output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
+                outputChannel.appendLine("Time to read file: " + (Date.now() - now) + " ms");
+                if (output === '')  {
+                    output = " ";
+                }
                 rawoutput = output;
             } else {
                 // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
@@ -1034,6 +1040,9 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             }
             let startChar = e.document.lineAt(nextline).range.end.character;
 
+            plotsProvider.newOutput(outputSnippet);
+            outputChannel.appendLine("Time to update plots: " + (Date.now() - now) + " ms");
+
             if (print) {
                 let sel: vscode.Selection = e!.selection;
                 let outputPosition: vscode.Position = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
@@ -1069,6 +1078,7 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             h.supportHtml = true;
             decoration.hoverMessage = h;
 
+
             for (let i = 0; i < (editorDecorations.get(e.document.uri.toString()) ?? []).length; i++) {
                 const d = (editorDecorations.get(e.document.uri.toString()) ?? [])[i];
                 if (d.range.start.line == result["params"]["position"]["line"] - 1) {
@@ -1086,7 +1096,8 @@ function updateResults(e: vscode.TextEditor | undefined, result: any, print: boo
             e.setDecorations(variableDecorationType,
                 editorDecorations.get(e.document.uri.toString())!);
 
-            plotsProvider.newOutput(outputSnippet)
+            outputChannel.appendLine("Time to update decorations: " + (Date.now() - now) + " ms");
+
         })
     };
 

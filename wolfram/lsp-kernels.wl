@@ -378,9 +378,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			|>|>],
 
 		True,
-		(*sendResponse[<|"method"->"onRunInWolfram", "params" -> <|
-		"input" -> string,
-		"file"->ToString@file|>|>]*)
 		sendResponse[response]
 	];
 
