@@ -1,5 +1,7 @@
 // @ts-check
 
+// import all the transform function s
+import { processArray } from './transform.js';
 // Script run within the webview itself.
 (function () {
 
@@ -8,6 +10,7 @@
 
 	// @ts-ignore
 	const vscode = acquireVsCodeApi();
+
 
 
 	const notesContainer = /** @type {HTMLElement} */ (document.querySelector('.notes'));
@@ -58,6 +61,8 @@
 				// Then persist state information.
 				// This state is returned in the call to `vscode.getState` below when a webview is reloaded.
 				vscode.setState({ text });
+
+				
 
 				return;
 		}

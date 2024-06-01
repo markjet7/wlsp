@@ -1,0 +1,26 @@
+/* CSS */
+.column {
+    display: flex;
+    flex-direction: column;
+}
+
+.column > .list {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+.list > .list {
+    margin-left: 20px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row > .list {
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+}

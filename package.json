@@ -27,7 +27,7 @@
         "configuration": {
             "title": "WLSP",
             "properties": {
-                "wlsp.liveDocument": {      
+                "wlsp.liveDocument": {
                     "type": "boolean",
                     "description": "Enable live document",
                     "default": false
@@ -437,10 +437,10 @@
     },
     "typings": "vscode.d.ts",
     "devDependencies": {
+        "@types/d3": "^7.4.3",
         "@types/glob": "^7.1.1",
         "@types/mocha": "^7.0.2",
         "@types/node": "^13.13.15",
-        "@types/vscode": "^1.76.0",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",
         "eslint": "^6.8.0",
@@ -461,6 +461,7 @@
         "abort-controller": "^3.0.0",
         "await-notify": "^1.0.1",
         "bson": "^4.4.0",
+        "d3": "6.7.0",
         "find-free-port": "^2.0.0",
         "open": "7.1.0",
         "ps-tree": "^1.2.0",

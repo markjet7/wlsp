@@ -850,7 +850,8 @@ let now = Date.now();
 function onRunInWolfram(file: any) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
-
+    
+    
     // wolframBusyQ = false;
     wolframStatusBar.text = wolframVersionText;
     wolframStatusBar.show();
