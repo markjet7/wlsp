@@ -295,8 +295,8 @@ export class PlotsViewProvider implements WebviewViewProvider {
         </head>
         <body onload="loaded()">
             <div class="outer">
-                <div class="svgarea" style="height:20vh; width:95vw;">
-                    <svg id="mysvg" width="100", height="100"></svg>
+                <div class="svgarea">
+                    <svg id="mysvg"></svg>
                 </div>
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>

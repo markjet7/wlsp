@@ -8,3 +8,4 @@ wolfram/varTable.js
 wolfram/cursorLocations.js
 *.vsix
 *.vsix
+.ds_store

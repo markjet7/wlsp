@@ -8,14 +8,15 @@ function processArray(array, parentSelection = undefined) {
   var selection;
 
   if (!parentSelection) {
+
+    console.error("No parent selection found");
     parentSelection = d3.select("#mysvg");
+    return;
   }
 
   if (!parentSelection) {
-    console.error("No parent selection found");
-    return;
   }
-  console.log("Parent", parentSelection, typeof(parentSelection));
+  console.log("Parent", parentSelection, typeof parentSelection);
 
   switch (tag) {
     case "Graphics":
@@ -33,13 +34,12 @@ function processArray(array, parentSelection = undefined) {
     default:
       break;
   }
-
   return selection;
 }
 
 function createGraphics(parentSelection, children) {
-    console.log("createGraphics", parentSelection);
-  let selection = parentSelection.append("svg:g").attr("class", "graphics");
+  console.log("createGraphics", parentSelection);
+  let selection = parentSelection.append("g").attr("class", "graphics");
 
   children.forEach((child) => {
     if (Array.isArray(child) && typeof child[0] === "string") {
@@ -50,48 +50,60 @@ function createGraphics(parentSelection, children) {
 }
 
 function createDisk(parentSelection, children) {
-  try {
-    const selection = parentSelection
-      .append("circle")
-      .attr("class", "disk")
-      .attr("cx", children[0][1])
-      .attr("cy", children[0][2])
-      .attr("r", children[1])
-      .style("fill", "red")
+  let cx = 100,
+    cy = 100,
+    r = 10;
 
-    return selection;
-  } catch (error) {
-    console.log("Error: ", error);
-    const selection = parentSelection
-      .append("circle")
-      .attr("class", "disk")
-      .attr("cx", 100)
-      .attr("cy", 100)
-      .attr("r", 10)
-      .style("fill", "red")
-    return selection;
+  if (
+    children &&
+    children.length > 1 &&
+    Array.isArray(children[0]) &&
+    children[0].length > 2
+  ) {
+    cx = children[0][1];
+    cy = children[0][2];
+    r = children[1];
   }
+
+  return parentSelection
+    .append("circle")
+    .attr("class", "disk")
+    .attr("cx", cx)
+    .attr("cy", cy)
+    .attr("r", r)
+    .style("fill", "red");
 }
 
 function createList(parentSelection, children) {
   const selection = parentSelection;
 
-  // Append text elements for each list item
-  children.forEach((child, index) => {
-    if (typeof child === "string" || typeof child === "number") {
-      selection
-        .append("text")
-        .attr("class", "list-item")
-        .attr("x", 0)
-        .attr("y", index * 20)
-        .text(child);
-    }
+  // Check if all children are strings or numbers
+  const allText = children.every(
+    (child) => typeof child === "string" || typeof child === "number"
+  );
 
-    // check if child is a nested array
-    if (Array.isArray(child) && typeof child[0] === "string") {
-      processArray(child, selection);
-    }
-  });
+  // Append text elements for each list item
+  if (allText) {
+    let text = children.reduce((acc, child) => acc + child + ", ", "");
+    selection.append("text").attr("class", "list-item").text(text);
+    return selection;
+  } else {
+    children.forEach((child, index) => {
+      if (typeof child === "string" || typeof child === "number") {
+        selection
+          .append("text")
+          .attr("class", "list-item")
+          .attr("x", 0)
+          .attr("y", index * 20)
+          .text(child);
+      }
+
+      // check if child is a nested array
+      if (Array.isArray(child) && typeof child[0] === "string") {
+        processArray(child, selection);
+      }
+    });
+  }
 
   return selection;
 }
@@ -149,11 +161,11 @@ function createList(parentSelection, children) {
   var lastInput = "";
   window.addEventListener("message", (event) => {
     // console.log("onRunInWolfram")
-    const svg = d3.select("svg");
-    console.log(
-      "onRunInWolfram",
-      processArray(["Graphics", ["Disk", ["List", 0, 0], 100]], svg)
-    );
+    // const svg = d3.select("svg");
+    // console.log(
+    //   "onRunInWolfram",
+    //   processArray(["Graphics", ["Disk", ["List", 0, 0], 100]], svg)
+    // );
     const message = event.data;
 
     if ("command" in message && message.command === "clear") {
@@ -182,6 +194,7 @@ function createList(parentSelection, children) {
     }
 
     if (message.output.length > 0) {
+
       outputDiv.innerHTML = outputDiv.innerHTML.replace(
         '<div class="output_row">Loading...</div>',
         '<div class="output_row">' +
@@ -194,6 +207,27 @@ function createList(parentSelection, children) {
           message.output +
           "`)'>Insert</button><br>"
       );
+      var output = d3.selectAll(".output_row").selection()._groups[0][0];
+      console.log("output", output);
+      var selection = processArray(["Graphics", ["Disk", ["List", 0, 0], 100]], output);
+        // Center and fit all elements in the parent selection
+
+  const bbox = selection.node().getBBox();
+  const width = bbox.width;
+  const height = bbox.height;
+  const x = bbox.x;
+  const y = bbox.y;
+  const parentWidth = output.node().getBBox().width;
+  const parentHeight = output.node().getBBox().height;
+
+  const scale = Math.min(parentWidth / width, parentHeight / height);
+  const translateX = (parentWidth - width * scale) / 2 - x * scale;
+  const translateY = (parentHeight - height * scale) / 2 - y * scale;
+  selection.attr(
+    "transform",
+    `translate(${translateX}, ${translateY}) scale(${scale})`
+  );
+
       // + outputDiv.innerHTML;
       // outputDiv.innerHTML = lastInput;
     }
