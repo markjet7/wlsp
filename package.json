@@ -17,7 +17,7 @@
         "Programming Languages"
     ],
     "main": "./dist/extension",
-    "activationEvents": [],
+    "activationEvents": ["onLanguage:wolfram"],
     "contributes": {
         "capabilities": {
             "untrustedWorkspaces": {
