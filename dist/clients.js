@@ -649,8 +649,10 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                 // console.log(wolframKernelClient?.state)
                 outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"]);
                 if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) !== 2) {
-                    vscode.window.showInformationMessage("Kernel is not running... restarting");
+                    vscode.window.showInformationMessage("Kernel is not running (" + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) + ")  restarting");
                     yield restartKernel().then(() => {
+                        vscode.window.showInformationMessage("Kernel restarted (" + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) + ")");
+                        outputChannel.appendLine("Kernel restarted (" + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) + ")");
                         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
                         }).catch((err) => {
                             console.log("Error in runInWolfram");

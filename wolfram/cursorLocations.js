@@ -1,5 +1,5 @@
 {
-	"file:\/\/\/System\/Volumes\/Data\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/Optimization\/maps.wl":[
+	"file:\/\/\/System\/Volumes\/Data\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/Optimization\/maps.wl":[
 		{
 			"start":{
 				"line":0,
@@ -258,6 +258,36 @@
 			"end":{
 				"line":121,
 				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":123,
+				"character":0
+			},
+			"end":{
+				"line":123,
+				"character":9
+			}
+		},
+		{
+			"start":{
+				"line":124,
+				"character":0
+			},
+			"end":{
+				"line":124,
+				"character":34
+			}
+		},
+		{
+			"start":{
+				"line":126,
+				"character":0
+			},
+			"end":{
+				"line":126,
+				"character":24
 			}
 		}
 	]

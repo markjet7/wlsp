@@ -137,7 +137,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
             .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
             // .replace(`<?xml version="1.0" encoding="UTF-8"?>`,"");
-        console.log(img)
+        // console.log(img)
 
         this._view?.webview.postMessage({
             text: [],
@@ -159,6 +159,11 @@ export class PlotsViewProvider implements WebviewViewProvider {
         const d3Uri = getUri(webview, extensionUri, [
             "media",
             "d3.min.js"
+        ]);
+
+        const graphicToSVG = getUri(webview, extensionUri, [
+            "media",
+            "graphicToSVG.js"
         ]);
        
         let result = `<!DOCTYPE html>
@@ -288,6 +293,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             /> 
 
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script src="${graphicToSVG}"></script>
             <script type="module" src="${toolkitUri}"></script>
             <script type="module" src="${transformUri}"></script>
             <script src="${d3Uri}"></script>

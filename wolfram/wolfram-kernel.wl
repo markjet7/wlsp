@@ -133,7 +133,7 @@ connectWithExponentialRetry[]:=Module[{i=0},
 		connected2 = !MatchQ[KERNELSERVER, $Failed];
 		If[i > 10, Quit[]];
 		If[!connected2,
-			Pause[Min[2^i, 60]];
+			Pause[Min[2^i, 10]];
 		]
 	];
 
@@ -147,9 +147,23 @@ connectWithExponentialRetry[]:=Module[{i=0},
 	];
 ];
 
+
+Print["Connecting to kernel..."];
+KERNELSERVER=SocketOpen[kernelport,"TCP"];
+If[KERNELSERVER === $Failed, Print["Cannot start tcp KERNELSERVER."]; Quit[1]];
+
+Print["Kernel ", KERNELSERVER, ": ", kernelport];
+
+Block[{$IterationLimit = Infinity}, 
+	CheckAbort[
+		socketHandler[state],
+		Print["Kernel aborted"]; Quit[1];
+	];
+];
+(*
 connectWithExponentialRetry[];
 
-(*
+
 Check[
 	KERNELSERVER=SocketOpen[kernelport,"TCP"];
 	Replace[KERNELSERVER,{$Failed:>(Print["Cannot start tcp KERNELSERVER."];Quit[1])}];,

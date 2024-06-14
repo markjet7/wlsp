@@ -220,6 +220,7 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 	now = Now;
 	file = CreateFile[];
 
+	
 	processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
 
 
@@ -239,5 +240,16 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 			"GraphicsOutput"->"SVG"
 		]
 	];
+	(*
+	out
+	out = Export[
+		file,
+		Column@{
+			output, 
+			errors},
+		"ExpressionJSON",
+		"Compact"->True
+	];
+	*)
 	out
 ];

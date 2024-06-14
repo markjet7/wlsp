@@ -792,8 +792,11 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
             outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
 
             if (wolframKernelClient?.state !== 2) {
-                vscode.window.showInformationMessage("Kernel is not running... restarting")
+                vscode.window.showInformationMessage("Kernel is not running (" + wolframKernelClient?.state + ")  restarting")
                 await restartKernel().then(() => {
+                    vscode.window.showInformationMessage("Kernel restarted (" + wolframKernelClient?.state + ")")
+                    outputChannel.appendLine("Kernel restarted (" + wolframKernelClient?.state + ")")
+
                     wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
                     }).catch((err) => {
                         console.log("Error in runInWolfram")

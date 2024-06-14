@@ -214,13 +214,17 @@ function startWLSPKernelSocket(id, path) {
                     // }, 500)
                 }));
                 fp(kernelPort).then(([freePort]) => __awaiter(this, void 0, void 0, function* () {
+                    if (wolframKernel) {
+                        outputChannel.appendLine("Killing kernel process: " + wolframKernel.pid);
+                        yield stopWolfram(undefined, wolframKernel);
+                    }
+                    outputChannel.appendLine("Wolfram Kernel status: " + (wolframKernel === null || wolframKernel === void 0 ? void 0 : wolframKernel.pid));
                     yield load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r) => {
                         wolframKernel = r;
-                        setTimeout(() => {
-                            socket.connect(kernelPort, "127.0.0.1", () => {
-                                outputChannel.appendLine("Kernel Socket connected");
-                            });
-                        }, 2000);
+                        socket.connect(kernelPort, "127.0.0.1", () => {
+                            outputChannel.appendLine("Kernel Socket connected");
+                            kernelConnecting = false;
+                        });
                     });
                 }));
             }));
@@ -392,73 +396,101 @@ function load(wolfram, path, port, outputChannel) {
 }
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
-        stop();
-        // sleep for 1 second to allow the kernel to shut down
-        yield new Promise(resolve => setTimeout(resolve, 2000));
-        kernelConnecting = false;
-        startWLSP(0, lspPath);
-        startWLSPKernelSocket(0, kernelPath);
-        return new Promise((resolve) => {
-            resolve([exports.wolframClient, exports.wolframKernelClient]);
+        return stop().then(() => {
+            kernelConnecting = false;
+            startWLSP(0, lspPath);
+            return startWLSPKernelSocket(0, kernelPath).then(() => {
+                return new Promise((resolve) => {
+                    resolve([exports.wolframClient, exports.wolframKernelClient]);
+                });
+            });
         });
     });
 }
 exports.restart = restart;
 function restartKernel() {
     return __awaiter(this, void 0, void 0, function* () {
-        stopKernel();
-        yield new Promise(resolve => setTimeout(resolve, 2000));
-        kernelConnecting = false;
-        startWLSPKernelSocket(0, kernelPath);
-        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            resolve(exports.wolframKernelClient);
-        }));
+        return stopKernel().then(() => {
+            kernelConnecting = false;
+            return startWLSPKernelSocket(0, kernelPath).then(() => {
+                return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+                    resolve(exports.wolframKernelClient);
+                }));
+            });
+        });
     });
 }
 exports.restartKernel = restartKernel;
 function stop() {
     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("Shutdown");
     exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("Shutdown");
-    kill(wolfram.pid);
-    kill(wolframKernel.pid);
-    return;
+    return new Promise((resolve) => {
+        kill(wolfram.pid).then(() => {
+            kill(wolframKernel.pid).then(() => {
+                resolve();
+            });
+        });
+    });
 }
 exports.stop = stop;
 function stopKernel() {
-    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("Shutdown");
-    kill(wolframKernel.pid);
-    return;
+    return new Promise((resolve) => {
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("Shutdown");
+        if (wolframKernel) {
+            outputChannel.appendLine("STOP: Killing kernel process: " + wolframKernel.pid);
+            kill(wolframKernel.pid).then(() => {
+                resolve();
+            });
+        }
+        else {
+            console.log("STOP: Kernel process not found");
+            resolve();
+        }
+    });
 }
 let kill = function (pid) {
     let signal = 'SIGKILL';
-    let callback = function () { };
     var killTree = false;
-    if (killTree) {
-        psTree(pid, function (err, children) {
-            [pid].concat(children.map(function (p) {
-                return p.PID;
-            })).forEach(function (pid) {
-                try {
-                    process.kill(pid, signal);
-                }
-                catch (ex) {
-                    console.log("Failed to kill: " + pid);
-                    console.log(ex.message);
-                }
-            });
-            callback();
-        });
-    }
-    else {
+    return new Promise((resolve, reject) => {
         try {
             process.kill(pid, signal);
+            resolve();
         }
         catch (ex) {
-            console.log("Failed to kill wolfram process");
+            outputChannel.appendLine("Failed to kill wolfram process");
+            reject(ex);
         }
-        callback();
-    }
+    });
 };
+// let kill = function (pid: any) {
+//     let signal = 'SIGKILL';
+//     let callback = function () { };
+//     var killTree = false;
+//     if (killTree) {
+//         psTree(pid, function (err: any, children: any) {
+//             [pid].concat(
+//                 children.map(function (p: any) {
+//                     return p.PID;
+//                 })
+//             ).forEach(function (pid) {
+//                 try { process.kill(pid, signal); }
+//                 catch (ex) {
+//                     console.log("Failed to kill: " + pid)
+//                     console.log((ex as Error).message)
+//                 }
+//             });
+//             callback();
+//         });
+//     } else {
+//         try { 
+//             process.kill(pid, signal); 
+//         }
+//         catch (ex) {
+//             console.log("Failed to kill wolfram process")
+//         }
+//         callback();
+//     }
+// };
 class ClientErrorHandler {
     error(error, message, count) {
         console.log("Error: " + error.message);
