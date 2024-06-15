@@ -12,7 +12,7 @@ import * as cp from 'child_process';
 import { EEXIST } from 'constants';
 const fs = require('fs')
 
-let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
+export let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
 let context:vscode.ExtensionContext;
 
 import {startLanguageServer} from './clients'

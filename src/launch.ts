@@ -17,7 +17,7 @@ import {
     ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
 } from 'vscode-LanguageClient/node';
 
-let outputChannel = vscode.window.createOutputChannel('wolf-lsp');
+import { outputChannel } from "./extension"
 let context: vscode.ExtensionContext;
 
 let clientPort: number = 37800;
@@ -159,8 +159,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
     let timeout: any;
     kernelPath = path;
     if (kernelConnecting) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return undefined
+        return new Promise(resolve => setTimeout(resolve, 1));
     }
     kernelConnecting = true;
     let serverOptions: ServerOptions = function () {
@@ -252,7 +251,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                     outputChannel.appendLine("Killing kernel process: " + wolframKernel.pid)
                     await stopWolfram(undefined, wolframKernel)
                 }
-                
+
                 outputChannel.appendLine("Wolfram Kernel status: " + wolframKernel?.pid)
 
                 await load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
@@ -448,7 +447,7 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
                 outputChannel.appendLine("WLSP: " + data.toString())
 
                 if (data.toString().includes("SocketObject")) {
-                    setTimeout(() => { resolve(wolfram) }, 1000)
+                    setTimeout(() => { resolve(wolfram) }, 10)
                 }
 
                 // vscode.window.showInformationMessage(data.toString().slice(0, 1000))
@@ -464,59 +463,71 @@ async function load(wolfram: cp.ChildProcess, path: string, port: number, output
 }
 
 export async function restart(): Promise<(LanguageClient | undefined)[]> {
-    return stop().then(() => {
-        kernelConnecting = false;
+    await stop()
+    kernelConnecting = false;
 
-        startWLSP(0, lspPath);
-        return startWLSPKernelSocket(0, kernelPath).then(() => {
+    await startWLSP(0, lspPath);
+    await startWLSPKernelSocket(0, kernelPath)
 
-            return new Promise((resolve) => {
-                resolve([wolframClient, wolframKernelClient])
-            })
-        });
+    return new Promise((resolve) => {
+        resolve([wolframClient, wolframKernelClient])
     });
 }
 
 export async function restartKernel(): Promise<LanguageClient | undefined> {
-    return stopKernel().then(() => {
-
-        kernelConnecting = false;
-
-        return startWLSPKernelSocket(0, kernelPath).then(() => {
-            return new Promise(async (resolve) => {
-                resolve(wolframKernelClient);
-            });
-        })
-    });
-}
-
-export function stop(): Promise<void> {
-    wolframKernelClient?.sendNotification("Shutdown");
-    wolframClient?.sendNotification("Shutdown");
-
-    return new Promise((resolve) => {
-        kill(wolfram.pid).then(() => {
-            kill(wolframKernel.pid).then(() => {
-                resolve();
-            })
+    if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
+        return new Promise((resolve) => {
+            resolve(wolframKernelClient)
         });
-    });
+    }
 
+    if (wolframKernelClient) {
+        wolframKernelClient?.stop();
+    }
+    await stopKernel();
+
+    kernelConnecting = false;
+
+    await startWLSPKernelSocket(0, kernelPath);
+
+    return wolframKernelClient;
 }
 
-function stopKernel(): Promise<void> {
+export async function stop(): Promise<void> {
+    // wolframKernelClient?.sendNotification("Shutdown");
+    // wolframClient?.sendNotification("Shutdown");
+
+    console.log("Stopping Wolfram Clients")
+    wolframKernelClient?.stop();
+    wolframClient?.stop();
+
+    console.log("Stopping Wolfram Processes")
+    await kill(wolfram.pid);
+    await kill(wolframKernel.pid);
+    console.log("Wolfram Processes Stopped")
+
     return new Promise((resolve) => {
-        wolframKernelClient?.sendNotification("Shutdown");
+        resolve();
+    });
+}
+
+async function stopKernel(): Promise<void> {
+    outputChannel.appendLine("STOP: Stopping kernel")
+    outputChannel.appendLine("Wolfram Kernel Client Status: " + wolframKernelClient?.state)
+    return wolframKernelClient?.stop().then(async () => {
+
         if (wolframKernel) {
             outputChannel.appendLine("STOP: Killing kernel process: " + wolframKernel.pid)
-            kill(wolframKernel.pid).then(() => {
-                resolve();
-            });
+            await kill(wolframKernel.pid)
+            outputChannel.appendLine("Kernel process killed")
         } else {
-            console.log("STOP: Kernel process not found")
-            resolve();
+            outputChannel.appendLine("Kernel process not found")
         }
-    });
+
+        return new Promise(async (resolve): Promise<any> => {
+            resolve();
+        });
+    })
 }
 
 
@@ -530,7 +541,7 @@ let kill = function (pid: any): Promise<void> {
             resolve();
         } catch (ex) {
             outputChannel.appendLine("Failed to kill wolfram process");
-            reject(ex);
+            resolve();
         }
     });
 };

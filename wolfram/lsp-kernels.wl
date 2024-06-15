@@ -495,9 +495,10 @@ handle["updateConfiguration", json_]:=Module[{messageHandler},
 	messageHandler = If[Last[#], 
 		Abort[];Exit[1]
 		] &;
+
 	If[json["params", "abortOnError"],
-		Internal`AddHandler["Message", messageHandler];,
-		Internal`RemoveHandler["Message", messageHandler]
+		Quiet@Internal`AddHandler["Message", messageHandler];,
+		Quiet@Internal`RemoveHandler["Message", messageHandler];
 	]
 ];
 

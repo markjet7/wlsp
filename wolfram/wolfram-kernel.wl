@@ -149,8 +149,8 @@ connectWithExponentialRetry[]:=Module[{i=0},
 
 
 Print["Connecting to kernel..."];
-KERNELSERVER=SocketOpen[kernelport,"TCP"];
-If[KERNELSERVER === $Failed, Print["Cannot start tcp KERNELSERVER."]; Quit[1]];
+KERNELSERVER=SocketOpen[kernelport,"TCP"]
+If[FailureQ[KERNELSERVER], Print["Cannot start tcp KERNELSERVER."]; Quit[]];
 
 Print["Kernel ", KERNELSERVER, ": ", kernelport];
 
