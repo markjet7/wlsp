@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.75",
+    "version": "0.0.77",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -63,7 +63,6 @@
             }
         },
         "configurationDefaults": {
-            "editor.semanticHighlighting.enabled": true,
             "[wolfram]": {
                 "editor.semanticHighlighting.enabled": true
             },
