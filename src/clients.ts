@@ -35,6 +35,7 @@ import { WolframScriptController } from './scriptController';
 import { workspaceSymbolProvider } from './treeDataProvider';
 import { DataViewProvider } from './dataPanel';
 import { PlotsViewProvider } from './plotsView';
+import { send } from 'process';
 
 // let wolfram: cp.ChildProcess;
 // let wolframKernel: cp.ChildProcess;
@@ -375,18 +376,6 @@ function pulse() {
             ).catch(error => {
                 console.log(error)
                 outputChannel.appendLine("The Wolfram kernel has not responded in >2 minutes")
-
-                // vscode.window.showWarningMessage("The Wolfram kernel has not responded in >10 minutes. Would you like to restart it?",
-                //     "Yes", "No").then((result) => {
-                //         if (result === "Yes") {
-                //             restart()
-                //         }
-                //         if (result === "No") {
-                //             setTimeout(pulse, 1000 * 60 * 10)
-                //         } else {
-
-                //         }
-                //     })
             })
 
 
@@ -746,6 +735,7 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
 }
 
 let evaluationQueue: any[] = [];
+let sendToWolframRetry = 0;
 async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefined = undefined) {
 
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
@@ -795,30 +785,66 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
             // console.log(wolframKernelClient?.state)
             // outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
 
-            if (wolframKernelClient?.state == State.Starting) {
-                setTimeout(() => {sendToWolfram(printOutput, sel)}, 1000)
+            if (wolframKernelClient?.state == State.Running) {
+
+                wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                }).catch((err) => {
+                    console.log("Error in runInWolfram")
+                    // restart()
+                })
                 return
             }
 
-            if (wolframKernelClient == undefined || wolframKernelClient?.state !== State.Running) {
-                outputChannel.appendLine("Kernel is not running (" + wolframKernelClient?.state + ")  restarting")
-                wolframKernelClient = await restartKernel()
-                
-                outputChannel.appendLine("Kernel restarted (" + wolframKernelClient?.state + ")")
-
-                wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
-                }).catch((err) => {
-                    console.log("Error in runInWolfram")
-                    // restart()
-                })
+            if (wolframKernelClient == undefined) {
+                outputChannel.appendLine("Kernel not running, waiting for kernel to start");
+                sendToWolframRetry += 1;
+                if (sendToWolframRetry < 10) {
+                    setTimeout(async () => { 
+                        try{
+                            outputChannel.appendLine("Retry: " + sendToWolframRetry + "/10");
+                            await sendToWolfram(printOutput, sel) 
+                        } catch {
+                            console.log("Error in sendToWolfram retry")
+                        }
+                    }, 500);
+                    return
+                } else {
+                    vscode.window.showErrorMessage("Wolfram kernel not running",
+                        "Restart kernel?").then((selection) => {
+                            if (selection === "Restart kernel?") {
+                                restartKernel()
+                            }
+                        });
+                    return
+                }
             }
-            else {
+            sendToWolframRetry = 0;
 
-                wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
-                }).catch((err) => {
-                    console.log("Error in runInWolfram")
-                    // restart()
-                })
+            if (wolframKernelClient?.state == State.Starting) {
+                // setTimeout(() => {sendToWolfram(printOutput, sel)}, 1000)
+                console.log("Kernel starting");
+                let sendDisposible = wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
+                    if (event.newState == State.Running) {
+                        
+                        sendToWolfram(printOutput, sel)
+                        sendDisposible.dispose()
+                    } else if (event.newState == State.Stopped) {
+                        vscode.window.showErrorMessage("Wolfram kernel stopped",
+                            "Restart kernel?").then(async (selection):Promise<any> => {
+                                if (selection === "Restart kernel?") {
+                                    wolframKernelClient = await restartKernel();
+                                    outputChannel.appendLine("Kernel restarted (" + wolframKernelClient?.state + ")");
+                                    wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                                    }).catch((err) => {
+                                        console.log("Error in runInWolfram")
+                                        // restart()
+                                    })
+                                }
+                            });
+                        return
+                    }
+                });
+                return
             }
         }
     }
