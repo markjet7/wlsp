@@ -264,9 +264,6 @@ class PlotsViewProvider {
         </head>
         <body onload="loaded()">
             <div class="outer">
-                <div class="svgarea">
-                    <svg id="mysvg"></svg>
-                </div>
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>
                 </div>

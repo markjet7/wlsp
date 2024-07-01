@@ -182,7 +182,12 @@ function startWLSPKernelSocket(id, path) {
                 });
                 socket.on("close", () => {
                     extension_1.outputChannel.appendLine("Kernel Socket closed");
-                    stopWolfram(undefined, wolframKernel);
+                    // stopWolfram(undefined, wolframKernel)
+                    kernelConnecting = true;
+                    socket.connect(kernelPort, "127.0.0.1", () => {
+                        extension_1.outputChannel.appendLine("Kernel Socket reconnected");
+                        kernelConnecting = false;
+                    });
                 });
                 socket.on('timeout', () => {
                     extension_1.outputChannel.appendLine("Kernel Socket timeout");
@@ -202,7 +207,12 @@ function startWLSPKernelSocket(id, path) {
                 });
                 socket.on("end", (msg) => __awaiter(this, void 0, void 0, function* () {
                     extension_1.outputChannel.appendLine("Kernel Socket end");
-                    stopWolfram(undefined, wolframKernel);
+                    // stopWolfram(undefined, wolframKernel)
+                    kernelConnecting = true;
+                    socket.connect(kernelPort, "127.0.0.1", () => {
+                        extension_1.outputChannel.appendLine("Kernel Socket reconnected");
+                        kernelConnecting = false;
+                    });
                     // console.log("Kernel Socket end");
                     // console.log(msg);
                     // attempt to revive the kernel

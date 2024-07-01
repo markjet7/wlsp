@@ -208,7 +208,12 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
 
             socket.on("close", () => {
                 outputChannel.appendLine("Kernel Socket closed")
-                stopWolfram(undefined, wolframKernel)
+                // stopWolfram(undefined, wolframKernel)
+                kernelConnecting = true;
+                socket.connect(kernelPort, "127.0.0.1", () => {
+                    outputChannel.appendLine("Kernel Socket reconnected")
+                    kernelConnecting = false;
+                });
             });
 
             socket.on('timeout', () => {
@@ -234,7 +239,12 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
 
             socket.on("end", async (msg: any) => {
                 outputChannel.appendLine("Kernel Socket end");
-                stopWolfram(undefined, wolframKernel)
+                // stopWolfram(undefined, wolframKernel)
+                kernelConnecting = true;
+                socket.connect(kernelPort, "127.0.0.1", () => {
+                    outputChannel.appendLine("Kernel Socket reconnected")
+                    kernelConnecting = false;
+                });
                 // console.log("Kernel Socket end");
                 // console.log(msg);
                 // attempt to revive the kernel
