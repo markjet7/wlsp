@@ -38,13 +38,14 @@ ServerCapabilities=<|
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>,
-	"semanticTokensProvider" -> <|
+	"semanticTokensProvider" -> False
+	(* "semanticTokensProvider" -> <|
 		"full" -> True,
 		"legend" -> <|
 			"tokenTypes" -> {"variable", "parameter", "keyword", "number", "string", "function"},
 			"tokenModifiers" -> {"definition", "declaration"}
 		|>
-	|>
+	|> *)
 |>;
 
 handle["initialize",json_]:=Module[{response2, builtins},

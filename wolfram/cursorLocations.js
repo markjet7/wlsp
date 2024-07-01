@@ -1,53 +1,143 @@
 {
-	"file:\/\/\/System\/Volumes\/Data\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/Optimization\/maps.wl":[
+	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/Optimization\/supplyChain.wl":[
 		{
 			"start":{
-				"line":0,
+				"line":2,
 				"character":0
 			},
 			"end":{
-				"line":0,
+				"line":2,
 				"character":34
 			}
 		},
 		{
 			"start":{
-				"line":1,
+				"line":3,
 				"character":0
 			},
 			"end":{
-				"line":1,
-				"character":88
+				"line":3,
+				"character":24
 			}
 		},
 		{
 			"start":{
-				"line":2,
+				"line":5,
 				"character":0
 			},
 			"end":{
-				"line":2,
-				"character":47
+				"line":5,
+				"character":27
 			}
 		},
 		{
 			"start":{
-				"line":4,
+				"line":7,
 				"character":0
 			},
 			"end":{
-				"line":4,
-				"character":102
+				"line":7,
+				"character":20
 			}
 		},
 		{
 			"start":{
-				"line":6,
+				"line":9,
+				"character":0
+			},
+			"end":{
+				"line":9,
+				"character":17
+			}
+		},
+		{
+			"start":{
+				"line":10,
+				"character":0
+			},
+			"end":{
+				"line":10,
+				"character":26
+			}
+		},
+		{
+			"start":{
+				"line":11,
+				"character":0
+			},
+			"end":{
+				"line":11,
+				"character":34
+			}
+		},
+		{
+			"start":{
+				"line":12,
+				"character":0
+			},
+			"end":{
+				"line":12,
+				"character":15
+			}
+		},
+		{
+			"start":{
+				"line":14,
+				"character":0
+			},
+			"end":{
+				"line":14,
+				"character":25
+			}
+		},
+		{
+			"start":{
+				"line":16,
+				"character":0
+			},
+			"end":{
+				"line":16,
+				"character":14
+			}
+		},
+		{
+			"start":{
+				"line":18,
+				"character":0
+			},
+			"end":{
+				"line":18,
+				"character":42
+			}
+		},
+		{
+			"start":{
+				"line":20,
+				"character":0
+			},
+			"end":{
+				"line":20,
+				"character":16
+			}
+		},
+		{
+			"start":{
+				"line":22,
+				"character":0
+			},
+			"end":{
+				"line":22,
+				"character":21
+			}
+		},
+		{
+			"start":{
+				"line":23,
 				"character":0
 			},
 			"end":{
 				"line":23,
-				"character":3
+				"character":14
 			}
 		},
 		{
@@ -57,7 +147,7 @@
 			},
 			"end":{
 				"line":25,
-				"character":81
+				"character":13
 			}
 		},
 		{
@@ -67,7 +157,7 @@
 			},
 			"end":{
 				"line":27,
-				"character":22
+				"character":13
 			}
 		},
 		{
@@ -77,7 +167,17 @@
 			},
 			"end":{
 				"line":29,
-				"character":104
+				"character":38
+			}
+		},
+		{
+			"start":{
+				"line":30,
+				"character":0
+			},
+			"end":{
+				"line":30,
+				"character":32
 			}
 		},
 		{
@@ -87,7 +187,7 @@
 			},
 			"end":{
 				"line":31,
-				"character":53
+				"character":14
 			}
 		},
 		{
@@ -96,28 +196,8 @@
 				"character":0
 			},
 			"end":{
-				"line":33,
-				"character":57
-			}
-		},
-		{
-			"start":{
-				"line":35,
-				"character":0
-			},
-			"end":{
-				"line":35,
-				"character":33
-			}
-		},
-		{
-			"start":{
-				"line":37,
-				"character":0
-			},
-			"end":{
-				"line":37,
-				"character":7
+				"line":38,
+				"character":60
 			}
 		},
 		{
@@ -127,7 +207,7 @@
 			},
 			"end":{
 				"line":39,
-				"character":116
+				"character":14
 			}
 		},
 		{
@@ -136,48 +216,88 @@
 				"character":0
 			},
 			"end":{
-				"line":52,
-				"character":1
+				"line":41,
+				"character":38
 			}
 		},
 		{
 			"start":{
-				"line":54,
+				"line":43,
 				"character":0
 			},
 			"end":{
-				"line":64,
-				"character":2
+				"line":43,
+				"character":17
 			}
 		},
 		{
 			"start":{
-				"line":66,
+				"line":45,
 				"character":0
 			},
 			"end":{
-				"line":76,
-				"character":2
+				"line":45,
+				"character":10
 			}
 		},
 		{
 			"start":{
-				"line":80,
+				"line":47,
 				"character":0
 			},
 			"end":{
-				"line":86,
-				"character":2
+				"line":47,
+				"character":24
 			}
 		},
 		{
 			"start":{
-				"line":88,
+				"line":49,
 				"character":0
 			},
 			"end":{
-				"line":88,
-				"character":70
+				"line":69,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":71,
+				"character":0
+			},
+			"end":{
+				"line":82,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":84,
+				"character":0
+			},
+			"end":{
+				"line":84,
+				"character":52
+			}
+		},
+		{
+			"start":{
+				"line":87,
+				"character":0
+			},
+			"end":{
+				"line":87,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":89,
+				"character":0
+			},
+			"end":{
+				"line":89,
+				"character":78
 			}
 		},
 		{
@@ -187,7 +307,37 @@
 			},
 			"end":{
 				"line":90,
-				"character":68
+				"character":75
+			}
+		},
+		{
+			"start":{
+				"line":91,
+				"character":0
+			},
+			"end":{
+				"line":91,
+				"character":73
+			}
+		},
+		{
+			"start":{
+				"line":92,
+				"character":0
+			},
+			"end":{
+				"line":92,
+				"character":80
+			}
+		},
+		{
+			"start":{
+				"line":93,
+				"character":0
+			},
+			"end":{
+				"line":93,
+				"character":81
 			}
 		},
 		{
@@ -196,8 +346,58 @@
 				"character":0
 			},
 			"end":{
+				"line":94,
+				"character":81
+			}
+		},
+		{
+			"start":{
+				"line":95,
+				"character":0
+			},
+			"end":{
+				"line":95,
+				"character":76
+			}
+		},
+		{
+			"start":{
+				"line":96,
+				"character":0
+			},
+			"end":{
+				"line":96,
+				"character":76
+			}
+		},
+		{
+			"start":{
+				"line":97,
+				"character":0
+			},
+			"end":{
+				"line":97,
+				"character":76
+			}
+		},
+		{
+			"start":{
+				"line":98,
+				"character":0
+			},
+			"end":{
+				"line":98,
+				"character":67
+			}
+		},
+		{
+			"start":{
 				"line":102,
-				"character":3
+				"character":0
+			},
+			"end":{
+				"line":102,
+				"character":17
 			}
 		},
 		{
@@ -206,38 +406,8 @@
 				"character":0
 			},
 			"end":{
-				"line":103,
-				"character":47
-			}
-		},
-		{
-			"start":{
-				"line":104,
-				"character":0
-			},
-			"end":{
-				"line":104,
-				"character":46
-			}
-		},
-		{
-			"start":{
-				"line":105,
-				"character":0
-			},
-			"end":{
-				"line":105,
-				"character":56
-			}
-		},
-		{
-			"start":{
-				"line":107,
-				"character":0
-			},
-			"end":{
-				"line":107,
-				"character":49
+				"line":108,
+				"character":2
 			}
 		},
 		{
@@ -246,48 +416,168 @@
 				"character":0
 			},
 			"end":{
-				"line":119,
+				"line":114,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":116,
+				"character":0
+			},
+			"end":{
+				"line":121,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":123,
+				"character":0
+			},
+			"end":{
+				"line":128,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":130,
+				"character":0
+			},
+			"end":{
+				"line":135,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":137,
+				"character":0
+			},
+			"end":{
+				"line":142,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":144,
+				"character":0
+			},
+			"end":{
+				"line":149,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":151,
+				"character":0
+			},
+			"end":{
+				"line":156,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":158,
+				"character":0
+			},
+			"end":{
+				"line":163,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":165,
+				"character":0
+			},
+			"end":{
+				"line":170,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":172,
+				"character":0
+			},
+			"end":{
+				"line":172,
+				"character":12
+			}
+		},
+		{
+			"start":{
+				"line":173,
+				"character":0
+			},
+			"end":{
+				"line":185,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":187,
+				"character":0
+			},
+			"end":{
+				"line":190,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":214,
+				"character":0
+			},
+			"end":{
+				"line":218,
+				"character":169
+			}
+		},
+		{
+			"start":{
+				"line":220,
+				"character":0
+			},
+			"end":{
+				"line":223,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":224,
 				"character":1
+			},
+			"end":{
+				"line":228,
+				"character":2
 			}
 		},
 		{
 			"start":{
-				"line":121,
+				"line":232,
 				"character":0
 			},
 			"end":{
-				"line":121,
-				"character":3
+				"line":243,
+				"character":2
 			}
 		},
 		{
 			"start":{
-				"line":123,
+				"line":246,
 				"character":0
 			},
 			"end":{
-				"line":123,
-				"character":9
-			}
-		},
-		{
-			"start":{
-				"line":124,
-				"character":0
-			},
-			"end":{
-				"line":124,
-				"character":34
-			}
-		},
-		{
-			"start":{
-				"line":126,
-				"character":0
-			},
-			"end":{
-				"line":126,
-				"character":24
+				"line":246,
+				"character":38
 			}
 		}
 	]
