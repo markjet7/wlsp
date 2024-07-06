@@ -310,7 +310,7 @@ export async function onkernelReady(): Promise<void> {
             wolframKernelClient?.onNotification("updateVarTable", updateVarTable);
             // wolframKernelClient?.onNotification("moveCursor", moveCursor);
             // wolframKernelClient?.onNotification("updateTreeItems", updateTreeItems);
-            wolframKernelClient?.onNotification("pulse", pulse);
+            // wolframKernelClient?.onNotification("pulse", pulse);
             wolframKernelClient?.onNotification("errorMessages", errorMessages)
             wolframKernelClient?.onNotification("updateInputs", updateInputs)
             wolframKernelClient?.onNotification("onResult", onResult)
@@ -331,7 +331,7 @@ export async function onkernelReady(): Promise<void> {
                 temporaryDir = result;
             });
             treeDataProvider.getSymbols(undefined);
-            pulse();
+            // pulse();
 
     return new Promise((resolve) => {
         resolve()
@@ -357,7 +357,7 @@ function promiseWithTimeout(ms: number, promise: Promise<any> | undefined) {
 }
 
 
-function pulse() {
+async function pulse() {
 
     if (wolframKernelClient !== undefined && wolframKernelClient?.state == 2) {
         promiseWithTimeout(1000 * 60 * 2,

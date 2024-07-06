@@ -159,7 +159,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
     let timeout: any;
     kernelPath = path;
     if (kernelConnecting) {
-        return new Promise(resolve => setTimeout(resolve, 1));
+        return new Promise(resolve => setTimeout(resolve, 100));
     }
     kernelConnecting = true;
     let serverOptions: ServerOptions = function () {
@@ -184,17 +184,20 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 }, 1000)
             })
 
-            socket.on('error', function (err: any) {
-                outputChannel.appendLine("Kernel Socket error: " + err)
+            socket.on('error', async function (err: any) {
+                outputChannel.appendLine("Kernel Socket error: " + err);
                 retries += 1;
                 if (retries < 10) {
                     if (err.code === 'ECONNREFUSED') {
-                        outputChannel.appendLine("Kernel failed to connect")
-                        timeout = setTimeout(() => {
+                        outputChannel.appendLine("Kernel failed to connect. Starting server");
+
+                            await load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
+                            wolframKernel = r;
                             socket.connect(kernelPort, "127.0.0.1", () => {
-                                // socket.setKeepAlive(true);
+                                outputChannel.appendLine("Kernel Socket connected")
+                                kernelConnecting = false;
                             });
-                        }, 1500)
+                        });
                     }
                 } else {
                     vscode.window.showErrorMessage("Wolfram Kernel failed to connect. Please check that wolframscript is installed and running and that the port " + kernelPort + " is not in use.",
@@ -209,11 +212,11 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
             socket.on("close", () => {
                 outputChannel.appendLine("Kernel Socket closed")
                 // stopWolfram(undefined, wolframKernel)
-                kernelConnecting = true;
-                socket.connect(kernelPort, "127.0.0.1", () => {
-                    outputChannel.appendLine("Kernel Socket reconnected")
-                    kernelConnecting = false;
-                });
+                // kernelConnecting = true;
+                // socket.connect(kernelPort, "127.0.0.1", () => {
+                //     outputChannel.appendLine("Kernel Socket reconnected")
+                //     kernelConnecting = false;
+                // });
             });
 
             socket.on('timeout', () => {
@@ -241,10 +244,12 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 outputChannel.appendLine("Kernel Socket end");
                 // stopWolfram(undefined, wolframKernel)
                 kernelConnecting = true;
-                socket.connect(kernelPort, "127.0.0.1", () => {
-                    outputChannel.appendLine("Kernel Socket reconnected")
-                    kernelConnecting = false;
-                });
+                setTimeout(() => {
+                    socket.connect(kernelPort, "127.0.0.1", () => {
+                        outputChannel.appendLine("Kernel Socket reconnected")
+                        kernelConnecting = false;
+                    });
+                }, 500);
                 // console.log("Kernel Socket end");
                 // console.log(msg);
                 // attempt to revive the kernel
@@ -257,20 +262,16 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
 
 
             fp(kernelPort).then(async ([freePort]: number[]) => {
-                if (wolframKernel) {
-                    outputChannel.appendLine("Killing kernel process: " + wolframKernel.pid)
-                    await stopWolfram(undefined, wolframKernel)
-                }
+                // if (wolframKernel) {
+                //     outputChannel.appendLine("Killing kernel process: " + wolframKernel.pid)
+                //     await stopWolfram(undefined, wolframKernel)
+                // }
 
-                outputChannel.appendLine("Wolfram Kernel status: " + wolframKernel?.pid)
+                // outputChannel.appendLine("Wolfram Kernel status: " + wolframKernel?.pid)
 
-                await load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                    wolframKernel = r
-                    socket.connect(kernelPort, "127.0.0.1", () => {
-                        outputChannel.appendLine("Kernel Socket connected")
-                        kernelConnecting = false;
-                    });
-
+                socket.connect(kernelPort, "127.0.0.1", () => {
+                    outputChannel.appendLine("Kernel Socket connected")
+                    kernelConnecting = false;
                 });
             })
         })
