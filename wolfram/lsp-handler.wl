@@ -749,6 +749,8 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 	];
 ];
 
+
+
 handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{position, v, uri, src, symbol, value, result, response, f},
 	Check[
 		position = json["params", "position"];
@@ -774,6 +776,12 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 			|>
 		|>;
 
+		If[MemberQ[canceledRequests, json["id"]],
+			canceledRequests = DeleteCases[canceledRequests, json["id"]];
+			response = <|"error"-><|"code" -> -32800, "message" -> "Request cancelled"|>|>;
+			sendResponse[response];
+			Return[]
+		];
 		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 
@@ -989,7 +997,9 @@ handle["deserializeScript", json_]:=Module[{inputs, json2},
 	]
 ];
 
+canceledRequests = {};
 handle["$/cancelRequest", json_]:=Module[{response},
+	canceledRequests = AppendTo[canceledRequests, json["params", "id"]];
 	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
 	(* response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response]; *)

@@ -8,6 +8,7 @@ BeginPackage["WolframKernel`"];
 
 (* ::Package:: *)
 (**)
+$MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[response_Association]:=Module[{byteResponse},
 		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];

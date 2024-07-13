@@ -56,9 +56,11 @@ function startWLSP(id, path) {
         let timeout;
         lspPath = path;
         let serverReady = yield checkPort(clientPort);
-        if (!serverReady) {
-            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+        if (serverReady) {
+            clientPort = clientPort + 1;
         }
+        ;
+        yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 let retries = 0;
@@ -139,7 +141,7 @@ function startWLSP(id, path) {
                     }
                     else {
                         socket.connect(clientPort, "127.0.0.1", () => {
-                            extension_1.outputChannel.appendLine("Client Socket reconnected");
+                            extension_1.outputChannel.appendLine("Client Socket connected");
                         });
                     }
                     ;
@@ -169,6 +171,7 @@ function startWLSP(id, path) {
             }, (reason) => {
                 connectingLSP = false;
                 extension_1.outputChannel.appendLine("Client Start Error: " + reason);
+                resolve(undefined);
             });
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
@@ -183,9 +186,10 @@ function startWLSPKernelSocket(id, path) {
         let timeout;
         kernelPath = path;
         let serverReady = yield checkPort(kernelPort);
-        if (!serverReady) {
-            yield load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel);
+        if (serverReady) {
+            kernelPort = kernelPort + 1;
         }
+        yield load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel);
         kernelConnecting = true;
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
@@ -299,6 +303,7 @@ function startWLSPKernelSocket(id, path) {
             }, (reason) => {
                 kernelConnecting = false;
                 extension_1.outputChannel.appendLine("Kernel Start Error: " + reason);
+                resolve(undefined);
             });
         }));
     });
@@ -404,7 +409,7 @@ function stopWolfram(client, client_process) {
         }
     });
 }
-function load(wolfram, path, port, outputChannel) {
+function load(wolf, path, port, outputChannel) {
     return __awaiter(this, void 0, void 0, function* () {
         let cpw;
         return new Promise((resolve) => {
@@ -430,7 +435,7 @@ function load(wolfram, path, port, outputChannel) {
                 (_b = cpw.stdout) === null || _b === void 0 ? void 0 : _b.on('data', (data) => {
                     outputChannel.appendLine("WLSP: " + data.toString());
                     if (data.toString().includes("SocketObject")) {
-                        wolfram = cpw;
+                        wolf = cpw;
                         resolve(cpw);
                     }
                     if (data.toString().includes("Cannot start tcp")) {

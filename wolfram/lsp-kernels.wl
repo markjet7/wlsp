@@ -112,7 +112,9 @@ handle["runCell", json_]:=Module[{uri, src, newPosition},
 	|> |>, json, newPosition}];
 ];
 
+canceledRequests = {};
 handle["$/cancelRequest", json_]:=Module[{response},
+	canceledRequests = AppendTo[canceledRequests, json["params", "id"]];
 	TaskRemove[Tasks[]];
 	response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response];
@@ -685,6 +687,12 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			|>
 		|>;
 
+		If[MemberQ[canceledRequests, json["id"]],
+			canceledRequests = DeleteCases[canceledRequests, json["id"]];
+			response = <|"error"-><|"code" -> -32800, "message" -> "Request cancelled"|>|>;
+			sendResponse[response];
+			Return[]
+		];
 		response = <|"id"->Lookup[json["params"], "id", 0], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 

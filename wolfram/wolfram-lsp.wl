@@ -65,6 +65,7 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
 logfile = DirectoryName[$path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
+		Print[msg];
 	Check[
 		handle[msg["method"], msg],
 		(*Print["LSP error handling message"];
@@ -75,6 +76,7 @@ handleMessage[msg_Association, state_]:=Module[{},
 ];
 
 handleMessage[msg_Association, state_, client_]:=Module[{},
+		Print[msg];
 	Check[
 		handle[msg["method"], msg, client],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>, client]
@@ -112,7 +114,7 @@ socketHandler[state_]:=Module[{},
 	Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
 	Pause[handlerWait];
 	If[
-		Echo@Length@SERVER["ConnectedClients"] === 0 &&
+		Length@SERVER["ConnectedClients"] === 0 &&
 		((Now - timeout) > Quantity[20, "Minutes"]),
 		Print["Closing kernel connection..."]; Quit[];
 	];
