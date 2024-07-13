@@ -65,12 +65,12 @@ handle["initialize",json_]:=Module[{response2, builtins},
 	cursorLocationsFile = scriptPath <> "cursorLocations.js";
 	Export[cursorLocationsFile, <||>, "JSON"];
 
-	messageHandler = If[Last[#],
+	(*messageHandler = If[Last[#],
 		Save["/tmp/lsphandler.wl", Stack[]],
 		Nothing
 	];
 
-	Internal`AddHandler["Message", messageHandler];
+	Internal`AddHandler["Message", messageHandler];*)
 
 ];
 
@@ -1259,7 +1259,7 @@ getSourceRanges[{start_, end_}]:=Table[
 ];
 
 lineRange[line_,start_,end_]:= {line, Which[
-	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]+1]},
+	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]-1]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
 	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]+1]}

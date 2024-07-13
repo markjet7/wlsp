@@ -176,7 +176,9 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		(* Evaluate each code block *)
 
 		Table[
-			s = StringTake[src, {charIndexFromLineColumn[src, c[[-1]][Source][[1]]], charIndexFromLineColumn[src, c[[-1]][Source][[2]]]}];
+			s = StringTake[src, {
+				charIndexFromLineColumn[src, c[[-1]][Source][[1]]], 
+				UpTo@charIndexFromLineColumn[src, c[[-1]][Source][[2]]]}];
 			codeLines = StringCount[StringTrim@s,"\n"];
 			codeBlock = <|
 				"code" -> s, "range" -> <|
@@ -1083,9 +1085,7 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 
 	StringJoin@Table[
 		StringTake[
-			StringReplace[
 				sLines[[l[[1]]]],
-				"\n"->"\n"], 
 			l[[2]]],
 		{l, sRanges}]
 ];
@@ -1094,12 +1094,12 @@ getSourceRanges[{start_, end_}]:=Table[
 	lineRange[l,start,end],
 	{l,start[[1]],end[[1]]}];
 
-lineRange[line_,start_,end_]:= {line, Which[
-	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]+1]},
+lineRange[line_,start_,end_]:= ({line, Which[
+	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]-1]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
-	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]]}
-]};
+	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]-1]}
+]});
 
 charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},
 	sLines = StringSplit[src, EndOfLine, All];

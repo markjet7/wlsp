@@ -70,8 +70,9 @@ handleMessage[msg_Association, state_]:=Module[{},
 				]
 			]
 		];,
-		Print["Kernel error handling message"];
-		Nothing
+		
+		Print["Kernel error handling message: "];
+		Print[msg];
 		(*
 		Export[logfile, msg];*)
 	];
@@ -150,7 +151,7 @@ connectWithExponentialRetry[]:=Module[{i=0},
 
 Print["Connecting to kernel..."];
 KERNELSERVER=SocketOpen[kernelport,"TCP"]
-If[FailureQ[KERNELSERVER], Print["Cannot start tcp KERNELSERVER."]; Quit[]];
+If[FailureQ[KERNELSERVER], Print["Cannot start tcp KERNELSERVER."]; Quit[1]];
 
 Print["Kernel ", KERNELSERVER, ": ", kernelport];
 

@@ -151,19 +151,7 @@ function createList(parentSelection, children) {
   // results = [];
   var index = 0;
 
-  function loaded() {
-    index = 0; // results.length;
-    // results = vscode.getState() || [];
-    // results = [];
-
-    const outputDiv = document.getElementById("outputs");
-    outputDiv.innerHTML = viewState;
-
-    outputDiv.scrollTop = outputDiv.scrollHeight;
-
-    // Add a download button for each image element
-    updateImageElements();
-  }
+  
 
   function scrollToBottom() {
     window.scrollTo(0, document.body.scrollHeight);
@@ -245,72 +233,7 @@ function createList(parentSelection, children) {
           "`)'>Insert</button><br>"
       );
 
-      // // Create a zoom behavior
-      // const zoom = d3.zoom().scaleExtent([0.1, 8]).on("zoom", zoomed);
-
-      // var svg = d3.select(`#svg${index}`);
-      // svg.attr("viewBox", [-50, -50, 200, 200])
-      // var g = svg.append("g");
-      // // g.attr("viewBox", [-20, -20, 200, 200]);
-      // // var selection = processArray(
-      // //   ["Graphics", ["Disk", ["List", 0, 0], 100]],
-      // //   output
-      // // );
-      // // var selection = processArray(
-      // //   ["List",1,2,3,4,5,6,7,8,9,10],
-      // //   output
-      // // );
-      // var selection = processArray(JSON.parse(message.output), g);
-      // // Center and zoom to see all elements inside the output SVG
-
-      // const bbox = selection.node().getBBox();
-      // svg.attr("viewBox", [bbox.x, bbox.y, bbox.width, bbox.height]);
-      // width = bbox.width + 1;
-      // height = bbox.height + 1;
-      // const midX = bbox.x + width / 2 + 1;
-      // const midY = bbox.y + height / 2 + 1;
-      // const svgWidth = selection.attr("width") + 1;
-      // const svgHeight = selection.attr("height") + 1;
-      // var scale = Math.min(svgWidth / width, svgHeight / height);
-      // if (isNaN(scale)) {
-      //   scale = 1;
-      // }
-      // scale = 1;
-
-      // console.log(
-      //   "bbox",
-      //   bbox,
-      //   width,
-      //   height,
-      //   midX,
-      //   midY,
-      //   svgWidth,
-      //   svgHeight,
-      //   scale
-      // );
-
-      // function zoomed(event) {
-      //   console.log("zoomed");
-      //   const { transform } = event;
-      //   svg.attr("transform", transform);
-      //   svg.attr("stroke-width", 1 / transform.k);
-      // }
-
-      // function reset() {
-      //   console.log("reset");
-      //   svg
-      //     .transition()
-      //     .duration(750)
-      //     .call(
-      //       zoom.transform,
-      //       d3.zoomIdentity,
-      //       d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
-      //     );
-      // }
-
-      // svg.call(zoom);
-      // svg.on("click", reset);
-      // svg.call(zoom.transform, transform);
+     
     }
 
     vscode.setState(outputDiv.innerHTML);
@@ -338,6 +261,15 @@ function createList(parentSelection, children) {
       createDownloadButton(imageElement);
     }
   };
+
+
+  const outputDiv = document.getElementById("outputs");
+  outputDiv.innerHTML = viewState;
+
+  outputDiv.scrollTop = outputDiv.scrollHeight;
+
+  // Add a download button for each image element
+  updateImageElements();
 
   // Create a function to handle the click event
   const handleImageClick = (imageElement) => {

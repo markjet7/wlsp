@@ -239,7 +239,7 @@ function onkernelReady() {
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateVarTable", updateVarTable);
         // wolframKernelClient?.onNotification("moveCursor", moveCursor);
         // wolframKernelClient?.onNotification("updateTreeItems", updateTreeItems);
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("pulse", pulse);
+        // wolframKernelClient?.onNotification("pulse", pulse);
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onResult", onResult);
@@ -255,7 +255,7 @@ function onkernelReady() {
             temporaryDir = result;
         });
         exports.treeDataProvider.getSymbols(undefined);
-        pulse();
+        // pulse();
         return new Promise((resolve) => {
             resolve();
         });
@@ -278,21 +278,23 @@ function promiseWithTimeout(ms, promise) {
     ]);
 }
 function pulse() {
-    if (exports.wolframKernelClient !== undefined && (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == 2) {
-        promiseWithTimeout(1000 * 60 * 2, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
-            wolframStatusBar.color = "red";
-            setTimeout(() => {
-                wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
-            }, 1000 * 30);
-            (0, path_1.resolve)("true");
-        })).then((a) => {
-            setTimeout(pulse, 1000 * 60 * 2);
-        }).catch(error => {
-            console.log(error);
-            outputChannel.appendLine("The Wolfram kernel has not responded in >2 minutes");
-        });
-    }
-    // pulseInterval = setInterval(ping, 60000)
+    return __awaiter(this, void 0, void 0, function* () {
+        if (exports.wolframKernelClient !== undefined && (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == 2) {
+            promiseWithTimeout(1000 * 60 * 2, exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("pulse").then((a) => {
+                wolframStatusBar.color = "red";
+                setTimeout(() => {
+                    wolframStatusBar.color = new vscode.ThemeColor("statusBar.foreground");
+                }, 1000 * 30);
+                (0, path_1.resolve)("true");
+            })).then((a) => {
+                setTimeout(pulse, 1000 * 60 * 2);
+            }).catch(error => {
+                console.log(error);
+                outputChannel.appendLine("The Wolfram kernel has not responded in >2 minutes");
+            });
+        }
+        // pulseInterval = setInterval(ping, 60000)
+    });
 }
 function newFunction() {
     exports.treeDataProvider = new treeDataProvider_1.workspaceSymbolProvider();

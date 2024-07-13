@@ -37,17 +37,44 @@ let socketsClosed = 0;
 let attempts = 0;
 
 let connectingLSP = false;
+let socket = new net.Socket();
+
+function checkPort(port:number): Promise<boolean> {
+    return new Promise((resolve) => {
+        let s = new net.Socket();
+        let t = 2000;
+
+        s.setTimeout(t);
+        s.on('connect', () => {
+            s.destroy();
+            resolve(true);
+        });
+
+        s.on('error', () => {
+            s.destroy();
+            resolve(false);
+        })
+
+        s.on('timeout', () => {
+            s.destroy();
+            resolve(false);
+        })
+
+        s.connect(port, '127.0.0.1')
+    })
+}
+
+
 export async function startWLSP(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
     lspPath = path;
-    if (connectingLSP) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return undefined;
+    let serverReady = await checkPort(clientPort);
+    if (!serverReady) {
+        await load(wolfram, lspPath, clientPort, outputChannel);
     }
 
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
-            let socket = new net.Socket();
             let retries = 0;
             socket.setMaxListeners(5);
 
@@ -57,33 +84,38 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
             // });
 
             socket.on('connect', () => {
-                clearTimeout(timeout);
-                setTimeout(() => {
-                    resolve({
-                        reader: socket,
-                        writer: socket
-                    })
-                }, 1000)
-            })
+                resolve({
+                    reader: socket,
+                    writer: socket
+                })
+            });
 
-            socket.on('error', function (err: any) {
-                outputChannel.appendLine("Client Socket error: " + err)
-                retries += 1;
-                if (retries < 10) {
-                    if (err.code === 'ECONNREFUSED') {
-                        timeout = setTimeout(() => {
-                            socket.connect(clientPort, "127.0.0.1");
-                        }, 1500)
-                    }
-                } else {
-                    vscode.window.showErrorMessage("Wolfram LSP failed to connect. Please check that wolframscript is installed and running and that the port " + clientPort + " is not in use.",
-                        { title: "Try Again?", command: "wolfram.restart" }).then(async (item) => {
-                            if (item?.command === "wolfram.restart") {
-                                restart()
+            socket.on('error', async function (err: any) {
+                outputChannel.appendLine("Client Socket error: " + err);
+                switch (err.code) {
+                    case 'ECONNREFUSED':
+                        outputChannel.appendLine("Connection refused. Retrying...");
+                        await load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
+                            socket.connect(clientPort, "127.0.0.1", () => {
+                                outputChannel.appendLine("Client Socket connected")
                             }
-                        })
+                            );
+                        });
+                        break;
+                    case 'ECONNRESET':
+                        outputChannel.appendLine("Connection reset. Retrying...")
+                        break;
+                    case 'EPIPE':
+                        outputChannel.appendLine("Broken pipe. Retrying...")
+                        break;
+                    case 'EALREADY':
+                        outputChannel.appendLine("Already connecting")
+                        break;
+                    default:
+                        outputChannel.appendLine("Error: " + err.code)
+                        break;
                 }
-            })
+            });
 
             socket.on("close", () => {
                 outputChannel.appendLine("Client Socket closed")
@@ -105,21 +137,37 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
             socket.on("end", () => {
                 outputChannel.appendLine("Client Socket end");
-                stopWolfram(undefined, wolfram)
-            })
+                retries += 1;
+                if (retries < 10) {
+                    outputChannel.appendLine("Kernel failed to connect. Starting server");
 
-
-            fp(clientPort).then(async ([freePort]: number[]) => {
-                // clientPort = freePort + id;
-                await load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
-                    wolfram = r;
-                    setTimeout(() => {
+                    load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
+                        wolfram = r;
                         socket.connect(clientPort, "127.0.0.1", () => {
-                            outputChannel.appendLine("Client Socket connected")
+                            connectingLSP = false;
                         });
-                    }, 2000)
-                });
+                    });
+                } else {
+                    vscode.window.showErrorMessage("Wolfram Kernel failed to connect. Please check that wolframscript is installed and running and that the port " + kernelPort + " is not in use.",
+                        { title: "Try Again?", command: "wolfram.restart" }).then(async (item) => {
+                            if (item?.command === "wolfram.restart") {
+                                restart()
+                            }
+                        })
+                }
             })
+
+            function connect() {
+                if (socket.connecting) {
+                    return;
+                } else {
+                    socket.connect(clientPort, "127.0.0.1", () => {
+                        outputChannel.appendLine("Client Socket reconnected")
+                    });
+                };
+            };
+
+            connect();
         })
     };
 
@@ -155,62 +203,62 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 }
 
 let kernelConnecting = false;
+let kernelSocket = new net.Socket();
 export async function startWLSPKernelSocket(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
     kernelPath = path;
-    if (kernelConnecting) {
-        return new Promise(resolve => setTimeout(resolve, 100));
+    let serverReady = await checkPort(kernelPort);
+    if (!serverReady) {
+        await load(wolframKernel, kernelPath, kernelPort, outputChannel);
     }
     kernelConnecting = true;
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
-            let socket = new net.Socket();
+            // let socket = new net.Socket();
             let retries = 0;
 
-            socket.setMaxListeners(5);
+            kernelSocket.setMaxListeners(5);
 
             // socket.on("data", (data) => {
             // outputChannel.appendLine("WLSP Kernel Data: " + data.toString().slice(0, 200))
             // console_outputs.push(data.toString());
             // });
 
-            socket.on('connect', () => {
-                clearTimeout(timeout);
-                setTimeout(() => {
-                    resolve({
-                        reader: socket,
-                        writer: socket
-                    })
-                }, 1000)
+            kernelSocket.on('connect', () => {
+                outputChannel.appendLine("Kernel Socket connected")
+                resolve({
+                    reader: kernelSocket,
+                    writer: kernelSocket
+                })
             })
 
-            socket.on('error', async function (err: any) {
+            kernelSocket.on('error', async function (err: any) {
                 outputChannel.appendLine("Kernel Socket error: " + err);
-                retries += 1;
-                if (retries < 10) {
-                    if (err.code === 'ECONNREFUSED') {
-                        outputChannel.appendLine("Kernel failed to connect. Starting server");
-
-                            await load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                            wolframKernel = r;
+                switch (err.code) {
+                    case 'ECONNREFUSED':
+                        outputChannel.appendLine("Connection refused. Retrying...");
+                        load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
                             socket.connect(kernelPort, "127.0.0.1", () => {
                                 outputChannel.appendLine("Kernel Socket connected")
-                                kernelConnecting = false;
-                            });
-                        });
-                    }
-                } else {
-                    vscode.window.showErrorMessage("Wolfram Kernel failed to connect. Please check that wolframscript is installed and running and that the port " + kernelPort + " is not in use.",
-                        { title: "Try Again?", command: "wolfram.restart" }).then(async (item) => {
-                            if (item?.command === "wolfram.restart") {
-                                restart()
                             }
-                        })
+                            );
+                        });
+                        break;
+                    case 'ECONNRESET':
+                        outputChannel.appendLine("Connection reset. Retrying...")
+                        break;
+                    case 'EPIPE':
+                        outputChannel.appendLine("Broken pipe. Retrying...")
+                        break;
+                    default:
+                        outputChannel.appendLine("Error: " + err.code)
+                        break;
                 }
             })
 
-            socket.on("close", () => {
-                outputChannel.appendLine("Kernel Socket closed")
+            kernelSocket.on("close", () => {
+                outputChannel.appendLine("Kernel Socket closed");
+
                 // stopWolfram(undefined, wolframKernel)
                 // kernelConnecting = true;
                 // socket.connect(kernelPort, "127.0.0.1", () => {
@@ -219,12 +267,12 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 // });
             });
 
-            socket.on('timeout', () => {
+            kernelSocket.on('timeout', () => {
                 outputChannel.appendLine("Kernel Socket timeout")
             });
 
 
-            socket.on('ready', () => {
+            kernelSocket.on('ready', () => {
                 // clearTimeout(timeout);
                 // setTimeout(() => {
                 //     resolve({
@@ -235,21 +283,13 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 // })
             })
 
-            socket.on('drain', () => {
+            kernelSocket.on('drain', () => {
                 // outputChannel.appendLine("Kernel Socket is draining")
             })
 
 
-            socket.on("end", async (msg: any) => {
+            kernelSocket.on("end", (msg: any) => {
                 outputChannel.appendLine("Kernel Socket end");
-                // stopWolfram(undefined, wolframKernel)
-                kernelConnecting = true;
-                setTimeout(() => {
-                    socket.connect(kernelPort, "127.0.0.1", () => {
-                        outputChannel.appendLine("Kernel Socket reconnected")
-                        kernelConnecting = false;
-                    });
-                }, 500);
                 // console.log("Kernel Socket end");
                 // console.log(msg);
                 // attempt to revive the kernel
@@ -260,20 +300,17 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 // }, 500)
             })
 
+            function connect() {
+                if (kernelSocket.connecting) {
+                    return;
+                } else {
+                    kernelSocket.connect(kernelPort, "127.0.0.1", () => {
+                        kernelConnecting = false;
+                    });
+                }
+            };
 
-            fp(kernelPort).then(async ([freePort]: number[]) => {
-                // if (wolframKernel) {
-                //     outputChannel.appendLine("Killing kernel process: " + wolframKernel.pid)
-                //     await stopWolfram(undefined, wolframKernel)
-                // }
-
-                // outputChannel.appendLine("Wolfram Kernel status: " + wolframKernel?.pid)
-
-                socket.connect(kernelPort, "127.0.0.1", () => {
-                    outputChannel.appendLine("Kernel Socket connected")
-                    kernelConnecting = false;
-                });
-            })
+            connect();
         })
     };
 
@@ -427,48 +464,55 @@ function stopWolfram(client: LanguageClient | undefined, client_process: any): P
 }
 
 
-async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess> {
+async function load(wolfram: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess | undefined> {
+    let cpw: cp.ChildProcess;
     return new Promise((resolve) => {
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
 
 
         try {
             if (process.platform === "win32") {
-                wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path, "-noinit"], { detached: false });
+                cpw = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', path, port.toString(), path, "-noinit"], { detached: false });
             } else {
-                wolfram = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path, "-noinit"], { detached: true });
+                cpw = cp.spawn(executablePath?.toString(), ['-file', path, port.toString(), path, "-noinit"], { detached: true });
             }
 
-            wolfram.on("error", (err) => {
+            cpw.on("error", (err) => {
                 outputChannel.appendLine("Wolframscript error: " + err)
                 vscode.window.showErrorMessage("WLSP failed to load. Please check that wolframscript is installed and that the path is correct in the settings. Download wolframscript at https://www.wolfram.com/engine/")
             })
 
-            wolfram.on('SIGPIPE', (data) => {
+            cpw.on('SIGPIPE', (data) => {
                 console.log("SIGPIPE");
             });
 
 
-            wolfram.stdout?.on('error', (data) => {
+            cpw.stdout?.on('error', (data) => {
                 console.log("STDOUT Error" + data.toString());
             });
 
-            wolfram.stdout?.on('data', (data) => {
+            cpw.stdout?.on('data', (data) => {
 
                 outputChannel.appendLine("WLSP: " + data.toString())
 
                 if (data.toString().includes("SocketObject")) {
-                    setTimeout(() => { resolve(wolfram) }, 10)
+                    wolfram = cpw;
+                    resolve(cpw)
                 }
 
-                // vscode.window.showInformationMessage(data.toString().slice(0, 1000))
+                if (data.toString().includes("Cannot start tcp")) {
+                    // kill the cpw process
+                    kill(cpw.pid);
+                    resolve(undefined)
+                }
             });
 
 
         } catch (error) {
             console.log(error)
             vscode.window.showErrorMessage("Wolframscript failed to load.")
-            resolve(wolfram)
+            outputChannel.appendLine("Wolframscript failed to load. " + error)
+            resolve(cpw)
         }
     })
 }

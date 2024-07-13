@@ -112,7 +112,7 @@ socketHandler[state_]:=Module[{},
 	Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
 	Pause[handlerWait];
 	If[
-		Length@SERVER["ConnectedClients"] === 0 &&
+		Echo@Length@SERVER["ConnectedClients"] === 0 &&
 		((Now - timeout) > Quantity[20, "Minutes"]),
 		Print["Closing kernel connection..."]; Quit[];
 	];
@@ -147,5 +147,3 @@ MemoryConstrained[
 CloseKernels[];
 
 EndPackage[];
-
-
