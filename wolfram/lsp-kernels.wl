@@ -272,9 +272,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 		SyntaxQ[string],
 		r = evaluateString[Echo[string, "Evaluating: "]];
-		(* AppendTo[Inputs, string]; *)
 		output = CheckAbort[
-
 			Which[
 				And[Lookup[json["params"], "output", False], KeyExistsQ[r, "FormattedMessages"]],
 				(* transforms[ReleaseHold[r["Result"]], r["FormattedMessages"]],*)
@@ -286,10 +284,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ToString[ReleaseHold[r["Result"]], InputForm, TotalWidth -> 1000]
 			], 
 			
-			Print@"Output evaluation aborted"
-
-		];
-		output,
+			Print@"Output evaluation aborted";
+			transforms["Aborted"]
+		];,
 		True,
 		r = <|
 			"AbsoluteTiming" -> "NA",
@@ -310,11 +307,12 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 				ExportString[Rasterize@Short[result,10], {"Base64", "PNG"}, ImageSize->5*72] <> 
 				"\" style=\"max-height:190px;max-width:120px;width:100vw\" />", "-Error-"], 
 
-				Quantity[1, "Seconds"],
+				Quantity[0.5, "Seconds"],
 
 				ToString[result, InputForm, TotalWidth -> 100]
 				],
-					StringRiffle[Map[ToString[Short[#, 3], InputForm] &, r["FormattedMessages"]], "\n"]];
+			StringRiffle[Map[ToString[Short[#, 3], InputForm] &, r["FormattedMessages"]], "\n"]
+	];
 	maxWidth = 8192;
 	response = If[KeyMemberQ[json, "id"],
 		<|
@@ -1019,7 +1017,8 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 		tree = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
-		call = First[Cases[tree, ((x_LeafNode /; 
+		Check[
+			call = First[Cases[tree, ((x_LeafNode /; 
 			inCodeRangeQ[
 			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
 			pos]) | (x_CallNode /; 
@@ -1035,7 +1034,10 @@ getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, 
 
 			<|"code"->If[Head@str === String, StringTrim[str], "Failed"], "range"->call[[3]][Source]|>
 		];
-		result1
+		result1,
+		
+		<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>
+	]
 ];
 
 inCodeRangeQ[source_, pos_] := Module[{start, end},
@@ -1078,7 +1080,7 @@ getWordAtPosition["", position_]:= "";
 
 getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
 	srcLines =StringSplit[src, EndOfLine, All];
-	line = StringTrim@srcLines[[position["line"]+1]];
+	line = srcLines[[position["line"]+1]];
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
 		IntervalMemberQ[Interval[First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]+1] &], ""];
 	
@@ -1089,6 +1091,7 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
 	If[range[[1]] == range[[2]], Return[""]];
 
 	sLines = StringSplit[string, EndOfLine, All];
+
 	sRanges= getSourceRanges[range];
 
 	StringJoin@Table[
@@ -1103,10 +1106,10 @@ getSourceRanges[{start_, end_}]:=Table[
 	{l,start[[1]],end[[1]]}];
 
 lineRange[line_,start_,end_]:= ({line, Which[
-	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]-1]},
+	line == start[[1]] && line==end[[1]], {start[[2]], UpTo[end[[2]]]},
 	line == start[[1]] && line!=end[[1]], {start[[2]],-1},
 	line != start[[1]] && line!=end[[1]], All,
-	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]-1]}
+	line != start[[1]] && line==end[[1]], {1, UpTo[end[[2]]]}
 ]});
 
 charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},

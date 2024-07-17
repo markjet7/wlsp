@@ -106,6 +106,7 @@ $timeout = Now;
 Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
 socketHandler[state_]:=Module[{},
 	Get[DirectoryName[$path] <> "lsp-kernels.wl"];
+	Get[DirectoryName[$path] <> "render-html.wl"];
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

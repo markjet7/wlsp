@@ -94,7 +94,6 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
     launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
         wolframKernelClient = client;
-        console.log("Kernel ready: ")
         onkernelReady()
         // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
         //     // if (event.newState == State.Running) {
@@ -797,28 +796,14 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
 
             if (wolframKernelClient == undefined) {
                 outputChannel.appendLine("Kernel not running, waiting for kernel to start");
-                sendToWolframRetry += 1;
-                if (sendToWolframRetry < 10) {
-                    setTimeout(async () => { 
-                        try{
-                            outputChannel.appendLine("Retry: " + sendToWolframRetry + "/10");
-                            await sendToWolfram(printOutput, sel) 
-                        } catch {
-                            console.log("Error in sendToWolfram retry")
-                        }
-                    }, 500);
-                    return
-                } else {
-                    vscode.window.showErrorMessage("Wolfram kernel not running",
-                        "Restart kernel?").then((selection) => {
-                            if (selection === "Restart kernel?") {
-                                restartKernel()
-                            }
-                        });
-                    return
-                }
+                launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
+                    wolframKernelClient = await restartKernel();
+                    onkernelReady();
+                    sendToWolfram(printOutput, sel);
+                    return;
+                });
+                
             }
-            sendToWolframRetry = 0;
 
             if (wolframKernelClient?.state == State.Starting) {
                 // setTimeout(() => {sendToWolfram(printOutput, sel)}, 1000)

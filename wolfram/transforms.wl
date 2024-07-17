@@ -1,6 +1,7 @@
 SetAttributes[accountingFormat, HoldFirst];
 accountingFormat[expr_] := expr /. x_Real | x_Integer :> NumberForm[x, ScientificNotationThreshold -> {-9, 12}];
 
+
 (*
 transforms[output_Graphics]:=Module[{}, 
 	(*imageToPNG[output];*)
@@ -220,26 +221,48 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 	now = Now;
 	file = CreateFile[];
 
-	
-	processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
-
-
-	out = If[Length@errors > 1, 
-		Export[
-			file,
-			Column@{
-				processed,
-				errors /. {} -> ""},
-			"HTMLFragment", 
-			"GraphicsOutput"->"SVG"
+	out = If[
+		ByteCount[Column[{output, errors}]] < 1000000,
+		If[Length@errors > 1, 
+			Export[
+				file,
+				Column@{
+					output,
+					errors /. {} -> ""},
+				"HTMLFragment", 
+				"GraphicsOutput"->"SVG"
+			],
+			Export[
+				file,
+				output, 
+				"HTMLFragment", 
+				"GraphicsOutput"->"SVG"
+			]
 		],
-		Export[
-			file,
-			processed, 
-			"HTMLFragment", 
-			"GraphicsOutput"->"SVG"
-		]
-	];
+
+		processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
+
+
+		If[Length@errors > 1, 
+			Export[
+				file,
+				Rasterize@Short[Column@{
+					processed,
+					errors /. {} -> ""}, 5],
+				"HTMLFragment", 
+				"GraphicsOutput"->"SVG"
+			],
+			Export[
+				file,
+				Rasterize@Short[processed, 5], 
+				"HTMLFragment", 
+				"GraphicsOutput"->"SVG"
+				]
+			]
+		];
+
+	
+
 	(*
 	out
 	out = Export[

@@ -65,7 +65,6 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
 logfile = DirectoryName[$path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{},
-		Print[msg];
 	Check[
 		handle[msg["method"], msg],
 		(*Print["LSP error handling message"];
@@ -76,7 +75,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 ];
 
 handleMessage[msg_Association, state_, client_]:=Module[{},
-		Print[msg];
 	Check[
 		handle[msg["method"], msg, client],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>, client]
