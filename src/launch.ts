@@ -96,29 +96,21 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 outputChannel.appendLine("Client Socket error: " + err);
                 switch (err.code) {
                     case 'ECONNREFUSED':
-                        if (wolfram.connected) {
-                            connect();
-                        } else {
-                            outputChannel.appendLine("Connection refused. Retrying...");
-                            await load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
-                                socket.connect(clientPort, "127.0.0.1", () => {
-                                    outputChannel.appendLine("Client Socket connected")
-                                }
-                                );
-                            });
-                        }
+                        reconnect()
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
                         break;
                     case 'EPIPE':
                         outputChannel.appendLine("Broken pipe. Retrying...")
+                        reconnect()
                         break;
                     case 'EALREADY':
                         outputChannel.appendLine("Already connecting")
                         break;
                     default:
                         outputChannel.appendLine("Error: " + err.code)
+                        reconnect() 
                         break;
                 }
             });
@@ -145,6 +137,21 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                     connect();
                 }
             })
+
+            function reconnect() {
+
+                outputChannel.appendLine("Connection refused. Retrying...");
+                if (wolframKernel.connected) {
+                    connect();
+                } else {
+                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
+                        socket.connect(kernelPort, "127.0.0.1", () => {
+                            outputChannel.appendLine("Kernel Socket connected")
+                        }
+                        );
+                    });
+                }
+            }
 
             function connect() {
                 if (socket.connecting) {
@@ -229,25 +236,18 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 switch (err.code) {
                     case 'ECONNREFUSED':
                         outputChannel.appendLine("Connection refused. Retrying...");
-                        if (wolframKernel.connected) {
-                            connect();
-                        } else {
-                            load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                                socket.connect(kernelPort, "127.0.0.1", () => {
-                                    outputChannel.appendLine("Kernel Socket connected")
-                                }
-                                );
-                            });
-                        }
+                        reconnect()
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
                         break;
                     case 'EPIPE':
                         outputChannel.appendLine("Broken pipe. Retrying...")
+                        reconnect()
                         break;
                     default:
                         outputChannel.appendLine("Error: " + err.code)
+                        reconnect()
                         break;
                 }
             })
@@ -301,6 +301,19 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 //     });
                 // }, 500)
             })
+
+            function reconnect() {
+                if (wolframKernel.connected) {
+                    connect();
+                } else {
+                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
+                        socket.connect(kernelPort, "127.0.0.1", () => {
+                            outputChannel.appendLine("Kernel Socket connected")
+                        }
+                        );
+                    });
+                }
+            }
 
             function connect() {
                 if (kernelSocket.connecting) {

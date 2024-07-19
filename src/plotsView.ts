@@ -85,6 +85,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this._view.onDidDispose(
             () => {
+
+                this._view?.webview.postMessage({command: "save", text: [], input:"", output:[]})
+
                 this._view = undefined;
             },
             null

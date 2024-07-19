@@ -145,6 +145,22 @@ function createList(parentSelection, children) {
   }
 }
 
+  // Function to create a download button for the given image element
+  const createDownloadButton = (imageElement) => {
+    // Create a button element
+    const button = document.createElement("button");
+    button.id = "download-link";
+
+    // Set the button's text
+    button.textContent = "Download";
+
+    // Add a click event listener to the button
+    button.addEventListener("click", () => handleImageClick(imageElement));
+
+    // Insert the button after the image element
+    imageElement.insertAdjacentElement("afterend", button);
+  };
+
 (function () {
   const vscode = acquireVsCodeApi();
   var viewState = vscode.getState() || [];
@@ -232,11 +248,15 @@ function createList(parentSelection, children) {
           message.output +
           "`)'>Insert</button><br>"
       );
+      vscode.setState(outputDiv.innerHTML);
 
      
     }
 
-    vscode.setState(outputDiv.innerHTML);
+    if ("command" in message && message.command === "save") {
+      vscode.setState(outputDiv.innerHTML);
+      return;
+    }
 
     // outputDiv.scrollTop = outputDiv.scrollHeight;
 
@@ -284,21 +304,7 @@ function createList(parentSelection, children) {
     link.click();
   };
 
-  // Function to create a download button for the given image element
-  const createDownloadButton = (imageElement) => {
-    // Create a button element
-    const button = document.createElement("button");
-    button.id = "download-link";
 
-    // Set the button's text
-    button.textContent = "Download";
-
-    // Add a click event listener to the button
-    button.addEventListener("click", () => handleImageClick(imageElement));
-
-    // Insert the button after the image element
-    imageElement.insertAdjacentElement("afterend", button);
-  };
 
   var clearButton = document.getElementById("btn_clear");
   function clearOutputs() {

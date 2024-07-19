@@ -395,7 +395,7 @@ function clearResults() {
 // }
 
 let movePositions: { [index: string]: any } = {};
-function updatePositions(params: any) {
+async function updatePositions(params: any) {
     params["result"].forEach((e: any) => {
         if (!(e["location"]["uri"] in movePositions)) {
             movePositions[e["location"]["uri"]] = {}
@@ -523,7 +523,7 @@ function moveCursor2(position: vscode.Position) {
 // }
 
 
-function cursorBlock() {
+async function cursorBlock() {
     let e: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
     for (let i: any = 0; i < cursorLocations.length - 1; i++) {
         if (e) {
@@ -869,7 +869,7 @@ function onRunInWolframIO(result: any) {
 
 let evaluationResults: { [key: string]: string } = {}
 let now = Date.now();
-function onRunInWolfram(file: any) {
+async function onRunInWolfram(file: any) {
     let end = Date.now();
     outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
     
@@ -1399,11 +1399,22 @@ function printInWolfram(print = true) {
     runInWolfram(print);
 }
 
-function didChangeSelection(event: vscode.TextEditorSelectionChangeEvent) {
+async function didChangeSelection(event: vscode.TextEditorSelectionChangeEvent) {
 
     let editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+
+    // return if the file is not a wolfram file or untitled 
+    if (editor?.document.languageId !== "wolfram" || editor?.document.uri.scheme === 'untitled') {
+        return
+    }
+
+    let cursorBlock0: any = await cursorBlock();
+
+    if (cursorBlock0 === undefined) {
+        return
+    }
     editor?.setDecorations(blockDecorationType, []);
-    let cursorBlock0: any = cursorBlock();
+
     let d: vscode.DecorationOptions = {
         "range": new vscode.Range(
             cursorBlock0.start.line,
@@ -1419,6 +1430,9 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
     // didOpenTextDocument(event.document);
     // remove old decorations
     // console.log(event)
+
+    return new Promise((resolve) => {
+    });
 
     return new Promise((resolve) => {
 

@@ -140,7 +140,10 @@ Check[
 
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
-		socketHandler["Continue"]
+		CheckAbort[
+			socketHandler["Continue"],
+			Print["LSP aborted"]; socketHandler["Continue"]
+		];
 	],
 	8*1024^3
 ];

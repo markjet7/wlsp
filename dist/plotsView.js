@@ -59,6 +59,8 @@ class PlotsViewProvider {
         //     }
         // })
         this._view.onDidDispose(() => {
+            var _a;
+            (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "save", text: [], input: "", output: [] });
             this._view = undefined;
         }, null);
         // change the plotsView text css format when the configuration changes

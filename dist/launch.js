@@ -80,29 +80,21 @@ function startWLSP(id, path) {
                         extension_1.outputChannel.appendLine("Client Socket error: " + err);
                         switch (err.code) {
                             case 'ECONNREFUSED':
-                                if (wolfram.connected) {
-                                    connect();
-                                }
-                                else {
-                                    extension_1.outputChannel.appendLine("Connection refused. Retrying...");
-                                    yield load(wolfram, lspPath, clientPort, extension_1.outputChannel).then((r) => {
-                                        socket.connect(clientPort, "127.0.0.1", () => {
-                                            extension_1.outputChannel.appendLine("Client Socket connected");
-                                        });
-                                    });
-                                }
+                                reconnect();
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
                                 break;
                             case 'EPIPE':
                                 extension_1.outputChannel.appendLine("Broken pipe. Retrying...");
+                                reconnect();
                                 break;
                             case 'EALREADY':
                                 extension_1.outputChannel.appendLine("Already connecting");
                                 break;
                             default:
                                 extension_1.outputChannel.appendLine("Error: " + err.code);
+                                reconnect();
                                 break;
                         }
                     });
@@ -124,6 +116,19 @@ function startWLSP(id, path) {
                         connect();
                     }
                 });
+                function reconnect() {
+                    extension_1.outputChannel.appendLine("Connection refused. Retrying...");
+                    if (wolframKernel.connected) {
+                        connect();
+                    }
+                    else {
+                        load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
+                            socket.connect(kernelPort, "127.0.0.1", () => {
+                                extension_1.outputChannel.appendLine("Kernel Socket connected");
+                            });
+                        });
+                    }
+                }
                 function connect() {
                     if (socket.connecting) {
                         return;
@@ -203,25 +208,18 @@ function startWLSPKernelSocket(id, path) {
                         switch (err.code) {
                             case 'ECONNREFUSED':
                                 extension_1.outputChannel.appendLine("Connection refused. Retrying...");
-                                if (wolframKernel.connected) {
-                                    connect();
-                                }
-                                else {
-                                    load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
-                                        socket.connect(kernelPort, "127.0.0.1", () => {
-                                            extension_1.outputChannel.appendLine("Kernel Socket connected");
-                                        });
-                                    });
-                                }
+                                reconnect();
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
                                 break;
                             case 'EPIPE':
                                 extension_1.outputChannel.appendLine("Broken pipe. Retrying...");
+                                reconnect();
                                 break;
                             default:
                                 extension_1.outputChannel.appendLine("Error: " + err.code);
+                                reconnect();
                                 break;
                         }
                     });
@@ -266,6 +264,18 @@ function startWLSPKernelSocket(id, path) {
                     //     });
                     // }, 500)
                 });
+                function reconnect() {
+                    if (wolframKernel.connected) {
+                        connect();
+                    }
+                    else {
+                        load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
+                            socket.connect(kernelPort, "127.0.0.1", () => {
+                                extension_1.outputChannel.appendLine("Kernel Socket connected");
+                            });
+                        });
+                    }
+                }
                 function connect() {
                     if (kernelSocket.connecting) {
                         return;
