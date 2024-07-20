@@ -73,7 +73,9 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
         clientPort = clientPort + 1;
     };
 
-    await load(wolfram, lspPath, clientPort, outputChannel);
+    if (wolfram == undefined) {
+        await load(wolfram, lspPath, clientPort, outputChannel);
+    }
 
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
@@ -96,7 +98,9 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 outputChannel.appendLine("Client Socket error: " + err);
                 switch (err.code) {
                     case 'ECONNREFUSED':
-                        reconnect()
+                        await setTimeout(() => {
+                            reconnect()
+                        }, 1000)
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
@@ -208,7 +212,10 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
     if (serverReady) {
         kernelPort = kernelPort + 1;
     }
-    await load(wolframKernel, kernelPath, kernelPort, outputChannel);
+
+    if (wolframKernel == undefined) {
+        await load(wolframKernel, kernelPath, kernelPort, outputChannel);
+    }
     kernelConnecting = true;
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
@@ -236,7 +243,9 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 switch (err.code) {
                     case 'ECONNREFUSED':
                         outputChannel.appendLine("Connection refused. Retrying...");
-                        reconnect()
+                        await setTimeout(() => {
+                            reconnect()
+                        }, 1000)
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
@@ -598,8 +607,8 @@ export async function stop(): Promise<void> {
     // wolframClient?.sendNotification("Shutdown");
 
     console.log("Stopping Wolfram Clients")
-    wolframKernelClient?.stop();
-    wolframClient?.stop();
+    await wolframKernelClient?.stop();
+    await wolframClient?.stop();
 
     console.log("Stopping Wolfram Processes")
     await kill(wolfram.pid);

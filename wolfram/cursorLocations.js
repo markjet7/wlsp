@@ -1,13 +1,13 @@
 {
-	"file:\/\/\/System\/Volumes\/Data\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/BioplasticsReview\/bibliography.wl":[
+	"file:\/\/\/System\/Volumes\/Data\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/process\/plots\/llamatest.wl.nb":[
 		{
 			"start":{
-				"line":2,
+				"line":4,
 				"character":0
 			},
 			"end":{
-				"line":2,
-				"character":33
+				"line":4,
+				"character":47
 			}
 		},
 		{
@@ -17,107 +17,57 @@
 			},
 			"end":{
 				"line":5,
-				"character":46
-			}
-		},
-		{
-			"start":{
-				"line":7,
-				"character":0
-			},
-			"end":{
-				"line":7,
-				"character":46
-			}
-		},
-		{
-			"start":{
-				"line":10,
-				"character":0
-			},
-			"end":{
-				"line":10,
-				"character":54
-			}
-		},
-		{
-			"start":{
-				"line":12,
-				"character":0
-			},
-			"end":{
-				"line":12,
-				"character":115
-			}
-		},
-		{
-			"start":{
-				"line":13,
-				"character":0
-			},
-			"end":{
-				"line":13,
 				"character":17
 			}
 		},
 		{
 			"start":{
-				"line":15,
+				"line":6,
 				"character":0
 			},
 			"end":{
-				"line":20,
-				"character":1
+				"line":6,
+				"character":32
 			}
 		},
 		{
 			"start":{
+				"line":8,
+				"character":0
+			},
+			"end":{
+				"line":17,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":20,
+				"character":0
+			},
+			"end":{
 				"line":22,
+				"character":50
+			}
+		},
+		{
+			"start":{
+				"line":24,
 				"character":0
 			},
 			"end":{
 				"line":25,
-				"character":1
+				"character":105
 			}
 		},
 		{
 			"start":{
-				"line":27,
+				"line":28,
 				"character":0
 			},
 			"end":{
-				"line":30,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":32,
-				"character":0
-			},
-			"end":{
-				"line":46,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":48,
-				"character":0
-			},
-			"end":{
-				"line":66,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":68,
-				"character":0
-			},
-			"end":{
-				"line":68,
-				"character":16
+				"line":28,
+				"character":38
 			}
 		}
 	]

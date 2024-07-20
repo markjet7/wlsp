@@ -60,7 +60,9 @@ function startWLSP(id, path) {
             clientPort = clientPort + 1;
         }
         ;
-        yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+        if (wolfram == undefined) {
+            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+        }
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 let retries = 0;
@@ -80,7 +82,9 @@ function startWLSP(id, path) {
                         extension_1.outputChannel.appendLine("Client Socket error: " + err);
                         switch (err.code) {
                             case 'ECONNREFUSED':
-                                reconnect();
+                                yield setTimeout(() => {
+                                    reconnect();
+                                }, 1000);
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
@@ -183,7 +187,9 @@ function startWLSPKernelSocket(id, path) {
         if (serverReady) {
             kernelPort = kernelPort + 1;
         }
-        yield load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel);
+        if (wolframKernel == undefined) {
+            yield load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel);
+        }
         kernelConnecting = true;
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
@@ -208,7 +214,9 @@ function startWLSPKernelSocket(id, path) {
                         switch (err.code) {
                             case 'ECONNREFUSED':
                                 extension_1.outputChannel.appendLine("Connection refused. Retrying...");
-                                reconnect();
+                                yield setTimeout(() => {
+                                    reconnect();
+                                }, 1000);
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
@@ -522,8 +530,8 @@ function stop() {
         // wolframKernelClient?.sendNotification("Shutdown");
         // wolframClient?.sendNotification("Shutdown");
         console.log("Stopping Wolfram Clients");
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop();
-        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop();
+        yield (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop());
+        yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop());
         console.log("Stopping Wolfram Processes");
         yield kill(wolfram.pid);
         yield kill(wolframKernel.pid);
