@@ -884,7 +884,7 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, oldContext},
+evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, response, oldContext},
 
 	sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
 	(* Begin["VSCode`"]; *)
