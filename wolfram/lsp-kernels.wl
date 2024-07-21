@@ -161,6 +161,7 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		src = documents[json["params","textDocument","uri", "external"]];
 		code = getCode[src, range];
 		newPosition = <|"line"->code["range"][[2,1]]+1, "character"->1|>;
+		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
 
 		(* Split string into code blocks *)
 		codeBlocks = Select[
@@ -213,6 +214,7 @@ handle["runInWolframIO", json_]:=Module[{start, range, uri, src, code, newPositi
 			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>
 		|>|>];
 		newPosition = <|"line"->code["range"][[2,1]], "character"->1|>;
+		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..."  |>|>];
 		
 		If[!SyntaxQ@code["code"],
 			sendResponse[<|"method" -> "onRunInWolframIO", "params" -> <|"output" -> "Syntax error", "input" -> code["code"], "result" -> "Syntax error", "load" -> False, "position" -> newPosition, "print" -> json["params", "print"], "hover" -> "Syntax error", "messages" -> {}, "time" -> 0, "decoration" -> "Syntax error", "document" -> json["params", "textDocument", "uri"]|>|>];
@@ -252,7 +254,6 @@ $myShort[expr_, n_:50] := (
 );
 evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine, decorationChar, string, output, successQ, decoration, response, response4, r, result, values, f, maxWidth, time, stack, hoverMessage, file},
 	$busy = True;
-	sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition |>|>];
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
@@ -479,7 +480,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		result
 	]; 
 	$busy = False;
-	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False |>|>];
+	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False, "text" -> ""  |>|>];
 ];
 
 storageUri = "";
@@ -535,7 +536,7 @@ handle["getChildren", json_]:=Module[{function, result, file},
 		)
 ];
 
-handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, chaIndeces, evaluations, decorations},
+handle["runDocumentLive", json_]:=Module[{e, r, uri, functions, locations, lineColumns, ast, charIndeces, evaluations, decorations},
 	uri = json["params", "external"];
 	ast = CodeParse[documents[uri], SourceConvention -> "LineColumn"];
 

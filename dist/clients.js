@@ -50,6 +50,7 @@ let plotsProvider;
 let debugging = false;
 exports.wolframClient = undefined;
 exports.wolframKernelClient = undefined;
+let firstKernelLaunched = false;
 function startLanguageServer(context0, outputChannel0) {
     return __awaiter(this, void 0, void 0, function* () {
         context = context0;
@@ -66,9 +67,11 @@ function startLanguageServer(context0, outputChannel0) {
             //     // }
             // })
         });
-        launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
+        vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
+        yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
             exports.wolframKernelClient = client;
             onkernelReady();
+            firstKernelLaunched = true;
             // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
             //     // if (event.newState == State.Running) {
             //         console.log("Kernel ready: " + event.newState)
@@ -115,7 +118,6 @@ function startLanguageServer(context0, outputChannel0) {
         // context.subscriptions.push(
         //     wlspdebugger
         // )
-        vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
         vscode.commands.registerCommand('wolfram.runToLine', runToLine);
         vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
         vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
@@ -426,69 +428,72 @@ function cursorBlock() {
 let cursorMoved = false;
 let cursorLocations = [];
 function moveCursor(selection) {
-    // if (cursorMoved == true) {
-    //     cursorMoved = false;
-    //     return
-    // }
-    let e = vscode.window.activeTextEditor;
-    fs.readFile(cursorFile, "utf8", (err, data) => {
-        var _a, _b, _c;
-        if (err) {
-            console.log(err);
-            return;
-        }
-        let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
-        cursorLocations = (_a = JSON.parse(data)[uri]) !== null && _a !== void 0 ? _a : [];
-        let top = selection.active;
-        let bottom = (e === null || e === void 0 ? void 0 : e.selection.active.line) + 1 || 0;
-        for (let i = 0; i < cursorLocations.length; i++) {
-            if (e) {
-                // This is the current block being executed
-                if ((cursorLocations[i]["start"]["line"] <= selection.active.line) && (cursorLocations[i]["end"]["line"] >= selection.active.line)) {
-                    // There is a block after this one
-                    if (cursorLocations.length > i + 1) {
-                        top = cursorLocations[i]["end"];
-                        bottom = cursorLocations[i + 1]["start"]["line"];
-                        break;
-                    }
-                    else {
-                        top = cursorLocations[i]["end"];
-                        bottom = top.line + 1;
-                        break;
+    return __awaiter(this, void 0, void 0, function* () {
+        // if (cursorMoved == true) {
+        //     cursorMoved = false;
+        //     return
+        // }
+        let e = vscode.window.activeTextEditor;
+        fs.readFile(cursorFile, "utf8", (err, data) => {
+            var _a, _b, _c;
+            if (err) {
+                console.log(err);
+                return;
+            }
+            let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
+            cursorLocations = (_a = JSON.parse(data)[uri]) !== null && _a !== void 0 ? _a : [];
+            let top = selection.active;
+            let bottom = (e === null || e === void 0 ? void 0 : e.selection.active.line) + 1 || 0;
+            for (let i = 0; i < cursorLocations.length; i++) {
+                if (e) {
+                    // This is the current block being executed
+                    if ((cursorLocations[i]["start"]["line"] <= selection.active.line) && (cursorLocations[i]["end"]["line"] >= selection.active.line)) {
+                        // There is a block after this one
+                        if (cursorLocations.length > i + 1) {
+                            top = cursorLocations[i]["end"];
+                            bottom = cursorLocations[i + 1]["start"]["line"];
+                            break;
+                        }
+                        else {
+                            top = cursorLocations[i]["end"];
+                            bottom = top.line + 1;
+                            break;
+                        }
                     }
                 }
             }
-        }
-        // console.log(selection.active.line, bottom)
-        let outputPosition = new vscode.Position(bottom, 0);
-        if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line)) {
-            e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
-                editBuilder.insert(new vscode.Position(outputPosition.line + 1, 0), "\n");
-            });
-        }
-        if (e) {
-            e.selection = new vscode.Selection(outputPosition, outputPosition);
-            // cursorMoved = true;
-            e === null || e === void 0 ? void 0 : e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            decorateRunningLine(new vscode.Position(top["line"], top["character"]));
-            let newEditorDecorations = [];
-            let selection = e.selection.active;
-            newEditorDecorations = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []).filter((d) => {
-                return d.range.start.line < selection.line;
-            });
-            editorDecorations.set(e.document.uri.toString(), newEditorDecorations);
-            e.setDecorations(variableDecorationType, ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []));
-        }
+            // console.log(selection.active.line, bottom)
+            let outputPosition = new vscode.Position(bottom, 0);
+            // if the outputposition is equal to the lineCount and the last line is not empty, add a new line
+            if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == (outputPosition.line) && (e === null || e === void 0 ? void 0 : e.document.lineAt(outputPosition.line - 1).text) != "") {
+                e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
+                    editBuilder.insert(new vscode.Position(outputPosition.line + 1, 0), "\n");
+                });
+            }
+            if (e) {
+                e.selection = new vscode.Selection(outputPosition, outputPosition);
+                // cursorMoved = true;
+                e === null || e === void 0 ? void 0 : e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+                decorateRunningLine(new vscode.Position(top["line"], top["character"]));
+                let newEditorDecorations = [];
+                let selection = e.selection.active;
+                newEditorDecorations = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []).filter((d) => {
+                    return d.range.start.line < selection.line;
+                });
+                editorDecorations.set(e.document.uri.toString(), newEditorDecorations);
+                e.setDecorations(variableDecorationType, ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []));
+            }
+        });
     });
 }
 function decorateRunningLine(outputPosition) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     let e = vscode.window.activeTextEditor;
     if (e) {
         // if (outputPosition.line == 0) {
         //     return
         // }
-        let decorationLine = e.document.lineAt(outputPosition.line);
+        let decorationLine = e.document.lineAt(outputPosition.line - 1);
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 10);
         let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 20);
         let range = new vscode.Range(start, end);
@@ -502,16 +507,14 @@ function decorateRunningLine(outputPosition) {
                 }
             }
         };
-        runningLines.set(range, d);
         e.setDecorations(runningDecorationType, Array.from(runningLines.values()));
-        let documentDecorations = (_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
-        for (let i = 0; i < ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : []).length; i++) {
-            const d1 = ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : [])[i];
+        for (let i = 0; i < ((_a = editorDecorations.get(e.document.uri.toString())) !== null && _a !== void 0 ? _a : []).length; i++) {
+            const d1 = ((_b = editorDecorations.get(e.document.uri.toString())) !== null && _b !== void 0 ? _b : [])[i];
             if (d1.range.start.line == d.range.start.line) {
-                ((_d = editorDecorations.get(e.document.uri.toString())) !== null && _d !== void 0 ? _d : []).splice(i, 1);
+                ((_c = editorDecorations.get(e.document.uri.toString())) !== null && _c !== void 0 ? _c : []).splice(i, 1);
             }
         }
-        e.setDecorations(variableDecorationType, ((_e = editorDecorations.get(e.document.uri.toString())) !== null && _e !== void 0 ? _e : []));
+        e.setDecorations(variableDecorationType, ((_d = editorDecorations.get(e.document.uri.toString())) !== null && _d !== void 0 ? _d : []));
         // updateDecorations([d]);
     }
 }
@@ -644,6 +647,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                 // console.log(wolframKernelClient?.state)
                 // outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
                 if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == node_1.State.Running) {
+                    console.log("Kernel running, sending to Wolfram");
                     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
                     }).catch((err) => {
                         console.log("Error in runInWolfram");
@@ -651,10 +655,12 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     });
                     return;
                 }
-                if (exports.wolframKernelClient == undefined) {
+                if (exports.wolframKernelClient == undefined && firstKernelLaunched == true) {
                     outputChannel.appendLine("Kernel not running, waiting for kernel to start");
-                    launch.startWLSPKernelSocket(0, kernelPath).then((client) => __awaiter(this, void 0, void 0, function* () {
-                        exports.wolframKernelClient = yield restartKernel();
+                    yield launch.stopKernel();
+                    yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+                        outputChannel.appendLine("Kernel started after not running");
+                        exports.wolframKernelClient = client;
                         onkernelReady();
                         sendToWolfram(printOutput, sel);
                         return;
@@ -703,24 +709,27 @@ function setDecorations(result) {
     }
 }
 function onRunInWolframIO(result) {
-    let end = Date.now();
-    outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
-    // wolframBusyQ = false;
-    wolframStatusBar.text = wolframVersionText;
-    wolframStatusBar.show();
-    setDecorations({ params: result });
-    const editors = vscode.window.visibleTextEditors;
-    let e = editors.filter((e) => {
-        return e.document.uri.path === result["document"]["path"];
-    })[0];
-    updateResults(e, { params: result }, result["print"], result["input"]);
+    return __awaiter(this, void 0, void 0, function* () {
+        let end = Date.now();
+        outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
+        // wolframBusyQ = false;
+        wolframStatusBar.text = wolframVersionText;
+        wolframStatusBar.show();
+        setDecorations({ params: result });
+        const editors = vscode.window.visibleTextEditors;
+        let e = editors.filter((e) => {
+            return e.document.uri.path === result["document"]["path"];
+        })[0];
+        updateResults(e, { params: result }, result["print"], result["input"]);
+    });
 }
 let evaluationResults = {};
 let now = Date.now();
 function onRunInWolfram(file) {
     return __awaiter(this, void 0, void 0, function* () {
         let end = Date.now();
-        outputChannel.appendLine(`Execution time: ${end - starttime} ms`);
+        let start = Date.now();
+        outputChannel.appendLine(`Execution time: ${end - start} ms`);
         // wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
@@ -733,7 +742,7 @@ function onRunInWolfram(file) {
                 "method": "onRunInWolfram",
                 "params": file
             };
-            setDecorations(result);
+            // setDecorations(result);
             const editors = vscode.window.visibleTextEditors;
             let e = editors.filter((e) => {
                 return e.document.uri.path === result["params"]["document"]["path"];
@@ -789,7 +798,6 @@ function onRunInWolfram(file) {
                         }
                     };
                 }
-                setDecorations(result);
                 const editors = vscode.window.visibleTextEditors;
                 let e = editors.filter((e) => {
                     return e.document.uri.path === result["params"]["document"]["path"];
@@ -810,6 +818,7 @@ function onRunInWolfram(file) {
             else {
                 exports.treeDataProvider.refresh();
             }
+            setDecorations(result);
         }));
         // try{
         //     result = JSON.parse(fs.readFileSync(file["file"], "utf8"))["params"];
@@ -835,6 +844,7 @@ function updateResults(e, result, print, input = "", file = "") {
                 var _a, _b, _c, _d;
                 let output;
                 let rawoutput;
+                now = Date.now();
                 if (result["params"]["load"]) {
                     output = `${fs.readFileSync(result["params"]["output"]).toString()}`;
                     outputChannel.appendLine("Time to read file: " + (Date.now() - now) + " ms");
@@ -948,12 +958,31 @@ function runExpression(expression, line, end) {
 }
 let wolframBusyQ = false;
 function wolframBusy(params) {
+    let outputPosition = new vscode.Position(0, 0);
+    if (params.position) {
+        outputPosition = new vscode.Position(params.position.line - 1, params.position.character);
+        let e = vscode.window.activeTextEditor;
+        if (e) {
+            let decorationLine = e.document.lineAt(outputPosition.line - 1);
+            let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 10);
+            let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 20);
+            let range = new vscode.Range(start, end);
+            let d = {
+                "range": range,
+                "renderOptions": {
+                    "after": {
+                        "contentText": params.text,
+                        "color": "foreground",
+                        "margin": "20px"
+                    }
+                }
+            };
+            runningLines.set(range, d);
+        }
+    }
+    ;
     if (params.busy === true) {
         //kernelStatusBar.color = "red";
-        let outputPosition = new vscode.Position(0, 0);
-        if (params.position) {
-            outputPosition = new vscode.Position(params.position.line, params.position.character);
-        }
         wolframBusyQ = true;
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Running (" + (outputPosition.line) + ")";
         wolframStatusBar.show();

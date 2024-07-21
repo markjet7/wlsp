@@ -1,6 +1,7 @@
 // transform.js
 // import * as d3 from "./d3.min.js";
 
+const parser = new DOMParser();
 function processArray(array, parentSelection = undefined) {
   // console.log("processArray", array);
   const tag = array[0];
@@ -167,6 +168,7 @@ function createList(parentSelection, children) {
   // results = [];
   var index = 0;
 
+
   
 
   function scrollToBottom() {
@@ -201,6 +203,7 @@ function createList(parentSelection, children) {
 
   var lastInput = "";
   window.addEventListener("message", (event) => {
+    var start = new Date().getTime();
     // console.log("onRunInWolfram")
     // const svg = d3.select("svg");
     // console.log(
@@ -233,22 +236,46 @@ function createList(parentSelection, children) {
         "<hr></div><div class='output_row'>Loading...</div>";
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
     }
+    
     var width, height;
     if (message.output.length > 0) {
-      outputDiv.innerHTML = outputDiv.innerHTML.replace(
-        '<div class="output_row">Loading...</div>',
-        `<div class="output_row">` +
+
+      let output = `<div class="output_row">` +
         // <svg id="svg${index}"></svg>` +
           message.output +
-          "</div>" +
           "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(`" +
           message.output +
           "`)'>Open</button>" +
           "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(`" +
           message.output +
-          "`)'>Insert</button><br>"
+          "`)'>Insert</button><br></div>";
+
+      let doc = parser.parseFromString(output, "text/html");
+      let images = doc.getElementsByTagName("img");
+      for (const image of images) {
+        createDownloadButton(image);
+      }
+
+      outputDiv.innerHTML = outputDiv.innerHTML.replace(
+        '<div class="output_row">Loading...</div>',
+        doc.body.innerHTML
       );
+      
+
+      let inputRows = document.getElementsByClassName("input_row");
+      if (inputRows.length > 19) {
+        let lastInputRow = inputRows[inputRows.length - 1];
+        lastInputRow.remove();
+      }
+
+      let outputRows = document.getElementsByClassName("output_row");
+      if (outputRows.length > 19) {
+        let lastOutputRow = outputRows[outputRows.length - 1];
+        lastOutputRow.remove();
+      }
+
       vscode.setState(outputDiv.innerHTML);
+      
 
      
     }
@@ -262,6 +289,7 @@ function createList(parentSelection, children) {
 
     // Add a download button for each image element
     updateImageElements();
+    // 
   });
 
   // Get all image elements on the page
@@ -289,7 +317,7 @@ function createList(parentSelection, children) {
   outputDiv.scrollTop = outputDiv.scrollHeight;
 
   // Add a download button for each image element
-  updateImageElements();
+  // updateImageElements();
 
   // Create a function to handle the click event
   const handleImageClick = (imageElement) => {
