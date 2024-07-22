@@ -150,7 +150,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 } else {
                     load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
                         socket.connect(kernelPort, "127.0.0.1", () => {
-                            outputChannel.appendLine("Kernel Socket connected")
+                            outputChannel.appendLine("Client Socket connected")
                         }
                         );
                     });
@@ -185,6 +185,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     };
     wolframClient = new LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
 
+
     return new Promise(async (resolve) => {
 
         wolframClient?.start().then((value) => {
@@ -207,6 +208,18 @@ let kernelConnecting = false;
 let kernelSocket = new net.Socket();
 export async function startWLSPKernelSocket(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
+    try {
+        outputChannel.appendLine("Wolfram Kernel state: " + wolframKernelClient?.state)
+    }
+    catch (e) {
+    }
+
+    if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
+        return new Promise((resolve) => {
+            resolve(wolframKernelClient)
+        });
+    }
+
     kernelPath = path;
     let serverReady = await checkPort(kernelPort);
     if (serverReady) {
@@ -222,7 +235,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
             // let socket = new net.Socket();
             let retries = 0;
 
-            kernelSocket.setMaxListeners(5);
+            kernelSocket.setMaxListeners(1);
 
             // socket.on("data", (data) => {
             // outputChannel.appendLine("WLSP Kernel Data: " + data.toString().slice(0, 200))
@@ -249,10 +262,19 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
+                        reconnect();
                         break;
                     case 'EPIPE':
                         outputChannel.appendLine("Broken pipe. Retrying...")
                         reconnect()
+                        break;
+                    case 'EISCONN':
+                        outputChannel.appendLine("Already connected")
+                        kernelConnecting = false;
+                        resolve({
+                            reader: kernelSocket,
+                            writer: kernelSocket
+                        })
                         break;
                     default:
                         outputChannel.appendLine("Error: " + err.code)
@@ -317,7 +339,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 } else {
                     load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
                         socket.connect(kernelPort, "127.0.0.1", () => {
-                            outputChannel.appendLine("Kernel Socket connected")
+                            outputChannel.appendLine("Kernel Socket reconnected")
                         }
                         );
                     });
@@ -329,7 +351,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                     return;
                 } else {
                     kernelSocket.connect(kernelPort, "127.0.0.1", () => {
-                        
+                        outputChannel.appendLine("Kernel Socket connected")
                     });
                 }
             };
@@ -515,10 +537,12 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
             cpw.on("error", (err) => {
                 outputChannel.appendLine("Wolframscript error: " + err)
                 vscode.window.showErrorMessage("WLSP failed to load. Please check that wolframscript is installed and that the path is correct in the settings. Download wolframscript at https://www.wolfram.com/engine/")
+                kill(cpw.pid);
             })
 
             cpw.on('SIGPIPE', (data) => {
                 console.log("SIGPIPE");
+                kill(cpw.pid);
             });
 
 
@@ -527,7 +551,6 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
             });
 
             cpw.stdout?.on('data', (data) => {
-
                 outputChannel.appendLine("WLSP: " + data.toString())
 
                 if (data.toString().includes("SocketObject")) {
@@ -555,7 +578,7 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
                 if (launched) {
                     return
                 };
-                vscode.window.showErrorMessage("Failed to load wolfram after 10 seconds. Please check your installation and make sure wolframscript is in the path.")
+                outputChannel.appendLine("Failed to load wolfram after 10 seconds. Please check your installation and make sure wolframscript is in the path.")
                 resolve(undefined)
             }, 10000);
 
@@ -564,6 +587,7 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
             console.log(error)
             vscode.window.showErrorMessage("Wolframscript failed to load.")
             outputChannel.appendLine("Wolframscript failed to load. " + error)
+            kill(cpw.pid);
             resolve(cpw)
         }
     })
@@ -620,23 +644,43 @@ export async function stop(): Promise<void> {
     });
 }
 
-async function stopKernel(): Promise<void> {
+export async function stopKernel(): Promise<void> {
     outputChannel.appendLine("STOP: Stopping kernel")
-    outputChannel.appendLine("Wolfram Kernel Client Status: " + wolframKernelClient?.state)
-    return wolframKernelClient?.stop().then(async () => {
+    if (wolframKernelClient && wolframKernel.pid) {
+        outputChannel.appendLine("Wolfram Kernel Client Status: " + wolframKernelClient?.state)
 
-        if (wolframKernel) {
-            outputChannel.appendLine("STOP: Killing kernel process: " + wolframKernel.pid)
-            await kill(wolframKernel.pid)
-            outputChannel.appendLine("Kernel process killed")
-        } else {
-            outputChannel.appendLine("Kernel process not found")
-        }
+        return wolframKernelClient?.stop().then(async () => {
 
+            if (wolframKernel) {
+                outputChannel.appendLine("STOP: Killing kernel process: " + wolframKernel.pid)
+                await kill(wolframKernel.pid)
+                outputChannel.appendLine("Kernel process killed")
+            } else {
+                outputChannel.appendLine("Kernel process not found")
+            }
+
+            return new Promise(async (resolve): Promise<any> => {
+                resolve();
+            });
+        })
+    } else if (wolframKernel?.pid) {
+        outputChannel.appendLine("STOP: Killing kernel process: " + wolframKernel.pid)
+        await kill(wolframKernel.pid)
+        outputChannel.appendLine("Kernel process killed")
         return new Promise(async (resolve): Promise<any> => {
             resolve();
         });
-    })
+    } else if (wolframKernelClient) {
+        return wolframKernelClient?.stop().then(async () => {
+            return new Promise(async (resolve): Promise<any> => {
+                resolve();
+            });
+        })
+    } else {
+        return new Promise(async (resolve): Promise<any> => {
+            resolve();
+        });
+    }
 }
 
 
@@ -698,7 +742,7 @@ class ClientErrorHandler implements ErrorHandler {
     closed(): CloseHandlerResult {
         console.log("Closed")
         return {
-            action: CloseAction.DoNotRestart
+            action: CloseAction.Restart
         }
     }
 
