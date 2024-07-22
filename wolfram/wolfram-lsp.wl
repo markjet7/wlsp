@@ -130,7 +130,7 @@ socketHandler[state_]:=Module[{},
 	] & /@ SERVER["ConnectedClients"]), "Continue"]
 ] // socketHandler;
 
-Check[
+connect[]:=Check[
 	Print[port];
 	SERVER=SocketOpen[port,"TCP"];
 	Replace[SERVER,{$Failed:>(Print["Cannot start tcp server."]; Quit[1])}];
@@ -138,11 +138,13 @@ Check[
 
 	Quit[]];
 
+connect[];
+
 MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 		CheckAbort[
 			socketHandler["Continue"],
-			Print["LSP aborted"]; socketHandler["Continue"]
+			Print["LSP aborted"]; connect[]; socketHandler["Continue"]
 		];
 	],
 	8*1024^3
