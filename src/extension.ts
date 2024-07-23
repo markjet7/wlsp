@@ -46,7 +46,7 @@ function willsaveDocument(event:vscode.TextDocumentWillSaveEvent) {
     }
 }
 
-export function deactivate() {
-    stop();
+export async function deactivate() {
+    await stop();
     console.log("deactivate");
 }

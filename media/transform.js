@@ -43,6 +43,23 @@ function processArray(array, parentSelection = undefined) {
   return selection;
 }
 
+
+function openOutputInNewDocument(output) {
+  test = vscode.postMessage({
+    text: "open",
+    // data: span1.textContent || span1.innerText
+    data: output,
+  });
+}
+
+function pasteOutput(output) {
+  test = vscode.postMessage({
+    text: "paste",
+    // data: span1.textContent || span1.innerText
+    data: output,
+  });
+}
+
 function createDefault(parentSelection, children) {
   const selection = parentSelection;
   // console.log("createDefault", children);
@@ -168,7 +185,21 @@ function createList(parentSelection, children) {
   // results = [];
   var index = 0;
 
-
+  const openOutputInNewDocument = (output) => {
+    test = vscode.postMessage({
+      text: "open",
+      // data: span1.textContent || span1.innerText
+      data: output,
+    });
+  }
+  
+  function pasteOutput(output) {
+    test = vscode.postMessage({
+      text: "paste",
+      // data: span1.textContent || span1.innerText
+      data: output,
+    });
+  }
   
 
   function scrollToBottom() {
@@ -240,15 +271,10 @@ function createList(parentSelection, children) {
     var width, height;
     if (message.output.length > 0) {
 
-      let output = `<div class="output_row">` +
-        // <svg id="svg${index}"></svg>` +
-          message.output +
-          "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(`" +
-          message.output +
-          "`)'>Open</button>" +
-          "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(`" +
-          message.output +
-          "`)'>Insert</button><br></div>";
+      let output = `<div class="output_row" data-content="${message.output.replace(/"/g, '&quot;')}">` +
+      message.output +
+      "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
+      "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
 
       let doc = parser.parseFromString(output, "text/html");
       let images = doc.getElementsByTagName("img");
@@ -351,19 +377,4 @@ function createList(parentSelection, children) {
     console.log(test);
   }
 
-  function openOutputInNewDocument(output) {
-    test = vscode.postMessage({
-      text: "open",
-      // data: span1.textContent || span1.innerText
-      data: output,
-    });
-  }
-
-  function pasteOutput(output) {
-    test = vscode.postMessage({
-      text: "paste",
-      // data: span1.textContent || span1.innerText
-      data: output,
-    });
-  }
 })();

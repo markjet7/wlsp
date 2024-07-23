@@ -51,6 +51,7 @@ function checkPort(port) {
         s.connect(port, '127.0.0.1');
     });
 }
+let clientConnectionAttempts = 0;
 function startWLSP(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
@@ -122,15 +123,28 @@ function startWLSP(id, path) {
                 });
                 function reconnect() {
                     extension_1.outputChannel.appendLine("Connection refused. Retrying...");
-                    if (wolframKernel.connected) {
-                        connect();
+                    if (clientConnectionAttempts > 10) {
+                        extension_1.outputChannel.appendLine("Too many connection attempts. Stopping client.");
+                        stopWolfram(undefined, wolfram);
+                        return;
                     }
                     else {
-                        load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
-                            socket.connect(kernelPort, "127.0.0.1", () => {
-                                extension_1.outputChannel.appendLine("Client Socket connected");
-                            });
-                        });
+                        clientConnectionAttempts += 1;
+                        setTimeout(() => {
+                            if (wolfram.connected) {
+                                connect();
+                            }
+                            if (!wolfram.connected && socket.connecting == false) {
+                                load(wolfram, lspPath, clientPort, extension_1.outputChannel).then((r) => {
+                                    socket.connect(clientPort, "127.0.0.1", () => {
+                                        extension_1.outputChannel.appendLine("Client Socket connected");
+                                    });
+                                });
+                            }
+                            if (socket.connecting) {
+                                return;
+                            }
+                        }, Math.pow(2, clientConnectionAttempts) * 1000);
                     }
                 }
                 function connect() {
@@ -179,6 +193,7 @@ function startWLSP(id, path) {
 exports.startWLSP = startWLSP;
 let kernelConnecting = false;
 let kernelSocket = new net.Socket();
+let kernelConnectionAttempts = 0;
 function startWLSPKernelSocket(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
@@ -224,9 +239,10 @@ function startWLSPKernelSocket(id, path) {
                         switch (err.code) {
                             case 'ECONNREFUSED':
                                 extension_1.outputChannel.appendLine("Connection refused. Retrying...");
-                                yield setTimeout(() => {
-                                    reconnect();
-                                }, 1000);
+                                resolve({
+                                    reader: kernelSocket,
+                                    writer: kernelSocket
+                                });
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
@@ -292,15 +308,28 @@ function startWLSPKernelSocket(id, path) {
                     // }, 500)
                 });
                 function reconnect() {
-                    if (wolframKernel.connected) {
-                        connect();
+                    if (kernelConnectionAttempts > 10) {
+                        extension_1.outputChannel.appendLine("Too many connection attempts. Stopping kernel.");
+                        stopKernel();
+                        return;
                     }
                     else {
-                        load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
-                            socket.connect(kernelPort, "127.0.0.1", () => {
-                                extension_1.outputChannel.appendLine("Kernel Socket reconnected");
-                            });
-                        });
+                        kernelConnectionAttempts += 1;
+                        setTimeout(() => {
+                            if (wolframKernel.connected && kernelSocket.connecting == false) {
+                                connect();
+                            }
+                            if (!wolframKernel.connected && kernelSocket.connecting == false) {
+                                load(wolframKernel, kernelPath, kernelPort, extension_1.outputChannel).then((r) => {
+                                    socket.connect(kernelPort, "127.0.0.1", () => {
+                                        extension_1.outputChannel.appendLine("Kernel Socket reconnected");
+                                    });
+                                });
+                            }
+                            if (kernelSocket.connecting) {
+                                return;
+                            }
+                        }, Math.pow(2, kernelConnectionAttempts) * 1000);
                     }
                 }
                 function connect() {
@@ -309,7 +338,6 @@ function startWLSPKernelSocket(id, path) {
                     }
                     else {
                         kernelSocket.connect(kernelPort, "127.0.0.1", () => {
-                            extension_1.outputChannel.appendLine("Kernel Socket connected");
                         });
                     }
                 }
@@ -553,11 +581,25 @@ function stop() {
         // wolframKernelClient?.sendNotification("Shutdown");
         // wolframClient?.sendNotification("Shutdown");
         console.log("Stopping Wolfram Clients");
-        yield (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop());
-        yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop());
+        try {
+            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop());
+        }
+        catch (e) {
+            console.log(e.message);
+        }
+        try {
+            yield (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop());
+        }
+        catch (e) {
+            console.log(e.message);
+        }
         console.log("Stopping Wolfram Processes");
-        yield kill(wolfram.pid);
-        yield kill(wolframKernel.pid);
+        if (wolfram) {
+            yield kill(wolfram.pid);
+        }
+        if (wolframKernel) {
+            yield kill(wolframKernel.pid);
+        }
         console.log("Wolfram Processes Stopped");
         return new Promise((resolve) => {
             resolve();

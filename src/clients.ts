@@ -301,7 +301,7 @@ async function onclientReady(): Promise<void> {
     })
 
     // wolframClient?.sendRequest("DocumentSymbolRequest");
-    treeDataProvider.getBuiltins();
+    treeDataProvider?.getBuiltins();
 }
 
 let temporaryDir = "";
@@ -332,7 +332,7 @@ export async function onkernelReady(): Promise<void> {
     wolframKernelClient?.sendRequest("storageUri").then((result: any) => {
         temporaryDir = result;
     });
-    treeDataProvider.getSymbols(undefined);
+    treeDataProvider?.getSymbols([]);
     // pulse();
 
     return new Promise((resolve) => {
@@ -1237,6 +1237,11 @@ function wolframBusy(params: any) {
         wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
+
+        // clear running line decorations
+        let editor = vscode.window.activeTextEditor;
+        editor?.setDecorations(runningDecorationType, [])
+        runningLines.clear();
 
         // progressStatus?.resolve();
     }

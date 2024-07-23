@@ -73,7 +73,6 @@ handleMessage[msg_Association, state_]:=Module[{},
 		];,
 		
 		Print["Kernel error handling message: "];
-		Print[msg];
 		(*
 		Export[logfile, msg];*)
 	];
@@ -160,7 +159,7 @@ Print["Kernel ", KERNELSERVER, ": ", kernelport];
 Block[{$IterationLimit = Infinity}, 
 	CheckAbort[
 		socketHandler[state],
-		Print["Kernel aborted"]; socketHandler[state]
+		Print["Kernel aborted"]; 
 	];
 ];
 (*

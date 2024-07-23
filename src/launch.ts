@@ -39,7 +39,7 @@ let attempts = 0;
 let connectingLSP = false;
 let socket = new net.Socket();
 
-function checkPort(port:number): Promise<boolean> {
+function checkPort(port: number): Promise<boolean> {
     return new Promise((resolve) => {
         let s = new net.Socket();
         let t = 2000;
@@ -64,7 +64,7 @@ function checkPort(port:number): Promise<boolean> {
     })
 }
 
-
+let clientConnectionAttempts = 0;
 export async function startWLSP(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
     lspPath = path;
@@ -114,7 +114,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                         break;
                     default:
                         outputChannel.appendLine("Error: " + err.code)
-                        reconnect() 
+                        reconnect()
                         break;
                 }
             });
@@ -145,15 +145,32 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
             function reconnect() {
 
                 outputChannel.appendLine("Connection refused. Retrying...");
-                if (wolframKernel.connected) {
-                    connect();
-                } else {
-                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                        socket.connect(kernelPort, "127.0.0.1", () => {
-                            outputChannel.appendLine("Client Socket connected")
+                if (clientConnectionAttempts > 10) {
+                    outputChannel.appendLine("Too many connection attempts. Stopping client.")
+                    stopWolfram(undefined, wolfram)
+                    return;
+                }
+                else {
+                    clientConnectionAttempts += 1;
+
+                    setTimeout(() => {
+                        if (wolfram.connected) {
+                            connect();
                         }
-                        );
-                    });
+
+                        if (!wolfram.connected && socket.connecting == false) {
+                            load(wolfram, lspPath, clientPort, outputChannel).then((r: any) => {
+                                socket.connect(clientPort, "127.0.0.1", () => {
+                                    outputChannel.appendLine("Client Socket connected")
+                                }
+                                );
+                            });
+                        }
+
+                        if (socket.connecting) {
+                            return;
+                        }
+                    }, Math.pow(2, clientConnectionAttempts) * 1000);
                 }
             }
 
@@ -206,6 +223,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
 let kernelConnecting = false;
 let kernelSocket = new net.Socket();
+let kernelConnectionAttempts = 0;
 export async function startWLSPKernelSocket(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
     try {
@@ -256,9 +274,10 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 switch (err.code) {
                     case 'ECONNREFUSED':
                         outputChannel.appendLine("Connection refused. Retrying...");
-                        await setTimeout(() => {
-                            reconnect()
-                        }, 1000)
+                        resolve({
+                            reader: kernelSocket,
+                            writer: kernelSocket
+                        })
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
@@ -320,7 +339,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                 outputChannel.appendLine("Kernel Socket end");
                 if (wolframKernel.connected == true && kernelSocket.connecting == false) {
                     connect();
-                }   
+                }
 
 
                 // console.log("Kernel Socket end");
@@ -334,15 +353,33 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
             })
 
             function reconnect() {
-                if (wolframKernel.connected) {
-                    connect();
+                if (kernelConnectionAttempts > 10) {
+                    outputChannel.appendLine("Too many connection attempts. Stopping kernel.")
+                    stopKernel();
+                    return;
                 } else {
-                    load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
-                        socket.connect(kernelPort, "127.0.0.1", () => {
-                            outputChannel.appendLine("Kernel Socket reconnected")
+                    kernelConnectionAttempts += 1;
+
+                    setTimeout(() => {
+
+                        if (wolframKernel.connected && kernelSocket.connecting == false) {
+                            connect();
                         }
-                        );
-                    });
+
+                        if (!wolframKernel.connected && kernelSocket.connecting == false) {
+                            load(wolframKernel, kernelPath, kernelPort, outputChannel).then((r: any) => {
+                                socket.connect(kernelPort, "127.0.0.1", () => {
+                                    outputChannel.appendLine("Kernel Socket reconnected")
+                                }
+                                );
+                            });
+                        }
+
+                        if (kernelSocket.connecting) {
+                            return;
+                        }
+                    }, Math.pow(2, kernelConnectionAttempts) * 1000);
+
                 }
             }
 
@@ -351,7 +388,6 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                     return;
                 } else {
                     kernelSocket.connect(kernelPort, "127.0.0.1", () => {
-                        outputChannel.appendLine("Kernel Socket connected")
                     });
                 }
             };
@@ -517,7 +553,7 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
 
         try {
-            
+
             if (wolf) {
                 kill(wolf.pid);
             }
@@ -631,12 +667,25 @@ export async function stop(): Promise<void> {
     // wolframClient?.sendNotification("Shutdown");
 
     console.log("Stopping Wolfram Clients")
-    await wolframKernelClient?.stop();
-    await wolframClient?.stop();
+    try{
+        await wolframClient?.stop();
+    } catch (e) {
+        console.log((e as Error).message)
+    }
+
+    try {
+        await wolframKernelClient?.stop();
+    } catch (e) {
+        console.log((e as Error).message)
+    }
 
     console.log("Stopping Wolfram Processes")
-    await kill(wolfram.pid);
-    await kill(wolframKernel.pid);
+    if (wolfram) {
+        await kill(wolfram.pid);
+    }
+    if (wolframKernel) {
+        await kill(wolframKernel.pid);
+    }
     console.log("Wolfram Processes Stopped")
 
     return new Promise((resolve) => {

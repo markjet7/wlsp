@@ -100,8 +100,8 @@ socketHandler[{stop_, state_}]:=Module[{},
 ];
 
 Get[DirectoryName[$path] <> "lsp-handler.wl"];
-handlerWait = 0.01;
-handlerWait = 0.05;
+handlerWait = 0.001;
+handlerWait = 0.005;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
@@ -144,7 +144,7 @@ MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 		CheckAbort[
 			socketHandler["Continue"],
-			Print["LSP aborted"]; connect[]; socketHandler["Continue"]
+			Print["LSP aborted"]; socketHandler["Continue"]
 		];
 	],
 	8*1024^3

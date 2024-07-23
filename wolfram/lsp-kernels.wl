@@ -904,11 +904,11 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 		(*$result["Result"] = ($result["Result"] /. Null -> "null"); *)
 	(* End[]; *)
+	response = StringTake[ToString@ReleaseHold@Last[$result["Result"]], {1, UpTo[8192]}];
+	If[response === $Failed, response = "Failed"];
 	If[
 		$result["Success"], 
 		(
-			response = ExportString[ReleaseHold@Last[$result["Result"]], "HTMLFragment", "GraphicsOutput"->Automatic];
-			If[response === $Failed, response = "Failed"];
 			If[ByteCount[response] > 1*^4, 
 				Print@"Output too large to display",
 				Print[response];
@@ -942,6 +942,9 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 			$result["FormattedMessages"] = Map[
 				$myShort[OutputForm[#], 200] &, 
 				Take[$result["MessagesText"], UpTo[5]]];
+			$result["Result"] = Last[$result["Result"]];
+			Print["Failed"];
+			Print[response];
 
 			(*sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
 				"message" -> StringTake[StringRiffle[$result["FormattedMessages"], "\n"], UpTo[500]]|>|>];*)

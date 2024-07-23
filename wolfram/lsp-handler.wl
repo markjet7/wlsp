@@ -772,7 +772,7 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",
-				"value" -> Check["```wolfram\n" <> (value) <> "\n```", value]
+				"value" -> Check["```wolfram\n" <> (value) <> "\n```", "-"]
 			|>
 		|>;
 
@@ -788,7 +788,7 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 		response = <|"id"->json["id"], "result"->"-"|>;
 		sendResponse[response];
 		
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[symbol, InputForm, TotalWidth -> 250] |> |>];
+		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[json, InputForm, TotalWidth -> 250] |> |>];
 	];
 ];
 
@@ -799,7 +799,9 @@ convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[M
 
 extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
-extractUsage[a_Null]:="";
+extractUsage[_Null]:="";
+
+extractUsage[_]:="";
 
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
 	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( n:ToString@symbol):>"\n"<>n]
@@ -1239,7 +1241,7 @@ getWordAtPosition[_,_]:="";
 getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 
 	srcLines =StringSplit[src, EndOfLine, All];
-	line = Check[srcLines[[position["line"]+1]],Print["Error: line not found"];Return[""];];
+	line = Check[srcLines[[position["line"]+1]],""];
 	If[line === "", Return[""]];
 	(*
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
@@ -1247,12 +1249,14 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 		Interval[
 				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""]; 
 	*)
-	word=StringTake[line,
-		Replace[
-			First@Nearest[
-				StringPosition[line, Replace[TextWords[line], {} -> {""}]],
-				{position["character"],position["character"]}],
-			Rule[{},{0,0}]]];
+	word=Check[
+			StringTake[line,
+			Replace[
+				First@Nearest[
+					StringPosition[line, Replace[TextWords[line], {} -> {""}]],
+					{position["character"],position["character"]}],
+				Rule[{},{0,0}]]],
+			""];
 	word
 ];
 

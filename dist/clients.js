@@ -227,7 +227,7 @@ function onclientReady() {
             wolframStatusBar.text = result["output"];
         });
         // wolframClient?.sendRequest("DocumentSymbolRequest");
-        exports.treeDataProvider.getBuiltins();
+        exports.treeDataProvider === null || exports.treeDataProvider === void 0 ? void 0 : exports.treeDataProvider.getBuiltins();
     });
 }
 let temporaryDir = "";
@@ -255,7 +255,7 @@ function onkernelReady() {
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("storageUri").then((result) => {
             temporaryDir = result;
         });
-        exports.treeDataProvider.getSymbols(undefined);
+        exports.treeDataProvider === null || exports.treeDataProvider === void 0 ? void 0 : exports.treeDataProvider.getSymbols([]);
         // pulse();
         return new Promise((resolve) => {
             resolve();
@@ -1032,6 +1032,10 @@ function wolframBusy(params) {
         wolframBusyQ = false;
         wolframStatusBar.text = wolframVersionText;
         wolframStatusBar.show();
+        // clear running line decorations
+        let editor = vscode.window.activeTextEditor;
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, []);
+        runningLines.clear();
         // progressStatus?.resolve();
     }
 }

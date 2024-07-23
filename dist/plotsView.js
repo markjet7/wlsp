@@ -258,7 +258,6 @@ class PlotsViewProvider {
             /> 
 
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="${graphicToSVG}"></script>
             <script type="module" src="${toolkitUri}"></script>
             <script type="module" src="${transformUri}"></script>
             <script src="${d3Uri}"></script>
