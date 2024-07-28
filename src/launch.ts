@@ -68,19 +68,11 @@ let clientConnectionAttempts = 0;
 export async function startWLSP(id: number, path: string): Promise<LanguageClient | undefined> {
     let timeout: any;
     lspPath = path;
-    let serverReady = await checkPort(clientPort);
-    if (serverReady) {
-        clientPort = clientPort + 1;
-    };
-
-    if (wolfram == undefined) {
-        await load(wolfram, lspPath, clientPort, outputChannel);
-    }
 
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
             let retries = 0;
-            socket.setMaxListeners(5);
+            socket.setMaxListeners(1);
 
             // socket.on("data", (data) => {
             // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
@@ -98,9 +90,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 outputChannel.appendLine("Client Socket error: " + err);
                 switch (err.code) {
                     case 'ECONNREFUSED':
-                        await setTimeout(() => {
-                            reconnect()
-                        }, 1000)
+                        outputChannel.appendLine("Connection refused. Retrying...")
                         break;
                     case 'ECONNRESET':
                         outputChannel.appendLine("Connection reset. Retrying...")
@@ -114,7 +104,6 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                         break;
                     default:
                         outputChannel.appendLine("Error: " + err.code)
-                        reconnect()
                         break;
                 }
             });
@@ -137,9 +126,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
 
             socket.on("end", () => {
-                if (wolfram.connected == true && socket.connecting == false) {
-                    connect();
-                }
+                outputChannel.appendLine("Client Socket end");
             })
 
             function reconnect() {
@@ -205,6 +192,8 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
     return new Promise(async (resolve) => {
 
+        await load(wolfram, lspPath, clientPort, outputChannel);
+
         wolframClient?.start().then((value) => {
             connectingLSP = false;
             outputChannel.appendLine("Client Started")
@@ -214,6 +203,20 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
             outputChannel.appendLine("Client Start Error: " + reason)
             resolve(undefined);
         });
+
+        wolframClient?.onDidChangeState(async (event) => {
+            if(event.newState === State.Stopped) {
+                if(wolfram){
+                    kill(wolfram.pid)
+                    wolfram.unref()
+                }
+
+                await load(wolfram, lspPath, clientPort, outputChannel);
+
+                wolframClient?.restart();
+            }
+        })
+
         // outputChannel.appendLine(new Date().toLocaleTimeString())
         // if (disposible) {context.subscriptions.push(disposible)};
 
@@ -679,7 +682,8 @@ export async function stop(): Promise<void> {
 
     console.log("Stopping Wolfram Clients")
     try {
-        await wolframClient?.stop();
+        // await wolframClient?.stop();
+        await wolframClient?.dispose();
     } catch (e) {
         console.log((e as Error).message)
     }

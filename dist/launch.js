@@ -56,18 +56,10 @@ function startWLSP(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         lspPath = path;
-        let serverReady = yield checkPort(clientPort);
-        if (serverReady) {
-            clientPort = clientPort + 1;
-        }
-        ;
-        if (wolfram == undefined) {
-            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
-        }
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 let retries = 0;
-                socket.setMaxListeners(5);
+                socket.setMaxListeners(1);
                 // socket.on("data", (data) => {
                 // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
                 // console_outputs.push(data.toString());
@@ -83,9 +75,7 @@ function startWLSP(id, path) {
                         extension_1.outputChannel.appendLine("Client Socket error: " + err);
                         switch (err.code) {
                             case 'ECONNREFUSED':
-                                yield setTimeout(() => {
-                                    reconnect();
-                                }, 1000);
+                                extension_1.outputChannel.appendLine("Connection refused. Retrying...");
                                 break;
                             case 'ECONNRESET':
                                 extension_1.outputChannel.appendLine("Connection reset. Retrying...");
@@ -99,7 +89,6 @@ function startWLSP(id, path) {
                                 break;
                             default:
                                 extension_1.outputChannel.appendLine("Error: " + err.code);
-                                reconnect();
                                 break;
                         }
                     });
@@ -117,9 +106,7 @@ function startWLSP(id, path) {
                     // outputChannel.appendLine(new Date().toLocaleTimeString())
                 });
                 socket.on("end", () => {
-                    if (wolfram.connected == true && socket.connecting == false) {
-                        connect();
-                    }
+                    extension_1.outputChannel.appendLine("Client Socket end");
                 });
                 function reconnect() {
                     extension_1.outputChannel.appendLine("Connection refused. Retrying...");
@@ -176,6 +163,7 @@ function startWLSP(id, path) {
         };
         exports.wolframClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start().then((value) => {
                 connectingLSP = false;
                 extension_1.outputChannel.appendLine("Client Started");
@@ -185,6 +173,16 @@ function startWLSP(id, path) {
                 extension_1.outputChannel.appendLine("Client Start Error: " + reason);
                 resolve(undefined);
             });
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onDidChangeState((event) => __awaiter(this, void 0, void 0, function* () {
+                if (event.newState === node_1.State.Stopped) {
+                    if (wolfram) {
+                        kill(wolfram.pid);
+                        wolfram.unref();
+                    }
+                    yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+                    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.restart();
+                }
+            }));
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
         }));
@@ -588,7 +586,8 @@ function stop() {
         // wolframClient?.sendNotification("Shutdown");
         console.log("Stopping Wolfram Clients");
         try {
-            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop());
+            // await wolframClient?.stop();
+            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.dispose());
         }
         catch (e) {
             console.log(e.message);
