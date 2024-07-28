@@ -676,8 +676,8 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			Return[]
 		];
 		value = TimeConstrained[
-			"<img src=\"data:image/png;base64," <> Quiet@ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
-			Quantity[2, "Seconds"],
+			"<img src=\"data:image/png;base64," <> ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
+			Quantity[0.5, "Seconds"],
 			ToString[symbol, TotalWidth->50]];
 
 		result = <|"contents"-><|
@@ -909,10 +909,12 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 	If[
 		$result["Success"], 
 		(
+			(*
 			If[ByteCount[response] > 1*^4, 
 				Print@"Output too large to display",
 				Print[response];
 			];
+			*)
 			
 			
 			
