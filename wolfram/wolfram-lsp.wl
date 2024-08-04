@@ -68,7 +68,7 @@ handleMessage[msg_Association, state_]:=Module[{n, r},
 	Check[
 		n = Now;
 		r = handle[msg["method"], msg];
-		Print[msg["method"], "; Time: ", Now - n];
+		(* Print[msg["method"], "; Time: ", Now - n]; *)
 		r,
 		(*handle[msg["method"], msg],*)
 		(*Print["LSP error handling message"];
@@ -148,7 +148,7 @@ MemoryConstrained[
 	Block[{$IterationLimit = Infinity}, 
 		CheckAbort[
 			socketHandler["Continue"],
-			Print["LSP aborted"]; socketHandler["Continue"]
+			Print["LSP aborted"];
 		];
 	],
 	8*1024^3

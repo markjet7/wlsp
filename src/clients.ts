@@ -306,7 +306,10 @@ async function onclientReady(): Promise<void> {
 
 let temporaryDir = "";
 export async function onkernelReady(): Promise<void> {
-    // wolframKernelClient?.onNotification("onRunInWolfram", onRunInWolfram);
+
+
+    return new Promise((resolve) => {
+            // wolframKernelClient?.onNotification("onRunInWolfram", onRunInWolfram);
     wolframKernelClient?.onNotification("wolframBusy", wolframBusy);
     // wolframKernelClient?.onNotification("updateDecorations", updateDecorations);
     wolframKernelClient?.onNotification("updateVarTable", updateVarTable);
@@ -333,9 +336,12 @@ export async function onkernelReady(): Promise<void> {
         temporaryDir = result;
     });
     treeDataProvider?.getSymbols([]);
+
+    
+
     // pulse();
 
-    return new Promise((resolve) => {
+
         resolve()
     })
 
@@ -715,16 +721,6 @@ let inputs: String[] = []; function runInWolfram(printOutput = false, trace = fa
 
     // check if wolframkernelclient is undefined
 
-
-
-    if (wolframKernelClient == undefined || wolframKernelClient?.state == 1) {
-        restartKernel().then(() => {
-            // evaluationQueue.unshift(evaluationData);
-            sendToWolfram(printOutput);
-            return
-        })
-    }
-
     sendToWolfram(printOutput);
 
     // if (evaluationQueue.length == 1) {
@@ -784,6 +780,8 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
             // console.log(wolframKernelClient?.state)
             // outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
 
+            outputChannel.appendLine("Wolfram Kernel State: " + wolframKernelClient?.state)
+
             if (wolframKernelClient?.state == State.Running) {
                 console.log("Kernel running, sending to Wolfram")
                 wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
@@ -792,46 +790,27 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
                     // restart()
                 })
                 return
-            }
+            } else {
 
-            if (wolframKernelClient == undefined && firstKernelLaunched == true) {
                 outputChannel.appendLine("Kernel not running, waiting for kernel to start");
-                await launch.stopKernel();
-                await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
+                try{
+                    await launch.stopKernel();
+                } catch (e) {}
+                outputChannel.appendLine("Kernel stopped. Starting a new kernel");
+                await launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
                     outputChannel.appendLine("Kernel started after not running");
                     wolframKernelClient = client;
-                    onkernelReady();
-                    sendToWolfram(printOutput, sel);
+                    onkernelReady().then(async () => {
+                        // await sendToWolfram(printOutput, sel);
+                wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                }).catch((err) => {
+                    console.log("Error in runInWolfram")
+                    // restart()
+                })
+                    })
                     return;
                 });
 
-            }
-
-            if (wolframKernelClient?.state == State.Starting) {
-                // setTimeout(() => {sendToWolfram(printOutput, sel)}, 1000)
-                console.log("Kernel starting");
-                let sendDisposible = wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
-                    if (event.newState == State.Running) {
-
-                        sendToWolfram(printOutput, sel)
-                        sendDisposible.dispose()
-                    } else if (event.newState == State.Stopped) {
-                        vscode.window.showErrorMessage("Wolfram kernel stopped",
-                            "Restart kernel?").then(async (selection): Promise<any> => {
-                                if (selection === "Restart kernel?") {
-                                    wolframKernelClient = await restartKernel();
-                                    outputChannel.appendLine("Kernel restarted (" + wolframKernelClient?.state + ")");
-                                    wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
-                                    }).catch((err) => {
-                                        console.log("Error in runInWolfram")
-                                        // restart()
-                                    })
-                                }
-                            });
-                        return
-                    }
-                });
-                return
             }
         }
     }

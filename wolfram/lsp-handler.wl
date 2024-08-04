@@ -397,7 +397,7 @@ getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
-handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
+handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
 
 	If[
 		!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
@@ -413,32 +413,41 @@ handle["textDocument/codeLens", json_]:=handle["textDocument/codeLens", json]=Mo
 			createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends,"character"->0|>|>}|>|>;
 
 			src = documents[json["params","textDocument","uri"]];
-			ast=CodeParse[StringReplace[StringTake[src, {1, UpTo[SyntaxLength@src]}],";"->" "]];
+			ast= Check[Quiet@CodeParse[StringReplace[StringTake[src, {1, UpTo[SyntaxLength@src]}],";"->" "]], {}];
 			functions=Cases[ast,(CallNode[LeafNode[Symbol,(_),_],___]|LeafNode[_,_,_]),{2}];
 
-			start = 1;
-			lens = BlockMap[
-			Function[{f},
-				gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
-				If[
-					gap>=3,
-					c = createCell[
-						start,
-						f[[2]][[-1]][Source][[1,1]]-3];
-						start = f[[2]][[-1]][Source][[1,1]];
-					c,
-				Nothing
-				]
-			],
-			functions,
-			2,
-			1];
-			sendResponse[<|"id"->json["id"], "result"->lens|>],
+			If[Length@functions < 2,
+				lens = {};
+				sendResponse[<|"id"->json["id"], "result"->lens|>];
+				Return[],
 
-			lens = {}
+				start = 1;
+				lens = BlockMap[
+					Function[{f},
+						gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
+						If[
+							gap>=3,
+							c = createCell[
+								start,
+								f[[2]][[-1]][Source][[1,1]]-3];
+								start = f[[2]][[-1]][Source][[1,1]];
+							c,
+						Nothing
+						]
+					],
+					functions,
+					2,
+				1];
+				sendResponse[<|"id"->json["id"], "result"->lens|>];
+			],
+
+			lens = {};
 			sendResponse[<|"id"->json["id"], "result"->{}|>];
+			Return[];
 		]
 	];
+
+
 	updateCursorLocations[json];
 ];
 
@@ -613,7 +622,9 @@ handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbo
 
 					uri = json["params"]["textDocument"]["uri"];
 					text = documents[json["params", "textDocument", "uri"]];
-					ast = CodeParse[StringTake[text, {1, UpTo[SyntaxLength@text]}], SourceConvention -> "SourceCharacterIndex"];
+
+
+					ast = Check[Quiet@CodeParse[StringTake[text, {1, UpTo[SyntaxLength@text]}], SourceConvention -> "SourceCharacterIndex"], {}];
 
 					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
 						"name"->StringTake[text,x[Source]],
@@ -633,18 +644,17 @@ handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbo
 						"range"->positionToRange[text,src[Source]]|>
 						|>,Infinity];
 
-
 					result = Join[funcs, defs];
-
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 
 					response = <|"id"->json["id"],"result"->result|>;
 					sendResponse[response];  
 
+
 					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
 					sendResponse[response]; 
-
 			),
+
 				response = <|"id"->json["id"],"result"->{}|>;
 				sendResponse[response];  
 				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
@@ -687,7 +697,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 
-		ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
+		ast = Quiet@Check[CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]], {}];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
 	 	function=FirstCase[ast,(UnterminatedCallNode[LeafNode[___],p:List[___],source_]|CallNode[LeafNode[___],p:List[___],source_])/;inCodeRangeQ[source[Source],pos],{},Infinity];
@@ -1026,7 +1036,7 @@ validate[json_]:=Module[{src, lints, severities, msgs, response},
 		workspaceLintDecorations = <||>;
 		uri = json["params", "textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
-		lints = CodeInspect[src];
+		lints = Check[CodeInspect[src], {}];
 		severities = <| "Error"->1, "Warning"->2, "Information"->3, "Hint"->4 |>;
 		msgs = Map[Check[<|  
 			"message"->#[[2]], 
