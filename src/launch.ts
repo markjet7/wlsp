@@ -69,6 +69,10 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     let timeout: any;
     lspPath = path;
 
+    fp(clientPort, (err:any, freePort:any)=>{
+        clientPort = freePort;
+    })
+
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
             let retries = 0;
@@ -225,6 +229,9 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
     //         resolve(wolframKernelClient)
     //     });
     // }
+    fp(kernelPort, (err:any, freePort:any)=>{
+        kernelPort = freePort;
+    });
 
     if (wolframKernel) {
         try{
