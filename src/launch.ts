@@ -91,7 +91,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     let serverOptions: ServerOptions = function () {
         return new Promise(async (resolve, reject) => {
             let retries = 0;
-            socket.setMaxListeners(1);
+            socket.setMaxListeners(10);
             socket.setKeepAlive(true);
 
             // socket.on("data", (data) => {
@@ -251,7 +251,7 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
     }
     let serverOptions: ServerOptions = function () {
         return new Promise((resolve, reject) => {
-            kernelSocket.setMaxListeners(1);
+            kernelSocket.setMaxListeners(10);
             kernelSocket.setKeepAlive(true);
 
             // socket.on("data", (data) => {

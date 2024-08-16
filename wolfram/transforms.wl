@@ -202,15 +202,37 @@ transforms[output_]:=Module[{f, txt},
 		Return[f]
 ];
 
-transformsIO[output_, errors_]:=Module[{out},
-	If[Length@erros > 0,
-		out = Rasterize@GraphicsColumn[
-			{Short[output, 10],
-			Short[errors, 10]}],
-		out = Rasterize@Short[output, 10]
+transformsIO[output_, errors_]:=Module[{out, short},
+	Which[
+		(ByteCount[output] + ByteCount[errors]) > 1000000 && Length@errors > 0,
+		out = ExportString[
+			Column@{Rasterize@Short[output, 10], Rasterize@Short[errors, 10]},
+			"HTMLFragment",
+			"GraphicsOutput"->"PNG"
+		];,
+		(ByteCount[output] + ByteCount[errors]) > 1000000,
+		out = ExportString[
+			Rasterize@Short[output, 10],
+			"HTMLFragment",
+			"GraphicsOutput"->"PNG"
+		];,
+		Length@erros > 0,
+		out = ExportString[
+			GraphicsColumn[
+			{output,
+			errors}], 
+			"HTMLFragment",
+			"GraphicsOutput"->"PNG"
+		];,
+		True,
+		out = ExportString[
+			output, 
+			"HTMLFragment",
+			"GraphicsOutput"->"PNG"
+		];
 	];
 
-	"<img src=\"data:image/png;base64," <> ExportString[out, {"Base64", "PNG"}] <> 	"\" />"
+	out
 ];
 
 lowerResolution =.;

@@ -998,7 +998,7 @@ async function updateResults(e: vscode.TextEditor | undefined, result: any, prin
                 // output = result["params"]["output"] + "<br>" + file["file"] +"<br>" +  result["params"]["messages"].join("<br>");
                 // output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
                 output = `${result["params"]["output"]}`
-                rawoutput = output;;
+                rawoutput = output;
             }
 
             if (result["params"]["messages"].length > 0) {

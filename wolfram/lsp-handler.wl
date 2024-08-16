@@ -535,11 +535,11 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 			src = documents[json["params","textDocument","uri"]];
 			pos = json["params","position"];
 			symbol = getWordAtPosition[src, pos] /. Null -> "";
-			ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
-			keys = Cases[ast,
+			ast = Check[CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]], {}];
+			keys = Check[Cases[ast,
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
-			];
+			], {}];
 			labels = {};
 
 			position = <|"line" -> pos["line"], "character" -> pos["character"]|>;

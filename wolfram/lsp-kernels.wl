@@ -277,9 +277,9 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			Which[
 				And[Lookup[json["params"], "output", False], KeyExistsQ[r, "FormattedMessages"]],
 				(* transforms[ReleaseHold[r["Result"]], r["FormattedMessages"]],*)
-				transformsCell[ReleaseHold[r["Result"]], r["FormattedMessages"]],
+				transformsIO[ReleaseHold[r["Result"]], r["FormattedMessages"]],
 				Lookup[json["params"], "output", False], 
-				transformsCell[ReleaseHold[r["Result"]], {}],
+				transformsIO[ReleaseHold[r["Result"]], {}],
 				(* transforms@ReleaseHold[r["Result"]],*)
 				True,
 				ToString[ReleaseHold[r["Result"]], InputForm, TotalWidth -> 1000]
@@ -296,7 +296,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 			"Messages" -> {},
 			"FormattedMessages" -> {}
 		|>;
-		output = transforms["Syntax error"];
+		output = transformsIO["Syntax error", {}];
 	];
 
 	{time, {result, successQ, stack}} = {r["AbsoluteTiming"], {CheckAbort[ReleaseHold[r["Result"]], "Aborted on result"], r["Success"], r["Result"]}};
@@ -347,7 +347,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		"params"-><|
 			"input" -> string,
 			"output"-> output,  
-			"load" -> True, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
+			"load" -> False, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
 			"result"-> "", (* ToString[result, InputForm, CharacterEncoding -> "ASCII"], *)
 			"position"-> newPosition,
 			"print" -> json["params", "print"],

@@ -837,7 +837,6 @@ function updateResults(e, result, print, input = "", file = "") {
                     // output = `${result["params"]["output"]}` + "<br>" + file["file"] + "<br>" + result["params"]["messages"].join("<br>");
                     output = `${result["params"]["output"]}`;
                     rawoutput = output;
-                    ;
                 }
                 if (result["params"]["messages"].length > 0) {
                     output += "<div id='errors'>" +

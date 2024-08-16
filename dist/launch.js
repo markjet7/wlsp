@@ -75,7 +75,7 @@ function startWLSP(id, path) {
         let serverOptions = function () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 let retries = 0;
-                socket.setMaxListeners(1);
+                socket.setMaxListeners(10);
                 socket.setKeepAlive(true);
                 // socket.on("data", (data) => {
                 // console.log("WLSP Kernel Data: " + data.toString().slice(0, 200))
@@ -213,7 +213,7 @@ function startWLSPKernelSocket(id, path) {
         }
         let serverOptions = function () {
             return new Promise((resolve, reject) => {
-                kernelSocket.setMaxListeners(1);
+                kernelSocket.setMaxListeners(10);
                 kernelSocket.setKeepAlive(true);
                 // socket.on("data", (data) => {
                 // outputChannel.appendLine("WLSP Kernel Data: " + data.toString().slice(0, 200))
