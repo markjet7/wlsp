@@ -98,15 +98,14 @@ socketHandler[{stop_, state_}]:=Module[{},
 	Quit[1];
 ];
 
-handlerWait = 0.01;
+handlerWait = 0.001;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected2 = False;
 $timeout = Now;
 Get[DirectoryName[$path] <> "lsp-kernels.wl"]; 
-socketHandler[state_]:=Module[{},
-	Get[DirectoryName[$path] <> "lsp-kernels.wl"];
 	Get[DirectoryName[$path] <> "render-html.wl"];
+socketHandler[state_]:=Module[{},
 	Pause[handlerWait];
 	If[
 		Length@KERNELSERVER["ConnectedClients"] === 0 &&

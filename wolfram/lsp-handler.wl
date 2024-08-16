@@ -811,11 +811,11 @@ ErrorBox[f_]:>{f}};
 
 convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
 
-extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
+extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[Echo@ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
 extractUsage[_Null]:="";
 
-extractUsage[_]:="";
+(*extractUsage[_]:="";*)
 
 printLanguageData[symbol_]:=printLanguageData[symbol]=Module[{},
 	StringTrim@StringJoin@StringSplit[WolframLanguageData[symbol, "PlaintextUsage"],( n:ToString@symbol):>"\n"<>n]
@@ -1373,7 +1373,6 @@ getCode[src_, range_]:=Module[{},
 (*
 handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, functions, result, response, kind},
 	TimeConstrained[(
-		Print["documentSymbol"];
 		kind[s_]:= Switch[
 					ToExpression@s[[1]], 
 					Symbol, 13, 
@@ -1423,7 +1422,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, src, tree, symbols, f
 		AppendTo[labels, DeleteCases[(#[[2]] & /@ functions), Null]];
 		labels = DeleteDuplicates[labels];
 		),
-		Quantity[0.1, "Seconds"],
+		Quantity[0.01, "Seconds"],
 		response = <|"id"->json["id"],"result"->{}|>;
 		sendResponse[response];
 	]

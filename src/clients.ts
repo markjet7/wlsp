@@ -83,7 +83,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     outputChannel = outputChannel0;
 
 
-    launch.startWLSP(0, lspPath).then((client) => {
+    await launch.startWLSP(0, lspPath).then((client) => {
         wolframClient = client;
         onclientReady()
         // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
@@ -268,7 +268,7 @@ export async function restart(): Promise<void> {
     editorDecorations.clear();
     e?.setDecorations(variableDecorationType, []);
 
-    launch.restart().then((clients) => {
+    await launch.restart().then((clients) => {
         wolframClient = clients[0];
         wolframKernelClient = clients[1];
         onclientReady()

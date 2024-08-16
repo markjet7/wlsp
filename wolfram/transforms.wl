@@ -222,10 +222,9 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 	file = CreateFile[];
 
 	Print["Errors: ", errors, Length@errors > 1];
-	Print["Output: ", output];
-
 	out = If[
 		ByteCount[Column[{output, errors}]] < 1000000,
+		Print["Output: ", output];
 		If[Length@errors > 1, 
 			Export[
 				file,
@@ -244,6 +243,7 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 		],
 
 		processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
+
 		If[Length@errors > 1, 
 			Export[
 				file,
@@ -255,15 +255,12 @@ transformsCell[output_, errors_]:=Module[{out, file, processed},
 			],
 			Export[
 				file,
-				Rasterize@Short[processed, 5], 
+				Rasterize[Short[processed, 5]], 
 				"HTMLFragment", 
 				"GraphicsOutput"->"SVG"
 				]
 			]
 		];
-
-	
-
 	(*
 	out
 	out = Export[

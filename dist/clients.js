@@ -58,7 +58,7 @@ function startLanguageServer(context0, outputChannel0) {
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         outputChannel = outputChannel0;
-        launch.startWLSP(0, lspPath).then((client) => {
+        yield launch.startWLSP(0, lspPath).then((client) => {
             exports.wolframClient = client;
             onclientReady();
             // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
@@ -199,7 +199,7 @@ function restart() {
         wolframStatusBar.show();
         editorDecorations.clear();
         e === null || e === void 0 ? void 0 : e.setDecorations(variableDecorationType, []);
-        launch.restart().then((clients) => {
+        yield launch.restart().then((clients) => {
             exports.wolframClient = clients[0];
             exports.wolframKernelClient = clients[1];
             onclientReady();

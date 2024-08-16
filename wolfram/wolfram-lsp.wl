@@ -65,14 +65,12 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> True];
 logfile = DirectoryName[$path] <> "wlsp.txt";
 
 handleMessage[msg_Association, state_]:=Module[{n, r},
-	Check[
+	CheckAbort[
 		n = Now;
 		r = handle[msg["method"], msg];
 		(* Print[msg["method"], "; Time: ", Now - n]; *)
 		r,
-		(*handle[msg["method"], msg],*)
-		(*Print["LSP error handling message"];
-		Export[logfile, msg];*)
+
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
 	];
 	{"Continue", state}
@@ -105,7 +103,7 @@ socketHandler[{stop_, state_}]:=Module[{},
 
 Get[DirectoryName[$path] <> "lsp-handler.wl"];
 handlerWait = 0.001;
-handlerWait = 0.005;
+handlerWait = 0.0001;
 flush[socket_]:=While[SocketReadyQ@socket, SocketReadMessage[socket]];
 
 connected = False;
@@ -113,7 +111,7 @@ timeout = Now;
 Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
 Get[DirectoryName[$path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
-	Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
+	(* Print@AbsoluteTiming@Get[DirectoryName[$path] <> "lsp-handler.wl"]; *)
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&
