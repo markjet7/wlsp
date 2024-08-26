@@ -79,7 +79,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     }
 
     if (wolfram == undefined || !wolfram.connected) {
-        await load(wolfram, lspPath, clientPort, outputChannel)
+        let loaded = await load(wolfram, lspPath, clientPort, outputChannel);
     }
 
     // if (socket) {
@@ -106,10 +106,11 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 })
             });
 
-            socket.on('error', async function (err: any) {
+            socket.on('error', function (err: any) {
                 outputChannel.appendLine("Client Socket error: " + err);
-                socket.destroy();
-                reject(err)
+                // socket.destroy();
+                // reject(err)
+                reconnect();
             });
 
             socket.on("close", () => {
@@ -148,12 +149,12 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
                     setTimeout(async () => {
 
-                        if (wolfram) {
-                            kill(wolfram.pid)
-                            wolfram.unref()
-                        }
+                        // if (wolfram) {
+                        //     kill(wolfram.pid)
+                        //     wolfram.unref()
+                        // }
 
-                        await load(wolfram, lspPath, clientPort, outputChannel);
+                        // await load(wolfram, lspPath, clientPort, outputChannel);
 
                         socket.connect(clientPort, "127.0.0.1", () => {
                             outputChannel.appendLine("Client Socket reconnected")
@@ -210,9 +211,10 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
                 if (wolfram && wolfram.connected) {
                     await kill(wolfram.pid);
                     wolfram.unref();
+                } else {
+                    // await load(wolfram, lspPath, clientPort, outputChannel);
+                    // wolframClient?.restart();
                 }
-                await load(wolfram, lspPath, clientPort, outputChannel);
-                wolframClient?.restart();
             }
         })
 

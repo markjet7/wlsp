@@ -65,7 +65,7 @@ function startWLSP(id, path) {
             catch (e) { }
         }
         if (wolfram == undefined || !wolfram.connected) {
-            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+            let loaded = yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
         }
         // if (socket) {
         //     socket.destroy();
@@ -88,11 +88,10 @@ function startWLSP(id, path) {
                     });
                 });
                 socket.on('error', function (err) {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        extension_1.outputChannel.appendLine("Client Socket error: " + err);
-                        socket.destroy();
-                        reject(err);
-                    });
+                    extension_1.outputChannel.appendLine("Client Socket error: " + err);
+                    // socket.destroy();
+                    // reject(err)
+                    reconnect();
                 });
                 socket.on("close", () => {
                     extension_1.outputChannel.appendLine("Client Socket closed");
@@ -121,11 +120,11 @@ function startWLSP(id, path) {
                     else {
                         clientConnectionAttempts += 1;
                         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
-                            if (wolfram) {
-                                kill(wolfram.pid);
-                                wolfram.unref();
-                            }
-                            yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
+                            // if (wolfram) {
+                            //     kill(wolfram.pid)
+                            //     wolfram.unref()
+                            // }
+                            // await load(wolfram, lspPath, clientPort, outputChannel);
                             socket.connect(clientPort, "127.0.0.1", () => {
                                 extension_1.outputChannel.appendLine("Client Socket reconnected");
                             });
@@ -176,8 +175,10 @@ function startWLSP(id, path) {
                         yield kill(wolfram.pid);
                         wolfram.unref();
                     }
-                    yield load(wolfram, lspPath, clientPort, extension_1.outputChannel);
-                    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.restart();
+                    else {
+                        // await load(wolfram, lspPath, clientPort, outputChannel);
+                        // wolframClient?.restart();
+                    }
                 }
             }));
             // outputChannel.appendLine(new Date().toLocaleTimeString())
