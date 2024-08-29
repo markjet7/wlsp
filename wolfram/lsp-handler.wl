@@ -27,7 +27,11 @@ ServerCapabilities=<|
 	"signatureHelpProvider"-><|"triggerCharacters" -> {"[", ","}, "retriggerCharacters"->{","}|>,
 	"foldingRangeProvider" -> False, (* True*)
 	"documentFormattingProvider" -> True,
-	"completionProvider"-> <|"resolveProvider"->False, "triggerCharacters" -> {"@"}, "allCommitCharacters" -> {"["}|> ,
+	"completionProvider"-> <|
+		"resolveProvider"->False, 		
+		"triggerCharacters" -> {"["}, 
+		"allCommitCharacters" -> {"["}
+	|> ,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
