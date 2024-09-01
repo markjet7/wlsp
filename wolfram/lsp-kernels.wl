@@ -448,8 +448,15 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 		(* getWorkspaceSymbols[];  *)
 	(*]; *)
 
-	
-	ast = CodeConcreteParse[string];
+	$busy = False;
+	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False, "text" -> ""  |>|>];
+];
+
+handle["updateVarTable", json_]:=Module[{string, ast, f, symbols, values, result},
+
+	string = Lookup[documents, json["params", "textDocument", "uri", "external"], ""];
+
+	ast = Check[CodeConcreteParse[string], {}];
 
 	f[node_]:=Module[{},
 		symbol = FirstCase[node, LeafNode[Symbol, name_, _] :> name, "var", Infinity, Heads->True];
@@ -465,8 +472,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 	values = Association@Table[v["name"] -> ToString[v["definition"], InputForm, TotalWidth->200], {v, symbols}];
 
-	
-
 	(* values = Association@Table[v -> ToString[ToExpression[v], InputForm, TotalWidth->100], {v, Names["Global`*"]}];*)
 
 	Check[
@@ -479,8 +484,6 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	sendResponse[
 		result
 	]; 
-	$busy = False;
-	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False, "text" -> ""  |>|>];
 ];
 
 storageUri = "";

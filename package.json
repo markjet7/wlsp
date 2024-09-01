@@ -255,6 +255,10 @@
                 "title": "Wolfram: Update variable tree data"
             },
             {
+                "command": "wolfram.updateVarTable",
+                "title": "Wolfram: Update variable data"
+            },
+            {
                 "command": "wolfram.restart",
                 "icon": "$(debug-restart)",
                 "title": "Wolfram: Restart"
@@ -263,6 +267,11 @@
                 "command": "wolfram.clearResults",
                 "icon": "$(clear-all)",
                 "title": "Wolfram: Clear Results"
+            },
+            {
+                "command": "wolfram.updateVarTable",
+                "icon": "$(variables-view-icon)",
+                "title": "Wolfram: Update Variable Table"
             },
             {
                 "command": "wolfram.wolframTerminal",
@@ -328,6 +337,12 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "wolfram.updateVarTable",
+                    "group": "navigation",
+                    "when": "view == wolfram.plotsView",
+                    "title": "Variables"
+                },
                 {
                     "command": "wolfram.clearResults",
                     "group": "navigation",

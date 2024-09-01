@@ -269,6 +269,10 @@ function createList(parentSelection, children) {
     }
     
     var width, height;
+    if (message.output == "") {
+      message.output = " ";
+    }
+    
     if (message.output.length > 0) {
 
       let output = `<div class="output_row" data-content="${message.output.replace(/"/g, '&quot;')}">` +
@@ -282,11 +286,9 @@ function createList(parentSelection, children) {
         createDownloadButton(image);
       }
 
-      outputDiv.innerHTML = outputDiv.innerHTML.replace(
-        '<div class="output_row">Loading...</div>',
-        doc.body.innerHTML
-      );
-      
+      let lastOutputDiv = outputDiv.getElementsByClassName("output_row")[0];
+
+      lastOutputDiv.innerHTML = doc.body.innerHTML;      
 
       let inputRows = document.getElementsByClassName("input_row");
       if (inputRows.length > 19) {

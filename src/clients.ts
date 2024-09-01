@@ -194,6 +194,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.commands.registerCommand('wolfram.showTrace', showTrace);
     vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger)
     vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider)
+    vscode.commands.registerCommand('wolfram.updateVarTable', getUpdateVarTable)
     vscode.commands.registerCommand('wolfram.clearPlots', clearPlots)
 
 
@@ -446,6 +447,13 @@ function runToLine() {
     if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
+}
+
+function getUpdateVarTable() {
+    let e = vscode.window.activeTextEditor;
+    wolframKernelClient?.sendNotification("updateVarTable", { textDocument: e?.document });
+
+    plotsProvider._view?.show(true);
 }
 
 

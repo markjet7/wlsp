@@ -139,6 +139,7 @@ function startLanguageServer(context0, outputChannel0) {
         vscode.commands.registerCommand('wolfram.showTrace', showTrace);
         vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
         vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
+        vscode.commands.registerCommand('wolfram.updateVarTable', getUpdateVarTable);
         vscode.commands.registerCommand('wolfram.clearPlots', clearPlots);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
@@ -340,6 +341,10 @@ function runToLine() {
     if (evaluationQueue.length == 1) {
         sendToWolfram(printOutput);
     }
+}
+function getUpdateVarTable() {
+    let e = vscode.window.activeTextEditor;
+    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("updateVarTable", { textDocument: e === null || e === void 0 ? void 0 : e.document });
 }
 let variableTable = {};
 function updateVarTable(vars) {
