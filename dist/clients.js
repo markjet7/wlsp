@@ -343,8 +343,10 @@ function runToLine() {
     }
 }
 function getUpdateVarTable() {
+    var _a;
     let e = vscode.window.activeTextEditor;
     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("updateVarTable", { textDocument: e === null || e === void 0 ? void 0 : e.document });
+    (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
 }
 let variableTable = {};
 function updateVarTable(vars) {

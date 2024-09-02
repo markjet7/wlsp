@@ -403,6 +403,8 @@ getSections[src_, sectionPattern_]:=Module[{},
 
 handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
 
+	Print[json];
+
 	If[
 		!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];
