@@ -2,47 +2,6 @@
 // import * as d3 from "./d3.min.js";
 
 const parser = new DOMParser();
-function processArray(array, parentSelection = undefined) {
-  // console.log("processArray", array);
-  const tag = array[0];
-  const children = array.slice(1);
-
-  var selection;
-
-  if (!parentSelection) {
-    console.error("No parent selection found");
-    parentSelection = d3.select("#mysvg");
-    return;
-  }
-
-  if (!parentSelection) {
-  }
-
-  switch (tag) {
-    case "Graphics":
-      selection = createGraphics(parentSelection, array);
-      break;
-
-    case "Disk":
-      selection = createDisk(parentSelection, children);
-      break;
-
-    case "List":
-      selection = createList(parentSelection, children);
-      break;
-
-    case "Column":
-      selection = createColumn(parentSelection, children);
-      break;
-
-    default:
-      console.log("Unrecognized tag: ", tag);
-      selection = createDefault(parentSelection, children);
-      break;
-  }
-  return selection;
-}
-
 
 function openOutputInNewDocument(output) {
   test = vscode.postMessage({
@@ -244,6 +203,7 @@ function createList(parentSelection, children) {
     const message = event.data;
 
     if ("command" in message && message.command === "clear") {
+      vscode.setState([]);
       clearOutputs();
       return;
     }
@@ -365,7 +325,7 @@ function createList(parentSelection, children) {
   var clearButton = document.getElementById("btn_clear");
   function clearOutputs() {
     index = 0;
-    vscode.setState("");
+    vscode.setState([]);
     const outputDiv = document.getElementById("outputs");
     outputDiv.innerHTML = "";
   }

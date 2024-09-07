@@ -55,8 +55,8 @@ FoldWhile[f_,x_,list_List,test_]:=FoldWhile[f,Prepend[list,x],test];
 FoldWhile[f_,list_List,test_]:=First[NestWhile[Prepend[Drop[#,2],f@@Take[#,2]]&,list,Length[#]>1&&test[First[#]]&]];
 Protect[FoldWhile];
 
-handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&,{"Continue", state},msgs,MatchQ[{"Continue", _}]]);
-handleMessageList[{"Continue", "Continue"}, state_]:={"Continue", state};
+handleMessageList[msgs:{___Association}, state_]:=(FoldWhile[(handleMessage[#2, Last[#1]])&, {"Continue", state}, msgs, MatchQ[{"Continue", _}]]);
+(*handleMessageList[{"Continue", "Continue"}, state_]:={"Continue", state};*)
 
 lastChange = Now;
 
@@ -70,8 +70,7 @@ handleMessage[msg_Association, state_]:=Module[{n, r},
 		r = handle[msg["method"], msg];
 		(* Print[msg["method"], "; Time: ", Now - n]; *)
 		r,
-
-		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>]
+		Print["Error in handleMessage: ", msg];
 	];
 	{"Continue", state}
 ];
@@ -111,17 +110,17 @@ timeout = Now;
 Get[DirectoryName[$path] <> "lsp-handler.wl"]; 
 Get[DirectoryName[$path] <> "file-transforms.wl"]; 
 socketHandler[state_]:=Module[{},
-	(* Print@AbsoluteTiming@Get[DirectoryName[$path] <> "lsp-handler.wl"]; *)
 	Pause[handlerWait];
 	If[
 		Length@SERVER["ConnectedClients"] === 0 &&
-		((Now - timeout) > Quantity[20, "Minutes"]),
+		((Now - timeout) > Quantity[10, "Minutes"]),
 		Print["Closing kernel connection..."]; Quit[];
 	];
 
 	If[Length@SERVER["ConnectedClients"] > 0,
 		timeout = Now;
 	];
+
 	Last[(Replace[
 		handleMessageList[ReadMessages[#], state],
 		{

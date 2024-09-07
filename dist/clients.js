@@ -497,9 +497,9 @@ function decorateRunningLine(outputPosition) {
     var _a, _b, _c, _d;
     let e = vscode.window.activeTextEditor;
     if (e) {
-        // if (outputPosition.line == 0) {
-        //     return
-        // }
+        if (outputPosition.line == 0) {
+            return;
+        }
         let decorationLine = e.document.lineAt(outputPosition.line - 1);
         let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 10);
         let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 20);

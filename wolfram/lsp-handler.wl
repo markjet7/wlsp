@@ -31,7 +31,7 @@ ServerCapabilities=<|
 		"resolveProvider"->False, 		
 		"triggerCharacters" -> {"["}, 
 		"allCommitCharacters" -> {"["}
-	|> ,
+	|>,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
 	"codeLensProvider"-> <|"resolveProvider"->True|>,
@@ -42,14 +42,13 @@ ServerCapabilities=<|
 	"workspace" -><|
 		"workspaceFolders" -> <|"supported"->True, "changeNotifications" -> True|>
 	|>,
-	"semanticTokensProvider" -> False
-	(* "semanticTokensProvider" -> <|
+	"semanticTokensProvider" -> <|
 		"full" -> True,
 		"legend" -> <|
 			"tokenTypes" -> {"variable", "parameter", "keyword", "number", "string", "function"},
 			"tokenModifiers" -> {"definition", "declaration"}
 		|>
-	|> *)
+	|>
 |>;
 
 handle["initialize",json_]:=Module[{response2, builtins},
@@ -262,7 +261,7 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 		];
 		sendResponse[<|"id"->json["id"], "result" -> result |>];,
 
-		Quantity[0.1, "Seconds"],
+		Quantity[0.01, "Seconds"],
 		sendResponse[<|"id"->json["id"], "result" -> {} |>];
 	]
 ];
@@ -284,10 +283,14 @@ handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, resu
 ];
 
 handle["textDocument/definition", json_]:=Module[{src, position, str, definitions, result},
-		src = documents[json["params"]["textDocument"]["uri"]];
+		Print["ToDo: textDocument/definition"];
+		sendResponse[<|"id" -> json["id"], "result"-> {}|>];
+		Return[];
+
+		src = Lookup[documents, json["params"]["textDocument"]["uri"], ""];
 		position = json["params"]["position"];
 
-		str = getWordAtPosition[src, position];
+		str = Check[getWordAtPosition[src, position], ""];
 		definitions = Select[Flatten@KeyValueMap[getSymbols[#2, #1] &, documents], StringMatchQ[#["name"], str] &];
 		result = Table[<|
 			"uri" -> d["uri"], 
@@ -402,9 +405,6 @@ getSections[src_, sectionPattern_]:=Module[{},
 ];
 
 handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
-
-	Print[json];
-
 	If[
 		!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];
@@ -606,9 +606,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
-handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbol", json]=Module[{uri, text, funcs, defs, result, response, kind, ast},
-	TimeConstrained[
-		Check[
+handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
 				(
 					kind[s_]:= Switch[
 								s, 
@@ -627,7 +625,7 @@ handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbo
 								_, 19];
 
 					uri = json["params"]["textDocument"]["uri"];
-					text = documents[json["params", "textDocument", "uri"]];
+					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
 
 
 					ast = Check[Quiet@CodeParse[StringTake[text, {1, UpTo[SyntaxLength@text]}], SourceConvention -> "SourceCharacterIndex"], {}];
@@ -659,17 +657,7 @@ handle["textDocument/documentSymbol", json_]:=handle["textDocument/documentSymbo
 
 					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
 					sendResponse[response]; 
-			),
-
-				response = <|"id"->json["id"],"result"->{}|>;
-				sendResponse[response];  
-				sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 1, "message" -> "Document symbol request failed due to parsing error." |> |>];
-		],
-		Quantity[0.1, "Seconds"],
-		response = <|"id"->json["id"],"result"->{}|>;
-		sendResponse[response];  
-	]
-
+			)
 ];
 
 updateCursorLocations[json_]:=Module[{src, ast, functions, l},
@@ -770,14 +758,19 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 ];
 
 
-
-handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{position, v, uri, src, symbol, value, result, response, f},
-	Check[
+handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response, f},
 		position = json["params", "position"];
 		position["character"] = position["character"]+1;
 		uri = json["params"]["textDocument"]["uri"];
-		src = documents[json["params","textDocument","uri"]];
+		src = Lookup[documents, json["params","textDocument","uri"], ""];
 		symbol = ToString@getWordAtPosition[src, position];
+
+		If[symbol === "",
+			response = <|"id"->json["id"],"result"-><|"contents"-><|"kind" -> "markdown", "value" -> "-"|>|>|>;
+			sendResponse[response];
+			Return[]
+		];
+
 		value = Which[
 			symbol === "",
 				"",
@@ -797,19 +790,15 @@ handle["textDocument/hover", json_]:=handle["textDocument/hover", json]=Module[{
 		|>;
 
 		If[MemberQ[canceledRequests, json["id"]],
-			canceledRequests = DeleteCases[canceledRequests, json["id"]];
+			(*canceledRequests = DeleteCases[canceledRequests, json["id"]];*)
 			response = <|"error"-><|"code" -> -32800, "message" -> "Request cancelled"|>|>;
 			sendResponse[response];
+			Print["Hover:  Request cancelled ", json["id"]];
 			Return[]
 		];
-		response = <|"id"->json["id"], "result"->(result /. Null -> "")|>;
-		sendResponse[response];,
 
-		response = <|"id"->json["id"], "result"->"-"|>;
+		response = <|"id"->json["id"], "result"->result|>;	
 		sendResponse[response];
-		
-		sendResponse[<| "method" -> "window/logMessage", "params" -> <| "type" -> 4, "message" -> "Hover failed for: " <> ToString[json, InputForm, TotalWidth -> 250] |> |>];
-	];
 ];
 
 boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
@@ -817,7 +806,7 @@ ErrorBox[f_]:>{f}};
 
 convertBoxExpressionToHTML[boxexpr_]:=StringJoin[ToString/@Flatten[ReleaseHold[MakeExpression[boxexpr,StandardForm]//.boxRules]]];
 
-extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[Echo@ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
+extractUsage[str_]:=With[{usg=Function[expr, Quiet@Check[StringReplace[expr::usage, "::usage" -> ""],ToString@expr],HoldAll]@@MakeExpression[ToString@str,StandardForm]},StringReplace[If[StringQ@usg, usg, ToString@usg],{Shortest["\!\(\*"~~content__~~"\)"]:>convertBoxExpressionToHTML[content]}]];
 
 extractUsage[_Null]:="";
 
@@ -1021,6 +1010,7 @@ handle["deserializeScript", json_]:=Module[{inputs, json2},
 
 canceledRequests = {};
 handle["$/cancelRequest", json_]:=Module[{response},
+	Print["Cancelling request ", json["params", "id"]];
 	canceledRequests = AppendTo[canceledRequests, json["params", "id"]];
 	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
 	(* response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
@@ -1259,24 +1249,14 @@ getStringAtLineChar[src_String, position_]:=Module[{lines},
 
 getWordAtPosition[_,_]:="";
 getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
-
 	srcLines =StringSplit[src, EndOfLine, All];
-	line = Check[srcLines[[position["line"]+1]],""];
-	If[line === "", Return[""]];
-	(*
+
+	If[position["line"]+1 > Length[srcLines], Return[""]];
+
+	line = srcLines[[position["line"]+1]];
 	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
-		IntervalMemberQ[
-		Interval[
-				First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]] &, 1], ""]; 
-	*)
-	word=Check[
-			StringTake[line,
-			Replace[
-				First@Nearest[
-					StringPosition[line, Replace[TextWords[line], {} -> {""}]],
-					{position["character"],position["character"]}],
-				Rule[{},{0,0}]]],
-			""];
+		IntervalMemberQ[Interval[First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]+1] &], ""];
+	
 	word
 ];
 

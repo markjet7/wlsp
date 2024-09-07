@@ -667,20 +667,21 @@ handle["textDocument/didSave", json_]:=Module[{},
 handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, value, result, response},
 	Check[
 		position = json["params", "position"];
-		src = documents[json["params","textDocument","uri"]];
+		src = Lookup[documents, json["params","textDocument","uri"], ""];
 
 		symbol = ToExpression@getWordAtPosition[src, position];
 		If[Or[symbol === Null, src === ""],
-			sendResponse[<|"id"->Lookup[json["params"], "id", 0], "result"-><|"contents"-><|
+			Print["No symbol found", json];
+			sendResponse[<|"id"->Lookup[json, "id", 1], "result"-><|"contents"-><|
 				"kind" -> "markdown",
-				"value" ->  "No value for symbol: " <> ToString@symbol 
+				"value" ->  "No value found." 
 				|>
 			|>|>];
 			Return[]
 		];
 		value = TimeConstrained[
 			"<img src=\"data:image/png;base64," <> ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
-			Quantity[0.5, "Seconds"],
+			Quantity[0.1, "Seconds"],
 			ToString[symbol, TotalWidth->50]];
 
 		result = <|"contents"-><|
@@ -695,11 +696,12 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			sendResponse[response];
 			Return[]
 		];
-		response = <|"id"->Lookup[json["params"], "id", 0], "result"->(result /. Null -> "")|>;
+		response = <|"id"->Lookup[json, "id", 1], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 
 		(
-			response = <|"id" -> Lookup[json, "id", 0], "result" -> <|"contents"-><|
+			Print[json];
+			response = <|"id" -> Lookup[json, "id", 1], "result" -> <|"contents"-><|
 				"kind" -> "markdown",
 				"value" ->  "Error getting hover" 
 				|>
@@ -888,7 +890,7 @@ handle["abort", json_]:=Module[{},
 
 evaluateString["", width_:10000]:={"Failed", False};
 
-evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, response, oldContext},
+evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgStr, response, oldContext, $result},
 
 	sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
 	(* Begin["VSCode`"]; *)
@@ -912,49 +914,17 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 	If[
 		$result["Success"], 
 		(
-			(*
-			If[ByteCount[response] > 1*^4, 
-				Print@"Output too large to display",
-				Print[response];
-			];
-			*)
-			
-			
-			
-			(*sendResponse[<|"method"->"onResult", "params"-><||>|>];*)
 			$result["FormattedMessages"] = {};
 			$result["Result"] = Last[$result["Result"]];
 			$result
 		),
 
-		(
-			(*
-			msgs = $result["MessagesExpressions"];
-			msgToStr[name_MessageName, params___]:=Apply[
-			StringTemplate[
-				If[
-					Head@name === MessageName,
-					name/.Messages[Evaluate[First[name,General]]],
-					First[$result["MessagesText"], "Unknown error"]
-				]],params];
-
-			msgToStr[_,_]:="An unknown error was generated";
-			msgStr = Quiet@StringTake[Table[
-				msgToStr[m[[1,1]],m[[1,2;;]]]<>"<br>",
-			{m, msgs}], {1, UpTo@8912}];
-			*)
-			
+		(			
 			$result["FormattedMessages"] = Map[
 				$myShort[OutputForm[#], 200] &, 
 				Take[$result["MessagesText"], UpTo[5]]];
 			$result["Result"] = Last[$result["Result"]];
-			Print["Failed"];
-			Print[response];
-
-			(*sendResponse[<|"method"->"window/showMessage", "params"-><|"type"-> 1, 
-				"message" -> StringTake[StringRiffle[$result["FormattedMessages"], "\n"], UpTo[500]]|>|>];*)
-
-
+			Print["Evaluation failed"];
 			$result
 		)
 	]
