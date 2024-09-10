@@ -1,43 +1,43 @@
 {
-	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/process\/plots\/plots.wl":[
+	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/learningScaleup.wl":[
 		{
 			"start":{
-				"line":0,
+				"line":1,
 				"character":0
 			},
 			"end":{
-				"line":0,
-				"character":33
+				"line":1,
+				"character":3
 			}
 		},
 		{
 			"start":{
-				"line":2,
+				"line":3,
 				"character":0
 			},
 			"end":{
-				"line":2,
-				"character":30
+				"line":15,
+				"character":5
 			}
 		},
 		{
 			"start":{
-				"line":6,
+				"line":17,
 				"character":0
 			},
 			"end":{
 				"line":17,
-				"character":2
+				"character":19
 			}
 		},
 		{
 			"start":{
-				"line":19,
+				"line":20,
 				"character":0
 			},
 			"end":{
-				"line":19,
-				"character":86
+				"line":20,
+				"character":10
 			}
 		},
 		{
@@ -47,47 +47,47 @@
 			},
 			"end":{
 				"line":21,
-				"character":20
+				"character":9
 			}
 		},
 		{
 			"start":{
-				"line":23,
-				"character":0
-			},
-			"end":{
-				"line":23,
-				"character":20
-			}
-		},
-		{
-			"start":{
-				"line":25,
-				"character":0
-			},
-			"end":{
-				"line":25,
-				"character":150
-			}
-		},
-		{
-			"start":{
-				"line":27,
+				"line":24,
 				"character":0
 			},
 			"end":{
 				"line":38,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":40,
+				"character":0
+			},
+			"end":{
+				"line":61,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":40,
+				"line":63,
 				"character":0
 			},
 			"end":{
-				"line":40,
-				"character":39
+				"line":63,
+				"character":91
+			}
+		},
+		{
+			"start":{
+				"line":66,
+				"character":0
+			},
+			"end":{
+				"line":74,
+				"character":9
 			}
 		}
 	]
