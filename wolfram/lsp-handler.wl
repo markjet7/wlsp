@@ -59,6 +59,7 @@ handle["initialize",json_]:=Module[{response2, builtins},
 	nearestLabel = Nearest[labels];
     
 	documents = <||>;
+	asts = <||>;
 	response2 = <|"id"->json["id"],"result"-><|"capabilities"->ServerCapabilities|>|>;
 	sendResponse[response2];	
 	workspaceLintDecorationsFile = CreateFile[];
@@ -322,7 +323,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition, as
 	uri = Check[json["params", "textDocument"]["uri", "external"],""];
 	src = Check[documents[json["params","textDocument","uri", "external"]],""];
 
-	ast = CodeParse[StringReplace[StringTake[src, {1, UpTo[SyntaxLength@src]}], ";" -> " "]];
+	ast = Lookup[asts, uri, {}];
 	functions = Cases[ast, (
 		CallNode[LeafNode[Symbol,(_),_],___] |
 		LeafNode[_,_,_]
@@ -400,11 +401,16 @@ handle["textDocument/foldingRange", json_]:=Module[{document, src, lines, sectio
 
 handle["codeLens/resolve", json_]:=Print["resolve"]; 
 
+createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends,"character"->0|>|>}|>|>;
+
 getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
 ];
 
-handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern},
+
+emptyLineQ[line_] := StringMatchQ[line, StartOfString ~~ WhitespaceCharacter ... ~~ EndOfString];
+
+handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens, lines, sections, sectionPattern, ast},
 	If[
 		!KeyMemberQ[documents, json["params"]["textDocument"]["uri"]],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];
@@ -415,11 +421,20 @@ handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens,
 		StringContainsQ[json["params"]["textDocument"]["uri"], "vscode-notebook-cell"],
 		sendResponse[<|"id"->json["id"], "result"->{}|>];,
 
+		n = Now;
 		Check[
-			createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends,"character"->0|>|>}|>|>;
+			
 
-			src = documents[json["params","textDocument","uri"]];
-			ast= Check[Quiet@CodeParse[StringReplace[StringTake[src, {1, UpTo[SyntaxLength@src]}],";"->" "]], {}];
+			src = Lookup[documents, json["params","textDocument","uri"], ""];
+			ast = Lookup[asts, json["params","textDocument","uri"], {}];
+			
+			lines = StringSplit[src, EndOfLine, All];
+			isEmptyLines = emptyLineQ /@ lines; 
+			tripleEmptyPositions = SequencePosition[isEmptyLines, {True, True, True}];
+			startLines = Prepend[tripleEmptyPositions[[All, 1]]+1, 1];
+			endLines = Append[tripleEmptyPositions[[All, 2]], Length@lines];
+			cellRanges = Select[Transpose[{startLines, endLines}], #[[1]] < #[[2]] &];
+
 			functions=Cases[ast,(CallNode[LeafNode[Symbol,(_),_],___]|LeafNode[_,_,_]),{2}];
 
 			If[Length@functions < 2,
@@ -444,6 +459,7 @@ handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens,
 					functions,
 					2,
 				1];
+				Print["Lens: ", Now-n];
 				sendResponse[<|"id"->json["id"], "result"->lens|>];
 			],
 
@@ -541,7 +557,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 			src = documents[json["params","textDocument","uri"]];
 			pos = json["params","position"];
 			symbol = getWordAtPosition[src, pos] /. Null -> "";
-			ast = Check[CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]], {}];
+			ast = Lookup[asts, json["params","textDocument","uri"], {}];
 			keys = Check[Cases[ast,
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
@@ -628,7 +644,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
 
 
-					ast = Check[Quiet@CodeParse[StringTake[text, {1, UpTo[SyntaxLength@text]}], SourceConvention -> "SourceCharacterIndex"], {}];
+					ast = Lookup[asts, uri, {}];
 
 					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
 						"name"->StringTake[text,x[Source]],
@@ -663,7 +679,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 updateCursorLocations[json_]:=Module[{src, ast, functions, l},
 	locations = Import[cursorLocationsFile, "RawJSON"];
 	src = documents[json["params","textDocument","uri"]];
-	ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
+	ast = Lookup[asts, json["params","textDocument","uri"], {}];
 	functions = Cases[ast, (
 		_CallNode |
 		_LeafNode
@@ -691,7 +707,7 @@ handle["textDocument/signatureHelp", json_]:=Module[{position, uri, src, symbol,
 		uri = json["params"]["textDocument"]["uri"];
 		src = documents[json["params","textDocument","uri"]];
 
-		ast = Quiet@Check[CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]], {}];
+		ast = Lookup[asts, uri, {}];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
 	 	function=FirstCase[ast,(UnterminatedCallNode[LeafNode[___],p:List[___],source_]|CallNode[LeafNode[___],p:List[___],source_])/;inCodeRangeQ[source[Source],pos],{},Infinity];
@@ -837,6 +853,7 @@ handle["runCell", json_]:=Module[{},
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
+	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[StringTake[json["params","textDocument","text"], {1, UpTo[SyntaxLength@json["params","textDocument","text"]]}]], {}];
 	(* validate[]; *)
 ];
 
@@ -845,6 +862,8 @@ handle["textDocument/didChange", json_]:=Module[{},
 	newLength = json["params","contentChanges"][[1]]["text"]; *)
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
+	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[StringTake[documents[json["params","textDocument","uri"]], {1, UpTo[SyntaxLength@documents[json["params","textDocument","uri"]]]}]], {}];
+	(* validate[]; *)
 ];
 
 handle["textDocument/semanticTokens", json_]:=Module[{},
@@ -903,7 +922,7 @@ tokenize[scopingDataObject[range_,{scope___}, {type___}, name_]]:=<|
 
 handle["textDocument/semanticTokens/full", json_]:=Module[{src, ast, tokens, digits, result},
 	src = documents[json["params","textDocument","uri"]];
-	ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
+	ast = Lookup[asts, json["params","textDocument","uri"], {}];
 
 	tokens = tokenize /@ ScopingData[ast] // SortBy[{"line", "startCharacter"}];
 
@@ -948,7 +967,7 @@ handle["openNotebook", json_]:=Module[{jupyterfile, response},
 
 handle["windowFocused", json_]:=Module[{},
 	If[First[json["params"], True],
-		handlerWait = 0.01,
+		handlerWait = 0.0001,
 		handlerWait = 1.0
 	]
 ];
@@ -1191,7 +1210,7 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 ];
 
 getFunctionSignature[src_, function_]:=Module[{ast, functions},
-	ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
+	ast = Check[Quiet@CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]], {}];
 	functions = Cases[ast,CallNode[
 					LeafNode[Symbol,"SetDelayed",_],
 					{
@@ -1316,7 +1335,7 @@ positionToRange[text_,range_]:=Module[{beforeText, selectedText, afterText},
 ];
 
 getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
-	ast = CodeParse[StringTake[src, {1, UpTo[SyntaxLength@src]}]];
+	ast = Lookup[asts, uri, {}];
 
 	f[node_]:=Module[{astStr,name,loc,kind,rhs},
 		astStr=ToFullFormString[node[[2,1]]];
