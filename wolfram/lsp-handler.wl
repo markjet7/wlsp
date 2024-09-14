@@ -574,7 +574,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 			keys = Check[Cases[ast,
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
-			], {}];*)
+			], {}];
 			keys = {};
 			labels = Join[DeleteDuplicates@TextWords[src], COMPLETIONS[[All, "label"]]];
 

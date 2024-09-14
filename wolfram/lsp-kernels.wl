@@ -517,9 +517,9 @@ handle["workspace/symbol", json_]:=Module[{response, symbol, symbols},
 	sendResponse[response];
 ];
 
-handle["getFunctionRanges", json_]:=Module[{uri, functions, locations},
+handle["getFunctionRanges", json_]:=Module[{uri, functions, locations, ast},
 	uri = json["params", "external"];
-	ast = CodeParse[documents[uri]];
+	ast = Lookup[asts, uri, {}];
 
 	functions = Cases[ast,CallNode[LeafNode[Symbol,("Set"|"SetDelayed"),_],___,<|Source->s_,"Definitions"->{_}|>]:>s,{1,4}];
 
@@ -628,6 +628,7 @@ handle["didChangeWorkspaceFolders", json_]:=Module[{dir, files},
 handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
+	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[json["params","textDocument","text"]], {}];
 ];
 
 handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtext, changedLines, changedPosition, newLength},
@@ -656,6 +657,7 @@ handle["textDocument/didChange", json_]:=Module[{range, oldKeys, oldtext, newtex
 		Export[decorationFile, workspaceDecorations, "JSON"];
 	];
 	documents[json["params","textDocument","uri"]] = json["params","contentChanges"][[1]]["text"];
+	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[json["params","textDocument","text"]], {}];
 	sendResponse[<|"method"->"updateDecorations", "params" -> ToString@decorationFile|>];
 ];
 
@@ -699,7 +701,6 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		sendResponse[response];,
 
 		(
-			Print[json];
 			response = <|"id" -> Lookup[json, "id", 1], "result" -> <|"contents"-><|
 				"kind" -> "markdown",
 				"value" ->  "Error getting hover" 
@@ -1154,7 +1155,7 @@ handle["getSymbols", json_]:=Module[{},
 
 getFileSymbols[file_, uri_:""]:=Module[{f, symbols, src},
 	src = Import[file, "Text"];
-	ast = CodeParse[src]; 
+	ast = Lookup[asts, uri, {}];
 	symbols = cellToSymbol[#, uri] & /@ Cases[ast, CodeParser`CallNode[CodeParser`LeafNode[Symbol,("Set"|"SetDelayed"),_],___],Infinity];
 	symbols
 ];
