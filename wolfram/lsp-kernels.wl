@@ -671,10 +671,9 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 
 		symbol = ToExpression@getWordAtPosition[src, position];
 		If[Or[symbol === Null, src === ""],
-			Print["No symbol found", json];
 			sendResponse[<|"id"->Lookup[json, "id", 1], "result"-><|"contents"-><|
 				"kind" -> "markdown",
-				"value" ->  "No value found." 
+				"value" ->  "na" 
 				|>
 			|>|>];
 			Return[]

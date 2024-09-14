@@ -28,9 +28,9 @@ ServerCapabilities=<|
 	"foldingRangeProvider" -> False, (* True*)
 	"documentFormattingProvider" -> True,
 	"completionProvider"-> <|
-		"resolveProvider"->False, 		
-		"triggerCharacters" -> {"["}, 
-		"allCommitCharacters" -> {"["}
+		"resolveProvider"->False,
+		"allCommitCharacters" -> {"["},
+		"insertReplaceSupport" -> True
 	|>,
 	"documentSymbolProvider"->True,
 	"codeActionProvider"->False,
@@ -552,19 +552,34 @@ handle["completionItem/resolve", json_] := Module[{item, documentation, result, 
 	sendResponse[response];
 ];
 
+nearestSymbols[symbol_, labels_]:=nearestSymbols[symbol, labels]=Module[{inputCharacters, fuzzyMatches, rankedWords},
+  (* Step 1: Break input string into characters *)
+  inputCharacters = Characters[symbol];
+  
+  (* Step 2: Filter words that contain all the characters in any order *)
+  fuzzyMatches = Select[labels, ContainsAll[Characters[#], inputCharacters] &];
+  
+  (* Step 3: Rank the words by similarity - here by length, but could also add frequency or other metrics *)
+  rankedWords = SortBy[fuzzyMatches, StringLength];
+  
+  (* Step 4: Return the top 20 suggestions *)
+  Take[rankedWords, UpTo[20]]
+];
+
 handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items, result, response, position, missingCloser, functionArguments, candidates, keys, labels, ast, function,  defaultItems},
-		TimeConstrained[
-			src = documents[json["params","textDocument","uri"]];
+			src = Lookup[documents, json["params","textDocument","uri"], ""];
 			pos = json["params","position"];
 			symbol = getWordAtPosition[src, pos] /. Null -> "";
 			ast = Lookup[asts, json["params","textDocument","uri"], {}];
 			keys = Check[Cases[ast,
 				CallNode[LeafNode[Symbol,"Rule",<||>],{LeafNode[String,k_,<|Source->_|>],LeafNode[Integer,v_,<|Source->_|>]},<|Source->_|>]:>k,
 				Infinity
-			], {}];
-			labels = {};
+			], {}];*)
+			keys = {};
+			labels = Join[DeleteDuplicates@TextWords[src], COMPLETIONS[[All, "label"]]];
 
 			position = <|"line" -> pos["line"], "character" -> pos["character"]|>;
+			(*
 			missingCloser = FirstCase[ast,
 				CallMissingCloserNode[___,source_]/;inCodeRangeQ[source[Source], position], {}, Infinity];
 
@@ -572,27 +587,28 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				functionArguments = {},
 				functionArguments = Options[ToExpression[missingCloser[[1, 2]]]][[All, 1]]
 			];
-
-			(* SmithWatermanSimilarity *)
-			(*names = Select[Join[keys,labels], EditDistance[#, symbol, IgnoreCase->True] >= StringLength@symbol &, 15]; *)
-
-			(* names = Nearest[Select[Join[keys,labels], StringLength@#>3&], symbol,20,DistanceFunction-> (EditDistance[#1,#2, IgnoreCase->True] &)]; *)
+			*)
 
 			candidates = Join[
-				{"Table", "Module", "Block", "With", "ListPlot", "Association"},
-				Select[Join[keys,labels], StringTake[#,UpTo[StringLength@symbol]]===symbol&]];
+				{"Table", "Module", "Block", "With", "ListPlot", "Association", "Histogram"},
+				Join[keys,labels]];
 
-			names = PadRight[
-				Join[functionArguments, candidates],
-				20,
-				Select[Join[keys,labels],EditDistance[ StringTake[#, UpTo[StringLength@symbol]],symbol,IgnoreCase->True] <=2&]];
+			names = DeleteDuplicates@nearestSymbols[symbol, candidates];
 
 			items = Table[
 					<|
 						"label" -> ToString@n,
 						"kind" -> If[ValueQ@n, 12, 13],
 						"commitCharacters" -> {"[", "\t"},
-						"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
+						"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *),
+						"filterText"-> ToString@n,
+						"textEdit"-> <|
+							"newText"-> ToString@n,
+							"replace" -> <|
+									"start" -> <|"line" -> pos["line"], "character" -> pos["character"]-StringLength[symbol]|>,
+									"end" -> <|"line" -> pos["line"], "character" -> pos["character"]|>
+								|>
+						|>
 					|>, 
 					{n,names}];
 			
@@ -602,23 +618,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 				|>;
 			response = <|"id"->json["id"],"result"->(result /. Null -> "NA")|>;
 			sendResponse[response];
-			(*Print[result];*),
-
-			Quantity[0.5, "Seconds"],
-			(
-			defaultItems = Table[
-				<|
-					"label" -> ToString@n,
-					"kind" -> 13,
-					"commitCharacters" -> {"[", "\t"},
-					"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *)
-				|>, 
-				{n, {"Table", "Module", "Block", "With", "ListPlot", "Association"}}];
-				(*Print[defaultItems];*)
-				response = <|"id"->json["id"],"result"-><| "isIncomplete" -> True, "items" -> defaultItems|>|>;
-				sendResponse[response];
-			)
-		]
+			(*Print[result];*)
 ];
 
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
@@ -782,7 +782,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		symbol = ToString@getWordAtPosition[src, position];
 
 		If[symbol === "",
-			response = <|"id"->json["id"],"result"-><|"contents"-><|"kind" -> "markdown", "value" -> "-"|>|>|>;
+			response = <|"id"->json["id"],"result"-><|"contents"-><|"kind" -> "markdown", "value" -> "na"|>|>|>;
 			sendResponse[response];
 			Return[]
 		];
