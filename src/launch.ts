@@ -2,7 +2,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as net from 'net';
-const fp = require('find-free-port');
 import * as cp from 'child_process';
 const psTree = require('ps-tree');
 const bson = require('bson');
@@ -22,7 +21,7 @@ import { start } from 'repl';
 let context: vscode.ExtensionContext;
 
 let clientPort: number = 37800;
-let kernelPort: number = 37810;
+let kernelPort: number = 37820;
 let lspPath = ""
 let kernelPath = ""
 
@@ -69,9 +68,7 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     let timeout: any;
     lspPath = path;
 
-    fp(clientPort, (err: any, freePort: any) => {
-        clientPort = freePort;
-    });
+    clientPort = Math.floor(Math.random() * 20) + 37800;
 
     if (wolfram) {
         try {
@@ -227,9 +224,8 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 }
 
 let kernelConnectionAttempts = 0;
-fp(kernelPort, (err: any, freePort: any) => {
-    kernelPort = freePort;
-});
+// pick random port between 37810 and 37820 for kernel
+kernelPort = Math.floor(Math.random() * 20) + 37820;
 export async function startWLSPKernelSocket(id: number, path: string): Promise<LanguageClient | undefined> {
     return new Promise(async (resolve) => {
         let kernelSocket = new net.Socket();
