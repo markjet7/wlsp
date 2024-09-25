@@ -459,7 +459,6 @@ handle["textDocument/codeLens", json_]:=Module[{src, starts, ends, breaks, lens,
 					functions,
 					2,
 				1];
-				Print["Lens: ", Now-n];
 				sendResponse[<|"id"->json["id"], "result"->lens|>];
 			],
 
@@ -599,7 +598,7 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 					<|
 						"label" -> ToString@n,
 						"kind" -> If[ValueQ@n, 12, 13],
-						"commitCharacters" -> {"[", "\t"},
+						"commitCharacters" -> {"\t"},
 						"detail" -> "" (* ToString@Check[extractUsage[n], n] *)(* DETAILS[n]["documentation"] *),
 						"filterText"-> ToString@n,
 						"textEdit"-> <|
@@ -642,14 +641,18 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 
 					uri = json["params"]["textDocument"]["uri"];
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
+					ast = CodeParse[text, SourceConvention -> "SourceCharacterIndex"];
 
-
-					ast = Lookup[asts, uri, {}];
+					If[ast === {} || text === "",
+						response = <|"id"->json["id"],"result"->{}|>;
+						sendResponse[response];
+						Return[]
+					];
 
 					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
-						"name"->StringTake[text,x[Source]],
+						"name"->Check[Quiet@StringTake[text,x[Source]], ""],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->StringTake[text,src[Source]],
+						"detail"->Check[Quiet@StringTake[text,src[Source]], ""],
 						"location"-><|
 						"uri"->uri,
 						"range"->positionToRange[text,src[Source]]|>
