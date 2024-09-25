@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.0.101",
+    "version": "0.1.0",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -62,6 +62,25 @@
                 }
             }
         },
+        "semanticTokenScopes": [
+            {
+                "language": "wolfram",
+                "scopes": {
+                    "function": [
+                        "entity.name.function.wolfram"
+                    ],
+                    "parameter": [
+                        "symbol.unrecognized.wolfram"
+                    ],
+                    "variable.definition": [
+                        "symbol.unrecognized.wolfram"
+                    ],
+                    "variable.declaration": [
+                        "entity.name.constant.wolfram"
+                    ]
+                }
+            }
+        ],
         "configurationDefaults": {
             "[wolfram]": {
                 "editor.semanticHighlighting.enabled": true
@@ -69,18 +88,23 @@
             "editor.semanticTokenColorCustomizations": {
                 "enabled": true,
                 "rules": {
-                    "function": {
-                        "foreground": "#ff0000",
+                    "function:wolfram": {
+                        "foreground": "#cf0a0a",
                         "fontStyle": "bold"
                     },
-                    "parameter": {
+                    "parameter:wolfram": {
+                        "foreground": "#ddac17",
                         "fontStyle": "italic"
                     },
-                    "variable.definition": {
+                    "variable.definition:wolfram": {
+                        "foreground": "#584c87",
                         "fontStyle": "bold"
                     },
-                    "variable": {},
-                    "variable.declaration": {
+                    "variable:wolfram": {
+                        "foreground": "#584c87"
+                    },
+                    "variable.declaration:wolfram": {
+                        "foreground": "#584c87",
                         "fontStyle": "bold"
                     }
                 }
