@@ -24,3 +24,10 @@
     padding: 10px;
     border: 1px solid #ccc;
 }
+
+.vertical-element {
+    display: block;
+    text-align: left;
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+}
