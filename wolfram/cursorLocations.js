@@ -1,23 +1,123 @@
 {
-	"untitled:Untitled-2":[
+	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Inbox\/bw.wl":[
 		{
 			"start":{
-				"line":0,
+				"line":2,
 				"character":0
 			},
 			"end":{
-				"line":0,
-				"character":44
+				"line":13,
+				"character":3
 			}
 		},
 		{
 			"start":{
-				"line":2,
+				"line":16,
 				"character":0
 			},
 			"end":{
-				"line":2,
-				"character":39
+				"line":22,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":24,
+				"character":0
+			},
+			"end":{
+				"line":24,
+				"character":27
+			}
+		},
+		{
+			"start":{
+				"line":26,
+				"character":0
+			},
+			"end":{
+				"line":26,
+				"character":27
+			}
+		},
+		{
+			"start":{
+				"line":28,
+				"character":0
+			},
+			"end":{
+				"line":44,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":46,
+				"character":0
+			},
+			"end":{
+				"line":46,
+				"character":54
+			}
+		},
+		{
+			"start":{
+				"line":48,
+				"character":0
+			},
+			"end":{
+				"line":48,
+				"character":48
+			}
+		},
+		{
+			"start":{
+				"line":51,
+				"character":0
+			},
+			"end":{
+				"line":63,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":65,
+				"character":0
+			},
+			"end":{
+				"line":65,
+				"character":50
+			}
+		},
+		{
+			"start":{
+				"line":67,
+				"character":0
+			},
+			"end":{
+				"line":77,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":79,
+				"character":0
+			},
+			"end":{
+				"line":79,
+				"character":53
+			}
+		},
+		{
+			"start":{
+				"line":81,
+				"character":0
+			},
+			"end":{
+				"line":81,
+				"character":82
 			}
 		}
 	]

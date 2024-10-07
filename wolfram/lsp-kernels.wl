@@ -259,6 +259,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
+
 	string = code2["code"];
 
 
