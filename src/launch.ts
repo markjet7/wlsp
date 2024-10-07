@@ -225,8 +225,8 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
 
 let kernelConnectionAttempts = 0;
 // pick random port between 37810 and 37820 for kernel
-kernelPort = Math.floor(Math.random() * 20) + 37820;
 export async function startWLSPKernelSocket(id: number, path: string): Promise<LanguageClient | undefined> {
+    kernelPort = Math.floor(Math.random() * 20) + 37820;
     return new Promise(async (resolve) => {
         let kernelSocket = new net.Socket();
         // if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
@@ -316,6 +316,11 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                     outputChannel.appendLine("Kernel Socket end: " + msg);
                     if (wolframKernel.connected == true && kernelSocket.connecting == false) {
                         reconnect();
+                    }
+
+                    if (wolframKernel.connected == false && kernelSocket) {
+                        kernelPort += 1;
+                        startWLSPKernelSocket(id, path);
                     }
                 })
 

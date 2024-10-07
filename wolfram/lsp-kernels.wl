@@ -79,7 +79,7 @@ handle["pulse", json_]:=Module[{},
 
 handle["windowFocused", json_]:=Module[{},
 	If[First[json["params"], True],
-		handlerWait = 0.01,
+		handlerWait = 0.001,
 		handlerWait = 1.0
 	];
 ];
@@ -158,8 +158,10 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		start = Now;
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
-		src = documents[json["params","textDocument","uri", "external"]];
-		code = getCode[src, range];
+		src = Lookup[documents,json["params","textDocument","uri", "external"], ""];
+		code = Check[getCode[src, range], <|"code"->"Get code failed", "range"-><|
+			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
+			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>|>|>];
 		newPosition = <|"line"->code["range"][[2,1]]+1, "character"->1|>;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
 
@@ -257,6 +259,7 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 	Unprotect[NotebookDirectory];
 	NotebookDirectory[] = FileNameJoin[
 		URLParse[DirectoryName[json["params","textDocument","uri", "external"]]]["Path"]] <> $PathnameSeparator;
+
 	string = code2["code"];
 
 

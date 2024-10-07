@@ -186,9 +186,9 @@ function startWLSP(id, path) {
 exports.startWLSP = startWLSP;
 let kernelConnectionAttempts = 0;
 // pick random port between 37810 and 37820 for kernel
-kernelPort = Math.floor(Math.random() * 20) + 37820;
 function startWLSPKernelSocket(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
+        kernelPort = Math.floor(Math.random() * 20) + 37820;
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             let kernelSocket = new net.Socket();
             // if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
@@ -264,6 +264,10 @@ function startWLSPKernelSocket(id, path) {
                         extension_1.outputChannel.appendLine("Kernel Socket end: " + msg);
                         if (wolframKernel.connected == true && kernelSocket.connecting == false) {
                             reconnect();
+                        }
+                        if (wolframKernel.connected == false && kernelSocket) {
+                            kernelPort += 1;
+                            startWLSPKernelSocket(id, path);
                         }
                     });
                     function reconnect() {

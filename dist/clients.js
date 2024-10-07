@@ -905,7 +905,7 @@ function updateResults(e, result, print, input = "", file = "") {
                     "range": new vscode.Range(nextline, startChar + 10, nextline, startChar + 200),
                     "renderOptions": {
                         "after": {
-                            "contentText": " " + resultString,
+                            "contentText": " " + result["params"]["decoration"],
                             "backgroundColor": new vscode.ThemeColor("editorInfo.background"),
                             "color": new vscode.ThemeColor("editorInfo.foreground"),
                             "margin": "10px 10px 10px 10px",

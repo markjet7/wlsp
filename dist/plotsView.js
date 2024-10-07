@@ -102,9 +102,9 @@ class PlotsViewProvider {
     }
     newOutput(output) {
         var _a;
-        let img = output
-            .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
-            .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "");
+        let img = output;
+        // .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
+        // .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
         // .replace(`<?xml version="1.0" encoding="UTF-8"?>`,"");
         // console.log(img)
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({
@@ -243,7 +243,38 @@ class PlotsViewProvider {
                     padding: 5px;
 
                 }
+
+                .vertical {
+                    display: flex;
+                    flex-direction: column;
+                    border: 1px solid #ccc;
+                    width: fit-content;
+                }
+
+                .vertical-element {
+                    text-align: left;
+                    padding: 5px;
+                    border-bottom: 1px solid #ccc;
+                    border-top: 1px solid #ccc;
+                    width: auto;
+                }
     
+                .horizontal {
+                    display: flex;
+                    flex-direction: row;
+                    border: 1px solid #ccc;
+                    width: fit-content;
+                }
+
+                .horizontal-element {
+                    text-align: left;
+                    padding: 5px;
+                    border-right: 1px solid #ccc;
+                }
+
+                .horizontal-element:last-child {
+                    border-right: none;
+                }
     
             </style>
             <meta charset="UTF-8">
