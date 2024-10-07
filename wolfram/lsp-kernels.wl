@@ -700,7 +700,6 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			sendResponse[response];
 			Return[]
 		];
-		Print["Kernel hover 5"];
 		response = <|"id"->Lookup[json, "id", 1], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 
