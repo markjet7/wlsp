@@ -680,10 +680,10 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			|>|>];
 			Return[]
 		];
-		value = TimeConstrained[
+		value = CheckAbort[TimeConstrained[
 			"<img src=\"data:image/png;base64," <> ExportString[Rasterize@Short[symbol,7], {"Base64", "PNG"}] <> "\" width=\"400px\" />", 
 			Quantity[0.1, "Seconds"],
-			ToString[symbol, TotalWidth->50]];
+			ToString[symbol, TotalWidth->50]], ""];
 
 		result = <|"contents"-><|
 				"kind" -> "markdown",
@@ -697,6 +697,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			sendResponse[response];
 			Return[]
 		];
+		Print["Kernel hover 5"];
 		response = <|"id"->Lookup[json, "id", 1], "result"->(result /. Null -> "")|>;
 		sendResponse[response];,
 

@@ -160,7 +160,8 @@ Print["Kernel ", KERNELSERVER, ": ", kernelport];
 Block[{$IterationLimit = Infinity}, 
 	CheckAbort[
 		socketHandler[state],
-		Print["Kernel aborted"]; 
+		Print["Kernel aborted while running..."];, 
+		PropagateAborts -> False
 	];
 ];
 (*

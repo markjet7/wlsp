@@ -13,7 +13,6 @@ exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = ex
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
-const fp = require('find-free-port');
 const cp = require("child_process");
 const psTree = require('ps-tree');
 const bson = require('bson');
@@ -21,7 +20,7 @@ const node_1 = require("vscode-LanguageClient/node");
 const extension_1 = require("./extension");
 let context;
 let clientPort = 37800;
-let kernelPort = 37810;
+let kernelPort = 37820;
 let lspPath = "";
 let kernelPath = "";
 var wolfram;
@@ -55,9 +54,7 @@ function startWLSP(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         let timeout;
         lspPath = path;
-        fp(clientPort, (err, freePort) => {
-            clientPort = freePort;
-        });
+        clientPort = Math.floor(Math.random() * 20) + 37800;
         if (wolfram) {
             try {
                 yield kill(wolfram.pid);
@@ -188,9 +185,8 @@ function startWLSP(id, path) {
 }
 exports.startWLSP = startWLSP;
 let kernelConnectionAttempts = 0;
-fp(kernelPort, (err, freePort) => {
-    kernelPort = freePort;
-});
+// pick random port between 37810 and 37820 for kernel
+kernelPort = Math.floor(Math.random() * 20) + 37820;
 function startWLSPKernelSocket(id, path) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {

@@ -624,6 +624,8 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
 handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
 				(
+					Return[];
+					Print["DocumentSymbol"];
 					kind[s_]:= Switch[
 								s, 
 								"Symbol", 13, 
@@ -643,29 +645,31 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 					uri = json["params"]["textDocument"]["uri"];
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
 
-
 					ast = Lookup[asts, uri, {}];
 
-					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
+					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>Quiet@Check[<|
 						"name"->StringTake[text,x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
 						"detail"->StringTake[text,src[Source]],
 						"location"-><|
 						"uri"->uri,
 						"range"->positionToRange[text,src[Source]]|>
-						|>,Infinity];
+						|>, Nothing],Infinity];
+					Print["DocumentSymbol 2"];
 
-					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:><|
+					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>Check[<|
 						"name"->StringTake[text,x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
 						"detail"->StringTake[text,src[Source]],
 						"location"-><|
 						"uri"->uri,
 						"range"->positionToRange[text,src[Source]]|>
-						|>,Infinity];
+						|>, Nothing],Infinity];
 
+					Print["DocumentSymbol 3"];
 					result = Join[funcs, defs];
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
+					Print["DocumentSymbol 4"];
 
 					response = <|"id"->json["id"],"result"->result|>;
 					sendResponse[response];  
