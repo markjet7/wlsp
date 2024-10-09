@@ -656,7 +656,7 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 
 					uri = json["params"]["textDocument"]["uri"];
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
-					ast = CodeParse[text];
+					(*ast = CodeParse[text];*)
 
 					ast = Lookup[asts, uri, {}];
 
@@ -669,7 +669,6 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 						"uri"->uri,
 						"range"->positionToRange[src[Source]]|>
 						|>, Nothing],Infinity];
-					Print["DocumentSymbol 2"];
 
 					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[<|
 						"name"->getStringAtRange[text,x[Source]],
@@ -680,10 +679,8 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 						"range"->positionToRange[src[Source]]|>
 						|>, Nothing],Infinity];
 
-					Print["DocumentSymbol 3"];
 					result = Join[funcs, defs];
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
-					Print["DocumentSymbol 4"];
 
 					response = <|"id"->json["id"],"result"->result|>;
 					sendResponse[response];  
@@ -827,7 +824,6 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 			(*canceledRequests = DeleteCases[canceledRequests, json["id"]];*)
 			response = <|"error"-><|"code" -> -32800, "message" -> "Request cancelled"|>|>;
 			sendResponse[response];
-			Print["Hover:  Request cancelled ", json["id"]];
 			Return[]
 		];
 
