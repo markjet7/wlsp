@@ -656,28 +656,28 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 
 					uri = json["params"]["textDocument"]["uri"];
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
-					ast = CodeParse[text, SourceConvention -> "SourceCharacterIndex"];
+					ast = CodeParse[text];
 
 					ast = Lookup[asts, uri, {}];
 
 					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
-						CheckAbort[Quiet@<|
-						"name"->StringTake[text,Echo@x[Source]],
+						CheckAbort[<|
+						"name"->getStringAtRange[text,x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->StringTake[text,src[Source]],
+						"detail"->getStringAtRange[text,src[Source]],
 						"location"-><|
 						"uri"->uri,
-						"range"->positionToRange[text,src[Source]]|>
+						"range"->positionToRange[src[Source]]|>
 						|>, Nothing],Infinity];
 					Print["DocumentSymbol 2"];
 
-					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[Quiet@<|
-						"name"->StringTake[text,Echo@x[Source]],
+					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[<|
+						"name"->getStringAtRange[text,x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->StringTake[text,src[Source]],
+						"detail"->getStringAtRange[text,src[Source]],
 						"location"-><|
 						"uri"->uri,
-						"range"->positionToRange[text,src[Source]]|>
+						"range"->positionToRange[src[Source]]|>
 						|>, Nothing],Infinity];
 
 					Print["DocumentSymbol 3"];
@@ -1336,10 +1336,11 @@ positionToLineChar[text_,range_]:=Module[{beforeText, selectedText, afterText},
 	|>
 ];
 
-positionToRange[text_,range_]:=Module[{beforeText, selectedText, afterText},
+positionToRange[text_String,range_]:=Module[{beforeText, selectedText, afterText},
 	beforeText = StringTake[text,{1, range[[1]]}];
 	selectedText = StringTake[text,{range[[1]], range[[2]]}];
 	afterText = StringTake[text,{range[[2]], -1}];
+
 	<|
 		"start"-><|
 			"line" -> StringCount[beforeText,EndOfLine]-1, 
@@ -1347,10 +1348,29 @@ positionToRange[text_,range_]:=Module[{beforeText, selectedText, afterText},
 		|>,
 		"end"-><|
 			"line" -> StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
-			"character" -> StringLength[Last@StringSplit[beforeText<>selectedText,EndOfLine]]-1 
+			"character" -> StringLength[
+				Last@
+					StringSplit[
+						beforeText<>selectedText,
+						EndOfLine]
+			]-1
 		|>
 	|>
 ];
+
+positionToRange[range_]:=Module[{},
+	<|
+		"start" -> <|
+			"line" -> range[[1,1]]-1,
+			"character" -> range[[1,2]]-1
+		|>,
+		"end" -> <|
+			"line" -> range[[2,1]]-1,
+			"character" -> range[[2,2]]-1
+		|>
+	|>
+];
+
 
 getSymbols[src_, uri_:""]:=getSymbols[src, uri]=Module[{ast, f, symbols},
 	ast = Lookup[asts, uri, {}];
