@@ -1,123 +1,183 @@
 {
-	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Inbox\/bw.wl":[
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Dropbox\/Research\/Charm\/Embodied%20Emissions\/standards.wl":[
 		{
 			"start":{
-				"line":2,
+				"line":0,
 				"character":0
 			},
 			"end":{
-				"line":13,
-				"character":3
+				"line":15,
+				"character":17
 			}
 		},
 		{
 			"start":{
-				"line":16,
-				"character":0
-			},
-			"end":{
 				"line":22,
-				"character":3
-			}
-		},
-		{
-			"start":{
-				"line":24,
 				"character":0
 			},
 			"end":{
-				"line":24,
-				"character":27
+				"line":29,
+				"character":6
 			}
 		},
 		{
 			"start":{
-				"line":26,
+				"line":31,
 				"character":0
 			},
 			"end":{
-				"line":26,
-				"character":27
+				"line":40,
+				"character":6
 			}
 		},
 		{
 			"start":{
-				"line":28,
+				"line":42,
+				"character":0
+			},
+			"end":{
+				"line":42,
+				"character":55
+			}
+		},
+		{
+			"start":{
+				"line":44,
 				"character":0
 			},
 			"end":{
 				"line":44,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":46,
-				"character":0
-			},
-			"end":{
-				"line":46,
-				"character":54
-			}
-		},
-		{
-			"start":{
-				"line":48,
-				"character":0
-			},
-			"end":{
-				"line":48,
-				"character":48
-			}
-		},
-		{
-			"start":{
-				"line":51,
-				"character":0
-			},
-			"end":{
-				"line":63,
-				"character":2
-			}
-		},
-		{
-			"start":{
-				"line":65,
-				"character":0
-			},
-			"end":{
-				"line":65,
 				"character":50
 			}
 		},
 		{
 			"start":{
-				"line":67,
+				"line":47,
 				"character":0
 			},
 			"end":{
-				"line":77,
+				"line":176,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":178,
+				"character":0
+			},
+			"end":{
+				"line":178,
+				"character":56
+			}
+		},
+		{
+			"start":{
+				"line":180,
+				"character":0
+			},
+			"end":{
+				"line":185,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":79,
+				"line":187,
 				"character":0
 			},
 			"end":{
-				"line":79,
-				"character":53
+				"line":194,
+				"character":19
 			}
 		},
 		{
 			"start":{
-				"line":81,
+				"line":196,
 				"character":0
 			},
 			"end":{
-				"line":81,
-				"character":82
+				"line":196,
+				"character":57
+			}
+		},
+		{
+			"start":{
+				"line":199,
+				"character":0
+			},
+			"end":{
+				"line":199,
+				"character":93
+			}
+		},
+		{
+			"start":{
+				"line":201,
+				"character":0
+			},
+			"end":{
+				"line":205,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":207,
+				"character":0
+			},
+			"end":{
+				"line":207,
+				"character":57
+			}
+		},
+		{
+			"start":{
+				"line":209,
+				"character":0
+			},
+			"end":{
+				"line":209,
+				"character":23
+			}
+		},
+		{
+			"start":{
+				"line":211,
+				"character":0
+			},
+			"end":{
+				"line":218,
+				"character":19
+			}
+		},
+		{
+			"start":{
+				"line":220,
+				"character":0
+			},
+			"end":{
+				"line":220,
+				"character":58
+			}
+		},
+		{
+			"start":{
+				"line":222,
+				"character":0
+			},
+			"end":{
+				"line":222,
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":224,
+				"character":0
+			},
+			"end":{
+				"line":224,
+				"character":49
 			}
 		}
 	]

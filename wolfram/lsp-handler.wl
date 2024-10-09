@@ -239,32 +239,47 @@ handle["textDocument/documentColor", json_]:=Module[{src, rgbPattern, colors, re
 		Return[]
 	];
 
-	TimeConstrained[
-		rgbPattern=c:(Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] | Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]);
-		If[Unequal[Head@rgbPattern, String], rgbPattern = ""]; 
-		colors=MapIndexed[{#2[[1]],StringPosition[#1,rgbPattern],StringCases[#1,rgbPattern:>ToExpression@c]}&,StringSplit[src,"\n",All]]//Select[#,#[[2]]!={}&]&;
-		result = Map[
-			If[AnyTrue[#, FailureQ],
-				Nothing,
-			<|
-				"range"-><|
-					"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
-					"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
-				|>,
-			"color"-><|
-				"red"->#[[3,1,1]],
-				"green"->#[[3,1,2]],
-				"blue"->#[[3,1,3]],
-				"alpha"->If[Length@#[[3,1]] >3, #[[3,1,4]] ,1]
-				|>
-			|>]&,
-			colors
-		];
-		sendResponse[<|"id"->json["id"], "result" -> result |>];,
+	CheckAbort[
+		TimeConstrained[
+			rgbPattern=c:(
+				Shortest["RGBColor["~~r__~~","~~g__~~","~~b__~~("]"|("," ~~a__~~"]"))] |
+				Shortest["RGBColor[" ~~ ___ ~~ "\"" ~~ WordCharacter.. ~~"\"" ~~ ___~~"]"]
+				);
+			If[Unequal[Head@rgbPattern, String], rgbPattern = ""]; 
+			colors=MapIndexed[
+				{
+					#2[[1]],
+					StringPosition[#1,rgbPattern],
+					StringCases[#1,rgbPattern:>ToExpression@c]
+				}&,
+				StringSplit[src,"\n",All]]
+				// Select[#,#[[2]]!={}&]&;
+			result = Map[
+				If[AnyTrue[#, FailureQ],
+					Nothing,
+				<|
+					"range"-><|
+						"start"-><|"line"->#[[1]]-1, "character"->#[[2,1,1]]-1|>,
+						"end"-><|"line"->#[[1]]-1, "character"->#[[2,1,2]]|>
+					|>,
+				"color"-><|
+					"red"->Replace[#[[3,1,1]], x_/;RealQ[x]->x],
+					"green"->Replace[#[[3,1,2]], x_/;RealQ[x]->x],
+					"blue"->Replace[#[[3,1,3]], x_/;RealQ[x]->x],
+					"alpha"->If[Length@#[[3,1]] >3,
+						Replace[#[[3,1,4]], x_/;RealQ[x]->x],
+						1]
+					|>
+				|>]&,
+				colors
+			];
+			sendResponse[<|"id"->json["id"], "result" -> result |>];,
 
-		Quantity[0.01, "Seconds"],
+			Quantity[0.01, "Seconds"],
+			sendResponse[<|"id"->json["id"], "result" -> {} |>];
+		],
 		sendResponse[<|"id"->json["id"], "result" -> {} |>];
-	]
+	];
 ];
 
 handle["textDocument/colorPresentation", json_]:=Module[{src, color, range, result},
@@ -623,8 +638,6 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
 handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
 				(
-					Return[];
-					Print["DocumentSymbol"];
 					kind[s_]:= Switch[
 								s, 
 								"Symbol", 13, 
@@ -647,26 +660,19 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 
 					ast = Lookup[asts, uri, {}];
 
-					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>Quiet@Check[<|
-						"name"->StringTake[text,x[Source]],
-					If[ast === {} || text === "",
-						response = <|"id"->json["id"],"result"->{}|>;
-						sendResponse[response];
-						Return[]
-					];
-
-					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:><|
-						"name"->Check[Quiet@StringTake[text,x[Source]], ""],
+					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
+						CheckAbort[Quiet@<|
+						"name"->StringTake[text,Echo@x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->Check[Quiet@StringTake[text,src[Source]], ""],
+						"detail"->StringTake[text,src[Source]],
 						"location"-><|
 						"uri"->uri,
 						"range"->positionToRange[text,src[Source]]|>
 						|>, Nothing],Infinity];
 					Print["DocumentSymbol 2"];
 
-					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>Check[<|
-						"name"->StringTake[text,x[Source]],
+					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[Quiet@<|
+						"name"->StringTake[text,Echo@x[Source]],
 						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
 						"detail"->StringTake[text,src[Source]],
 						"location"-><|
