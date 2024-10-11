@@ -6,7 +6,7 @@ BeginPackage["wolframLSP`"];
 $MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
 
 sendResponse[response_Association]:=Module[{byteResponse},
-	Check[
+	CheckAbort[
 		byteResponse = constructRPCBytes[Prepend[response,<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
@@ -22,7 +22,7 @@ sendResponse[response_Association]:=Module[{byteResponse},
 ];
 
 sendResponse[response_Association, client_SocketObject]:=Module[{byteResponse},
-	Check[
+	CheckAbort[
 		byteResponse = constructRPCBytes[Prepend[response,<|"jsonrpc"->"2.0"|>]];
 		BinaryWrite[client, # , "Character32"] &/@ byteResponse;
 		Print["response error"];
@@ -76,7 +76,7 @@ handleMessage[msg_Association, state_]:=Module[{n, r},
 ];
 
 handleMessage[msg_Association, state_, client_]:=Module[{},
-	Check[
+	CheckAbort[
 		Print[AbsoluteTiming[handle[msg["method"], msg, client]]],
 		sendRespose[<|"id"->msg["id"], "result"-> "Failed" |>, client]
 	];
