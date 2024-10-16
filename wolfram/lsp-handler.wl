@@ -797,8 +797,7 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 		symbol = ToString@getWordAtPosition[src, position];
 
 		If[symbol === "",
-			response = <|"id"->json["id"],"result"-><|"contents"-><|"kind" -> "markdown", "value" -> "na"|>|>|>;
-			sendResponse[response];
+			sendResponse[<|"id"->Lookup[json, "id", 1], "result"->Null|>];
 			Return[]
 		];
 
@@ -1043,9 +1042,8 @@ handle["deserializeScript", json_]:=Module[{inputs, json2},
 
 canceledRequests = {};
 handle["$/cancelRequest", json_]:=Module[{response},
-	Print["Cancelling request ", json["params", "id"]];
 	canceledRequests = AppendTo[canceledRequests, json["params", "id"]];
-	DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
+	hoverQueue = DeleteCases[hoverQueue, x_/;x["id"] == json["params", "id"]];  
 	(* response = <|"id" -> json["params", "id"], "result" -> "cancelled"|>; 
 	sendResponse[response]; *)
 ];

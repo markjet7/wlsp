@@ -52,6 +52,7 @@ exports.wolframClient = undefined;
 exports.wolframKernelClient = undefined;
 let firstKernelLaunched = false;
 function startLanguageServer(context0, outputChannel0) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         context = context0;
         lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
@@ -102,6 +103,7 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
         plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
+        (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
         // plotsProvider._view?.webview.onDidReceiveMessage((data:any) => {
         //     if (data.text === "restart") {
         //         restartKernel();
@@ -167,8 +169,6 @@ function startLanguageServer(context0, outputChannel0) {
                 }
             }
         });
-        // setTimeout(updateRunningLines, 500);
-        // restart()
     });
 }
 exports.startLanguageServer = startLanguageServer;
@@ -229,6 +229,7 @@ function onclientReady() {
         });
         // wolframClient?.sendRequest("DocumentSymbolRequest");
         exports.treeDataProvider === null || exports.treeDataProvider === void 0 ? void 0 : exports.treeDataProvider.getBuiltins();
+        (0, path_1.resolve)();
     });
 }
 let temporaryDir = "";
@@ -257,7 +258,7 @@ function onkernelReady() {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("storageUri").then((result) => {
                 temporaryDir = result;
             });
-            exports.treeDataProvider === null || exports.treeDataProvider === void 0 ? void 0 : exports.treeDataProvider.getSymbols([]);
+            // treeDataProvider?.getSymbols([]);
             // pulse();
             resolve();
         });
@@ -333,7 +334,7 @@ function runToLine() {
     evaluationQueue.unshift(evaluationData);
     if (!exports.wolframKernelClient) {
         restart().then(() => {
-            evaluationQueue.unshift(evaluationData);
+            // evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return;
         });
@@ -619,6 +620,52 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                 outputPosition = new vscode.Position(sel.active.line + 1, 0);
             });
         }
+        if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
+            // e.selection = new vscode.Selection(outputPosition, outputPosition);
+            // e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
+            // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
+            // if (!wolframBusyQ) {
+            if (true) {
+                if (evaluationQueue.length == 0) {
+                    return;
+                }
+                let evalNext = evaluationQueue.pop();
+                starttime = Date.now();
+                // console.log(wolframKernelClient?.state)
+                // outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
+                // outputChannel.appendLine("Wolfram Kernel State: " + wolframKernelClient?.state)
+                if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == node_1.State.Running) {
+                    // console.log("Kernel running, sending to Wolfram")
+                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+                    }).catch((err) => {
+                        console.log("Error in runInWolfram");
+                        // restart()
+                    });
+                    return;
+                }
+                else {
+                    // outputChannel.appendLine("Kernel not running, waiting for kernel to start");
+                    try {
+                        yield launch.stopKernel();
+                    }
+                    catch (e) { }
+                    // outputChannel.appendLine("Kernel stopped. Starting a new kernel");
+                    yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
+                        outputChannel.appendLine("Kernel started after not running");
+                        exports.wolframKernelClient = client;
+                        onkernelReady().then(() => __awaiter(this, void 0, void 0, function* () {
+                            // await sendToWolfram(printOutput, sel);
+                            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+                            }).catch((err) => {
+                                console.log("Error in runInWolfram after kernel relaunch");
+                                // restart()
+                            });
+                        }));
+                        return;
+                    });
+                }
+            }
+        }
         if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'vscode-notebook-cell') {
             e.selection = new vscode.Selection(0, 0, 1, 1);
             try {
@@ -632,52 +679,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
                     }
                 });
             }
-        }
-        else if ((e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'file' || (e === null || e === void 0 ? void 0 : e.document.uri.scheme) === 'untitled') {
-            // e.selection = new vscode.Selection(outputPosition, outputPosition);
-            // e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
-            // if (!wolframBusyQ) {
-            if (true) {
-                let evalNext = evaluationQueue.pop();
-                if (evalNext == undefined) {
-                    return;
-                }
-                starttime = Date.now();
-                // console.log(wolframKernelClient?.state)
-                // outputChannel.appendLine("Sending to Wolfram: " + evalNext["textDocument"]["uri"]["path"])
-                outputChannel.appendLine("Wolfram Kernel State: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
-                if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) == node_1.State.Running) {
-                    console.log("Kernel running, sending to Wolfram");
-                    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
-                    }).catch((err) => {
-                        console.log("Error in runInWolfram");
-                        // restart()
-                    });
-                    return;
-                }
-                else {
-                    outputChannel.appendLine("Kernel not running, waiting for kernel to start");
-                    try {
-                        yield launch.stopKernel();
-                    }
-                    catch (e) { }
-                    outputChannel.appendLine("Kernel stopped. Starting a new kernel");
-                    yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
-                        outputChannel.appendLine("Kernel started after not running");
-                        exports.wolframKernelClient = client;
-                        onkernelReady().then(() => __awaiter(this, void 0, void 0, function* () {
-                            // await sendToWolfram(printOutput, sel);
-                            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
-                            }).catch((err) => {
-                                console.log("Error in runInWolfram");
-                                // restart()
-                            });
-                        }));
-                        return;
-                    });
-                }
-            }
+            return;
         }
     });
 }
@@ -1198,8 +1200,9 @@ function didChangeTextDocument(event) {
         // didOpenTextDocument(event.document);
         // remove old decorations
         // console.log(event)
-        return new Promise((resolve) => {
-        });
+        // return new Promise((resolve) => {
+        //     resolve()
+        // });
         return new Promise((resolve) => {
             var _a, _b, _c;
             let editor = vscode.window.activeTextEditor;
@@ -1230,40 +1233,6 @@ function didChangeTextDocument(event) {
             });
             editorDecorations.set(editor.document.uri.toString(), newEditorDecorations);
             editor.setDecorations(variableDecorationType, ((_c = editorDecorations.get(editor.document.uri.toString())) !== null && _c !== void 0 ? _c : []));
-            // for (let i = 0; i < runningLines.length; i++) {
-            //     const d:vscode.DecorationOptions = runningLines[i];
-            //     if (selection?.line == d.range.start.line) {
-            //         d.range = new vscode.Range(
-            //             selection.line,
-            //             editor.document.lineAt(selection.line).range.end.character + 10,
-            //             selection.line,
-            //             editor.document.lineAt(selection.line).range.end.character + 110
-            //         )
-            //         runningLines[i] = d
-            //     }
-            // }
-            // editor.setDecorations(runningDecorationType, runningLines)
-            // for (let i = 0; i < editorDecorations.length; i++) {
-            //     const d:vscode.DecorationOptions = editorDecorations[i];
-            //     if (selection?.line == d.range.start.line) {
-            //         d.range = new vscode.Range(
-            //             selection.line,
-            //             editor.document.lineAt(selection.line).range.end.character + 10,
-            //             selection.line,
-            //             editor.document.lineAt(selection.line).range.end.character + 110
-            //         )
-            //         editorDecorations[i] = d
-            //     }
-            // }
-            // editor.setDecorations(variableDecorationType, editorDecorations)
-            // if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
-            //     let doc = editor?.document;
-            //     if (wolframKernelClient) {        
-            //             wolframKernelClient?.sendNotification("runDocumentLive", doc?.uri)
-            //     } 
-            //     return
-            // }  
-            // return ;
             resolve();
         });
     });

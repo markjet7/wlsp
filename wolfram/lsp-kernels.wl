@@ -676,11 +676,14 @@ handle["textDocument/hover", json_]:=Module[{position, v, uri, src, symbol, valu
 
 		symbol = ToExpression@getWordAtPosition[src, position];
 		If[Or[symbol === Null, src === ""],
+			sendResponse[<|"id"->Lookup[json, "id", 1], "result"->Null|>];
+			(*
 			sendResponse[<|"id"->Lookup[json, "id", 1], "result"-><|"contents"-><|
 				"kind" -> "markdown",
 				"value" ->  "na" 
 				|>
 			|>|>];
+			*)
 			Return[]
 		];
 		value = CheckAbort[TimeConstrained[
