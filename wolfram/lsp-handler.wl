@@ -658,28 +658,10 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
 					(*ast = CodeParse[text];*)
 
+
 					ast = Lookup[asts, uri, {}];
 
-					funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
-						CheckAbort[<|
-						"name"->getStringAtRange[text,x[Source]],
-						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->getStringAtRange[text,src[Source]],
-						"location"-><|
-						"uri"->uri,
-						"range"->positionToRange[src[Source]]|>
-						|>, Nothing],Infinity];
-
-					defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[<|
-						"name"->getStringAtRange[text,x[Source]],
-						"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
-						"detail"->getStringAtRange[text,src[Source]],
-						"location"-><|
-						"uri"->uri,
-						"range"->positionToRange[src[Source]]|>
-						|>, Nothing],Infinity];
-
-					result = Join[funcs, defs];
+					result = funcsDefs[ast];
 					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 
 					response = <|"id"->json["id"],"result"->result|>;
@@ -689,6 +671,29 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
 					sendResponse[response]; 
 			)
+];
+
+funcsDefs[ast_]:=Module[{funcs, defs},
+	funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
+		CheckAbort[<|
+		"name"->getStringAtRange[text,x[Source]],
+		"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+		"detail"->getStringAtRange[text,src[Source]],
+		"location"-><|
+		"uri"->uri,
+		"range"->positionToRange[src[Source]]|>
+		|>, Nothing],Infinity];
+
+	defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[<|
+		"name"->getStringAtRange[text,x[Source]],
+		"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+		"detail"->getStringAtRange[text,src[Source]],
+		"location"-><|
+		"uri"->uri,
+		"range"->positionToRange[src[Source]]|>
+		|>, Nothing],Infinity];
+
+	Join[funcs, defs]
 ];
 
 updateCursorLocations[json_]:=Module[{src, ast, functions, l},
@@ -867,6 +872,10 @@ handle["textDocument/didOpen", json_]:=Module[{},
 	lastChange = Now;
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[StringTake[json["params","textDocument","text"], {1, UpTo[SyntaxLength@json["params","textDocument","text"]]}]], {}];
+
+	result = funcsDefs[asts[json["params","textDocument","uri"]]];
+	response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
+	sendResponse[response]; 
 	(* validate[]; *)
 ];
 

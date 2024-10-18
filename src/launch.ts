@@ -268,15 +268,16 @@ export async function startWLSPKernelSocket(id: number, path: string): Promise<L
                     })
                 })
 
-                kernelSocket.on('error', function (err: any) {
+                kernelSocket.on('error', async function (err: any) {
                     outputChannel.appendLine("Kernel Socket error: " + err);
                     // kernelSocket.destroy();
                     // reject(err)
                     if (err.code === "ECONNREFUSED") {
                         kernelPort += 1;
-                        startWLSPKernelSocket(id, path);
+                        kernelSocket.destroy()
+                        await startWLSPKernelSocket(id, path);
                     }
-                    reconnect()
+                    // reconnect()
                 })
 
                 kernelSocket.on("close", () => {

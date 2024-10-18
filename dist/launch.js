@@ -225,14 +225,17 @@ function startWLSPKernelSocket(id, path) {
                         });
                     });
                     kernelSocket.on('error', function (err) {
-                        extension_1.outputChannel.appendLine("Kernel Socket error: " + err);
-                        // kernelSocket.destroy();
-                        // reject(err)
-                        if (err.code === "ECONNREFUSED") {
-                            kernelPort += 1;
-                            startWLSPKernelSocket(id, path);
-                        }
-                        reconnect();
+                        return __awaiter(this, void 0, void 0, function* () {
+                            extension_1.outputChannel.appendLine("Kernel Socket error: " + err);
+                            // kernelSocket.destroy();
+                            // reject(err)
+                            if (err.code === "ECONNREFUSED") {
+                                kernelPort += 1;
+                                kernelSocket.destroy();
+                                yield startWLSPKernelSocket(id, path);
+                            }
+                            // reconnect()
+                        });
                     });
                     kernelSocket.on("close", () => {
                         extension_1.outputChannel.appendLine("Kernel Socket closed. Reconnecting...");
