@@ -7,11 +7,18 @@ BeginPackage["WolframKernel`"];
 (* $SyntaxHandler = Function[Null, Null, HoldAllComplete]; *)
 
 (* ::Package:: *)
-(**)
-$MessagePrePrint = (ToString["Message: " <> ToString@#, TotalWidth->500, CharacterEncoding->"ASCII"] &);
+(*
+$MessagePrePrint = (CheckAbort[ToString[#, CharacterEncoding->"ASCII"], "Unknown Error Message"] &);
 
+$MessagePrePrint = Function[ReplaceAll[#, $Failed -> "Failed"]];
+$PrePrint = Function[ReplaceAll[#, $Failed -> "Failed"]];
+*)
+
+$RecursionLimit = Infinity;
 
 sendResponse[response_Association]:=Module[{byteResponse},
+	CheckAbort[
+
 		byteResponse = constructRPCBytes[Prepend[Replace[response, $Failed -> "Failed"],<|"jsonrpc"->"2.0"|>]];
 		Map[
 			Function[{client},
@@ -21,7 +28,9 @@ sendResponse[response_Association]:=Module[{byteResponse},
 				]
 			],
 			KERNELSERVER["ConnectedClients"]
-		]
+		],
+		Print["response error"];
+	]
 ];
 
 (* Off[General::stop]; *)
@@ -58,15 +67,15 @@ SetSystemOptions["ParallelOptions" -> "RelaunchFailedKernels" -> False];
 logfile = DirectoryName[$path] <> "kernel-wlsp.log";
 logfile = DirectoryName[$path] <> "wlsp_kernel.txt";
 handleMessage[msg_Association, state_]:=Module[{},
-	Check[
+	CheckAbort[
 		If[KeyMemberQ[msg, "method"],
 			If[MemberQ[{"runInWolfram", "runExpression"}, msg["method"]],
-				Check[
+				CheckAbort[
 					handle[msg["method"],msg], 
 					sendRespose@<|"method"->"onRunInWolfram", "output"-> "NA", "result" -> "Kernel error", "print" -> False, "document" -> msg["params", "textDocument"]["uri"] |>;
 				],
  
-				Check[handle[msg["method"], msg],
+				CheckAbort[handle[msg["method"], msg],
 
 					(*sendRespose@<|"id"->msg["id"], "result"-> "Kernel error" |>*)
 					Print["Kernel error"];
@@ -152,7 +161,7 @@ connectWithExponentialRetry[]:=Module[{i=0},
 
 
 Print["Connecting to kernel..."];
-KERNELSERVER=SocketOpen[kernelport,"TCP"]
+KERNELSERVER=SocketOpen[kernelport,"TCP"];
 If[FailureQ[KERNELSERVER], Print["Cannot start tcp KERNELSERVER."]; Quit[1]];
 
 Print["Kernel ", KERNELSERVER, ": ", kernelport];
@@ -160,8 +169,7 @@ Print["Kernel ", KERNELSERVER, ": ", kernelport];
 Block[{$IterationLimit = Infinity}, 
 	CheckAbort[
 		socketHandler[state],
-		Print["Kernel aborted while running..."];, 
-		PropagateAborts -> False
+		Print["Kernel aborted while running..."]
 	];
 ];
 (*

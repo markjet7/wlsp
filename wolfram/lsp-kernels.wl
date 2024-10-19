@@ -44,7 +44,6 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	 *)
 	evalnumber = 1;
 
-
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
 	varTableFile = scriptPath <> "varTable.js";
@@ -504,6 +503,8 @@ handle["updateConfiguration", json_]:=Module[{messageHandler},
 	messageHandler = If[Last[#], 
 		Abort[];Exit[1]
 		] &;
+	
+	messageHandler = Function[Null];
 
 	If[json["params", "abortOnError"],
 		Quiet@Internal`AddHandler["Message", messageHandler];,
@@ -900,12 +901,9 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 	sendResponse[<|"method" -> "updateInputs", "params" -> <|"input" -> ToString@string|>|>];
 	(* Begin["VSCode`"]; *)
-
-		$result = Replace[
-
-					EvaluationData[Trace[ToExpression[string], TraceDepth -> 3]],
+		$result = CheckAbort[EvaluationData[Trace[ToExpression[string], TraceDepth -> 3]],
 					
-					$Aborted -> <|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
+					<|"Result" :> "Aborted", "Success" -> False, "FailureType" -> None, 
 					"OutputLog" -> {}, "Messages" -> {}, "MessagesText" -> {}, 
 					"MessagesExpressions" -> {"Kernel aborted"}, "Timing" -> 0.`, 
 					"AbsoluteTiming" -> 0.`, 
@@ -915,8 +913,7 @@ evaluateString[string_, width_:10000]:= Module[{r1, r2, f, msgs, msgToStr, msgSt
 
 		(*$result["Result"] = ($result["Result"] /. Null -> "null"); *)
 	(* End[]; *)
-	response = StringTake[ToString@ReleaseHold@Last[$result["Result"]], {1, UpTo[8192]}];
-	If[response === $Failed, response = "Failed"];
+
 	If[
 		$result["Success"], 
 		(

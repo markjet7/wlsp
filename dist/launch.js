@@ -187,160 +187,135 @@ exports.startWLSP = startWLSP;
 let kernelConnectionAttempts = 0;
 // pick random port between 37810 and 37820 for kernel
 function startWLSPKernelSocket(id, path) {
-    return __awaiter(this, void 0, void 0, function* () {
-        kernelPort = Math.floor(Math.random() * 20) + 37820;
-        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            let kernelSocket = new net.Socket();
-            // if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
-            //     return new Promise((resolve) => {
-            //         resolve(wolframKernelClient)
-            //     });
-            // }
-            if (wolframKernel) {
-                try {
-                    yield kill(wolframKernel.pid);
-                }
-                catch (e) { }
-            }
-            if (wolframKernel == undefined || !wolframKernel.connected) {
-                yield loadKernel(path);
-            }
-            if (kernelSocket) {
-                kernelSocket.destroy();
-                kernelSocket = new net.Socket();
-            }
-            let serverOptions = function () {
-                return new Promise((resolve, reject) => {
-                    kernelSocket.setMaxListeners(10);
-                    kernelSocket.setKeepAlive(true);
-                    // socket.on("data", (data) => {
-                    // outputChannel.appendLine("WLSP Kernel Data: " + data.toString().slice(0, 200))
-                    // console_outputs.push(data.toString());
-                    // });
-                    kernelSocket.on('connect', () => {
-                        extension_1.outputChannel.appendLine("Kernel Socket connected");
-                        resolve({
-                            reader: kernelSocket,
-                            writer: kernelSocket
-                        });
-                    });
-                    kernelSocket.on('error', function (err) {
-                        return __awaiter(this, void 0, void 0, function* () {
-                            extension_1.outputChannel.appendLine("Kernel Socket error: " + err);
-                            // kernelSocket.destroy();
-                            // reject(err)
-                            if (err.code === "ECONNREFUSED") {
-                                kernelPort += 1;
-                                kernelSocket.destroy();
-                                yield startWLSPKernelSocket(id, path);
-                            }
-                            // reconnect()
-                        });
-                    });
-                    kernelSocket.on("close", () => {
-                        extension_1.outputChannel.appendLine("Kernel Socket closed. Reconnecting...");
-                        kernelSocket.destroy();
-                        // stopWolfram(undefined, wolframKernel)
-                        // kernelConnecting = true;
-                        // socket.connect(kernelPort, "127.0.0.1", () => {
-                        //     outputChannel.appendLine("Kernel Socket reconnected")
-                        //     kernelConnecting = false;
-                        // });
-                    });
-                    kernelSocket.on('timeout', () => {
-                        extension_1.outputChannel.appendLine("Kernel Socket timeout");
-                    });
-                    kernelSocket.on('ready', () => {
-                        // clearTimeout(timeout);
-                        // setTimeout(() => {
-                        //     resolve({
-                        //         reader: socket,
-                        //         writer: socket
-                        //     }),
-                        //         1000
-                        // })
-                    });
-                    kernelSocket.on('drain', () => {
-                        // outputChannel.appendLine("Kernel Socket is draining")
-                    });
-                    kernelSocket.on("end", (msg) => {
-                        extension_1.outputChannel.appendLine("Kernel Socket end: " + msg);
-                        if (wolframKernel.connected == true && kernelSocket.connecting == false) {
-                            reconnect();
-                        }
-                        if (wolframKernel.connected == false && kernelSocket) {
-                            kernelPort += 1;
-                            startWLSPKernelSocket(id, path);
-                        }
-                    });
-                    function reconnect() {
-                        if (kernelConnectionAttempts > 10) {
-                            extension_1.outputChannel.appendLine("Too many connection attempts. Stopping kernel.");
-                            stopKernel();
-                            return;
-                        }
-                        else {
-                            kernelConnectionAttempts += 1;
-                            setTimeout(() => __awaiter(this, void 0, void 0, function* () {
-                                // if (wolframKernel) {
-                                //     kill(wolframKernel.pid)
-                                //     wolframKernel.unref()
-                                // }
-                                // await loadKernel(path);
-                                kernelSocket.connect(kernelPort, "127.0.0.1", () => {
-                                    extension_1.outputChannel.appendLine("Kernel Socket reconnected");
-                                });
-                            }), Math.pow(2, kernelConnectionAttempts) * 1000);
-                        }
-                    }
-                    function connect() {
-                        if (kernelSocket.connecting) {
-                            return;
-                        }
-                        else {
-                            kernelSocket.connect(kernelPort, "127.0.0.1", () => {
-                            });
-                        }
-                    }
-                    ;
-                    connect();
-                });
-            };
-            let kernelErrorHandler = new KernelClientErrorHandler();
-            let clientOptions = {
-                documentSelector: [
-                    "wolfram"
-                ],
-                diagnosticCollectionName: 'wolfram-lsp',
-                markdown: {
-                    isTrusted: true,
-                    supportHtml: true
-                },
-                outputChannel: extension_1.outputChannel,
-                errorHandler: kernelErrorHandler
-            };
-            exports.wolframKernelClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
-            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onDidChangeState((event) => {
-                if (event.newState === node_1.State.Stopped) {
+    kernelPort = Math.floor(Math.random() * 20) + 37820;
+    return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+        let kernelSocket = new net.Socket();
+        // if (wolframKernelClient && wolframKernelClient?.state === State.Starting) {
+        //     return new Promise((resolve) => {
+        //         resolve(wolframKernelClient)
+        //     });
+        // }
+        let serverOptions = function () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                if (wolframKernel) {
                     try {
-                        kill(wolframKernel.pid).then(() => {
-                            wolframKernel.unref();
+                        kill(wolframKernel.pid);
+                    }
+                    catch (e) { }
+                }
+                if (wolframKernel == undefined || !wolframKernel.connected) {
+                    yield loadKernel(path).then((result) => {
+                        if (result) {
+                            extension_1.outputChannel.appendLine("Kernel Ready");
+                        }
+                        else {
+                            extension_1.outputChannel.appendLine("Failed to load kernel");
+                            // Ask the user if they want to restart the kernel
+                            vscode.window.showInformationMessage("The kernel failed to start. Would you like to restart it?", "Yes", "No").then((selection) => __awaiter(this, void 0, void 0, function* () {
+                                if (selection === "Yes") {
+                                    yield startWLSPKernelSocket(id, path);
+                                }
+                            }));
+                        }
+                    });
+                }
+                kernelSocket.setMaxListeners(10);
+                kernelSocket.setKeepAlive(true);
+                // socket.on("data", (data) => {
+                // outputChannel.appendLine("WLSP Kernel Data: " + data.toString().slice(0, 200))
+                // console_outputs.push(data.toString());
+                // });
+                kernelSocket.on('connect', () => {
+                    extension_1.outputChannel.appendLine("Kernel Socket connected");
+                    resolve({
+                        reader: kernelSocket,
+                        writer: kernelSocket
+                    });
+                });
+                kernelSocket.on('error', function (err) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        extension_1.outputChannel.appendLine("Kernel Socket error: " + err);
+                        // kernelSocket.destroy();
+                        // reject(err)
+                        if (err.code === "ECONNREFUSED") {
+                            kernelSocket.destroy();
+                            yield startWLSPKernelSocket(id, path);
+                        }
+                        // reconnect()
+                    });
+                });
+                kernelSocket.on("close", (msg) => {
+                    extension_1.outputChannel.appendLine("Kernel Socket closed: " + msg);
+                });
+                kernelSocket.on('timeout', () => {
+                    extension_1.outputChannel.appendLine("Kernel Socket timeout");
+                });
+                kernelSocket.on('ready', () => {
+                    // clearTimeout(timeout);
+                    // setTimeout(() => {
+                    //     resolve({
+                    //         reader: socket,
+                    //         writer: socket
+                    //     }),
+                    //         1000
+                    // })
+                });
+                kernelSocket.on('drain', () => {
+                    // outputChannel.appendLine("Kernel Socket is draining")
+                });
+                kernelSocket.on("end", (msg) => {
+                    extension_1.outputChannel.appendLine("Kernel Socket ended: " + msg);
+                    let s = vscode.window.setStatusBarMessage("Restarting Wolfram...");
+                    setTimeout(() => {
+                        s.dispose();
+                    }, 2000);
+                });
+                function connect() {
+                    if (kernelSocket.connecting) {
+                        return;
+                    }
+                    else {
+                        kernelSocket.connect(kernelPort, "127.0.0.1", () => {
                         });
                     }
-                    catch (e) {
-                        extension_1.outputChannel.appendLine("Failed to kill wolfram kernel");
-                    }
                 }
-            });
-            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then((value) => {
-                extension_1.outputChannel.appendLine("Kernel Started");
-                resolve(exports.wolframKernelClient);
-            }, (reason) => {
-                extension_1.outputChannel.appendLine("Kernel Start Error: " + reason);
-                resolve(undefined);
-            });
-        }));
-    });
+                ;
+                connect();
+            }));
+        };
+        let clientOptions = {
+            documentSelector: [
+                "wolfram"
+            ],
+            diagnosticCollectionName: 'wolfram-lsp',
+            markdown: {
+                isTrusted: true,
+                supportHtml: true
+            },
+            outputChannel: extension_1.outputChannel,
+            errorHandler: new KernelClientErrorHandler()
+        };
+        exports.wolframKernelClient = new node_1.LanguageClient('wolfram', 'Wolfram Language Server', serverOptions, clientOptions);
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onDidChangeState((event) => {
+            if (event.newState === node_1.State.Stopped) {
+                try {
+                    kill(wolframKernel.pid).then(() => {
+                        wolframKernel.unref();
+                    });
+                }
+                catch (e) {
+                    extension_1.outputChannel.appendLine("Failed to kill wolfram kernel");
+                }
+            }
+        });
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then((value) => {
+            extension_1.outputChannel.appendLine("Kernel Started");
+            resolve(exports.wolframKernelClient);
+        }, (reason) => {
+            extension_1.outputChannel.appendLine("Kernel Start Error: " + reason);
+            resolve(undefined);
+        });
+    }));
 }
 exports.startWLSPKernelSocket = startWLSPKernelSocket;
 function startWLSPIO(id) {
@@ -438,7 +413,7 @@ function stopWolfram(client, client_process) {
             }
         }
         catch (e) {
-            console.log(e.message);
+            console.log("kernel error: ", e.message);
             resolve();
         }
     });
@@ -455,30 +430,40 @@ function loadKernel(kernelPath) {
             }
             wolframKernel = cp.spawn(executablePath, ['-file', kernelPath, kernelPort.toString(), kernelPath, "-noinit", "-noprompt"], { detached: true });
             (_a = wolframKernel.stdout) === null || _a === void 0 ? void 0 : _a.on('data', (data) => {
-                extension_1.outputChannel.appendLine("Kernel: " + data.toString());
-                if (data.toString().includes("SocketObject")) {
-                    resolve();
+                try {
+                    extension_1.outputChannel.appendLine("Kernel stdout: " + data.toString());
+                    if (data.toString().includes("SocketObject")) {
+                        resolve(true);
+                    }
+                    if (data.toString().includes("Cannot start tcp")) {
+                        kill(wolframKernel.pid);
+                        wolframKernel.unref();
+                        resolve(false);
+                    }
+                    if (data.toString().includes("Invalid password")) {
+                        kill(wolframKernel.pid);
+                        wolframKernel.unref();
+                        vscode.window.showErrorMessage("Wolfram Kernel failed to start. You may have launched too many instances. Check your task manager.");
+                        resolve(false);
+                    }
                 }
-                if (data.toString().includes("Cannot start tcp")) {
-                    kill(wolframKernel.pid);
-                    wolframKernel.unref();
-                    resolve();
-                }
-                if (data.toString().includes("Invalid password")) {
-                    kill(wolframKernel.pid);
-                    wolframKernel.unref();
-                    vscode.window.showErrorMessage("Wolfram Kernel failed to start. You may have launched too many instances. Check your task manager.");
-                    resolve();
+                catch (e) {
+                    console.error("kernel error: ", e.message);
+                    extension_1.outputChannel.appendLine("Error: " + e.message);
                 }
             });
             (_b = wolframKernel.stderr) === null || _b === void 0 ? void 0 : _b.on('data', (data) => {
-                extension_1.outputChannel.appendLine("Kernel: " + data.toString());
+                try {
+                    extension_1.outputChannel.appendLine("Kernel Error: " + data.toString());
+                }
+                catch (error) {
+                }
             });
             wolframKernel.on('close', (code) => {
                 extension_1.outputChannel.appendLine("Kernel exited with code: " + code);
                 // kill(wolframKernel.pid);
                 wolframKernel.unref();
-                resolve();
+                resolve(false);
             });
         });
     });
@@ -701,7 +686,7 @@ class KernelClientErrorHandler {
     closed() {
         console.log("Closed");
         return {
-            action: node_1.CloseAction.DoNotRestart
+            action: node_1.CloseAction.Restart
         };
     }
 }

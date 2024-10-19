@@ -638,6 +638,29 @@ handle["textDocument/completion", json_]:=Module[{src, pos, symbol, names, items
 balancedQ[str_String] := StringCount[str, "["] === StringCount[str, "]"];
 handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, result, response, kind, ast},
 				(
+
+					(*ast = CodeParse[text];*)
+					uri = json["params"]["textDocument"]["uri"];
+					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
+
+
+					ast = Lookup[asts, uri, {}];
+
+					result = funcsDefs[ast, json];
+					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
+
+					response = <|"id"->json["id"],"result"->result|>;
+					sendResponse[response];  
+
+
+					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
+					sendResponse[response]; 
+			)
+];
+
+funcsDefs[ast_, json_]:=Module[{funcs, defs, kind, uri, text},
+					uri = json["params"]["textDocument"]["uri"];
+					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
 					kind[s_]:= Switch[
 								s, 
 								"Symbol", 13, 
@@ -653,27 +676,6 @@ handle["textDocument/documentSymbol", json_]:=Module[{uri, text, funcs, defs, re
 								"String", 15, 
 								"Module", 12,
 								_, 19];
-
-					uri = json["params"]["textDocument"]["uri"];
-					text = Lookup[documents, json["params", "textDocument", "uri"], ""];
-					(*ast = CodeParse[text];*)
-
-
-					ast = Lookup[asts, uri, {}];
-
-					result = funcsDefs[ast];
-					Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
-
-					response = <|"id"->json["id"],"result"->result|>;
-					sendResponse[response];  
-
-
-					response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
-					sendResponse[response]; 
-			)
-];
-
-funcsDefs[ast_]:=Module[{funcs, defs},
 	funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
 		CheckAbort[<|
 		"name"->getStringAtRange[text,x[Source]],
@@ -873,7 +875,7 @@ handle["textDocument/didOpen", json_]:=Module[{},
 	documents[json["params","textDocument","uri"]] = json["params","textDocument","text"];
 	asts[json["params","textDocument","uri"]] = Check[Quiet@CodeParse[StringTake[json["params","textDocument","text"], {1, UpTo[SyntaxLength@json["params","textDocument","text"]]}]], {}];
 
-	result = funcsDefs[asts[json["params","textDocument","uri"]]];
+	result = funcsDefs[asts[json["params","textDocument","uri"]], json];
 	response = <|"method"->"updatePositions", "params" -> <|"result" -> result|>|>;
 	sendResponse[response]; 
 	(* validate[]; *)
@@ -1299,6 +1301,8 @@ getWordAtPosition[src_String, position_]:=Module[{srcLines, line, word},
 	
 	word
 ];
+
+getStringAtRange[_, _]:="";
 
 getStringAtRange[string_String, range_]:=Module[{sLines, sRanges},
 	sLines = StringSplit[string, EndOfLine, All];
