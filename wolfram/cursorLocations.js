@@ -1,4 +1,46 @@
 {
+	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-SharedLibraries-IowaStateUniversity\/Lignin%20HCA%20%28Patrick%29%20-%20Meta%20Analysis\/Testing\/localsemantic.wl":[
+		{
+			"start":{
+				"line":0,
+				"character":0
+			},
+			"end":{
+				"line":0,
+				"character":33
+			}
+		},
+		{
+			"start":{
+				"line":2,
+				"character":0
+			},
+			"end":{
+				"line":2,
+				"character":109
+			}
+		},
+		{
+			"start":{
+				"line":4,
+				"character":0
+			},
+			"end":{
+				"line":4,
+				"character":51
+			}
+		},
+		{
+			"start":{
+				"line":7,
+				"character":0
+			},
+			"end":{
+				"line":7,
+				"character":82
+			}
+		}
+	],
 	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-SharedLibraries-IowaStateUniversity\/Lignin%20HCA%20%28Patrick%29%20-%20Meta%20Analysis\/metaAnalysis.wl":[
 		{
 			"start":{

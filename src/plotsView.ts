@@ -40,6 +40,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             localResourceRoots: [Uri.joinPath(this._extensionUri, "media")]
         };
 
+
         this._text = "In: ..."
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
 
@@ -76,7 +77,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this.updateView(this._out);
         // this._view?.webview.postMessage({text: []});
-        this._view.show(true)
+        this._view.show(true);
+
+
         // this._view.onDidChangeVisibility((e) => {
         //     if (this._view?.visible) {
         //         this._view?.webview.postMessage({text: []})

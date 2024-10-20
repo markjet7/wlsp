@@ -209,10 +209,10 @@ function createList(parentSelection, children) {
     }
 
     if ("command" in message && message.command === "fontSize") {
-      const outputDivs = document.getElementsByClassName("output_row");
-      for (const outputDiv of outputDivs) {
-        outputDiv.style.fontSize = message.size + "px";
-      }
+
+      let styleElement = document.createElement('style');
+      styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
+      document.head.appendChild(styleElement);
       return;
     }
 
@@ -248,7 +248,7 @@ function createList(parentSelection, children) {
 
       let lastOutputDiv = outputDiv.getElementsByClassName("output_row")[0];
 
-      lastOutputDiv.innerHTML = doc.body.innerHTML;      
+      lastOutputDiv.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
 
       let inputRows = document.getElementsByClassName("input_row");
       if (inputRows.length > 19) {
