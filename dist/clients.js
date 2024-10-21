@@ -59,6 +59,9 @@ function startLanguageServer(context0, outputChannel0) {
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         outputChannel = outputChannel0;
+        plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
+        context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
+        (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
         yield launch.startWLSP(0, lspPath).then((client) => {
             exports.wolframClient = client;
             onclientReady();
@@ -101,9 +104,6 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.workspace.registerNotebookSerializer('wolfram-interactive', exports.interactiveNotebookSerializer));
         dataProvider = new dataPanel_1.DataViewProvider(context.extensionUri);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
-        plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
-        context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
-        (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
         // plotsProvider._view?.webview.onDidReceiveMessage((data:any) => {
         //     if (data.text === "restart") {
         //         restartKernel();
@@ -607,7 +607,7 @@ function sendToWolfram(printOutput = false, sel = undefined) {
         }
         ;
         let outputPosition = new vscode.Position(sel.active.line, 0);
-        if (((_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.visible) == false || ((_b = plotsProvider._view) === null || _b === void 0 ? void 0 : _b.visible) == undefined) {
+        if (plotsProvider._view && (((_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.visible) == false || ((_b = plotsProvider._view) === null || _b === void 0 ? void 0 : _b.visible) == undefined)) {
             vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
         }
         if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == outputPosition.line) {

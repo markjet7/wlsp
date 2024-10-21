@@ -37,69 +37,57 @@
 			},
 			"end":{
 				"line":7,
-				"character":82
-			}
-		}
-	],
-	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-SharedLibraries-IowaStateUniversity\/Lignin%20HCA%20%28Patrick%29%20-%20Meta%20Analysis\/metaAnalysis.wl":[
-		{
-			"start":{
-				"line":2,
-				"character":0
-			},
-			"end":{
-				"line":2,
-				"character":33
+				"character":73
 			}
 		},
 		{
 			"start":{
-				"line":4,
+				"line":9,
 				"character":0
 			},
 			"end":{
-				"line":4,
-				"character":79
+				"line":9,
+				"character":18
 			}
 		},
 		{
 			"start":{
-				"line":8,
+				"line":11,
 				"character":0
 			},
 			"end":{
-				"line":15,
+				"line":11,
+				"character":26
+			}
+		},
+		{
+			"start":{
+				"line":13,
+				"character":0
+			},
+			"end":{
+				"line":16,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":17,
-				"character":0
-			},
-			"end":{
-				"line":17,
-				"character":40
-			}
-		},
-		{
-			"start":{
 				"line":18,
 				"character":0
 			},
 			"end":{
-				"line":18,
-				"character":22
+				"line":20,
+				"character":2
 			}
 		},
 		{
 			"start":{
-				"line":20,
+				"line":22,
 				"character":0
 			},
 			"end":{
-				"line":20,
-				"character":44
+				"line":22,
+				"character":31
 			}
 		},
 		{
@@ -109,97 +97,7 @@
 			},
 			"end":{
 				"line":24,
-				"character":33
-			}
-		},
-		{
-			"start":{
-				"line":26,
-				"character":0
-			},
-			"end":{
-				"line":36,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":38,
-				"character":0
-			},
-			"end":{
-				"line":38,
-				"character":79
-			}
-		},
-		{
-			"start":{
-				"line":40,
-				"character":0
-			},
-			"end":{
-				"line":40,
-				"character":12
-			}
-		},
-		{
-			"start":{
-				"line":41,
-				"character":0
-			},
-			"end":{
-				"line":55,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":57,
-				"character":0
-			},
-			"end":{
-				"line":70,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":72,
-				"character":0
-			},
-			"end":{
-				"line":72,
-				"character":36
-			}
-		},
-		{
-			"start":{
-				"line":75,
-				"character":0
-			},
-			"end":{
-				"line":75,
-				"character":32
-			}
-		},
-		{
-			"start":{
-				"line":77,
-				"character":0
-			},
-			"end":{
-				"line":77,
-				"character":6
-			}
-		},
-		{
-			"start":{
-				"line":79,
-				"character":0
-			},
-			"end":{
-				"line":79,
-				"character":8
+				"character":99
 			}
 		}
 	]

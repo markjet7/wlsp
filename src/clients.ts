@@ -82,6 +82,12 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
     outputChannel = outputChannel0;
 
+    plotsProvider = new PlotsViewProvider(context.extensionUri, context);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(PlotsViewProvider.viewType, plotsProvider)
+    )
+    plotsProvider._view?.show(true);
+
 
     await launch.startWLSP(0, lspPath).then((client) => {
         wolframClient = client;
@@ -143,12 +149,6 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(DataViewProvider.viewType, dataProvider)
     )
-
-    plotsProvider = new PlotsViewProvider(context.extensionUri, context);
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(PlotsViewProvider.viewType, plotsProvider)
-    )
-    plotsProvider._view?.show(true);
 
     // plotsProvider._view?.webview.onDidReceiveMessage((data:any) => {
     //     if (data.text === "restart") {
@@ -749,7 +749,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
     if (!sel) { sel = e!.selection };
     let outputPosition: vscode.Position = new vscode.Position(sel.active.line, 0);
 
-    if (plotsProvider._view?.visible == false || plotsProvider._view?.visible == undefined) {
+    if (plotsProvider._view && (plotsProvider._view?.visible == false || plotsProvider._view?.visible == undefined)) {
         vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
     }
     if (e?.document.lineCount == outputPosition.line) {

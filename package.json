@@ -52,6 +52,11 @@
                     "description": "Font size",
                     "default": 12
                 },
+                "wlsp.background": {
+                    "type": "string",
+                    "description": "Background",
+                    "default": "none"
+                },
                 "comments.blockComment": {
                     "type": "string",
                     "default": [
@@ -403,7 +408,7 @@
                 {
                     "id": "wolfram-workspace-explorer",
                     "title": "Wolfram",
-                    "icon": "media/wolf-logo.svg"
+                    "icon": "media/wolf-logo.png"
                 }
             ],
             "panel": []
@@ -413,21 +418,21 @@
                 {
                     "id": "wolfram.plotsView",
                     "type": "webview",
-                    "name": "WLSP Output",
-                    "icon": "",
+                    "name": "WLSP",
+                    "icon": "media/wolf-logo.png",
                     "contextualTitle": "WLSP Output"
                 },
                 {
                     "id": "wolfram.dataView",
                     "type": "webview",
                     "name": "WLSP Variables",
-                    "icon": "",
+                    "icon": "media/wolf-logo.png",
                     "contextualTitle": "WLSP Variables"
                 },
                 {
                     "id": "wolframSymbols",
                     "name": "WLSP Help",
-                    "icon": "",
+                    "icon": "media/wolf-logo.png",
                     "contextualTitle": "Symbols"
                 }
             ]

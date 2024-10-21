@@ -1,21 +1,24 @@
 // transform.js
 // import * as d3 from "./d3.min.js";
 
+// const { image } = require("d3");
+
 const parser = new DOMParser();
 
 function openOutputInNewDocument(output) {
-  test = vscode.postMessage({
+
+  vscode.postMessage({
     text: "open",
     // data: span1.textContent || span1.innerText
-    data: output,
+    data: output.textContent,
   });
 }
 
 function pasteOutput(output) {
-  test = vscode.postMessage({
+  vscode.postMessage({
     text: "paste",
     // data: span1.textContent || span1.innerText
-    data: output,
+    data: output.textContent,
   });
 }
 
@@ -129,36 +132,155 @@ function createList(parentSelection, children) {
     button.id = "download-link";
 
     // Set the button's text
-    button.textContent = "Download";
+    button.textContent = "⇩";
 
     // Add a click event listener to the button
     button.addEventListener("click", () => handleImageClick(imageElement));
 
     // Insert the button after the image element
-    imageElement.insertAdjacentElement("afterend", button);
+    // imageElement.insertAdjacentElement("afterend", button);
+
+      // Apply styles to position the button
+    button.style.position = "absolute";
+    button.style.top = "2px";
+    button.style.right = "10px";
+    // button.style.height = "40px";
+
+    // reduce opacity
+    button.style.opacity = 0.3;
+
+    // on hover increase opacity
+    button.addEventListener("mouseover", () => {
+      button.style.opacity = 1;
+    })
+
+    button.addEventListener("mouseout", () => {
+      button.style.opacity = 0.3;
+    })
+
+    // Ensure the image element's parent is positioned relatively
+    // const parent = imageElement.parentElement;
+    imageElement.style.position = "relative";
+
+    // Insert the button into the parent of the image element
+    imageElement.appendChild(button);
   };
 
+  const handleImageClick = (imageElement) => {
+    // Create an anchor element
+    const link = document.createElement("a");
+
+    // Set the image source as the link's href and specify the download attribute
+    link.href = imageElement.src;
+    link.download = "image.png";
+
+    // Trigger the click event on the link element to start the download
+    link.click();
+  };
+
+  const createOpenButton = (imageElement) => {
+    // Create a button element
+    const button = document.createElement("button");
+    button.id = "open-link";
+
+    // Set the button's text
+    button.textContent = "📝";
+
+    // Add a click event listener to the button
+    button.addEventListener("click", () => openOutputInNewDocument(imageElement));
+
+    // Insert the button after the image element
+    // imageElement.insertAdjacentElement("afterend", button);
+
+      // Apply styles to position the button
+    button.style.position = "absolute";
+    button.style.top = "2px";
+    button.style.right = "40px";
+    // button.style.height = "40px";
+
+    // reduce opacity
+    button.style.opacity = 0.3;
+
+    // on hover increase opacity
+    button.addEventListener("mouseover", () => {
+      button.style.opacity = 1;
+    })
+
+    button.addEventListener("mouseout", () => {
+      button.style.opacity = 0.3;
+    })
+
+    // Ensure the image element's parent is positioned relatively
+    // const parent = imageElement.parentElement;
+    imageElement.style.position = "relative";
+
+    // Insert the button into the parent of the image element
+    imageElement.appendChild(button);
+  };
+
+  const createPasteButton = (imageElement) => {
+    // Create a button element
+    const button = document.createElement("button");
+    button.id = "paste-link";
+
+    // Set the button's text
+    button.textContent = "📋";
+
+    // Add a click event listener to the button
+    button.addEventListener("click", () => pasteOutput(imageElement));
+
+    // Insert the button after the image element
+    // imageElement.insertAdjacentElement("afterend", button);
+
+      // Apply styles to position the button
+    button.style.position = "absolute";
+    button.style.top = "2px";
+    button.style.right = "75px";
+    // button.style.height = "40px";
+
+    // reduce opacity
+    button.style.opacity = 0.3;
+
+    // on hover increase opacity
+    button.addEventListener("mouseover", () => {
+      button.style.opacity = 1;
+    })
+
+    button.addEventListener("mouseout", () => {
+      button.style.opacity = 0.3;
+    })
+
+    // Ensure the image element's parent is positioned relatively
+    // const parent = imageElement.parentElement;
+    imageElement.style.position = "relative";
+
+    // Insert the button into the parent of the image element
+    imageElement.appendChild(button);
+  }
+
+  // const openOutputInNewDocument = (output) => {
+  //   test = vscode.postMessage({
+  //     text: "open",
+  //     // data: span1.textContent || span1.innerText
+  //     data: output,
+  //   });
+  // }
+  
+  // function pasteOutput(output) {
+  //   test = vscode.postMessage({
+  //     text: "paste",
+  //     // data: span1.textContent || span1.innerText
+  //     data: output,
+  //   });
+  // }
+
+const vscode = acquireVsCodeApi();
 (function () {
-  const vscode = acquireVsCodeApi();
   var viewState = vscode.getState() || [];
   // results = [];
   var index = 0;
 
-  const openOutputInNewDocument = (output) => {
-    test = vscode.postMessage({
-      text: "open",
-      // data: span1.textContent || span1.innerText
-      data: output,
-    });
-  }
-  
-  function pasteOutput(output) {
-    test = vscode.postMessage({
-      text: "paste",
-      // data: span1.textContent || span1.innerText
-      data: output,
-    });
-  }
+
   
 
   function scrollToBottom() {
@@ -193,7 +315,7 @@ function createList(parentSelection, children) {
 
   var lastInput = "";
   window.addEventListener("message", (event) => {
-    var start = new Date().getTime();
+    // var start = new Date().getTime();
     // console.log("onRunInWolfram")
     // const svg = d3.select("svg");
     // console.log(
@@ -216,6 +338,14 @@ function createList(parentSelection, children) {
       return;
     }
 
+    if ("command" in message && message.command === "background") {
+
+      let styleElement = document.createElement('style');
+      styleElement.innerHTML = `#outputs { background: ${message.background}; }`;
+      document.head.appendChild(styleElement);
+      return;
+    }
+
     const outputDiv = document.getElementById("outputs");
     if (message.input && message.input.length > 0) {
       index += 1;
@@ -233,18 +363,26 @@ function createList(parentSelection, children) {
       message.output = " ";
     }
     
-    if (message.output.length > 0) {
+    if (message.output && message.output.length > 0) {
 
       let output = `<div class="output_row" data-content="${message.output.replace(/"/g, '&quot;')}">` +
-      message.output +
-      "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
-      "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
+       message.output // +
+      // "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
+      // "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
 
       let doc = parser.parseFromString(output, "text/html");
-      let images = doc.getElementsByTagName("img");
-      for (const image of images) {
-        createDownloadButton(image);
-      }
+      // let outs = doc.getElementsByTagName("output_row");
+      // let imgs = doc.getElementsByTagName("img");
+      // for (const o of outs) {
+      //   createDownloadButton(o);
+      //   createOpenButton(o);
+      //   createPasteButton(o);
+      // }
+      // for (const i of imgs) {
+      //   createDownloadButton(i);
+      //   createOpenButton(i);
+      //   createPasteButton(i);
+      // }
 
       let lastOutputDiv = outputDiv.getElementsByClassName("output_row")[0];
 
@@ -263,8 +401,6 @@ function createList(parentSelection, children) {
       }
 
       vscode.setState(outputDiv.innerHTML);
-      
-
      
     }
 
@@ -273,15 +409,36 @@ function createList(parentSelection, children) {
       return;
     }
 
-    // outputDiv.scrollTop = outputDiv.scrollHeight;
+    outputDiv.scrollTop = outputDiv.scrollHeight;
 
     // Add a download button for each image element
+    updateOutputs();
     updateImageElements();
+
     // 
   });
 
   // Get all image elements on the page
   // const imageElements = document.getElementsByTagName("img");
+
+  const updateOutputs = () => {
+    let openlinks = document.querySelectorAll("#open-link");
+    for (const openlink of openlinks) {
+      openlink.remove();
+    }
+
+    let pastelinks = document.querySelectorAll("#paste-link");
+    for (const pastelink of pastelinks) {
+      pastelink.remove();
+    }
+
+    let outs = document.getElementsByClassName("output_row");
+    for (const o of outs) {
+      createOpenButton(o);
+      createPasteButton(o);
+    }
+
+  }
 
   const updateImageElements = () => {
     var downloadlinks = document.querySelectorAll("#download-link");
@@ -290,11 +447,13 @@ function createList(parentSelection, children) {
     }
 
     // Get all image elements on the page
-    var imageElements = document.getElementsByTagName("img");
+    var imageElements = document.getElementsByClassName("output_row");
 
     // Add a download button for each image element
     for (const imageElement of imageElements) {
       createDownloadButton(imageElement);
+      // createOpenButton(imageElement);
+      // createPasteButton(imageElement);
     }
   };
 
@@ -308,17 +467,9 @@ function createList(parentSelection, children) {
   // updateImageElements();
 
   // Create a function to handle the click event
-  const handleImageClick = (imageElement) => {
-    // Create an anchor element
-    const link = document.createElement("a");
+    updateOutputs();
+    updateImageElements();
 
-    // Set the image source as the link's href and specify the download attribute
-    link.href = imageElement.src;
-    link.download = "image.png";
-
-    // Trigger the click event on the link element to start the download
-    link.click();
-  };
 
 
 

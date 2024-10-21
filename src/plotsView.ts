@@ -1,11 +1,13 @@
 
-import { Uri, 
-    Webview, 
-    WebviewView, 
+import {
+    Uri,
+    Webview,
+    WebviewView,
     WebviewViewProvider,
     WebviewViewResolveContext,
-    CancellationToken, 
-    ExtensionContext} from "vscode";
+    CancellationToken,
+    ExtensionContext
+} from "vscode";
 
 import * as vscode from 'vscode';
 
@@ -17,23 +19,23 @@ export class PlotsViewProvider implements WebviewViewProvider {
     public _view?: WebviewView;
     private _extensionUri: Uri;
     private _text: string = "";
-    private _context: ExtensionContext|undefined;
+    private _context: ExtensionContext | undefined;
     private _allOutputs: Map<string, string> = new Map();
-    private _out: any[]= [];
+    private _out: any[] = [];
     private _fontSize: string = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
 
     public static readonly viewType = "wolfram.plotsView";
 
 
-    constructor(private readonly _extensionUri0: Uri, context:ExtensionContext|undefined) {
+    constructor(private readonly _extensionUri0: Uri, context: ExtensionContext | undefined) {
         this._extensionUri = _extensionUri0;
         this._context = context;
     }
 
     public resolveWebviewView(
-		webviewView: WebviewView,
-		context: WebviewViewResolveContext,
-		_token: CancellationToken) {
+        webviewView: WebviewView,
+        context: WebviewViewResolveContext,
+        _token: CancellationToken) {
         this._view = webviewView;
         this._view.webview.options = {
             enableScripts: true,
@@ -44,7 +46,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._text = "In: ..."
         this._view.webview.html = this.getOutputContent(this._view.webview, this._extensionUri);
 
-        this._view.webview.onDidReceiveMessage((data:any) => {
+        this._view.webview.onDidReceiveMessage((data: any) => {
             if (data.text === "restart") {
                 restartKernel();
             }
@@ -54,7 +56,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 // console.log(data.output)
 
                 // new document
-                vscode.workspace.openTextDocument({ content: this._allOutputs.get(data.data) }).then((document) => {
+                vscode.workspace.openTextDocument({ content: data.data.replace("📝📋⇩", "")}).then((document) => {
                     vscode.window.showTextDocument(document);
                 });
             }
@@ -65,9 +67,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
                 let editor = vscode.window.activeTextEditor;
                 if (editor) {
                     let selection = editor.selection;
-                    let position = new vscode.Position(selection.end.line+1, 0);
+                    let position = new vscode.Position(selection.end.line + 1, 0);
                     editor.edit((editBuilder) => {
-                        editBuilder.insert(position, this._allOutputs.get(data.data)?.toString() + "\n");
+                        editBuilder.insert(position, data.data.replace("📝📋⇩", "") + "\n");
                     }
                     );
                 }
@@ -89,7 +91,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._view.onDidDispose(
             () => {
 
-                this._view?.webview.postMessage({command: "save", text: [], input:"", output:[]})
+                this._view?.webview.postMessage({ command: "save", text: [], input: "", output: [] })
 
                 this._view = undefined;
             },
@@ -99,21 +101,26 @@ export class PlotsViewProvider implements WebviewViewProvider {
         // change the plotsView text css format when the configuration changes
         vscode.workspace.onDidChangeConfiguration((e) => {
             this._fontSize = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
-            this._view?.webview.postMessage({command: "fontSize", size:this._fontSize, text: [], input:"", output:[]})
+            this._view?.webview.postMessage({ command: "fontSize", size: this._fontSize, text: [], input: "", output: [] })
+
+            this._view?.webview.postMessage({
+                command: "background",
+                background: vscode.workspace.getConfiguration().get("wlsp.background") || "none"
+            })
         });
 
-        
+
         return
     }
-    
+
     public clearResults() {
-        this._view?.webview.postMessage({command: "clear", text: [], input:"", output:[]})
+        this._view?.webview.postMessage({ command: "clear", text: [], input: "", output: [] })
     }
 
-    public updateView(out:any[]) {
+    public updateView(out: any[]) {
         // this._text = out;
         this._out = out;
-        let out2:any[] = []
+        let out2: any[] = []
         let index = 0
         for (let i = 0; i < this._out.length; i++) {
             index = this._allOutputs.size;
@@ -127,10 +134,10 @@ export class PlotsViewProvider implements WebviewViewProvider {
             out2.push(o)
         }
 
-        this._view?.webview.postMessage({text: (out2)})
+        this._view?.webview.postMessage({ text: (out2) })
     }
 
-    public newInput(input:string) {
+    public newInput(input: string) {
         this._view?.webview.postMessage({
             text: [],
             input: input,
@@ -138,11 +145,11 @@ export class PlotsViewProvider implements WebviewViewProvider {
         })
     }
 
-    public newOutput(output:string) {
+    public newOutput(output: string) {
         let img = output
-            // .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
-            // .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
-            // .replace(`<?xml version="1.0" encoding="UTF-8"?>`,"");
+        // .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
+        // .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
+        // .replace(`<?xml version="1.0" encoding="UTF-8"?>`,"");
         // console.log(img)
 
         this._view?.webview.postMessage({
@@ -153,7 +160,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
     }
 
     getOutputContent(webview: any, extensionUri: Uri) {
-        let timeNow = new Date().getTime();    
         const toolkitUri = getUri(webview, extensionUri, [
             "media",
             "toolkit.js"
@@ -171,7 +177,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             "media",
             "graphicToSVG.js"
         ]);
-       
+
         let result = `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -250,6 +256,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     font-size: ${this._fontSize}px;
                     max-height:50vh;
                     overflow-y: scroll;
+                    min-height: 45px;
                 }
 
                 .output_row img{
@@ -275,13 +282,9 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     display: block;
                 }
 
-                #download-link {
+                .output_row button{
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
-                    color: #801f01;
-                    display: block;
-                    margin-top: 5px;
-                    padding: 5px;
 
                 }
 
@@ -333,7 +336,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
             <script type="module" src="${transformUri}"></script>
             <title>Plots</title>
         </head>
-        <body onload="loaded()">
+        <body onload="">
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>

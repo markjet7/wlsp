@@ -202,31 +202,40 @@ transforms[output_]:=Module[{f, txt},
 		Return[f]
 ];
 
-transformsIO[output_, errors_]:=Module[{out, short},
+transformsIO[output_, errors_]:=Module[{out, short, processed},
+
+	processed = output /. {
+		(*g_Graphics :> lowerResolution[g], 
+		g_Image :> lowerResolution[g], 
+		g_GeoGraphics :> lowerResolution[g],*)
+		g_InformationData :> lowerResolution[g],
+		g_SemanticSearchIndex :> lowerResolution[g]
+		};
+
 	Which[
 		(ByteCount[output] + ByteCount[errors]) > 1000000 && Length@errors > 0,
 		out = ExportString[
-			Column@{Rasterize@Short[output, 10], Rasterize@Short[errors, 10]},
+			Column@{Rasterize@Short[processed, 10], Rasterize@Short[errors, 10]},
 			"HTMLFragment",
 			"GraphicsOutput"->"PNG"
 		];,
 		(ByteCount[output] + ByteCount[errors]) > 1000000,
 		out = ExportString[
-			Rasterize@Short[output, 10],
+			Rasterize@Short[processed, 10],
 			"HTMLFragment",
 			"GraphicsOutput"->"PNG"
 		];,
 		Length@erros > 0,
 		out = ExportString[
 			GraphicsColumn[
-			{output,
+			{processed,
 			errors}], 
 			"HTMLFragment",
 			"GraphicsOutput"->"PNG"
 		];,
 		True,
 		out = ExportString[
-			output, 
+			processed, 
 			"HTMLFragment",
 			"GraphicsOutput"->"PNG"
 		];
@@ -236,35 +245,41 @@ transformsIO[output_, errors_]:=Module[{out, short},
 ];
 
 lowerResolution =.;
-lowerResolution[g_]:=Rasterize[g, ImageResolution->72];
+lowerResolution[g_]:=Rasterize[g, ImageResolution->72*3];
 (*lowerResolution[g_Graphics]:=g;*)
 
 transformsCell[output_, errors_]:=Module[{out, file, processed},
-	now = Now;
 	file = CreateFile[];
 
-	Print["Errors: ", errors, Length@errors > 1];
+	processed = output /. {
+		g_Graphics :> lowerResolution[g], 
+		g_Image :> lowerResolution[g], 
+		g_GeoGraphics :> lowerResolution[g],
+		g_InformationData :> lowerResolution[g]
+		};
+
+	Print[output, processed];
+
 	out = If[
-		ByteCount[Column[{output, errors}]] < 1000000,
-		Print["Output: ", output];
+		ByteCount[Column[{processed, errors}]] < 1000000,
+		Print["Output: ", processed];
 		If[Length@errors > 1, 
 			Export[
 				file,
 				Column@{
-					output,
+					processed,
 					Rasterize@Short[errors, 5]},
 				"HTMLFragment", 
 				"GraphicsOutput"->"SVG"
 			],
 			Export[
 				file,
-				output, 
+				processed, 
 				"HTMLFragment", 
 				"GraphicsOutput"->"SVG"
 			]
 		],
 
-		processed = output /. {g_Graphics :> lowerResolution[g], g_Image :> lowerResolution[g], g_GeoGraphics :> lowerResolution[g]};
 
 		If[Length@errors > 1, 
 			Export[

@@ -32,7 +32,7 @@ class PlotsViewProvider {
                 // open new untitled document with content of data.output
                 // console.log(data.output)
                 // new document
-                vscode.workspace.openTextDocument({ content: this._allOutputs.get(data.data) }).then((document) => {
+                vscode.workspace.openTextDocument({ content: data.data.replace("📝📋⇩", "") }).then((document) => {
                     vscode.window.showTextDocument(document);
                 });
             }
@@ -44,8 +44,7 @@ class PlotsViewProvider {
                     let selection = editor.selection;
                     let position = new vscode.Position(selection.end.line + 1, 0);
                     editor.edit((editBuilder) => {
-                        var _a;
-                        editBuilder.insert(position, ((_a = this._allOutputs.get(data.data)) === null || _a === void 0 ? void 0 : _a.toString()) + "\n");
+                        editBuilder.insert(position, data.data.replace("📝📋⇩", "") + "\n");
                     });
                 }
             }
@@ -65,9 +64,13 @@ class PlotsViewProvider {
         }, null);
         // change the plotsView text css format when the configuration changes
         vscode.workspace.onDidChangeConfiguration((e) => {
-            var _a;
+            var _a, _b;
             this._fontSize = vscode.workspace.getConfiguration().get("wlsp.fontSize") || "var(--vscode-editor-font-size)";
             (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ command: "fontSize", size: this._fontSize, text: [], input: "", output: [] });
+            (_b = this._view) === null || _b === void 0 ? void 0 : _b.webview.postMessage({
+                command: "background",
+                background: vscode.workspace.getConfiguration().get("wlsp.background") || "none"
+            });
         });
         return;
     }
@@ -114,7 +117,6 @@ class PlotsViewProvider {
         });
     }
     getOutputContent(webview, extensionUri) {
-        let timeNow = new Date().getTime();
         const toolkitUri = getUri(webview, extensionUri, [
             "media",
             "toolkit.js"
@@ -209,6 +211,7 @@ class PlotsViewProvider {
                     font-size: ${this._fontSize}px;
                     max-height:50vh;
                     overflow-y: scroll;
+                    min-height: 45px;
                 }
 
                 .output_row img{
@@ -234,13 +237,9 @@ class PlotsViewProvider {
                     display: block;
                 }
 
-                #download-link {
+                .output_row button{
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
-                    color: #801f01;
-                    display: block;
-                    margin-top: 5px;
-                    padding: 5px;
 
                 }
 
@@ -292,7 +291,7 @@ class PlotsViewProvider {
             <script type="module" src="${transformUri}"></script>
             <title>Plots</title>
         </head>
-        <body onload="loaded()">
+        <body onload="">
             <div class="outer">
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>
