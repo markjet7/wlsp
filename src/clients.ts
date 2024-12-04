@@ -102,7 +102,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
     await launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
         wolframKernelClient = client;
-        onkernelReady();
+        onkernelReady()
 
         firstKernelLaunched = true;
         // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
@@ -115,6 +115,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
 
     // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
+    outputChannel.appendLine("Wolfram Language Kernel started: " + wolframKernelClient?.state);
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.command = 'wolfram.restart';
     wolframStatusBar.show();
@@ -336,17 +337,19 @@ export async function onkernelReady(): Promise<void> {
 
 
     }
+    if (wolframKernelClient?.state == 2) {
     wolframKernelClient?.sendRequest("storageUri").then((result: any) => {
         temporaryDir = result;
+        resolve()
     });
+} else {
     // treeDataProvider?.getSymbols([]);
 
     
 
     // pulse();
-
-
         resolve()
+}
     })
 
 }
@@ -701,8 +704,10 @@ function abort() {
 }
 
 let starttime = 0;
-let inputs: String[] = []; function runInWolfram(printOutput = false, trace = false) {
+let inputs: String[] = []; 
+function runInWolfram(printOutput = false, trace = false) {
 
+    outputChannel.appendLine("Running in Wolfram Kernel: " + wolframKernelClient?.state)
     let unsavedDocumentsQ = false;
     let editors = vscode.window.visibleTextEditors;
     editors.forEach((e: vscode.TextEditor) => {
@@ -767,6 +772,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
 
         // if (!wolframBusyQ) {
+        outputChannel.appendLine("Sending to Wolfram kernel: " + wolframKernelClient?.state)
         if (true) {
             if (evaluationQueue.length == 0) {
                 return
@@ -785,6 +791,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
             if (wolframKernelClient?.state == State.Running) {
                 // console.log("Kernel running, sending to Wolfram")
                 wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                    // outputChannel.appendLine("Wolfram kernel response: " + result)
                 }).catch((err) => {
                     console.log("Error in runInWolfram")
                     // restart()
@@ -792,7 +799,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
                 return
             } else {
 
-                // outputChannel.appendLine("Kernel not running, waiting for kernel to start");
+                outputChannel.appendLine("Kernel not running, waiting for kernel to start");
                 try{
                     await launch.stopKernel();
                 } catch (e) {}

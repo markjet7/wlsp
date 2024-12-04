@@ -237,7 +237,7 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
 
 
         let serverOptions: ServerOptions = function () {
-            return new Promise(async (resolve, reject) => {
+            return new Promise(async (res, reject) => {
 
                 if (wolframKernel) {
                     try {
@@ -271,7 +271,7 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
 
                 kernelSocket.on('connect', () => {
                     outputChannel.appendLine("Kernel Socket connected");
-                    resolve({
+                    res({
                         reader: kernelSocket,
                         writer: kernelSocket
                     })
@@ -283,7 +283,7 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
                     // reject(err)
                     if (err.code === "ECONNREFUSED") {
                         kernelSocket.destroy()
-                        await startWLSPKernelSocket(id, path);
+                        // await startWLSPKernelSocket(id, path);
                     }
                     // reconnect()
                 })
@@ -496,6 +496,7 @@ function stopWolfram(client: LanguageClient | undefined, client_process: any): P
 }
 
 async function loadKernel(kernelPath: string): Promise<Boolean> {
+    outputChannel.appendLine("Starting Wolframscript Kernel: " + kernelPath)
     return new Promise((resolve) => {
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
         try {
@@ -549,6 +550,9 @@ async function loadKernel(kernelPath: string): Promise<Boolean> {
 
 async function load(wolf: cp.ChildProcess, path: string, port: number, outputChannel: vscode.OutputChannel): Promise<cp.ChildProcess | undefined> {
     let cpw: cp.ChildProcess;
+
+    outputChannel.appendLine("Starting Wolframscript: " + path)
+
     return new Promise((resolve) => {
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
 

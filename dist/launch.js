@@ -196,7 +196,7 @@ function startWLSPKernelSocket(id, path) {
         //     });
         // }
         let serverOptions = function () {
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            return new Promise((res, reject) => __awaiter(this, void 0, void 0, function* () {
                 if (wolframKernel) {
                     try {
                         kill(wolframKernel.pid);
@@ -227,7 +227,7 @@ function startWLSPKernelSocket(id, path) {
                 // });
                 kernelSocket.on('connect', () => {
                     extension_1.outputChannel.appendLine("Kernel Socket connected");
-                    resolve({
+                    res({
                         reader: kernelSocket,
                         writer: kernelSocket
                     });
@@ -239,7 +239,7 @@ function startWLSPKernelSocket(id, path) {
                         // reject(err)
                         if (err.code === "ECONNREFUSED") {
                             kernelSocket.destroy();
-                            yield startWLSPKernelSocket(id, path);
+                            // await startWLSPKernelSocket(id, path);
                         }
                         // reconnect()
                     });
@@ -420,6 +420,7 @@ function stopWolfram(client, client_process) {
 }
 function loadKernel(kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
+        extension_1.outputChannel.appendLine("Starting Wolframscript Kernel: " + kernelPath);
         return new Promise((resolve) => {
             var _a, _b;
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
@@ -471,6 +472,7 @@ function loadKernel(kernelPath) {
 function load(wolf, path, port, outputChannel) {
     return __awaiter(this, void 0, void 0, function* () {
         let cpw;
+        outputChannel.appendLine("Starting Wolframscript: " + path);
         return new Promise((resolve) => {
             var _a, _b;
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
