@@ -219,6 +219,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
     
                 .outer {
                     height:100vh;
+                    width:99vw;
                     display:block;
                     position:relative;
                 }
@@ -257,6 +258,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     max-height:50vh;
                     overflow-y: scroll;
                     min-height: 45px;
+                    width: 98vw;
                 }
 
                 .output_row img{
