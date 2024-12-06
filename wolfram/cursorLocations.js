@@ -1,5 +1,5 @@
 {
-	"file:\/\/\/Users\/mark\/Library\/CloudStorage\/OneDrive-SharedLibraries-IowaStateUniversity\/Lignin%20HCA%20%28Patrick%29%20-%20Meta%20Analysis\/Testing\/localsemantic.wl":[
+	"file:\/\/\/System\/Volumes\/Data\/Users\/markmw\/Github\/wolframLCA\/wolframLCA.wl":[
 		{
 			"start":{
 				"line":0,
@@ -7,7 +7,7 @@
 			},
 			"end":{
 				"line":0,
-				"character":33
+				"character":15
 			}
 		},
 		{
@@ -17,7 +17,7 @@
 			},
 			"end":{
 				"line":2,
-				"character":109
+				"character":3
 			}
 		},
 		{
@@ -27,77 +27,7 @@
 			},
 			"end":{
 				"line":4,
-				"character":51
-			}
-		},
-		{
-			"start":{
-				"line":7,
-				"character":0
-			},
-			"end":{
-				"line":7,
-				"character":73
-			}
-		},
-		{
-			"start":{
-				"line":9,
-				"character":0
-			},
-			"end":{
-				"line":9,
-				"character":18
-			}
-		},
-		{
-			"start":{
-				"line":11,
-				"character":0
-			},
-			"end":{
-				"line":11,
-				"character":26
-			}
-		},
-		{
-			"start":{
-				"line":13,
-				"character":0
-			},
-			"end":{
-				"line":16,
-				"character":1
-			}
-		},
-		{
-			"start":{
-				"line":18,
-				"character":0
-			},
-			"end":{
-				"line":20,
-				"character":2
-			}
-		},
-		{
-			"start":{
-				"line":22,
-				"character":0
-			},
-			"end":{
-				"line":22,
-				"character":31
-			}
-		},
-		{
-			"start":{
-				"line":24,
-				"character":0
-			},
-			"end":{
-				"line":24,
-				"character":99
+				"character":22
 			}
 		}
 	]
