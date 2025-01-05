@@ -59,6 +59,30 @@ function startLanguageServer(context0, outputChannel0) {
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
         outputChannel = outputChannel0;
+        vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
+        vscode.commands.registerCommand('wolfram.runToLine', runToLine);
+        vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
+        vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
+        vscode.commands.registerCommand('wolfram.wolframTerminal', startWolframTerminal);
+        vscode.commands.registerCommand('wolfram.runInTerminal', runInTerminal);
+        vscode.commands.registerCommand('wolfram.help', help);
+        vscode.commands.registerCommand('wolfram.stringHelp', stringHelp);
+        vscode.commands.registerCommand('wolfram.wolframHelp', wolframHelp);
+        vscode.commands.registerCommand('wolfram.restart', restart);
+        vscode.commands.registerCommand('wolfram.abort', abort);
+        vscode.commands.registerCommand('wolfram.textToSection', textToSection);
+        vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
+        vscode.commands.registerCommand('wolfram.createFile', createFile);
+        vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
+        vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
+        vscode.commands.registerCommand('wolfram.createNotebookInteractive', createNotebookInteractive);
+        vscode.commands.registerCommand('wolfram.runExpression', runExpression);
+        vscode.commands.registerCommand('wolfram.clearResults', clearResults);
+        vscode.commands.registerCommand('wolfram.showTrace', showTrace);
+        vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
+        vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
+        vscode.commands.registerCommand('wolfram.updateVarTable', getUpdateVarTable);
+        vscode.commands.registerCommand('wolfram.clearPlots', clearPlots);
         plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
@@ -71,7 +95,6 @@ function startLanguageServer(context0, outputChannel0) {
             //     // }
             // })
         });
-        vscode.commands.registerCommand('wolfram.runInWolfram', runInWolfram);
         yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
             exports.wolframKernelClient = client;
             onkernelReady();
@@ -81,13 +104,12 @@ function startLanguageServer(context0, outputChannel0) {
             //         console.log("Kernel ready: " + event.newState)
             //         onkernelReady()
             //     // }
-            // })
+            // })    // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
+            outputChannel.appendLine("Wolfram Language Kernel started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
+            wolframStatusBar.text = "Wolfram ?";
+            wolframStatusBar.command = 'wolfram.restart';
+            wolframStatusBar.show();
         });
-        // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
-        outputChannel.appendLine("Wolfram Language Kernel started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
-        wolframStatusBar.text = "Wolfram ?";
-        wolframStatusBar.command = 'wolfram.restart';
-        wolframStatusBar.show();
         vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
         debugging = (vscode.env.machineId === "someValue.machineId");
         exports.scriptserializer = new notebook_1.WolframScriptSerializer();
@@ -121,29 +143,6 @@ function startLanguageServer(context0, outputChannel0) {
         // context.subscriptions.push(
         //     wlspdebugger
         // )
-        vscode.commands.registerCommand('wolfram.runToLine', runToLine);
-        vscode.commands.registerCommand('wolfram.printInWolfram', printInWolfram);
-        vscode.commands.registerCommand('wolfram.runTextCell', runTextCell);
-        vscode.commands.registerCommand('wolfram.wolframTerminal', startWolframTerminal);
-        vscode.commands.registerCommand('wolfram.runInTerminal', runInTerminal);
-        vscode.commands.registerCommand('wolfram.help', help);
-        vscode.commands.registerCommand('wolfram.stringHelp', stringHelp);
-        vscode.commands.registerCommand('wolfram.wolframHelp', wolframHelp);
-        vscode.commands.registerCommand('wolfram.restart', restart);
-        vscode.commands.registerCommand('wolfram.abort', abort);
-        vscode.commands.registerCommand('wolfram.textToSection', textToSection);
-        vscode.commands.registerCommand('wolfram.textFromSection', textFromSection);
-        vscode.commands.registerCommand('wolfram.createFile', createFile);
-        vscode.commands.registerCommand('wolfram.createNotebook', createNotebook);
-        vscode.commands.registerCommand('wolfram.createNotebookScript', createNotebookScript);
-        vscode.commands.registerCommand('wolfram.createNotebookInteractive', createNotebookInteractive);
-        vscode.commands.registerCommand('wolfram.runExpression', runExpression);
-        vscode.commands.registerCommand('wolfram.clearResults', clearResults);
-        vscode.commands.registerCommand('wolfram.showTrace', showTrace);
-        vscode.commands.registerCommand('wolfram.debug', startWLSPDebugger);
-        vscode.commands.registerCommand('wolfram.updateTreeData', updateTreeDataProvider);
-        vscode.commands.registerCommand('wolfram.updateVarTable', getUpdateVarTable);
-        vscode.commands.registerCommand('wolfram.clearPlots', clearPlots);
         vscode.workspace.onDidOpenTextDocument(didOpenTextDocument);
         vscode.workspace.onDidSaveTextDocument(didSaveTextDocument);
         vscode.workspace.onDidChangeConfiguration(updateConfiguration);

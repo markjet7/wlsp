@@ -542,9 +542,24 @@ function load(wolf, path, port, outputChannel) {
 }
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
-        yield stop();
-        yield startWLSP(0, lspPath);
-        yield startWLSPKernelSocket(0, kernelPath);
+        try {
+            yield stop();
+        }
+        catch (e) {
+            console.log(e.message);
+        }
+        try {
+            yield startWLSP(0, lspPath);
+        }
+        catch (e) {
+            console.log(e.message);
+        }
+        try {
+            yield startWLSPKernelSocket(0, kernelPath);
+        }
+        catch (e) {
+            console.log(e.message);
+        }
         return new Promise((resolve) => {
             resolve([exports.wolframClient, exports.wolframKernelClient]);
         });

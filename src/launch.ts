@@ -633,11 +633,26 @@ async function load(wolf: cp.ChildProcess, path: string, port: number, outputCha
 }
 
 export async function restart(): Promise<(LanguageClient | undefined)[]> {
-    await stop()
+    try {
+        await stop();
+    }
+    catch (e) {
+        console.log((e as Error).message)
+    }
 
-    await startWLSP(0, lspPath);
-    await startWLSPKernelSocket(0, kernelPath)
+    try {
+        await startWLSP(0, lspPath);
+    }
+    catch (e) {
+        console.log((e as Error).message)
+    }
 
+    try {
+        await startWLSPKernelSocket(0, kernelPath)
+    }
+    catch (e) {
+        console.log((e as Error).message)
+    }
     return new Promise((resolve) => {
         resolve([wolframClient, wolframKernelClient])
     });
