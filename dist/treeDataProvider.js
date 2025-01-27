@@ -93,6 +93,9 @@ class workspaceSymbolProvider {
         return __awaiter(this, void 0, void 0, function* () {
             if (((_a = workspace.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
                 function getFolderFiles(folder) {
+                    if (!fs.existsSync(folder)) {
+                        return;
+                    }
                     let files = fs.readdirSync(folder, { withFileTypes: true });
                     files.forEach((file) => {
                         var _a;

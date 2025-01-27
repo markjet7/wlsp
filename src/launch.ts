@@ -195,13 +195,14 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
         // await load(wolfram, lspPath, clientPort, outputChannel);
 
         wolframClient?.start().then((value) => {
+            resolve(wolframClient);
             connectingLSP = false;
             outputChannel.appendLine("Client Started")
         }, (reason) => {
+            resolve(wolframClient);
             connectingLSP = false;
             outputChannel.appendLine("Client Start Error: " + reason)
         });
-        resolve(wolframClient);
 
         wolframClient?.onDidChangeState(async (event) => {
             if (event.newState === State.Stopped) {
@@ -247,10 +248,13 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
         
                 if (wolframKernel == undefined || !wolframKernel.connected) {
                     await loadKernel(path).then((result) => {
+                        outputChannel.appendLine("Result: " + result)
                         if (result) {
                             outputChannel.appendLine("Kernel Ready")
                         } else {
                             outputChannel.appendLine("Failed to load kernel")
+                            outputChannel.appendLine("Wolfram kernel: " + wolframKernel)
+                            outputChannel.appendLine("Wolfram kernel connected: " + wolframKernel?.connected)
                             // Ask the user if they want to restart the kernel
                             vscode.window.showInformationMessage("The kernel failed to start. Would you like to restart it?","Yes", "No").then(async (selection) => {
                                 if (selection === "Yes") {
@@ -366,7 +370,7 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
         });
 
         wolframKernelClient?.start().then((value) => {
-            outputChannel.appendLine("Kernel Started")
+            outputChannel.appendLine("Kernel Started: " + wolframKernelClient?.state)
             resolve(wolframKernelClient)
         }, (reason) => {
             outputChannel.appendLine("Kernel Start Error: " + reason)
@@ -496,7 +500,7 @@ function stopWolfram(client: LanguageClient | undefined, client_process: any): P
 }
 
 async function loadKernel(kernelPath: string): Promise<Boolean> {
-    outputChannel.appendLine("Starting Wolframscript Kernel: " + kernelPath)
+    outputChannel.appendLine("Starting Wolframscript Kernel")
     return new Promise((resolve) => {
         let executablePath: string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
         try {
@@ -514,13 +518,15 @@ async function loadKernel(kernelPath: string): Promise<Boolean> {
                 if (data.toString().includes("Cannot start tcp")) {
                     kill(wolframKernel.pid);
                     wolframKernel.unref();
-                    resolve(false)
+
+                    kernelPort = Math.floor(Math.random() * 20) + 37820;
+                    loadKernel(kernelPath);
                 }
 
                 if (data.toString().includes("Invalid password")) {
                     kill(wolframKernel.pid);
                     wolframKernel.unref();
-                    vscode.window.showErrorMessage("Wolfram Kernel failed to start. You may have launched too many instances. Check your task manager.")
+                    vscode.window.showErrorMessage("Wolfram Kernel reported invalid password. You may have launched too many instances or need a license.")
                     resolve(false);
                 }
             } catch (e) {
@@ -644,16 +650,17 @@ export async function restart(): Promise<(LanguageClient | undefined)[]> {
         await startWLSP(0, lspPath);
     }
     catch (e) {
-        console.log((e as Error).message)
+        outputChannel.appendLine("startWLSP error: " + (e as Error).message)
     }
 
     try {
         await startWLSPKernelSocket(0, kernelPath)
     }
     catch (e) {
-        console.log((e as Error).message)
+        outputChannel.appendLine("startWLSPKernelSocket error:" + (e as Error).message)
     }
     return new Promise((resolve) => {
+        outputChannel.appendLine("Restarted Wolfram Clients: " + wolframClient + " " + wolframKernelClient)
         resolve([wolframClient, wolframKernelClient])
     });
 }

@@ -159,13 +159,14 @@ function startWLSP(id, path) {
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             // await load(wolfram, lspPath, clientPort, outputChannel);
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start().then((value) => {
+                resolve(exports.wolframClient);
                 connectingLSP = false;
                 extension_1.outputChannel.appendLine("Client Started");
             }, (reason) => {
+                resolve(exports.wolframClient);
                 connectingLSP = false;
                 extension_1.outputChannel.appendLine("Client Start Error: " + reason);
             });
-            resolve(exports.wolframClient);
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onDidChangeState((event) => __awaiter(this, void 0, void 0, function* () {
                 if (event.newState === node_1.State.Stopped) {
                     if (wolfram && wolfram.connected) {
@@ -205,11 +206,14 @@ function startWLSPKernelSocket(id, path) {
                 }
                 if (wolframKernel == undefined || !wolframKernel.connected) {
                     yield loadKernel(path).then((result) => {
+                        extension_1.outputChannel.appendLine("Result: " + result);
                         if (result) {
                             extension_1.outputChannel.appendLine("Kernel Ready");
                         }
                         else {
                             extension_1.outputChannel.appendLine("Failed to load kernel");
+                            extension_1.outputChannel.appendLine("Wolfram kernel: " + wolframKernel);
+                            extension_1.outputChannel.appendLine("Wolfram kernel connected: " + (wolframKernel === null || wolframKernel === void 0 ? void 0 : wolframKernel.connected));
                             // Ask the user if they want to restart the kernel
                             vscode.window.showInformationMessage("The kernel failed to start. Would you like to restart it?", "Yes", "No").then((selection) => __awaiter(this, void 0, void 0, function* () {
                                 if (selection === "Yes") {
@@ -309,7 +313,7 @@ function startWLSPKernelSocket(id, path) {
             }
         });
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then((value) => {
-            extension_1.outputChannel.appendLine("Kernel Started");
+            extension_1.outputChannel.appendLine("Kernel Started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
             resolve(exports.wolframKernelClient);
         }, (reason) => {
             extension_1.outputChannel.appendLine("Kernel Start Error: " + reason);
@@ -420,7 +424,7 @@ function stopWolfram(client, client_process) {
 }
 function loadKernel(kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        extension_1.outputChannel.appendLine("Starting Wolframscript Kernel: " + kernelPath);
+        extension_1.outputChannel.appendLine("Starting Wolframscript Kernel");
         return new Promise((resolve) => {
             var _a, _b;
             let executablePath = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
@@ -439,12 +443,13 @@ function loadKernel(kernelPath) {
                     if (data.toString().includes("Cannot start tcp")) {
                         kill(wolframKernel.pid);
                         wolframKernel.unref();
-                        resolve(false);
+                        kernelPort = Math.floor(Math.random() * 20) + 37820;
+                        loadKernel(kernelPath);
                     }
                     if (data.toString().includes("Invalid password")) {
                         kill(wolframKernel.pid);
                         wolframKernel.unref();
-                        vscode.window.showErrorMessage("Wolfram Kernel failed to start. You may have launched too many instances. Check your task manager.");
+                        vscode.window.showErrorMessage("Wolfram Kernel reported invalid password. You may have launched too many instances or need a license.");
                         resolve(false);
                     }
                 }
@@ -552,15 +557,16 @@ function restart() {
             yield startWLSP(0, lspPath);
         }
         catch (e) {
-            console.log(e.message);
+            extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
         }
         try {
             yield startWLSPKernelSocket(0, kernelPath);
         }
         catch (e) {
-            console.log(e.message);
+            extension_1.outputChannel.appendLine("startWLSPKernelSocket error:" + e.message);
         }
         return new Promise((resolve) => {
+            extension_1.outputChannel.appendLine("Restarted Wolfram Clients: " + exports.wolframClient + " " + exports.wolframKernelClient);
             resolve([exports.wolframClient, exports.wolframKernelClient]);
         });
     });

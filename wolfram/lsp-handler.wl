@@ -29,7 +29,7 @@ ServerCapabilities=<|
 	"documentFormattingProvider" -> True,
 	"completionProvider"-> <|
 		"resolveProvider"->False,
-		"allCommitCharacters" -> {"["},
+		(*"allCommitCharacters" -> {"["},*)
 		"insertReplaceSupport" -> True
 	|>,
 	"documentSymbolProvider"->True,

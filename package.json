@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.2.3",
+    "version": "0.2.5",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -254,6 +254,10 @@
                 "title": "Wolfram: Run"
             },
             {
+                "command": "wolfram.runSectionInWolfram",
+                "title": "Wolfram: Run Section"
+            },
+            {
                 "command": "wolfram.showTrace",
                 "title": "Wolfram: Trace"
             },
@@ -392,17 +396,22 @@
             {
                 "command": "wolfram.runInWolfram",
                 "key": "shift+enter",
-                "when": "editorLangId == wolfram"
+                "when": "editorTextFocus && editorLangId == 'wolfram'"
+            },
+            {
+                "command": "wolfram.runSectionInWolfram",
+                "key": "option+enter",
+                "when": "editorTextFocus && editorLangId == 'wolfram'"
             },
             {
                 "command": "wolfram.printInWolfram",
                 "key": "ctrl+shift+enter",
-                "when": "editorLangId == wolfram"
+                "when": "editorTextFocus && editorLangId == 'wolfram'"
             },
             {
                 "command": "wolfram.restart",
                 "key": "alt+.",
-                "when": "editorLangId == wolfram"
+                "when": "editorTextFocus && editorLangId == 'wolfram'"
             }
         ],
         "viewsContainers": {

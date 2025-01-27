@@ -109,6 +109,10 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
         if (workspace.children?.length===0) {
 
             function getFolderFiles(folder:string) {
+                if (!fs.existsSync(folder)) {
+                    return;
+                }
+
                 let files = fs.readdirSync(folder, {withFileTypes: true});
                 files.forEach((file:fs.Dirent) => {
                     if(path.extname(file.name) == ".wl") { 

@@ -124,7 +124,7 @@ handle["moveCursor", json_]:=Module[{range, uri, src, end, code, newPosition},
 	uri = json["params", "textDocument"]["uri", "external"];
 	src = documents[json["params","textDocument","uri", "external"]];
 	end = range["end"];
-	code = getcode[src, range];
+	code = getCode[src, range];
 	newPosition = <|"line"->code["range"][[2,1]], "character"->0|>;
 	(* sendResponse[<|"method" -> "moveCursor", "params" -> newPosition|>]; *)
 ];
@@ -151,6 +151,12 @@ handle["runNB", json_]:=Module[{id, html, inputID, inputs, expr, line, end, posi
 	evaluateFromQueue[code, json, position];
 ];
 
+handle["runSectionInWolfram", json_]:=Module[{js},
+	js = json;
+	js["section"] = True;
+	handle["runInWolfram", js];
+];
+
 handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code, codeBlock, codeBlocks, c, s, string, output, newPosition, decorationLine, decorationChar, response, response2, response3, decoration, newLines, codeLines},
 
 	Check[
@@ -158,23 +164,37 @@ handle["runInWolfram", json_]:=Module[{range, uri, src, end, workingfolder, code
 		range = json["params", "range"];
 		uri = json["params", "textDocument"]["uri", "external"];
 		src = Lookup[documents,json["params","textDocument","uri", "external"], ""];
-		code = Check[getCode[src, range], <|"code"->"Get code failed", "range"-><|
+
+		code = Check[getCode[src, range, Lookup[json, "section", False]], <|"code"->"Get code failed", "range"-><|
 			"start" -> <|"line" -> range["start"]["line"]+1, "character" -> range["start"]["character"]+1 |>,
 			"end" -> <|"line" -> range["end"]["line"]+1, "character" -> range["end"]["character"]+1 |>|>|>];
 		newPosition = <|"line"->code["range"][[2,1]]+1, "character"->1|>;
 		sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
 
 		(* Split string into code blocks *)
-		codeBlocks = Select[
-			Cases[CodeParse[src 
-				(*, SourceConvention -> "SourceCharacterIndex" *)
-				],
-				(
-				CallNode[LeafNode[Symbol,(_),_],___] |
-				CallNode[CallNode[_, (_), _], ___] |
-				LeafNode[_,_,_]
-			),{2}],
-			#[[-1]][Source][[1,1]] >= code["range"][[1,1]] && #[[-1]][Source][[2,1]] <= code["range"][[2,1]] &
+		codeBlocks = If[
+			Lookup[json, "section", False],
+			List@First[Select[
+				Cases[CodeParse[src 
+					(*, SourceConvention -> "SourceCharacterIndex" *)
+					],
+					(
+					CallNode[LeafNode[Symbol,(_),_],___] |
+					CallNode[CallNode[_, (_), _], ___] 
+				), -2],
+				#[[-1]][Source][[1,1]] >= code["range"][[1,1]] && #[[-1]][Source][[2,1]] <= code["range"][[2,1]] &
+			], Nothing],
+			Select[
+				Cases[CodeParse[src 
+					(*, SourceConvention -> "SourceCharacterIndex" *)
+					],
+					(
+					CallNode[LeafNode[Symbol,(_),_],___] |
+					CallNode[CallNode[_, (_), _], ___] |
+					LeafNode[_,_,_]
+				),{2}],
+				#[[-1]][Source][[1,1]] >= code["range"][[1,1]] && #[[-1]][Source][[2,1]] <= code["range"][[2,1]] &
+			]
 		];
 
 		(* Evaluate each code block *)
@@ -973,10 +993,13 @@ getWordsPosition[word_, src_]:=Module[{sLines, lines, character, range},
 		{word, range}, {l, lines}]
 ];
 
-getCode[src_, range_]:=Module[{},
+getCode[src_, range_, section_:False]:=Module[{},
 	Which[
 		range["start"] === range["end"], (* run line or group of lines *)
-			getCodeAtPosition[src, range["start"]],
+			If[section,
+				getSectionLevelCodeAtPosition[src, range["start"]],
+				getTopLevelCodeAtPosition[src, range["start"]]
+			],
 		!(range["start"] === range["end"]),
 			<|
 				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
@@ -994,7 +1017,31 @@ getCode[src_, range_]:=Module[{},
 	]
 ];
 
-getCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
+getSectionLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, str},
+	tree = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];
+	pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
+
+	Check[
+		call = First[Cases[tree, x_CallNode /; 
+		inCodeRangeQ[
+		FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
+		pos], -2], {}];
+
+
+		result1 = If[call === {},
+			<|"code"->"null", "range"->{{pos["line"],0}, {pos["line"],0}}|>,
+			
+			str = Check[getStringAtRange[src, FirstCase[call, <|Source -> s_, ___|> :> s, {{0, 0}, {0, 0}}, 1]], ToFullFormString[call]];
+
+			<|"code"->If[Head@str === String, StringTrim[str], "Failed"], "range"->call[[3]][Source]|>
+		];
+		result1,
+	
+		<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>
+	]
+];
+
+getTopLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
 
 		tree = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];
 		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
