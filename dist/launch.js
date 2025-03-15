@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelIO = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
@@ -359,39 +359,54 @@ function startWLSPIO(id) {
         }));
     });
 }
-function startWLSPKernelIO(id) {
+function startWLSPKernelIO(id, kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
         console.log("Starting WLSP Kernel: " + attempts);
+        // let serverOptions: ServerOptions = {
+        //     run: { module: context.asAbsolutePath('dist/server.js'), transport: TransportKind.ipc },
+        //     debug: { module: context.asAbsolutePath('dist/server.js'), transport: TransportKind.ipc, options: { execArgv: ["--nolazy", "--inspect=6009"] } }
+        // };
+        // let kernelErrorHandler = new KernelClientErrorHandler();
+        // let clientOptions: LanguageClientOptions = {
+        //     documentSelector: [
+        //         "wolfram"
+        //     ],
+        //     initializationOptions: {
+        //         debuggerPort: 7777
+        //     },
+        //     diagnosticCollectionName: 'wolfram-lsp',
+        //     outputChannel: outputChannel,
+        //     errorHandler: kernelErrorHandler
+        // };
+        // Use the rustwstp binary and standard I/O
         let serverOptions = {
-            run: { module: context.asAbsolutePath('dist/server.js'), transport: node_1.TransportKind.ipc },
-            debug: { module: context.asAbsolutePath('dist/server.js'), transport: node_1.TransportKind.ipc, options: { execArgv: ["--nolazy", "--inspect=6009"] } }
+            run: {
+                command: kernelPath + '/rustwstp/target/release/rustwstp', args: [], transport: node_1.TransportKind.stdio
+            },
+            debug: { command: kernelPath + '/rustwstp/target/release/rustwstp', args: [], transport: node_1.TransportKind.stdio }
         };
-        let kernelErrorHandler = new KernelClientErrorHandler();
         let clientOptions = {
             documentSelector: [
                 "wolfram"
             ],
-            initializationOptions: {
-                debuggerPort: 7777
-            },
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: extension_1.outputChannel,
-            errorHandler: kernelErrorHandler
+            outputChannel: extension_1.outputChannel
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);
-            setTimeout(() => {
-                let disposible;
-                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start();
-                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.outputChannel.appendLine("Kernel Client Started");
-                // outputChannel.appendLine(new Date().toLocaleTimeString())
-                // if (disposible) {context.subscriptions.push(disposible)};
-                resolve();
-            }, 100);
+            let disposible;
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then((value) => {
+                resolve(exports.wolframKernelClient);
+            });
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.outputChannel.appendLine("Kernel Client Started");
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
+            // if (disposible) {context.subscriptions.push(disposible)};
+            // resolve(wolframKernelClient)
         }));
     });
 }
+exports.startWLSPKernelIO = startWLSPKernelIO;
 function stopWolfram(client, client_process) {
     return new Promise((resolve) => {
         // client?.stop();

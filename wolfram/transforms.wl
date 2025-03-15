@@ -1,3 +1,7 @@
+
+Get[DirectoryName[$path] <> "textQ.wl"];
+
+
 SetAttributes[accountingFormat, HoldFirst];
 accountingFormat[expr_] := expr /. x_Real | x_Integer :> NumberForm[x, ScientificNotationThreshold -> {-9, 12}];
 
@@ -204,13 +208,19 @@ transforms[output_]:=Module[{f, txt},
 
 transformsIO[output_, errors_]:=Module[{out, short, processed},
 
-	processed = output /. {
+	(* processed = output /. { *)
 		(*g_Graphics :> lowerResolution[g], 
 		g_Image :> lowerResolution[g], 
 		g_GeoGraphics :> lowerResolution[g],*)
-		g_InformationData :> lowerResolution[g],
+	(*	g_InformationData :> lowerResolution[g], 
 		g_SemanticSearchIndex :> lowerResolution[g]
-		};
+		}; *)
+
+	processed = If[
+		textQ[output],
+		output,
+		Rasterize@output
+	];
 
 	Which[
 		(ByteCount[output] + ByteCount[errors]) > 1000000 && Length@errors > 0,

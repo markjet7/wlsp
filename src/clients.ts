@@ -77,6 +77,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
 
     context = context0;
+    let wlspPath = context.asAbsolutePath(path.join(''));
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
@@ -115,7 +116,8 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     plotsProvider._view?.show(true);
 
 
-    await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
+    // await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
+    await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
         wolframKernelClient = client;
         onkernelReady();
 
@@ -276,8 +278,8 @@ export async function restart(): Promise<void> {
     await launch.restart().then((clients) => {
         wolframClient = clients[0];
         wolframKernelClient = clients[1];
-        onclientReady()
         onkernelReady()
+        onclientReady()
     })
 
     return new Promise((resolve) => {
@@ -334,6 +336,15 @@ export async function onkernelReady(): Promise<void> {
     wolframKernelClient?.onNotification("errorMessages", errorMessages)
     wolframKernelClient?.onNotification("updateInputs", updateInputs)
     wolframKernelClient?.onNotification("onResult", onResult)
+
+
+    wolframKernelClient?.onNotification("onRunInWolfram", (result: any) => {
+        onRunInWolfram(result)
+    });
+
+    wolframKernelClient?.onNotification("onRunInWolframIO", (result: any) => {
+        onRunInWolframIO(result)
+    });
 
 
     if (vscode.window.activeTextEditor) {
@@ -1209,13 +1220,6 @@ function wolframBusy(params: any) {
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Running (" + (outputPosition.line) + ")";
         wolframStatusBar.show();
 
-        wolframKernelClient?.onNotification("onRunInWolfram", (result: any) => {
-            onRunInWolfram(result)
-        });
-
-        wolframKernelClient?.onNotification("onRunInWolframIO", (result: any) => {
-            onRunInWolframIO(result)
-        });
 
         // progressStatus = vscode.window.withProgress({
         //     location: vscode.ProgressLocation.Notification,
@@ -1422,7 +1426,7 @@ let runningDecorationType: vscode.TextEditorDecorationType = vscode.window.creat
 let blockDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(
     {
         backgroundColor: 'none',
-        fontWeight: 'bold',
+        // fontWeight: 'bold',
         overviewRulerColor: new vscode.ThemeColor("foreground"),
         overviewRulerLane: vscode.OverviewRulerLane.Right
     }

@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.2.5",
+    "version": "0.2.7",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -540,7 +540,8 @@
         "test": "node ./out/test/runTest.js",
         "vscode:prepublish": "webpack --mode production",
         "webpack": "webpack --mode development",
-        "webpack-dev": "webpack --mode development --watch",
-        "test-compile": "tsc -p ./"
+        "webpack-dev": "cargo build --release --manifest-path ./rustwstp/Cargo.toml &&webpack --mode development --watch",
+        "test-compile": "tsc -p ./",
+        "cargo-build": "cargo build --release --manifest-path ./rustwstp/Cargo.toml"
     }
 }

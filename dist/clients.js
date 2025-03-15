@@ -55,6 +55,7 @@ function startLanguageServer(context0, outputChannel0) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         context = context0;
+        let wlspPath = context.asAbsolutePath(path.join(''));
         lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
@@ -87,7 +88,8 @@ function startLanguageServer(context0, outputChannel0) {
         plotsProvider = new plotsView_1.PlotsViewProvider(context.extensionUri, context);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
-        yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+        // await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
+        yield launch.startWLSPKernelIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = client;
             onkernelReady();
             firstKernelLaunched = true;
@@ -204,8 +206,8 @@ function restart() {
         yield launch.restart().then((clients) => {
             exports.wolframClient = clients[0];
             exports.wolframKernelClient = clients[1];
-            onclientReady();
             onkernelReady();
+            onclientReady();
         });
         return new Promise((resolve) => {
             vscode.workspace.textDocuments.forEach(didOpenTextDocument);
@@ -254,6 +256,12 @@ function onkernelReady() {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onResult", onResult);
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
+                onRunInWolfram(result);
+            });
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolframIO", (result) => {
+                onRunInWolframIO(result);
+            });
             if (vscode.window.activeTextEditor) {
                 let workspacefolder = vscode.workspace.getWorkspaceFolder((_a = vscode.window.activeTextEditor) === null || _a === void 0 ? void 0 : _a.document.uri);
                 if (workspacefolder) {
@@ -1003,12 +1011,6 @@ function wolframBusy(params) {
         wolframBusyQ = true;
         wolframStatusBar.text = "$(extensions-sync-enabled~spin) Running (" + (outputPosition.line) + ")";
         wolframStatusBar.show();
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
-            onRunInWolfram(result);
-        });
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolframIO", (result) => {
-            onRunInWolframIO(result);
-        });
         // progressStatus = vscode.window.withProgress({
         //     location: vscode.ProgressLocation.Notification,
         //     title: "Running line " + (outputPosition.line) + " in Wolfram",
@@ -1178,7 +1180,7 @@ let runningDecorationType = vscode.window.createTextEditorDecorationType({
 });
 let blockDecorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: 'none',
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     overviewRulerColor: new vscode.ThemeColor("foreground"),
     overviewRulerLane: vscode.OverviewRulerLane.Right
 });
