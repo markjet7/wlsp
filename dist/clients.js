@@ -751,7 +751,7 @@ function onRunInWolframIO(result) {
 }
 let evaluationResults = {};
 let now = Date.now();
-function onRunInWolfram(file) {
+function onRunInWolfram(params) {
     return __awaiter(this, void 0, void 0, function* () {
         let end = Date.now();
         let start = Date.now();
@@ -763,10 +763,10 @@ function onRunInWolfram(file) {
         // try {
         //     result = bson.deserialize(fs.readFileSync(file["file"]), {encoding: null})
         // }
-        if (Object.keys(file).includes("output")) {
+        if (Object.keys(params).includes("output")) {
             result = {
                 "method": "onRunInWolfram",
-                "params": file
+                "params": params
             };
             // setDecorations(result);
             const editors = vscode.window.visibleTextEditors;
@@ -778,7 +778,7 @@ function onRunInWolfram(file) {
             else {
                 // inputs.push(file["input"])
                 now = Date.now();
-                updateResults(e, result, result["params"]["print"], file["input"], file);
+                updateResults(e, result, result["params"]["print"], params["input"], params);
             }
             if (evaluationQueue.length > 0) {
                 sendToWolfram();
@@ -788,7 +788,10 @@ function onRunInWolfram(file) {
             }
             return;
         }
-        fs.readFile(file["file"], null, ((err, data) => {
+        if (params["file"] === undefined) {
+            return;
+        }
+        fs.readFile(params["file"], null, ((err, data) => {
             var _a, _b, _c, _d, _e, _f, _g;
             if (err) {
                 outputChannel.appendLine(err);
@@ -832,7 +835,7 @@ function onRunInWolfram(file) {
                 }
                 else {
                     // inputs.push(file["input"])
-                    updateResults(e, result, result["params"]["print"], file["input"], file);
+                    updateResults(e, result, result["params"]["print"], params["input"], params);
                 }
             }
             catch (err) {

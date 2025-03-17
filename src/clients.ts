@@ -909,7 +909,7 @@ async function onRunInWolframIO(result: any) {
 
 let evaluationResults: { [key: string]: string } = {}
 let now = Date.now();
-async function onRunInWolfram(file: any) {
+async function onRunInWolfram(params: any) {
     let end = Date.now();
     let start = Date.now();
     outputChannel.appendLine(`Execution time: ${end - start} ms`);
@@ -925,10 +925,10 @@ async function onRunInWolfram(file: any) {
     // try {
     //     result = bson.deserialize(fs.readFileSync(file["file"]), {encoding: null})
     // }
-    if (Object.keys(file).includes("output")) {
+    if (Object.keys(params).includes("output")) {
         result = {
             "method": "onRunInWolfram",
-            "params": file
+            "params": params
         };
 
         // setDecorations(result);
@@ -941,7 +941,7 @@ async function onRunInWolfram(file: any) {
         } else {
             // inputs.push(file["input"])
             now = Date.now();
-            updateResults(e, result, result["params"]["print"], file["input"], file);
+            updateResults(e, result, result["params"]["print"], params["input"], params);
 
         }
 
@@ -956,7 +956,11 @@ async function onRunInWolfram(file: any) {
         return
     }
 
-    fs.readFile(file["file"], null, ((err: any, data: any) => {
+    if (params["file"] === undefined) {
+        return
+    }
+
+    fs.readFile(params["file"], null, ((err: any, data: any) => {
 
         if (err) {
             outputChannel.appendLine(err);
@@ -1001,7 +1005,7 @@ async function onRunInWolfram(file: any) {
 
             } else {
                 // inputs.push(file["input"])
-                updateResults(e, result, result["params"]["print"], file["input"], file);
+                updateResults(e, result, result["params"]["print"], params["input"], params);
 
             }
 

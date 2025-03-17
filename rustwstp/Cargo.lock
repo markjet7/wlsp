@@ -660,7 +660,9 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tower 0.5.2",
  "tower-lsp",
+ "tower-lsp-macros",
  "wolfram-app-discovery",
  "wolfram-expr",
  "wstp",
@@ -856,6 +858,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tower"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
+dependencies = [
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "tower-layer"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -879,7 +891,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
- "tower",
+ "tower 0.4.13",
  "tower-lsp-macros",
  "tracing",
 ]

@@ -121,3 +121,43 @@ pub fn pretty_print_expr(expr: &Expr) -> String {
         _ => format!("{:?}", expr)
     }
 }
+
+
+#[derive(Debug)]
+#[derive(serde::Serialize)]
+pub enum KernelError {
+    EvaluationError(String),
+    PacketError(String),
+}
+
+struct LocalWolframKernelProcess {
+    link: wstp::Link,
+}
+
+// Helper function to evaluate expressions in the kernel
+pub fn evaluate_in_kernel(expression: &str, link: &mut wstp::Link) -> std::result::Result<String, KernelError> {
+    put_user_input(link, expression)
+        .map_err(|e| KernelError::PacketError(format!("Error putting user input: {}", e)))?;
+
+        let mut pkt_type = link.raw_next_packet().map_err(|e| KernelError::PacketError(format!("Error getting next packet: {}", e)))?;
+
+        while pkt_type != wstp::sys::RETURNPKT {
+            // println!("Skipping packet of type: {}", pkt_type);
+            link.new_packet().map_err(|e| KernelError::PacketError(format!("Error creating new packet: {}", e)))?;
+            pkt_type = link.raw_next_packet().map_err(|e| KernelError::PacketError(format!("Error getting next packet: {}", e)))?;
+        }
+
+    let result = read_expr_with_context_handling(link);
+
+    if let Err(e) = link.end_packet() {
+        return Err(KernelError::PacketError(format!("Error ending packet: {}", e)));
+    }
+
+    match result {
+        Ok(result) => Ok(result),
+        Err(e) => {
+            eprintln!("Error evaluating expression: {}", e);
+            Err(KernelError::EvaluationError(format!("Error evaluating expression: {}", e)))
+        }
+    }
+}

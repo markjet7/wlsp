@@ -8,3 +8,10 @@ src/
 tsconfig.json
 webpack.config.js
 *.gif
+rustwstp/target/debug
+rustwstp/target/release/build 
+rustwstp/target/release/deps
+rustwstp/target/release/incremental
+rustwstp/target/release/.fingerprint
+rustwstp/target/release/.cargo
+rustwstp/target/x86_64-pc-windows-msvc
