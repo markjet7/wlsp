@@ -569,13 +569,15 @@ function restart() {
             console.log(e.message);
         }
         try {
-            yield startWLSP(0, lspPath);
-        }
-        catch (e) {
-            extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
-        }
-        try {
-            yield startWLSPKernelSocket(0, kernelPath);
+            // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
+            yield startWLSPKernelIO(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    yield startWLSP(0, lspPath);
+                }
+                catch (e) {
+                    extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
+                }
+            }));
         }
         catch (e) {
             extension_1.outputChannel.appendLine("startWLSPKernelSocket error:" + e.message);

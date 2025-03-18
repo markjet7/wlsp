@@ -56,39 +56,28 @@ impl Backend {
         };
         // let filestr = "";
 
-        let expression = format!("getCodeString[\"{}\", {:?}]", filestr, range);
+        let escaped = filestr.replace("\\", "\\\\").replace("\"", "\\\"");
+
+        let expression = format!("getCodeString[\"{}\", {:?}]", escaped, range);
 
         // self.client.log_message(MessageType::INFO, expression.clone()).await;
 
-
-
-
-        // let code = Code {
-        //     code: expression,
-        //     range: Range {
-        //         start: Position {
-        //             line: 0,
-        //             character: 0
-        //         },
-        //         end: Position {
-        //             line: 0,
-        //             character: 0
-        //         }
-        //     }
-        // };
-
+        // start timer 
+        let start = std::time::Instant::now();
 
         let input_string = evaluate_in_kernel(&expression, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+
+        let elapsed = start.elapsed().as_secs();
 
         // let codeString = r#"{ 
         // "code": "Hello", 
         // "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 0 } } }"#;
 
-        let code: Value = match serde_json::from_str(input_string.trim_matches('"')) {
+        let code: Value = match serde_json::from_str(input_string[0].join("\n").trim_matches('"')) {
             Ok(code) => code,
             Err(e) => {
                 self.client
-                    .log_message(MessageType::ERROR, format!("Failed to parse JSON: {:?}\n\n{}", e, input_string))
+                    .log_message(MessageType::ERROR, format!("Failed to parse JSON: {:?}\n\n{}", e, input_string[0].join("\n")))
                     .await;
                 return;
             }
@@ -103,14 +92,18 @@ impl Backend {
         // self.client.log_message(MessageType::INFO, inputString.clone()).await;
 
         // wrap the expression with ExportString[expression, "HTMLFragment"]
-        let input = format!("ExportString[{}, \"HTMLFragment\"]", code["code"].to_string().trim_matches('"'));
+        let input = format!("ExportString[ToExpression@{}, \"HTMLFragment\"]", code["code"].to_string());
 
         // self.client.log_message(MessageType::INFO, input.clone()).await;
 
         // println!("Running in Wolfram");
 
         let response = evaluate_in_kernel(&input, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
-        let response_clone = response.clone();
+        let response_clone = response[0].clone().join("\n").trim_end_matches('\n').to_string();
+        let errors = response[1].clone().join("\n").trim_end_matches('\n').to_string();
+        let messages = response[2].clone().join("\n").trim_end_matches('\n').to_string();
+
+        self.client.log_message(MessageType::INFO, messages.clone()).await;
 
 
         // let expr = params["expr"].as_str().unwrap();
@@ -132,16 +125,18 @@ impl Backend {
 			// "document" -> json["params", "textDocument"]["uri"]
 			// |>
 
-        let decoration = format!("{}: {}", 0, response[..std::cmp::min(100, response.len())].trim_matches('"'));
+        let decoration = format!("{:2?}  s: {}", elapsed, response_clone[..std::cmp::min(100, response_clone.len())].trim_matches('"'));
+
+        let messages_and_errors = messages.clone() + "\n" + &errors;
 
         let result = json!({
-            "input":  "test",
+            "input":  code["code"].to_string(),
             "load": false,
-            "result": "",
-            "output": response.trim_matches('"'),
+            "result": response_clone.trim_matches('"'),
+            "output": response_clone.trim_matches('"'),
             "position": code["range"]["end"],
             "hover": response_clone,
-            "messages": "",
+            "messages":  messages_and_errors.split("\n").collect::<Vec<&str>>(),
             "time": 0,
             "decoration":decoration,
             "document":  {
@@ -149,7 +144,7 @@ impl Backend {
             }
         });
 
-        // self.client.log_message(MessageType::INFO, result.clone()).await;
+        self.client.log_message(MessageType::INFO, result.clone()).await;
 
         self.client.send_notification::<WolframNotification>(result).await;
 
@@ -305,6 +300,12 @@ impl LanguageServer for Backend {
 
         let mut document = self.document.lock().unwrap();
         *document = Some(text);
+
+        let directory = params.text_document.uri.path().to_string();
+
+        let expr = format!("Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+			URLParse[DirectoryName[\"{}\"]][\"Path\"]] <> $PathnameSeparator ;", directory);
+        let _ = evaluate_in_kernel(&expr, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link());
 
 
     }

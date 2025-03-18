@@ -664,14 +664,16 @@ export async function restart(): Promise<(LanguageClient | undefined)[]> {
     }
 
     try {
-        await startWLSP(0, lspPath);
-    }
-    catch (e) {
-        outputChannel.appendLine("startWLSP error: " + (e as Error).message)
-    }
+        // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
+        await startWLSPKernelIO(0, kernelPath).then(async (result) => {
 
-    try {
-        await startWLSPKernelSocket(0, kernelPath)
+            try {
+                await startWLSP(0, lspPath);
+            }
+            catch (e) {
+                outputChannel.appendLine("startWLSP error: " + (e as Error).message)
+            }
+        })
     }
     catch (e) {
         outputChannel.appendLine("startWLSPKernelSocket error:" + (e as Error).message)

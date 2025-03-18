@@ -100,7 +100,7 @@ pub fn read_expr_with_context_handling(link: &mut wstp::Link) -> Result<String, 
             Ok(result)
         },
         Ok(_) => {
-            Ok(format!("Unknown type"))
+            Ok("Unknown type".to_string())
         },
         Err(e) => Err(AppError::WstpError(e)),
     }
@@ -135,29 +135,51 @@ struct LocalWolframKernelProcess {
 }
 
 // Helper function to evaluate expressions in the kernel
-pub fn evaluate_in_kernel(expression: &str, link: &mut wstp::Link) -> std::result::Result<String, KernelError> {
+pub fn evaluate_in_kernel(expression: &str, link: &mut wstp::Link) ->  std::result::Result<Vec<Vec<String>>, KernelError> {
+
+    let mut results: Vec<String> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+    let mut outputs: Vec<String> = Vec::new();
+
     put_user_input(link, expression)
-        .map_err(|e| KernelError::PacketError(format!("Error putting user input: {}", e)))?;
+        .map_err(|e| KernelError::PacketError(format!("Error putting user input: {}", e))).unwrap();
 
         let mut pkt_type = link.raw_next_packet().map_err(|e| KernelError::PacketError(format!("Error getting next packet: {}", e)))?;
 
+        if pkt_type == wstp::sys::TEXTPKT {
+            let text = read_expr_with_context_handling(link).map_err(|e| KernelError::PacketError(format!("Error reading expression: {}", e))).unwrap();
+            outputs.push(text.replace("\"", ""));
+        }
+
+
         while pkt_type != wstp::sys::RETURNPKT {
             // println!("Skipping packet of type: {}", pkt_type);
-            link.new_packet().map_err(|e| KernelError::PacketError(format!("Error creating new packet: {}", e)))?;
-            pkt_type = link.raw_next_packet().map_err(|e| KernelError::PacketError(format!("Error getting next packet: {}", e)))?;
+            link.new_packet().map_err(|e| KernelError::PacketError(format!("Error creating new packet: {}", e))).unwrap();
+            pkt_type = link.raw_next_packet().map_err(|e| KernelError::PacketError(format!("Error getting next packet: {}", e))).unwrap();
+
+            if pkt_type == wstp::sys::MESSAGEPKT {
+                let text = read_expr_with_context_handling(link).map_err(|e| KernelError::PacketError(format!("Error reading expression: {}", e))).unwrap();
+                errors.push(text);
+            }
+
+            if pkt_type == wstp::sys::TEXTPKT {
+                let text = read_expr_with_context_handling(link).map_err(|e| KernelError::PacketError(format!("Error reading expression: {}", e))).unwrap();
+                outputs.push(text.replace("\"", ""));
+            }
         }
 
     let result = read_expr_with_context_handling(link);
+    results.push(result.unwrap());
+
+
+
+    
 
     if let Err(e) = link.end_packet() {
-        return Err(KernelError::PacketError(format!("Error ending packet: {}", e)));
+        errors.push(format!("Error ending packet: {}", e.to_string()).as_str().to_string());
     }
 
-    match result {
-        Ok(result) => Ok(result),
-        Err(e) => {
-            eprintln!("Error evaluating expression: {}", e);
-            Err(KernelError::EvaluationError(format!("Error evaluating expression: {}", e)))
-        }
-    }
+    
+
+    return Ok(vec![results, errors, outputs]);
 }
