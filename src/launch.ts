@@ -464,7 +464,11 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
             "wolfram"
         ],
         diagnosticCollectionName: 'wolfram-lsp',
-        outputChannel: outputChannel
+        outputChannel: outputChannel,
+        markdown: {
+            isTrusted: true,
+            supportHtml: true
+        },
     };
 
     return new Promise(async (resolve) => {

@@ -310,11 +310,42 @@ impl LanguageServer for Backend {
 
     }
 
-    async fn hover(&self, _: HoverParams) -> Result<Option<Hover>> {
-        self.client.log_message(MessageType::INFO, "Hello Hover").await;
-        // self.client.log_message(MessageType::INFO), params)
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        // self.client.log_message(MessageType::INFO, "Hello Hover").await;
+        // self.client.log_message(MessageType::INFO, format!("{:?}", params)).await;
+
+        // HoverParams { text_document_position_params: TextDocumentPositionParams { text_document: TextDocumentIdentifier { uri: Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/Users/markmw/Library/CloudStorage/OneDrive-IowaStateUniversity/General%20-%20Lignin%20HCA%20%28Patrick%29/Meta%20Analysis/resultsMarch18.wl", query: None, fragment: None } }, position: Position { line: 32, character: 9 } }, work_done_progress_params: WorkDoneProgressParams { work_done_token: None } }
+
+        let expr = {
+            let document = self.document.lock().unwrap();
+            let position =  json!(params.text_document_position_params.position).to_string();
+            format!("getWordAtPosition[{:?}, ImportString[{:?}, \"RawJSON\"]]", document.as_ref().unwrap(), position)
+        };
+
+        let string = evaluate_in_kernel(&expr, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+
+        let response = string[0].clone().join("\n").trim_end_matches('\n').to_string();
+
+        let result = evaluate_in_kernel(
+            &format!("TimeConstrained[ExportString[ToExpression@{}, \"HTMLFragment\"], 10, \"Timed out\"]", response),
+            self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+
+        
+
+        let hover_message = result[0].clone().join("");
+
+        // self.client.log_message(MessageType::INFO, hover_message.clone()).await;
+
+        // hover_message contains an html image tag with a base64 jpg encoded image
+        // we want to convert it to a markdown image tag
+        // ![alt text](data:image/jpg;base64,base64_encoded_image)
+        let hover_message_markdown = hover_message.replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").
+            replace("class=\"img-responsive\"/>", ")"). replace("\" )", ")").trim_end_matches('"').to_string();
+            self.client.log_message(MessageType::INFO, hover_message_markdown.to_string().trim_end_matches('"').to_string()).await;
+
+
         Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("Hello Hover".to_string())),
+            contents: HoverContents::Scalar(MarkedString::String(hover_message_markdown.to_string())),
             range: None,
         }))
     }

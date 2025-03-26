@@ -391,7 +391,11 @@ function startWLSPKernelIO(id, kernelPath) {
                 "wolfram"
             ],
             diagnosticCollectionName: 'wolfram-lsp',
-            outputChannel: extension_1.outputChannel
+            outputChannel: extension_1.outputChannel,
+            markdown: {
+                isTrusted: true,
+                supportHtml: true
+            },
         };
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = new node_1.LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);

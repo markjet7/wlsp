@@ -3,7 +3,7 @@
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
 
 getStringAtRange[string_, rangejs_String]:=Module[{sLines, sRanges, range},
-	range = ImportString[rangejs, "RawJSON"];
+	range = ImportString[rangejs, "JSON"];
 	If[range[[1]] == range[[2]], Return[""]];
 
 	sLines = StringSplit[string, EndOfLine, All];
@@ -52,6 +52,15 @@ getCodeString[src_, rangejs_]:=Module[{range, result, result2},
 	result = getCode[src, range];
 	result2 = <|"code" -> result["code"], "range" -> <|"start" -> <|"line" -> result["range"][[1,1]], "character" -> result["range"][[1,2]]|>, "end" -> <|"line" -> result["range"][[2,1]], "character" -> result["range"][[2,2]]|>|>|>;
 	ExportString[result2, "RawJSON", "Compact"->True]
+];
+
+getWordAtPosition[src_, position_]:=Module[{srcLines, line, word},
+	srcLines =StringSplit[src, EndOfLine, All];
+	line = srcLines[[position["line"]+1]];
+	word = First[Select[StringSplit[line, RegularExpression["\\W+"]], 
+		IntervalMemberQ[Interval[First@StringPosition[line, WordBoundary~~#~~ WordBoundary, Overlaps->False]], position["character"]+1] &], ""];
+	
+	word
 ];
 
 getCode[src_, range_, section_:False]:=Module[{ result},
