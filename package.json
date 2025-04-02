@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.3.1",
+    "version": "0.3.3",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -418,7 +418,7 @@
             "activitybar": [
                 {
                     "id": "wolfram-workspace-explorer",
-                    "title": "Wolfram",
+                    "title": "WLSP",
                     "icon": "media/wolf-logo.png"
                 }
             ],
@@ -429,22 +429,22 @@
                 {
                     "id": "wolfram.plotsView",
                     "type": "webview",
-                    "name": "WLSP",
+                    "name": "Output",
                     "icon": "media/wolf-logo.png",
-                    "contextualTitle": "WLSP Output"
+                    "visibility":"visible"
                 },
                 {
                     "id": "wolfram.dataView",
                     "type": "webview",
-                    "name": "WLSP Variables",
+                    "name": "Variables",
                     "icon": "media/wolf-logo.png",
-                    "contextualTitle": "WLSP Variables"
+                    "visibility": "collapsed"
                 },
                 {
                     "id": "wolframSymbols",
-                    "name": "WLSP Help",
+                    "name": "Help",
                     "icon": "media/wolf-logo.png",
-                    "contextualTitle": "Symbols"
+                    "visibility": "collapsed"
                 }
             ]
         },

@@ -10,9 +10,35 @@ use kernel::{AppError, launch_kernel_with_args, read_expr_with_context_handling,
 
 mod lsp;
 use lsp::start;
+use std::env;
+use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "windows")]
+    {
+        // check if Wolfram Mathematica is installed by checking the folder 
+        // C:\Program Files\Wolfram Research\Mathematica
+        // and figure out the version number
+        let wolfram_directory_exists = fs::metadata("C:\\Program Files\\Wolfram Research\\Mathematica").is_ok();
+        if wolfram_directory_exists {
+            let wolfram_version = fs::read_dir("C:\\Program Files\\Wolfram Research\\Mathematica")?;
+            for entry in wolfram_version {
+                let entry = entry?;
+                let path = entry.path();
+                let version = path.file_name().unwrap().to_str().unwrap();
 
+                env::set_var("WOLFRAM_APP_DIRECTORY", format!("C:\\Program Files\\Wolfram Research\\Mathematica\\{}", version));
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // Set environment variables for macOS
+        // WOLFRAM_APP_DIRECTORY = "/Applications/Wolfram.app"
+        env::set_var("WOLFRAM_APP_DIRECTORY", "/Applications/Wolfram.app");
+    }
+    
     lsp::start();
 
     Ok(())

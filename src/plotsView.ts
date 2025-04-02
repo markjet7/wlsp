@@ -258,11 +258,14 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     max-height:50vh;
                     overflow-y: scroll;
                     min-height: 45px;
-                    width: 98vw;
+                    width: 95vw;
                 }
 
                 .output_row img{
-                    width: 98vw;
+                    width: 92vw;
+                    object-fit:contain;
+                    display: block;
+                    margin-left: auto;
                 }
 
                 #errors {

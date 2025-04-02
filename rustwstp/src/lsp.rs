@@ -103,7 +103,7 @@ impl Backend {
         let errors = response[1].clone().join("\n").trim_end_matches('\n').to_string();
         let messages = response[2].clone().join("\n").trim_end_matches('\n').to_string();
 
-        self.client.log_message(MessageType::INFO, messages.clone()).await;
+        // self.client.log_message(MessageType::INFO, messages.clone()).await;
 
 
         // let expr = params["expr"].as_str().unwrap();
@@ -294,7 +294,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.client.log_message(MessageType::INFO, format!("{:?}", params)).await;
+        // self.client.log_message(MessageType::INFO, format!("{:?}", params)).await;
 
         let text = params.text_document.text;
 
@@ -327,7 +327,7 @@ impl LanguageServer for Backend {
         let response = string[0].clone().join("\n").trim_end_matches('\n').to_string();
 
         let result = evaluate_in_kernel(
-            &format!("TimeConstrained[ExportString[ToExpression@{}, \"HTMLFragment\"], 10, \"Timed out\"]", response),
+            &format!("TimeConstrained[ExportString[ToExpression@{}, \"HTMLFragment\"], 2, \"Timed out\"]", response),
             self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
 
         
@@ -341,7 +341,8 @@ impl LanguageServer for Backend {
         // ![alt text](data:image/jpg;base64,base64_encoded_image)
         let hover_message_markdown = hover_message.replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").
             replace("class=\"img-responsive\"/>", ")"). replace("\" )", ")").trim_end_matches('"').to_string();
-            self.client.log_message(MessageType::INFO, hover_message_markdown.to_string().trim_end_matches('"').to_string()).await;
+        
+        // self.client.log_message(MessageType::INFO, hover_message_markdown.to_string().trim_end_matches('"').to_string()).await;
 
 
         Ok(Some(Hover {

@@ -22,3 +22,6 @@ path = "src/main.rs"
 
 [env]
 WOLFRAM_APP_DIRECTORY = "/Applications/Wolfram.app"
+
+[patch.crates-io]
+wstp-sys = { git = "https://github.com/markjet7/wstp-rs", branch = "master" }

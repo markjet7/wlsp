@@ -160,10 +160,10 @@ function createList(parentSelection, children) {
 
     // Ensure the image element's parent is positioned relatively
     // const parent = imageElement.parentElement;
-    imageElement.style.position = "relative";
+    // imageElement.parentNode.style.position = "relative";
 
     // Insert the button into the parent of the image element
-    imageElement.appendChild(button);
+    // imageElement.parentNode.appendChild(button);
   };
 
   const handleImageClick = (imageElement) => {
@@ -451,7 +451,10 @@ const vscode = acquireVsCodeApi();
 
     // Add a download button for each image element
     for (const imageElement of imageElements) {
-      createDownloadButton(imageElement);
+      // get the image tag inside the output_row
+      const img = imageElement.getElementsByTagName("img")[0];
+
+      createDownloadButton(img);
       // createOpenButton(imageElement);
       // createPasteButton(imageElement);
     }
