@@ -117,7 +117,8 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
 
     // await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
-    await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
+    // await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
+    await launch.startWLSPKernelIOClojure(0, wlspPath).then(async (client) => {
         wolframKernelClient = client;
         onkernelReady();
 

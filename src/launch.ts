@@ -428,6 +428,47 @@ async function startWLSPIO(id: number): Promise<void> {
     })
 }
 
+export async function startWLSPKernelIOClojure(id: number, kernelPath: string): Promise<LanguageClient | undefined> {
+    attempts += 1;
+    console.log("Starting WLSP Kernel: " + attempts)
+
+    // Use the javawstp binary and standard I/O
+    let serverOptions: ServerOptions = {
+        run: {
+            command: kernelPath + '/javawlsp/target/uberjar/cljwlsp', args: [], transport: TransportKind.stdio
+        },
+        debug: { command: kernelPath + '/javawlsp/target/uberjar/cljwlsp', args: [], transport: TransportKind.stdio }
+    };
+
+    let clientOptions: LanguageClientOptions = {
+        documentSelector: [
+            "wolfram"
+        ],
+        diagnosticCollectionName: 'wolfram-lsp',
+        outputChannel: outputChannel,
+        markdown: {
+            isTrusted: true,
+            supportHtml: true
+        },
+    };
+
+    return new Promise(async (resolve) => {
+
+        wolframKernelClient = new LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);
+
+
+            let disposible: vscode.Disposable | undefined;
+            wolframKernelClient?.start().then((value) => {
+                resolve(wolframKernelClient)
+            });
+            wolframKernelClient?.outputChannel.appendLine("Kernel Client Started")
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
+            // if (disposible) {context.subscriptions.push(disposible)};
+            // resolve(wolframKernelClient)
+
+    });
+}
+
 
 export async function startWLSPKernelIO(id: number, kernelPath: string): Promise<LanguageClient | undefined> {
     attempts += 1;
@@ -669,7 +710,7 @@ export async function restart(): Promise<(LanguageClient | undefined)[]> {
 
     try {
         // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
-        await startWLSPKernelIO(0, kernelPath).then(async (result) => {
+        await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
 
             try {
                 await startWLSP(0, lspPath);

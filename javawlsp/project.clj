@@ -10,5 +10,9 @@
   :resource-paths ["/Applications/Wolfram.app/Contents/SystemFiles/Links/JLink/JLink.jar"]
   :jvm-opts [~(str "-Djava.library.path=/Applications/Wolfram.app/Contents/SystemFiles/Links/JLink/SystemFiles/Libraries/MacOSX-x86-64:"
                    "/Applications/Wolfram.app/Contents/SystemFiles/Links/JLink/SystemFiles/Libraries/MacOSX-x86-64:")]
+  :scm {:dir ".."}
   :profiles {:uberjar {:aot :all
-                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}})
+                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}}
+  :plugins [[io.taylorwood/lein-native-image "0.3.1"]]
+  :native-image {:name "cljwlsp"
+                 :opts ["--no-fallback" "--initialize-at-build-time"]})
