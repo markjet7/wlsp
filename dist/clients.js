@@ -89,7 +89,8 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
         // await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
-        yield launch.startWLSPKernelIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+        // await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
+        yield launch.startWLSPKernelIOClojure(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = client;
             onkernelReady();
             firstKernelLaunched = true;
@@ -773,6 +774,9 @@ function onRunInWolfram(params) {
             let e = editors.filter((e) => {
                 return e.document.uri.path === result["params"]["document"]["path"];
             })[0];
+            if (e === undefined && vscode.window.activeTextEditor !== undefined) {
+                e = vscode.window.activeTextEditor;
+            }
             if (e.document.uri.scheme == 'vscode-notebook-cell') {
             }
             else {

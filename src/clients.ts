@@ -937,6 +937,11 @@ async function onRunInWolfram(params: any) {
         let e = editors.filter((e) => {
             return e.document.uri.path === result["params"]["document"]["path"]
         })[0];
+
+        if (e === undefined && vscode.window.activeTextEditor !== undefined) {
+            e = vscode.window.activeTextEditor;
+        }
+
         if (e.document.uri.scheme == 'vscode-notebook-cell') {
 
         } else {

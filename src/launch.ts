@@ -430,7 +430,7 @@ async function startWLSPIO(id: number): Promise<void> {
 
 export async function startWLSPKernelIOClojure(id: number, kernelPath: string): Promise<LanguageClient | undefined> {
     attempts += 1;
-    console.log("Starting WLSP Kernel: " + attempts)
+    console.log("Starting Clojure WLSP Kernel: " + attempts)
 
     // Use the javawstp binary and standard I/O
     let serverOptions: ServerOptions = {
@@ -459,9 +459,9 @@ export async function startWLSPKernelIOClojure(id: number, kernelPath: string): 
 
             let disposible: vscode.Disposable | undefined;
             wolframKernelClient?.start().then((value) => {
+                wolframKernelClient?.outputChannel.appendLine("Kernel Clojure Client Started")
                 resolve(wolframKernelClient)
             });
-            wolframKernelClient?.outputChannel.appendLine("Kernel Client Started")
             // outputChannel.appendLine(new Date().toLocaleTimeString())
             // if (disposible) {context.subscriptions.push(disposible)};
             // resolve(wolframKernelClient)

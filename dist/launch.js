@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelIO = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelIO = exports.startWLSPKernelIOClojure = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
@@ -359,6 +359,42 @@ function startWLSPIO(id) {
         }));
     });
 }
+function startWLSPKernelIOClojure(id, kernelPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        attempts += 1;
+        console.log("Starting Clojure WLSP Kernel: " + attempts);
+        // Use the javawstp binary and standard I/O
+        let serverOptions = {
+            run: {
+                command: kernelPath + '/javawlsp/target/uberjar/cljwlsp', args: [], transport: node_1.TransportKind.stdio
+            },
+            debug: { command: kernelPath + '/javawlsp/target/uberjar/cljwlsp', args: [], transport: node_1.TransportKind.stdio }
+        };
+        let clientOptions = {
+            documentSelector: [
+                "wolfram"
+            ],
+            diagnosticCollectionName: 'wolfram-lsp',
+            outputChannel: extension_1.outputChannel,
+            markdown: {
+                isTrusted: true,
+                supportHtml: true
+            },
+        };
+        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+            exports.wolframKernelClient = new node_1.LanguageClient('wolfram-kernel', 'Wolfram Language Kernel Server', serverOptions, clientOptions);
+            let disposible;
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.start().then((value) => {
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.outputChannel.appendLine("Kernel Clojure Client Started");
+                resolve(exports.wolframKernelClient);
+            });
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
+            // if (disposible) {context.subscriptions.push(disposible)};
+            // resolve(wolframKernelClient)
+        }));
+    });
+}
+exports.startWLSPKernelIOClojure = startWLSPKernelIOClojure;
 function startWLSPKernelIO(id, kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
@@ -574,7 +610,7 @@ function restart() {
         }
         try {
             // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
-            yield startWLSPKernelIO(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
+            yield startWLSPKernelIOClojure(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     yield startWLSP(0, lspPath);
                 }

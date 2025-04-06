@@ -2,181 +2,181 @@
 	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Ebrahimpourboura%2C%20Zahra%20%5BM%20E%5D%27s%20files%20-%20Optimization\/ZAFATEALCA\/fa_kinetics.wl":[
 		{
 			"start":{
-				"line":3,
+				"line":5,
 				"character":0
 			},
 			"end":{
-				"line":3,
-				"character":34
+				"line":5,
+				"character":33
 			}
 		},
 		{
 			"start":{
-				"line":5,
+				"line":7,
 				"character":0
 			},
 			"end":{
-				"line":5,
+				"line":7,
 				"character":63
 			}
 		},
 		{
 			"start":{
-				"line":7,
+				"line":9,
 				"character":0
 			},
 			"end":{
-				"line":7,
+				"line":9,
 				"character":22
 			}
 		},
 		{
 			"start":{
-				"line":8,
+				"line":10,
 				"character":0
 			},
 			"end":{
-				"line":8,
+				"line":10,
 				"character":35
 			}
 		},
 		{
 			"start":{
-				"line":9,
+				"line":11,
 				"character":0
 			},
 			"end":{
-				"line":9,
+				"line":11,
 				"character":36
 			}
 		},
 		{
 			"start":{
-				"line":10,
+				"line":12,
 				"character":0
 			},
 			"end":{
-				"line":10,
+				"line":12,
 				"character":36
 			}
 		},
 		{
 			"start":{
-				"line":13,
+				"line":15,
 				"character":0
 			},
 			"end":{
-				"line":13,
+				"line":15,
 				"character":30
 			}
 		},
 		{
 			"start":{
-				"line":16,
+				"line":18,
 				"character":0
 			},
 			"end":{
-				"line":16,
+				"line":18,
 				"character":84
 			}
 		},
 		{
 			"start":{
-				"line":17,
+				"line":19,
 				"character":0
 			},
 			"end":{
-				"line":17,
+				"line":19,
 				"character":87
 			}
 		},
 		{
 			"start":{
-				"line":18,
+				"line":20,
 				"character":0
 			},
 			"end":{
-				"line":18,
+				"line":20,
 				"character":87
 			}
 		},
 		{
 			"start":{
-				"line":21,
+				"line":23,
 				"character":0
 			},
 			"end":{
-				"line":21,
+				"line":23,
 				"character":27
 			}
 		},
 		{
 			"start":{
-				"line":22,
+				"line":24,
 				"character":0
 			},
 			"end":{
-				"line":22,
+				"line":24,
 				"character":28
 			}
 		},
 		{
 			"start":{
-				"line":23,
+				"line":25,
 				"character":0
 			},
 			"end":{
-				"line":23,
+				"line":25,
 				"character":28
 			}
 		},
 		{
 			"start":{
-				"line":26,
+				"line":28,
 				"character":0
 			},
 			"end":{
-				"line":46,
+				"line":48,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":48,
+				"line":50,
 				"character":0
 			},
 			"end":{
-				"line":48,
+				"line":50,
 				"character":30
 			}
 		},
 		{
 			"start":{
-				"line":52,
+				"line":54,
 				"character":0
 			},
 			"end":{
-				"line":56,
-				"character":1
-			}
-		},
-		{
-			"start":{
 				"line":58,
-				"character":0
-			},
-			"end":{
-				"line":62,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":64,
+				"line":60,
 				"character":0
 			},
 			"end":{
-				"line":68,
+				"line":64,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":66,
+				"character":0
+			},
+			"end":{
+				"line":70,
 				"character":1
 			}
 		}
