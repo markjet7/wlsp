@@ -609,15 +609,28 @@ function restart() {
             console.log(e.message);
         }
         try {
-            // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
-            yield startWLSPKernelIOClojure(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
-                try {
-                    yield startWLSP(0, lspPath);
-                }
-                catch (e) {
-                    extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
-                }
-            }));
+            if (process.platform === "win32") {
+                yield startWLSPKernelSocket(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
+                    // await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
+                    try {
+                        yield startWLSP(0, lspPath);
+                    }
+                    catch (e) {
+                        extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
+                    }
+                }));
+            }
+            else {
+                yield startWLSPKernelIO(0, kernelPath).then((result) => __awaiter(this, void 0, void 0, function* () {
+                    // await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
+                    try {
+                        yield startWLSP(0, lspPath);
+                    }
+                    catch (e) {
+                        extension_1.outputChannel.appendLine("startWLSP error: " + e.message);
+                    }
+                }));
+            }
         }
         catch (e) {
             extension_1.outputChannel.appendLine("startWLSPKernelSocket error:" + e.message);

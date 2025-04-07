@@ -709,8 +709,22 @@ export async function restart(): Promise<(LanguageClient | undefined)[]> {
     }
 
     try {
-        // await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
-        await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
+
+        if (process.platform === "win32") {
+            await startWLSPKernelSocket(0, kernelPath).then(async (result) => {
+            // await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
+    
+                try {
+                    await startWLSP(0, lspPath);
+                }
+                catch (e) {
+                    outputChannel.appendLine("startWLSP error: " + (e as Error).message)
+                }
+            })
+
+        } else {
+        await startWLSPKernelIO(0, kernelPath).then(async (result) => {
+        // await startWLSPKernelIOClojure(0, kernelPath).then(async (result) => {
 
             try {
                 await startWLSP(0, lspPath);
@@ -719,6 +733,7 @@ export async function restart(): Promise<(LanguageClient | undefined)[]> {
                 outputChannel.appendLine("startWLSP error: " + (e as Error).message)
             }
         })
+    }
     }
     catch (e) {
         outputChannel.appendLine("startWLSPKernelSocket error:" + (e as Error).message)

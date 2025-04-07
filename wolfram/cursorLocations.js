@@ -1,83 +1,435 @@
 {
-	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Ebrahimpourboura%2C%20Zahra%20%5BM%20E%5D%27s%20files%20-%20Optimization\/ZAFATEALCA\/fa_kinetics.wl":[
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Ebrahimpourboura%2C%20Zahra%20%5BM%20E%5D%27s%20files%20-%20Optimization\/ZAFATEALCA\/machineLearning.wl":[
 		{
 			"start":{
-				"line":5,
+				"line":2,
 				"character":0
 			},
 			"end":{
-				"line":5,
+				"line":2,
 				"character":33
 			}
 		},
 		{
 			"start":{
+				"line":4,
+				"character":0
+			},
+			"end":{
+				"line":4,
+				"character":40
+			}
+		},
+		{
+			"start":{
+				"line":5,
+				"character":0
+			},
+			"end":{
+				"line":5,
+				"character":28
+			}
+		},
+		{
+			"start":{
 				"line":7,
 				"character":0
 			},
 			"end":{
-				"line":7,
+				"line":10,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":19,
+				"character":0
+			},
+			"end":{
+				"line":26,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":29,
+				"character":0
+			},
+			"end":{
+				"line":31,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":33,
+				"character":0
+			},
+			"end":{
+				"line":33,
+				"character":177
+			}
+		},
+		{
+			"start":{
+				"line":36,
+				"character":0
+			},
+			"end":{
+				"line":36,
+				"character":17
+			}
+		},
+		{
+			"start":{
+				"line":38,
+				"character":0
+			},
+			"end":{
+				"line":38,
+				"character":113
+			}
+		},
+		{
+			"start":{
+				"line":39,
+				"character":0
+			},
+			"end":{
+				"line":39,
+				"character":12
+			}
+		},
+		{
+			"start":{
+				"line":41,
+				"character":0
+			},
+			"end":{
+				"line":41,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":43,
+				"character":0
+			},
+			"end":{
+				"line":43,
+				"character":6
+			}
+		},
+		{
+			"start":{
+				"line":45,
+				"character":0
+			},
+			"end":{
+				"line":77,
+				"character":3
+			}
+		},
+		{
+			"start":{
+				"line":79,
+				"character":0
+			},
+			"end":{
+				"line":79,
+				"character":37
+			}
+		},
+		{
+			"start":{
+				"line":82,
+				"character":0
+			},
+			"end":{
+				"line":82,
+				"character":10
+			}
+		},
+		{
+			"start":{
+				"line":83,
+				"character":0
+			},
+			"end":{
+				"line":83,
+				"character":5
+			}
+		},
+		{
+			"start":{
+				"line":108,
+				"character":0
+			},
+			"end":{
+				"line":108,
+				"character":12
+			}
+		},
+		{
+			"start":{
+				"line":110,
+				"character":0
+			},
+			"end":{
+				"line":110,
+				"character":15
+			}
+		},
+		{
+			"start":{
+				"line":112,
+				"character":0
+			},
+			"end":{
+				"line":118,
+				"character":156
+			}
+		},
+		{
+			"start":{
+				"line":120,
+				"character":0
+			},
+			"end":{
+				"line":126,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":128,
+				"character":0
+			},
+			"end":{
+				"line":131,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":133,
+				"character":0
+			},
+			"end":{
+				"line":135,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":137,
+				"character":0
+			},
+			"end":{
+				"line":137,
+				"character":33
+			}
+		},
+		{
+			"start":{
+				"line":139,
+				"character":0
+			},
+			"end":{
+				"line":151,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":153,
+				"character":0
+			},
+			"end":{
+				"line":153,
 				"character":63
 			}
 		},
 		{
 			"start":{
-				"line":9,
+				"line":155,
 				"character":0
 			},
 			"end":{
-				"line":9,
-				"character":22
+				"line":168,
+				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":10,
+				"line":170,
 				"character":0
 			},
 			"end":{
-				"line":10,
-				"character":35
+				"line":170,
+				"character":56
 			}
 		},
 		{
 			"start":{
-				"line":11,
+				"line":188,
 				"character":0
 			},
 			"end":{
-				"line":11,
-				"character":36
+				"line":188,
+				"character":44
 			}
 		},
 		{
 			"start":{
-				"line":12,
+				"line":189,
 				"character":0
 			},
 			"end":{
-				"line":12,
-				"character":36
-			}
-		},
-		{
-			"start":{
-				"line":15,
-				"character":0
-			},
-			"end":{
-				"line":15,
+				"line":189,
 				"character":30
 			}
 		},
 		{
 			"start":{
-				"line":18,
+				"line":190,
 				"character":0
 			},
 			"end":{
-				"line":18,
-				"character":84
+				"line":190,
+				"character":93
+			}
+		},
+		{
+			"start":{
+				"line":192,
+				"character":0
+			},
+			"end":{
+				"line":194,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":196,
+				"character":0
+			},
+			"end":{
+				"line":205,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":207,
+				"character":0
+			},
+			"end":{
+				"line":244,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":247,
+				"character":0
+			},
+			"end":{
+				"line":251,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":253,
+				"character":0
+			},
+			"end":{
+				"line":260,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":262,
+				"character":0
+			},
+			"end":{
+				"line":262,
+				"character":61
+			}
+		},
+		{
+			"start":{
+				"line":264,
+				"character":0
+			},
+			"end":{
+				"line":270,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":272,
+				"character":0
+			},
+			"end":{
+				"line":278,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":280,
+				"character":0
+			},
+			"end":{
+				"line":286,
+				"character":1
+			}
+		}
+	],
+	"file:\/\/\/Users\/markmw\/Library\/CloudStorage\/OneDrive-IowaStateUniversity\/Ebrahimpourboura%2C%20Zahra%20%5BM%20E%5D%27s%20files%20-%20Optimization\/ZAFATEALCA\/dcfror.wl":[
+		{
+			"start":{
+				"line":6,
+				"character":0
+			},
+			"end":{
+				"line":6,
+				"character":89
+			}
+		},
+		{
+			"start":{
+				"line":7,
+				"character":0
+			},
+			"end":{
+				"line":7,
+				"character":42
+			}
+		},
+		{
+			"start":{
+				"line":9,
+				"character":0
+			},
+			"end":{
+				"line":9,
+				"character":174
+			}
+		},
+		{
+			"start":{
+				"line":10,
+				"character":0
+			},
+			"end":{
+				"line":17,
+				"character":19
 			}
 		},
 		{
@@ -87,47 +439,37 @@
 			},
 			"end":{
 				"line":19,
-				"character":87
+				"character":42
 			}
 		},
 		{
 			"start":{
-				"line":20,
+				"line":21,
 				"character":0
 			},
 			"end":{
-				"line":20,
-				"character":87
+				"line":21,
+				"character":166
 			}
 		},
 		{
 			"start":{
-				"line":23,
-				"character":0
-			},
-			"end":{
-				"line":23,
-				"character":27
-			}
-		},
-		{
-			"start":{
-				"line":24,
-				"character":0
-			},
-			"end":{
-				"line":24,
-				"character":28
-			}
-		},
-		{
-			"start":{
-				"line":25,
+				"line":22,
 				"character":0
 			},
 			"end":{
 				"line":25,
-				"character":28
+				"character":80
+			}
+		},
+		{
+			"start":{
+				"line":27,
+				"character":0
+			},
+			"end":{
+				"line":27,
+				"character":177
 			}
 		},
 		{
@@ -136,18 +478,168 @@
 				"character":0
 			},
 			"end":{
-				"line":48,
-				"character":1
+				"line":28,
+				"character":143
 			}
 		},
 		{
 			"start":{
-				"line":50,
+				"line":30,
 				"character":0
 			},
 			"end":{
-				"line":50,
-				"character":30
+				"line":30,
+				"character":76
+			}
+		},
+		{
+			"start":{
+				"line":31,
+				"character":0
+			},
+			"end":{
+				"line":31,
+				"character":47
+			}
+		},
+		{
+			"start":{
+				"line":33,
+				"character":0
+			},
+			"end":{
+				"line":33,
+				"character":104
+			}
+		},
+		{
+			"start":{
+				"line":34,
+				"character":0
+			},
+			"end":{
+				"line":34,
+				"character":49
+			}
+		},
+		{
+			"start":{
+				"line":36,
+				"character":0
+			},
+			"end":{
+				"line":36,
+				"character":138
+			}
+		},
+		{
+			"start":{
+				"line":37,
+				"character":0
+			},
+			"end":{
+				"line":37,
+				"character":33
+			}
+		},
+		{
+			"start":{
+				"line":39,
+				"character":0
+			},
+			"end":{
+				"line":39,
+				"character":127
+			}
+		},
+		{
+			"start":{
+				"line":40,
+				"character":0
+			},
+			"end":{
+				"line":40,
+				"character":87
+			}
+		},
+		{
+			"start":{
+				"line":42,
+				"character":0
+			},
+			"end":{
+				"line":42,
+				"character":137
+			}
+		},
+		{
+			"start":{
+				"line":43,
+				"character":0
+			},
+			"end":{
+				"line":43,
+				"character":92
+			}
+		},
+		{
+			"start":{
+				"line":45,
+				"character":0
+			},
+			"end":{
+				"line":45,
+				"character":143
+			}
+		},
+		{
+			"start":{
+				"line":46,
+				"character":0
+			},
+			"end":{
+				"line":46,
+				"character":96
+			}
+		},
+		{
+			"start":{
+				"line":48,
+				"character":0
+			},
+			"end":{
+				"line":48,
+				"character":79
+			}
+		},
+		{
+			"start":{
+				"line":49,
+				"character":0
+			},
+			"end":{
+				"line":49,
+				"character":17
+			}
+		},
+		{
+			"start":{
+				"line":51,
+				"character":0
+			},
+			"end":{
+				"line":51,
+				"character":84
+			}
+		},
+		{
+			"start":{
+				"line":52,
+				"character":0
+			},
+			"end":{
+				"line":52,
+				"character":25
 			}
 		},
 		{
@@ -156,8 +648,38 @@
 				"character":0
 			},
 			"end":{
+				"line":54,
+				"character":82
+			}
+		},
+		{
+			"start":{
+				"line":55,
+				"character":0
+			},
+			"end":{
+				"line":55,
+				"character":23
+			}
+		},
+		{
+			"start":{
+				"line":57,
+				"character":0
+			},
+			"end":{
+				"line":57,
+				"character":121
+			}
+		},
+		{
+			"start":{
 				"line":58,
-				"character":1
+				"character":0
+			},
+			"end":{
+				"line":58,
+				"character":67
 			}
 		},
 		{
@@ -166,17 +688,257 @@
 				"character":0
 			},
 			"end":{
-				"line":64,
+				"line":60,
+				"character":103
+			}
+		},
+		{
+			"start":{
+				"line":61,
+				"character":0
+			},
+			"end":{
+				"line":61,
+				"character":89
+			}
+		},
+		{
+			"start":{
+				"line":63,
+				"character":0
+			},
+			"end":{
+				"line":63,
+				"character":186
+			}
+		},
+		{
+			"start":{
+				"line":65,
+				"character":0
+			},
+			"end":{
+				"line":65,
+				"character":42
+			}
+		},
+		{
+			"start":{
+				"line":68,
+				"character":0
+			},
+			"end":{
+				"line":68,
+				"character":107
+			}
+		},
+		{
+			"start":{
+				"line":69,
+				"character":0
+			},
+			"end":{
+				"line":69,
+				"character":57
+			}
+		},
+		{
+			"start":{
+				"line":71,
+				"character":0
+			},
+			"end":{
+				"line":71,
+				"character":155
+			}
+		},
+		{
+			"start":{
+				"line":72,
+				"character":0
+			},
+			"end":{
+				"line":75,
+				"character":47
+			}
+		},
+		{
+			"start":{
+				"line":77,
+				"character":0
+			},
+			"end":{
+				"line":77,
+				"character":142
+			}
+		},
+		{
+			"start":{
+				"line":78,
+				"character":0
+			},
+			"end":{
+				"line":78,
+				"character":132
+			}
+		},
+		{
+			"start":{
+				"line":80,
+				"character":0
+			},
+			"end":{
+				"line":80,
+				"character":123
+			}
+		},
+		{
+			"start":{
+				"line":81,
+				"character":0
+			},
+			"end":{
+				"line":81,
+				"character":63
+			}
+		},
+		{
+			"start":{
+				"line":83,
+				"character":0
+			},
+			"end":{
+				"line":83,
+				"character":174
+			}
+		},
+		{
+			"start":{
+				"line":84,
+				"character":0
+			},
+			"end":{
+				"line":84,
+				"character":90
+			}
+		},
+		{
+			"start":{
+				"line":88,
+				"character":0
+			},
+			"end":{
+				"line":134,
 				"character":1
 			}
 		},
 		{
 			"start":{
-				"line":66,
+				"line":136,
 				"character":0
 			},
 			"end":{
-				"line":70,
+				"line":136,
+				"character":72
+			}
+		},
+		{
+			"start":{
+				"line":138,
+				"character":0
+			},
+			"end":{
+				"line":138,
+				"character":79
+			}
+		},
+		{
+			"start":{
+				"line":141,
+				"character":0
+			},
+			"end":{
+				"line":141,
+				"character":73
+			}
+		},
+		{
+			"start":{
+				"line":142,
+				"character":0
+			},
+			"end":{
+				"line":142,
+				"character":84
+			}
+		},
+		{
+			"start":{
+				"line":144,
+				"character":0
+			},
+			"end":{
+				"line":144,
+				"character":105
+			}
+		},
+		{
+			"start":{
+				"line":145,
+				"character":0
+			},
+			"end":{
+				"line":151,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":153,
+				"character":0
+			},
+			"end":{
+				"line":159,
+				"character":2
+			}
+		},
+		{
+			"start":{
+				"line":161,
+				"character":0
+			},
+			"end":{
+				"line":166,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":168,
+				"character":0
+			},
+			"end":{
+				"line":172,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":174,
+				"character":0
+			},
+			"end":{
+				"line":180,
+				"character":1
+			}
+		},
+		{
+			"start":{
+				"line":182,
+				"character":0
+			},
+			"end":{
+				"line":185,
 				"character":1
 			}
 		}

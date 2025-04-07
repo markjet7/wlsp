@@ -19,6 +19,12 @@ impl tower_lsp::lsp_types::notification::Notification for  WolframNotification {
     const METHOD: &'static str = "onRunInWolfram";
 }
 
+struct WolframBusy {}
+impl tower_lsp::lsp_types::notification::Notification for  WolframBusy {
+    type Params = Value;
+    const METHOD: &'static str = "wolframBusy";
+}
+
 struct UpdateInputs {
 }
 impl tower_lsp::lsp_types::notification::Notification for  UpdateInputs {
@@ -42,6 +48,15 @@ struct Code {
 
 impl Backend {
     async fn run_in_wolfram(&self, params: Value)  {
+        // sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
+
+        self.client.send_notification::<WolframBusy>(
+            json!({
+                "busy": true,
+                "position": params["range"],
+                "text": "Running Wolfram code..."
+            })
+        ).await;
         // self.client.log_message(MessageType::INFO, params.clone()).await;
         let range = params["range"].clone().to_string();
 

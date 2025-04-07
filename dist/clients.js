@@ -89,31 +89,60 @@ function startLanguageServer(context0, outputChannel0) {
         context.subscriptions.push(vscode.window.registerWebviewViewProvider(plotsView_1.PlotsViewProvider.viewType, plotsProvider));
         (_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.show(true);
         // await launch.startWLSPKernelSocket(0, kernelPath).then(async (client) => {
-        // await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
-        yield launch.startWLSPKernelIOClojure(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
-            exports.wolframKernelClient = client;
-            onkernelReady();
-            firstKernelLaunched = true;
-            // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
-            //     // if (event.newState == State.Running) {
-            //         console.log("Kernel ready: " + event.newState)
-            //         onkernelReady()
-            //     // }
-            // })    // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
-            outputChannel.appendLine("Wolfram Language Kernel started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
-            // wolframStatusBar.text = "Wolfram ?";
-            // wolframStatusBar.command = 'wolfram.restart';
-            // wolframStatusBar.show();
-            yield launch.startWLSP(0, lspPath).then((client) => {
-                exports.wolframClient = client;
-                onclientReady();
-                // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+        // await launch.startWLSPKernelIOClojure(0, wlspPath).then(async (client) => {
+        // if on Windows, use the socket
+        if (process.platform === "win32") {
+            yield launch.startWLSPKernelSocket(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+                exports.wolframKernelClient = client;
+                onkernelReady();
+                firstKernelLaunched = true;
+                // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
                 //     // if (event.newState == State.Running) {
-                //         onclientReady()
+                //         console.log("Kernel ready: " + event.newState)
+                //         onkernelReady()
                 //     // }
-                // })
-            });
-        }));
+                // })    // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
+                outputChannel.appendLine("Wolfram Language Kernel started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
+                // wolframStatusBar.text = "Wolfram ?";
+                // wolframStatusBar.command = 'wolfram.restart';
+                // wolframStatusBar.show();
+                yield launch.startWLSP(0, lspPath).then((client) => {
+                    exports.wolframClient = client;
+                    onclientReady();
+                    // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+                    //     // if (event.newState == State.Running) {
+                    //         onclientReady()
+                    //     // }
+                    // })
+                });
+            }));
+        }
+        else {
+            yield launch.startWLSPKernelIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+                exports.wolframKernelClient = client;
+                onkernelReady();
+                firstKernelLaunched = true;
+                // wolframKernelClient?.onDidChangeState((event: StateChangeEvent) => {
+                //     // if (event.newState == State.Running) {
+                //         console.log("Kernel ready: " + event.newState)
+                //         onkernelReady()
+                //     // }
+                // })    // kernelOutputChannel = vscode.window.createOutputChannel("Wolfram Kernel");
+                outputChannel.appendLine("Wolfram Language Kernel started: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
+                // wolframStatusBar.text = "Wolfram ?";
+                // wolframStatusBar.command = 'wolfram.restart';
+                // wolframStatusBar.show();
+                yield launch.startWLSP(0, lspPath).then((client) => {
+                    exports.wolframClient = client;
+                    onclientReady();
+                    // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+                    //     // if (event.newState == State.Running) {
+                    //         onclientReady()
+                    //     // }
+                    // })
+                });
+            }));
+        }
         vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
         debugging = (vscode.env.machineId === "someValue.machineId");
         exports.scriptserializer = new notebook_1.WolframScriptSerializer();
