@@ -95,15 +95,16 @@ class PlotsViewProvider {
         }
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({ text: (out2) });
     }
-    newInput(input) {
+    newInput(row, input) {
         var _a;
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({
             text: [],
+            row: row,
             input: input,
-            output: ""
+            output: "..."
         });
     }
-    newOutput(output) {
+    newOutput(row, output) {
         var _a;
         let img = output;
         // .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
@@ -112,6 +113,7 @@ class PlotsViewProvider {
         // console.log(img)
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({
             text: [],
+            row,
             input: "",
             output: img
         });
@@ -204,6 +206,18 @@ class PlotsViewProvider {
 
                 .input_row {
                     background: var(--vscode-tree-tableOddRowsBackground);
+                }
+
+                @keyframes loading {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
+
+                .loading {
+                    animation: loading 1s infinite;
                 }
 
                 .output_row {

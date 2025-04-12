@@ -348,13 +348,12 @@ const vscode = acquireVsCodeApi();
 
     const outputDiv = document.getElementById("outputs");
     if (message.input && message.input.length > 0) {
-      index += 1;
       lastInput =
-        "<div class='input_row'><hr>In[" +
-        index +
+        "<div class='input_row' id='" + message.row + "'><hr>In[" +
+       message.row +
         "]: " +
         message.input +
-        "<hr></div><div class='output_row'>Loading...</div>";
+        "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
     }
     
@@ -384,9 +383,14 @@ const vscode = acquireVsCodeApi();
       //   createPasteButton(i);
       // }
 
-      let lastOutputDiv = outputDiv.getElementsByClassName("output_row")[0];
-
-      lastOutputDiv.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
+      let outputDivs = outputDiv.getElementsByClassName("output_row");
+      // select output div with id = message.row
+      for (const o of outputDivs) {
+        if (o.id == message.row) {
+          let outputDiv = o;
+          outputDiv.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
+        }
+      }
 
       let inputRows = document.getElementsByClassName("input_row");
       if (inputRows.length > 19) {

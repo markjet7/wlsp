@@ -103,20 +103,12 @@ impl Backend {
         self.client.send_notification::<DidChangeWorkspaceFolders>(result).await;
     }
 
-    async fn run_in_wolfram(&self, params: Value)  {
-        // sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
+    async fn _get_input(&self, params: Value) -> Result<Value> {
 
-        self.client.send_notification::<WolframBusy>(
-            json!({
-                "busy": true,
-                "position": params["range"],
-                "text": "..."
-            })
-        ).await;
         // self.client.log_message(MessageType::INFO, params.clone()).await;
         let range = params["range"].clone().to_string();
 
-        let filepath = params["textDocument"]["uri"]["fsPath"].as_str().unwrap();
+        // let filepath = params["textDocument"]["uri"]["fsPath"].as_str().unwrap();
 
         // check if self.document.lock is none 
         // if it is, filestr = ""
@@ -133,14 +125,10 @@ impl Backend {
 
         // self.client.log_message(MessageType::INFO, expression.clone()).await;
 
-        // start timer 
-        let start = std::time::Instant::now();
-
         let input_string = evaluate_in_kernel(&expression, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
 
         // self.client.log_message(MessageType::INFO, input_string[0].clone().join("\n")).await;
 
-        let elapsed = start.elapsed().as_secs();
 
         // let codeString = r#"{ 
         // "code": "Hello", 
@@ -152,26 +140,58 @@ impl Backend {
                 self.client
                     .log_message(MessageType::ERROR, format!("Failed to parse JSON: {:?}\n\n{}", e, input_string[0].join("\n")))
                     .await;
-                return;
+                return Err(tower_lsp::jsonrpc::Error {
+                    code: tower_lsp::jsonrpc::ErrorCode::ParseError,
+                    message: "Failed to parse JSON".into(),
+                    data: None,
+                });
             }
         };
 
         let update_notification = json!({
             "input": code["code"].to_string().trim_matches('"'),
         });
+        
+        // self.client.log_message(MessageType::INFO, update_notification.clone()).await;
 
-        self.client.send_notification::<UpdateInputs>(update_notification).await;
+        // self.client.send_notification::<UpdateInputs>(update_notification.clone()).await;
+        Ok(code)
+    }
 
-        // self.client.log_message(MessageType::INFO, inputString.clone()).await;
+    async fn get_input(&self, params: Value) {
+        // self.client.log_message(MessageType::INFO, params.clone()).await;
+        let code = self._get_input(params).await.unwrap();
+        let update_notification = json!({
+            "input": code["code"].to_string().trim_matches('"'),
+        });
+        self.client.send_notification::<UpdateInputs>(update_notification.clone()).await;
+    }
+
+    async fn run_in_wolfram(&self, params: Value)  {
+        // sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
+
+        self.client.send_notification::<WolframBusy>(
+            json!({
+                "busy": true,
+                "position": params["range"],
+                "text": "..."
+            })
+        ).await;
+
+        let code = self._get_input(params.clone()).await.unwrap();
+        let filepath = params["textDocument"]["uri"]["fsPath"].as_str().unwrap();
 
         // wrap the expression with ExportString[expression, "HTMLFragment"]
-        let input = format!("ExportString[ToExpression@{}, \"HTMLFragment\"]", code["code"].to_string());
+        let input = format!("ExportString[ToExpression@{}, \"HTMLFragment\"]", code["code"].to_string().trim_matches('"'));
 
         // self.client.log_message(MessageType::INFO, input.clone()).await;
 
         // println!("Running in Wolfram");
 
+        // start timer 
+        let start = std::time::Instant::now();
         let response = evaluate_in_kernel(&input, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+        let elapsed = start.elapsed().as_secs();
         let response_clone = response[0].clone().join("\n").trim_end_matches('\n').to_string();
         let errors = response[1].clone().join("\n").trim_end_matches('\n').to_string();
         let messages = response[2].clone().join("\n").trim_end_matches('\n').to_string();
@@ -205,6 +225,7 @@ impl Backend {
         let result = json!({
             "input":  code["code"].to_string(),
             "load": false,
+            "print":false,
             "result": response_clone.trim_matches('"'),
             "output": response_clone.trim_matches('"'),
             "position": code["range"]["end"],
@@ -462,6 +483,8 @@ pub async fn start() -> std::result::Result<(), Box<dyn std::error::Error>> {
     .custom_method("runInWolfram", Backend::run_in_wolfram)
     .custom_method("storageUri", Backend::storageUri)
     .custom_method("didChangeWorkspaceFolders", Backend::did_change_workspace_folders)
+    .custom_method("updateVarTable", Backend::update_var_table)
+    .custom_method("getInput", Backend::get_input)
     .finish();
 
     Server::new(stdin, stdout, socket)

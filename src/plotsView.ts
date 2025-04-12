@@ -137,15 +137,16 @@ export class PlotsViewProvider implements WebviewViewProvider {
         this._view?.webview.postMessage({ text: (out2) })
     }
 
-    public newInput(input: string) {
+    public newInput(row:number, input: string) {
         this._view?.webview.postMessage({
             text: [],
+            row: row,
             input: input,
-            output: ""
+            output: "..."
         })
     }
 
-    public newOutput(output: string) {
+    public newOutput(row:number, output: string) {
         let img = output
         // .replace(`<div class="vertical"><span style="text-align:left" class="vertical-element">`, "")
         // .replace(`</span><span style="text-align:left" class="vertical-element"><br></span></div>`, "")
@@ -154,6 +155,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this._view?.webview.postMessage({
             text: [],
+            row,
             input: "",
             output: img
         })
@@ -249,6 +251,18 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
                 .input_row {
                     background: var(--vscode-tree-tableOddRowsBackground);
+                }
+
+                @keyframes loading {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
+
+                .loading {
+                    animation: loading 1s infinite;
                 }
 
                 .output_row {

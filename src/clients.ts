@@ -36,6 +36,7 @@ import { workspaceSymbolProvider } from './treeDataProvider';
 import { DataViewProvider } from './dataPanel';
 import { PlotsViewProvider } from './plotsView';
 import { send } from 'process';
+import { Int32 } from 'bson';
 
 // let wolfram: cp.ChildProcess;
 // let wolframKernel: cp.ChildProcess;
@@ -72,6 +73,8 @@ export let interactiveNotebookSerializer: InteractiveNotebookSerializer;
 export let scriptController: WolframScriptController;
 export let treeDataProvider: workspaceSymbolProvider;
 export let wlspdebugger: WolframDebugAdapterDescriptorFactory;
+
+let plotsInputsOutputs: Map<number, any[]> = new Map();
 
 export async function startLanguageServer(context0: vscode.ExtensionContext, outputChannel0: vscode.OutputChannel): Promise<void> {
 
@@ -861,10 +864,18 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
                     })
                 } else {
                     // console.log("Kernel running, sending to Wolfram")
-                    wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
-                        // outputChannel.appendLine("Wolfram kernel response: " + result)
+
+                    
+                    wolframKernelClient?.sendNotification("getInput", evalNext).then((result: any) => {
+                        
+                        wolframKernelClient?.sendNotification("runInWolfram", evalNext).then((result: any) => {
+                            // outputChannel.appendLine("Wolfram kernel response: " + result)
+                        }).catch((err) => {
+                            console.log("Error in runInWolfram")
+                            // restart()
+                        })
                     }).catch((err) => {
-                        console.log("Error in runInWolfram")
+                        console.log("Error in getting input.")
                         // restart()
                     })
                 }
@@ -993,7 +1004,7 @@ async function onRunInWolfram(params: any) {
 
         } else {
 
-            treeDataProvider.refresh();
+            treeDataProvider?.refresh();
         }
 
         return
@@ -1081,7 +1092,14 @@ function onResult(result: any) {
 }
 
 function updateInputs(params: any) {
-    plotsProvider.newInput(params["input"])
+
+    plotsProvider.newInput(plotsInputsOutputs.size, params["input"])
+    // add new input to the list of inputs where the key is the length of the map
+    plotsInputsOutputs.set(plotsInputsOutputs.size, [
+        params["input"],
+        "..."
+    ])
+
 }
 
 async function updateResults(e: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file: any = "") {
@@ -1157,10 +1175,20 @@ async function updateResults(e: vscode.TextEditor | undefined, result: any, prin
             if (nextline >= e.document.lineCount) {
                 nextline = e.document.lineCount - 1
             }
-            let startChar = e.document.lineAt(nextline).range.end.character;
 
-            plotsProvider.newOutput(outputSnippet);
+            // add the output to the latest input where the output is ""
+            for (const [key, value] of plotsInputsOutputs.entries()) {
+                if (value[1] == "...") {
+                    plotsInputsOutputs.set(key, [value[0], outputSnippet]);
+                    plotsProvider.newOutput(key, outputSnippet);
+                    break;
+                }
+            }
+
             outputChannel.appendLine("Time to update plots: " + (Date.now() - now) + " ms");
+
+
+            let startChar = e.document.lineAt(nextline).range.end.character;
 
             if (print) {
                 let sel: vscode.Selection = e!.selection;

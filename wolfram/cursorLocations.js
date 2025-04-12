@@ -17,17 +17,27 @@
 			},
 			"end":{
 				"line":2,
-				"character":4
+				"character":14
 			}
 		},
 		{
 			"start":{
 				"line":4,
-				"character":0
+				"character":1
 			},
 			"end":{
 				"line":4,
-				"character":26
+				"character":13
+			}
+		},
+		{
+			"start":{
+				"line":6,
+				"character":1
+			},
+			"end":{
+				"line":6,
+				"character":13
 			}
 		}
 	]

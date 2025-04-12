@@ -51,6 +51,7 @@ let debugging = false;
 exports.wolframClient = undefined;
 exports.wolframKernelClient = undefined;
 let firstKernelLaunched = false;
+let plotsInputsOutputs = new Map();
 function startLanguageServer(context0, outputChannel0) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -702,10 +703,15 @@ function sendToWolfram(printOutput = false, sel = undefined, section = false) {
                     }
                     else {
                         // console.log("Kernel running, sending to Wolfram")
-                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
-                            // outputChannel.appendLine("Wolfram kernel response: " + result)
+                        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("getInput", evalNext).then((result) => {
+                            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("runInWolfram", evalNext).then((result) => {
+                                // outputChannel.appendLine("Wolfram kernel response: " + result)
+                            }).catch((err) => {
+                                console.log("Error in runInWolfram");
+                                // restart()
+                            });
                         }).catch((err) => {
-                            console.log("Error in runInWolfram");
+                            console.log("Error in getting input.");
                             // restart()
                         });
                     }
@@ -817,7 +823,7 @@ function onRunInWolfram(params) {
                 sendToWolfram();
             }
             else {
-                exports.treeDataProvider.refresh();
+                exports.treeDataProvider === null || exports.treeDataProvider === void 0 ? void 0 : exports.treeDataProvider.refresh();
             }
             return;
         }
@@ -897,7 +903,12 @@ function onResult(result) {
     // console.log(result)
 }
 function updateInputs(params) {
-    plotsProvider.newInput(params["input"]);
+    plotsProvider.newInput(plotsInputsOutputs.size, params["input"]);
+    // add new input to the list of inputs where the key is the length of the map
+    plotsInputsOutputs.set(plotsInputsOutputs.size, [
+        params["input"],
+        "..."
+    ]);
 }
 function updateResults(e, result, print, input = "", file = "") {
     return __awaiter(this, void 0, void 0, function* () {
@@ -964,9 +975,16 @@ function updateResults(e, result, print, input = "", file = "") {
                 if (nextline >= e.document.lineCount) {
                     nextline = e.document.lineCount - 1;
                 }
-                let startChar = e.document.lineAt(nextline).range.end.character;
-                plotsProvider.newOutput(outputSnippet);
+                // add the output to the latest input where the output is ""
+                for (const [key, value] of plotsInputsOutputs.entries()) {
+                    if (value[1] == "...") {
+                        plotsInputsOutputs.set(key, [value[0], outputSnippet]);
+                        plotsProvider.newOutput(key, outputSnippet);
+                        break;
+                    }
+                }
                 outputChannel.appendLine("Time to update plots: " + (Date.now() - now) + " ms");
+                let startChar = e.document.lineAt(nextline).range.end.character;
                 if (print) {
                     let sel = e.selection;
                     let outputPosition = new vscode.Position(result["params"]["position"]["line"] + 1, 0);
