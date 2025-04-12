@@ -10,25 +10,35 @@ getStringAtRange[string_, rangejs_String]:=Module[{sLines, sRanges, range},
 
 	sRanges= getSourceRanges[range];
 
-	StringJoin@Table[
+	result = StringJoin@Table[
 		StringTake[
 				sLines[[l[[1]]]],
 			l[[2]]],
-		{l, sRanges}]
+		{l, sRanges}];
+
+	If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")",
+		result = StringDrop[result, 1];
+	];
+	result
 ];
 
-getStringAtRange[string_, range_]:=Module[{sLines, sRanges},
+getStringAtRange[string_, range_]:=Module[{sLines, sRanges, result},
 	If[range[[1]] == range[[2]], Return[""]];
 
 	sLines = StringSplit[string, EndOfLine, All];
 
 	sRanges= getSourceRanges[range];
 
-	StringJoin@Table[
+	result = StringJoin@Table[
 		StringTake[
 				sLines[[l[[1]]]],
 			l[[2]]],
-		{l, sRanges}]
+		{l, sRanges}];
+	
+	If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
+		result = StringDrop[result, 1];
+	];
+	result
 ];
 
 getSourceRanges[{start_, end_}]:=Table[

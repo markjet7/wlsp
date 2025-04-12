@@ -1021,7 +1021,7 @@ let wolframBusyQ = false;
 function wolframBusy(params) {
     let outputPosition = new vscode.Position(0, 0);
     if (params.position) {
-        outputPosition = new vscode.Position(params.position.line - 1, params.position.character);
+        outputPosition = new vscode.Position(params.position.start.line - 1, params.position.start.character);
         let e = vscode.window.activeTextEditor;
         if (e) {
             let decorationLine = e.document.lineAt(outputPosition.line - 1);

@@ -1143,8 +1143,9 @@ dependencies = [
 
 [[package]]
 name = "wstp-sys"
-version = "0.2.9"
-source = "git+https://github.com/markjet7/wstp-rs?branch=master#b398fd576a551b48771828df50ff48bd59a51483"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80076a52358dff4df32e337421844541a1e07a973162ee0b65093bbc4164ad3a"
 dependencies = [
  "env_logger",
  "link-cplusplus",

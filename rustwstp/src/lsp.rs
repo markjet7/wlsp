@@ -19,10 +19,34 @@ impl tower_lsp::lsp_types::notification::Notification for  WolframNotification {
     const METHOD: &'static str = "onRunInWolfram";
 }
 
+struct StorageUri {
+    result: String,
+}
+impl tower_lsp::lsp_types::notification::Notification for  StorageUri {
+    type Params = Value;
+    const METHOD: &'static str = "storageUri";
+}
+
+struct DidChangeWorkspaceFolders {
+    files: Vec<String>
+}
+impl tower_lsp::lsp_types::notification::Notification for  DidChangeWorkspaceFolders {
+    type Params = Value;
+    const METHOD: &'static str = "didChangeWorkspaceFolders";
+}
+
 struct WolframBusy {}
 impl tower_lsp::lsp_types::notification::Notification for  WolframBusy {
     type Params = Value;
     const METHOD: &'static str = "wolframBusy";
+}
+
+struct updateVarTable {
+    varTable: Vec<String>,
+}
+impl tower_lsp::lsp_types::notification::Notification for  updateVarTable {
+    type Params = Value;
+    const METHOD: &'static str = "updateVarTable";
 }
 
 struct UpdateInputs {
@@ -47,6 +71,38 @@ struct Code {
 }
 
 impl Backend {
+    async fn update_var_table(&self, params: Value) {
+        // self.client.log_message(MessageType::INFO, params.clone()).await;
+        let var_table = params["params"]["varTable"].as_array().unwrap();
+        let mut vars = Vec::new();
+        for var in var_table {
+            let name = var["name"].as_str().unwrap();
+            vars.push(name.to_string());
+        }
+        let result = json!({
+            "varTable": vars,
+        });
+        self.client.send_notification::<updateVarTable>(result).await;
+    }
+
+    async fn did_change_workspace_folders(&self, params: Value) {
+        // self.client.log_message(MessageType::INFO, params.clone()).await;
+        let added = params["params"]["event"]["added"].clone();
+        if added.is_null() {
+            return;
+        }
+        let folders = added.as_array().unwrap();
+        let mut files = Vec::new();
+        for folder in folders {
+            let uri = folder["uri"].as_str().unwrap();
+            files.push(uri.to_string());
+        }
+        let result = json!({
+            "files": files,
+        });
+        self.client.send_notification::<DidChangeWorkspaceFolders>(result).await;
+    }
+
     async fn run_in_wolfram(&self, params: Value)  {
         // sendResponse[<|"method" -> "wolframBusy", "params"-> <|"busy" -> True, "position"->newPosition, "text" -> "..." |>|>];
 
@@ -54,7 +110,7 @@ impl Backend {
             json!({
                 "busy": true,
                 "position": params["range"],
-                "text": "Running Wolfram code..."
+                "text": "..."
             })
         ).await;
         // self.client.log_message(MessageType::INFO, params.clone()).await;
@@ -81,6 +137,8 @@ impl Backend {
         let start = std::time::Instant::now();
 
         let input_string = evaluate_in_kernel(&expression, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+
+        // self.client.log_message(MessageType::INFO, input_string[0].clone().join("\n")).await;
 
         let elapsed = start.elapsed().as_secs();
 
@@ -159,12 +217,28 @@ impl Backend {
             }
         });
 
-        self.client.log_message(MessageType::INFO, result.clone()).await;
+        // self.client.log_message(MessageType::INFO, result.clone()).await;
 
         self.client.send_notification::<WolframNotification>(result).await;
+        self.client.send_notification::<WolframBusy>(
+            json!({
+                "busy": false,
+                "position": params["range"],
+                "text": "..."
+            })
+        ).await;
 
         // Ok(()) 
 
+    }
+
+    async fn storageUri(&self, params: Value) {
+        // self.client.log_message(MessageType::INFO, params.clone()).await;
+        let uri = params["uri"].as_str().unwrap();
+        let result = json!({
+            "uri": uri,
+        });
+        self.client.send_notification::<StorageUri>(result).await;
     }
 }
 
@@ -386,6 +460,8 @@ pub async fn start() -> std::result::Result<(), Box<dyn std::error::Error>> {
         document: Arc::new(Mutex::new(Some("".to_string()))),
     })
     .custom_method("runInWolfram", Backend::run_in_wolfram)
+    .custom_method("storageUri", Backend::storageUri)
+    .custom_method("didChangeWorkspaceFolders", Backend::did_change_workspace_folders)
     .finish();
 
     Server::new(stdin, stdout, socket)
