@@ -61,6 +61,7 @@ impl tower_lsp::lsp_types::notification::Notification for  UpdateInputs {
 struct Backend {
     client: Client,
     kernel: Arc<Mutex<Option<WolframKernel>>>,
+    inputkernel: Arc<Mutex<Option<WolframKernel>>>,
     document: Arc<Mutex<Option<String>>>,
 }
 
@@ -125,7 +126,7 @@ impl Backend {
 
         // self.client.log_message(MessageType::INFO, expression.clone()).await;
 
-        let input_string = evaluate_in_kernel(&expression, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+        let input_string = evaluate_in_kernel(&expression, self.inputkernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
 
         // self.client.log_message(MessageType::INFO, input_string[0].clone().join("\n")).await;
 
@@ -188,66 +189,55 @@ impl Backend {
 
         // println!("Running in Wolfram");
 
-        // start timer 
-        let start = std::time::Instant::now();
-        let response = evaluate_in_kernel(&input, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
-        let elapsed = start.elapsed().as_secs();
-        let response_clone = response[0].clone().join("\n").trim_end_matches('\n').to_string();
-        let errors = response[1].clone().join("\n").trim_end_matches('\n').to_string();
-        let messages = response[2].clone().join("\n").trim_end_matches('\n').to_string();
+        // send to background thread
+        let filepath = params["textDocument"]["uri"]["fsPath"].as_str().unwrap().to_owned();
+        let range = params["range"].clone();
+        let cloned_self = self.clone();
+        tokio::spawn({
 
-        // self.client.log_message(MessageType::INFO, messages.clone()).await;
+            let kernel = cloned_self.kernel.clone();
+            async move {
+                let start = std::time::Instant::now();
+                let response = evaluate_in_kernel(&input, kernel.lock().unwrap().as_mut().unwrap().kernel_process.link()).unwrap();
+                let elapsed = start.elapsed().as_secs();
+                let response_clone = response[0].clone().join("\n").trim_end_matches('\n').to_string();
+                let errors = response[1].clone().join("\n").trim_end_matches('\n').to_string();
+                let messages = response[2].clone().join("\n").trim_end_matches('\n').to_string();
 
+                let decoration = format!("{:2?}  s: {}", elapsed, response_clone[..std::cmp::min(100, response_clone.len())].trim_matches('"'));
 
-        // let expr = params["expr"].as_str().unwrap();
-        // let mut kernel = self.kernel.lock().unwrap();
-        // let kernel = kernel.as_mut().unwrap();
-        // kernel.evaluate(expr).await
+                let messages_and_errors = messages.clone() + "\n" + &errors;
 
-        //<|
-			// "input" -> string,
-			// "output"-> output,  
-			// "load" -> False, (*Lookup[json["params"], "output", False],*) (*If[json["params", "output"], True, False],*)
-			// "result"-> "", (* ToString[result, InputForm, CharacterEncoding -> "ASCII"], *)
-			// "position"-> newPosition,
-			// "print" -> json["params", "print"],
-			// "hover" -> StringTake[hoverMessage, 1;;-1],
-			// "messages" -> r["FormattedMessages"],
-			// "time" -> time,
-			// "decoration" -> ToString@time <> ": " <> $myShort[result],
-			// "document" -> json["params", "textDocument"]["uri"]
-			// |>
+                let result = json!({
+                    "input":  code["code"].to_string(),
+                    "load": false,
+                    "print":false,
+                    "result": response_clone.trim_matches('"'),
+                    "output": response_clone.trim_matches('"'),
+                    "position": code["range"]["end"],
+                    "hover": response_clone,
+                    "messages":  messages_and_errors.split("\n").collect::<Vec<&str>>(),
+                    "time": 0,
+                    "decoration":decoration,
+                    "document":  {
+                        "path": filepath
+                    }
+                });
 
-        let decoration = format!("{:2?}  s: {}", elapsed, response_clone[..std::cmp::min(100, response_clone.len())].trim_matches('"'));
+                // self.client.log_message(MessageType::INFO, result.clone()).await;
 
-        let messages_and_errors = messages.clone() + "\n" + &errors;
-
-        let result = json!({
-            "input":  code["code"].to_string(),
-            "load": false,
-            "print":false,
-            "result": response_clone.trim_matches('"'),
-            "output": response_clone.trim_matches('"'),
-            "position": code["range"]["end"],
-            "hover": response_clone,
-            "messages":  messages_and_errors.split("\n").collect::<Vec<&str>>(),
-            "time": 0,
-            "decoration":decoration,
-            "document":  {
-                "path": filepath
+                cloned_self.client.send_notification::<WolframNotification>(result).await;
+                cloned_self.client.send_notification::<WolframBusy>(
+                    json!({
+                        "busy": false,
+                        "position": range,
+                        "text": "..."
+                    })
+                ).await;
             }
         });
-
-        // self.client.log_message(MessageType::INFO, result.clone()).await;
-
-        self.client.send_notification::<WolframNotification>(result).await;
-        self.client.send_notification::<WolframBusy>(
-            json!({
-                "busy": false,
-                "position": params["range"],
-                "text": "..."
-            })
-        ).await;
+        // start timer 
+        
 
         // Ok(()) 
 
@@ -364,7 +354,7 @@ impl LanguageServer for Backend {
             Ok(kernel_process) => {
                 // Only lock the mutex for the brief moment we need to update it
                 {
-                    let mut kernel_mutex = self.kernel.lock().unwrap();
+                    let mut kernel_mutex = self.inputkernel.lock().unwrap();
                     *kernel_mutex = Some(WolframKernel { kernel_process });
                 } // mutex guard is dropped here
                 
@@ -388,9 +378,10 @@ impl LanguageServer for Backend {
 
                 let input = format!("Get[\"{}\"]", wolfram_path.display());
 
-                let _ = evaluate_in_kernel(&input, self.kernel.lock().unwrap().as_mut().unwrap().kernel_process.link());
+                let _ = evaluate_in_kernel(&input, self.inputkernel.lock().unwrap().as_mut().unwrap().kernel_process.link());
 
             }
+
             Err(e) => {
                 self.client
                     .log_message(
@@ -399,6 +390,27 @@ impl LanguageServer for Backend {
                     )
                     .await;
             }
+        }
+
+        match launch_kernel_with_args(&kernel_path) {
+            Ok(kernel_process) => {
+                // Only lock the mutex for the brief moment we need to update it
+                {
+                    let mut kernel_mutex = self.kernel.lock().unwrap();
+                    *kernel_mutex = Some(WolframKernel { kernel_process });
+                } // mutex guard is dropped here
+
+            }
+
+            Err(e) => {
+                self.client
+                    .log_message(
+                        MessageType::ERROR,
+                        format!("Failed to launch input Wolfram kernel: {:?}", e),
+                    )
+                    .await;
+            }
+                
         }
 
     }
@@ -478,6 +490,7 @@ pub async fn start() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let (service, socket) = LspService::build(|client| Backend {
         client,
         kernel: Arc::new(Mutex::new(None)),
+        inputkernel: Arc::new(Mutex::new(None)),
         document: Arc::new(Mutex::new(Some("".to_string()))),
     })
     .custom_method("runInWolfram", Backend::run_in_wolfram)
