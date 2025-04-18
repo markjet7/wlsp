@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.3.3",
+    "version": "0.3.5",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -538,7 +538,7 @@
         "lint": "node ./node_modules/tslint/bin/tslint ../src/*.ts",
         "pretest": "npm run compile",
         "test": "node ./out/test/runTest.js",
-        "vscode:prepublish": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
+        "vscode:prepublish": "export NODE_OPTIONS=--openssl-legacy-provider && cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
         "vscode:prepublish:windows": "cargo build --release --target x86_64-pc-windows-msvc --manifest-path ./rustwstp/Cargo.toml && cargo build --release --target x86_64-unknown-linux-gnu --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
         "vscode:prepublish:linux": "cargo build --release --target x86_64-unknown-linux-gnu --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
         "webpack": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode development",

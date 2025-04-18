@@ -183,7 +183,7 @@ impl Backend {
         let filepath = params["textDocument"]["uri"]["fsPath"].as_str().unwrap();
 
         // wrap the expression with ExportString[expression, "HTMLFragment"]
-        let input = format!("ExportString[ToExpression@{}, \"HTMLFragment\"]", code["code"].to_string().trim_matches('"'));
+        let input = format!("ExportString[ToExpression[\"{}\"], \"HTMLFragment\"]", code["code"].to_string().trim_matches('"'));
 
         // self.client.log_message(MessageType::INFO, input.clone()).await;
 

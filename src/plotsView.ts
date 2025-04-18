@@ -288,7 +288,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     color: #801f01;
                 }
     
-                #result img{
+                .output_row img{
                     width:90vw;
                     max-height:95vh;
                     object-fit:contain;
