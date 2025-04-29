@@ -1,17 +1,13 @@
 // use std::path::PathBuf;
-use wolfram_app_discovery::WolframApp;
 // use wstp::{kernel::WolframKernelProcess, Link, TokenType};
 // use wolfram_expr::{Expr, Symbol, ExprKind};
 
 // https://github.com/ebkalderon/tower-lsp
 
 mod kernel;
-use kernel::{AppError, launch_kernel_with_args, read_expr_with_context_handling, put_user_input};
 
 mod lsp;
-use lsp::start;
 use std::env;
-use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "windows")]

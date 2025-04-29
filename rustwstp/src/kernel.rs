@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use wolfram_expr::{Expr, Symbol, ExprKind};
-use wstp::{kernel::WolframKernelProcess, Link, TokenType};
+use wolfram_expr::{Expr, ExprKind};
+use wstp::{kernel::WolframKernelProcess, TokenType};
 
 // Custom error type for our application
 #[derive(Debug)]
@@ -29,7 +29,7 @@ impl From<wstp::Error> for AppError {
 // Helper function to launch the kernel with proper arguments
 pub fn launch_kernel_with_args(path: &PathBuf) -> Result<WolframKernelProcess, AppError> {
     // Add specific WSTP arguments that help with proper context handling
-    let mut process = WolframKernelProcess::launch(path)
+    let process = WolframKernelProcess::launch(path)
         .map_err(|e| AppError::WolframError(format!("{:?}", e)))?;
 
     // process.link().put_function("EvaluatePacket", 1)?;
