@@ -2,17 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <FSharpResolveNamespaces>true</FSharpResolveNamespaces>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="7.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="lsp.fs" />
-    <Compile Include="LanguageServer.fs" />
+    <Compile Include="fswlsp.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -20,11 +15,10 @@
     <None Include="mathlink.framework\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>  
-    <PackageReference Include="Microsoft.VisualStudio.LanguageServer.Protocol" Version="17.2.8" />
+    <PackageReference Include="LanguageServerProtocol" Version="7.0.0" />
     <Reference Include="Wolfram.NETLink">
       <HintPath>$(ProjectDir)Wolfram.NETLink.dll</HintPath>
     </Reference>
-    <PackageReference Include="System.Drawing.Common" Version="9.0.4" />
   </ItemGroup>
 
 </Project>

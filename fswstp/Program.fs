@@ -1,15 +1,14 @@
 ﻿open System
-open LSP
+open fswlsp
 
 [<EntryPoint>]
 let main args =
     try
-        let client = setupLanguageServer()
-        client.OnLoadedAsync().Wait()
-        
-        printfn "Language server started. Press any key to exit..."
-        Console.ReadKey() |> ignore
+        let server = new fswlspServer(Console.OpenStandardInput(), Console.OpenStandardOutput())
+
+        server.Listen().Wait()
         0
+
     with
     | ex ->
         printfn "Error: %s" ex.Message
