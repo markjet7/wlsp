@@ -519,7 +519,7 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
     // Use the rustwstp binary and standard I/O
     let serverOptions: ServerOptions = {
         run: {
-            command: kernelPath + '/fswstp/bin/Release/net9.0/osx-x64/fswstp', args: [], transport: TransportKind.stdio
+            command: kernelPath + '/fswstp/bin/Release/net9.0/osx-x64/publish/fswstp', args: [], transport: TransportKind.stdio
         },
         debug: { command: kernelPath + '/fswstp/bin/Debug/net9.0/fswstp', args: [], transport: TransportKind.stdio }
     };

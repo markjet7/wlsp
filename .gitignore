@@ -38,6 +38,10 @@ Temporary Items
 wolfram/cursorLocations.js
 
 rustwstp/target
+
+fswstpold
+
 fswstp/bin
 fswstp/obj 
 fswstp/mathlink.framework
+fswstp/wstp.framework

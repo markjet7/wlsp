@@ -438,7 +438,7 @@ function startWLSPKernelIO(id, kernelPath) {
         // Use the rustwstp binary and standard I/O
         let serverOptions = {
             run: {
-                command: kernelPath + '/fswstp/bin/Release/net9.0/osx-x64/fswstp', args: [], transport: node_1.TransportKind.stdio
+                command: kernelPath + '/fswstp/bin/Release/net9.0/osx-x64/publish/fswstp', args: [], transport: node_1.TransportKind.stdio
             },
             debug: { command: kernelPath + '/fswstp/bin/Debug/net9.0/fswstp', args: [], transport: node_1.TransportKind.stdio }
         };

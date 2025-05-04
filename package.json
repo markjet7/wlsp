@@ -533,17 +533,17 @@
     },
     "scripts": {
         "vscode:prepublish_old": "tsc -p ./",
-        "watch": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && tsc -p ./",
-        "compile": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && tsc -p ./",
+        "watch": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
+        "compile": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
         "lint": "node ./node_modules/tslint/bin/tslint ../src/*.ts",
         "pretest": "npm run compile",
         "test": "node ./out/test/runTest.js",
-        "vscode:prepublish": "export NODE_OPTIONS=--openssl-legacy-provider && cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
+        "vscode:prepublish": "export NODE_OPTIONS=--openssl-legacy-provider && dotnet build fswstp/fswstp.fsproj && webpack --mode production",
         "vscode:prepublish:windows": "cargo build --release --target x86_64-pc-windows-msvc --manifest-path ./rustwstp/Cargo.toml && cargo build --release --target x86_64-unknown-linux-gnu --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
         "vscode:prepublish:linux": "cargo build --release --target x86_64-unknown-linux-gnu --manifest-path ./rustwstp/Cargo.toml && webpack --mode production",
-        "webpack": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode development",
-        "webpack-dev": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && webpack --mode development --watch",
-        "test-compile": "cargo build --release --manifest-path ./rustwstp/Cargo.toml && tsc -p ./",
-        "cargo-build": "cargo build --release --manifest-path ./rustwstp/Cargo.toml"
+        "webpack": "dotnet build fswstp/fswstp.fsproj && webpack --mode development",
+        "webpack-dev": "dotnet build fswstp/fswstp.fsproj && webpack --mode development --watch",
+        "test-compile": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
+        "cargo-build": "dotnet build fswstp/fswstp.fsproj"
     }
 }
