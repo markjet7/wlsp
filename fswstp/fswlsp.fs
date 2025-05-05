@@ -14,26 +14,65 @@ open LanguageServer.Parameters.General
 open LanguageServer.Parameters.TextDocument 
 open LanguageServer.Parameters.Workspace 
 open LanguageServer.Parameters.Window
+open LanguageServer.Json
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
+open System.Text.RegularExpressions
 
 open Wolfram.NETLink
 
 
+type WolframResultParams() =
+                //     let result = json!({
+                //     "input":  code["code"].to_string(),
+                //     "load": false,
+                //     "print":false,
+                //     "result": response_clone.trim_matches('"'),
+                //     "output": response_clone.trim_matches('"'),
+                //     "position": code["range"]["end"],
+                //     "hover": response_clone,
+                //     "messages":  messages_and_errors.split("\n").collect::<Vec<&str>>(),
+                //     "time": 0,
+                //     "decoration":decoration,
+                //     "document":  {
+                //         "path": filepath
+                //     }
+                // });
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method : string = "onRunInWolfram" with get, set
+    // member val input: string = "" with get, set
+    // member val load: bool = false with get, set
+    // member val print: bool = false with get, set
+    // member val result: string = "" with get, set
+    // member val output: string = "" with get, set
+    // member val position: string = "" with get, set
+    // member val hover: string = "" with get, set
+    // member val messages: List<string> = [] with get, set
+    // member val time: int = 0 with get, set
+    // member val decoration: string = "" with get, set
+    // member val document: JToken = null with get, set
 
+type updateInputsParams() =
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method: string = "updateInputs" with get, set
 
 type SetTraceParams() =
     inherit RequestMessageBase()
-    member val value: string = "messages" with get, set
-    member val level: int = 0 with get, set
+    member val Params: JToken = null with get, set
 
 type storageUriParams() =
     inherit RequestMessageBase()
     member val uri: string = "" with get, set
 
-type RunInWolframParams() =
-    inherit RequestMessageBase()
-
 type GetInputParams() =
     inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+
+type RunInWolframParams() =
+    inherit GetInputParams()
+
     // member val range: Range = null with get, set
     // member val textDocument: TextDocument option = None with get, set
     // member val print: bool = true with get, set
@@ -65,6 +104,10 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member val Window: WindowProxy = null with get, set
 
+    member val _document: string = "" with get, set
+
+    member val _text: string = "" with get, set
+
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
         p.``type`` <- MessageType.Info
@@ -74,9 +117,12 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
         let toHTML : string = sprintf "ExportString[%s, \"HTMLFragment\"]" code
-        ml.Evaluate(code)
+        // this.log_messages(sprintf "Result from Wolfram: %s" toHTML)
+        ml.Evaluate(toHTML)
         ml.WaitForAnswer() |> ignore
         let result = ml.GetString()
+
+        // this.log_messages(sprintf "Result from Wolfram: %s" result)
         result
 
 
@@ -86,7 +132,7 @@ type fswlspServer(input: Stream, output: Stream) =
             let log_messages(message :string) = 
                 let p = new LogMessageParams()
                 p.``type`` <- MessageType.Info
-                p.message <- sprintf "Result from Wolfram: %s" message
+                p.message <- sprintf "%s" message
 
                 this.Window.LogMessage(
                     p
@@ -95,27 +141,78 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
             let traceHandler (request: SetTraceParams) : unit =
-                log_messages(sprintf "setTrace: %A" ( request))
+
+                let value:JToken = request.Params["value"]
+                // log_messages(sprintf "setTrace: %s" ( value.ToString() ))
                 ()
 
             let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
                 ResponseMessage()
 
+            let get_input(request: GetInputParams): string = 
+
+                let range = request.Params["range"].ToString().Replace("\"", "\\\"")
+                let t = this._text.Replace("\"", "\\\"")
+
+                let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
+
+                let input = JObject.Parse( this.evaluate_in_kernel(this._ml,eval ))
+                let code = input["code"].ToString()
+                code 
+
             let getInputHandler (request: GetInputParams): unit = 
-                            
-                log_messages(sprintf "getInput: %A" ( request ))
+                try
+                    let input:string = get_input(request)
+
+                    // send notification to client
+                    let p = new updateInputsParams()
+                    p.``params`` <- {| input = input |} |> JObject.FromObject
+
+                    this.SendNotification(
+                        p
+                    )
+                with 
+                | ex -> 
+                    let error = new ResponseError<InitializeErrorData>()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    error.data <- null
+                    // Handle the error here, e.g., log it or send a notification to the client
+                    log_messages(sprintf "Error: %s" ex.Message)
                 ()
 
             let runInWolframHandler(request: RunInWolframParams): unit =
                 // Handle the request to run code in Wolfram
                 // You can implement the logic to run the code here
-                this._ml.Evaluate("2+2") 
-                this._ml.WaitForAnswer() |> ignore
-                let result = this._ml.GetInteger()
+
+                let input = get_input request
+
+                this.log_messages(sprintf "Run in Wolfram: %s" input)
+
+                let result = this.evaluate_in_kernel(this._ml, input) 
                 // printfn "Result from Wolfram: %d" resultp
                 
+                let wolframResult: WolframResultParams = WolframResultParams()
+                wolframResult.``params`` <- JObject.FromObject({|
+                    input = input
+                    load = false
+                    print = false
+                    result = result
+                    output = result
+                    position = request.Params.["range"].["end"].ToString()
+                    hover = result
+                    messages = []
+                    time = 0
+                    decoration = result
+                    document = request.Params["textDocument"]
+                |})
+                
 
-                log_messages(sprintf "Result from Wolfram: %d" result)
+
+
+                this.SendNotification(
+                    wolframResult
+                )
                 ()
 
             this.RequestHandlers.Set<storageUriParams, ResponseMessageBase>(
@@ -139,7 +236,7 @@ type fswlspServer(input: Stream, output: Stream) =
             )
 
             let capabilities = new ServerCapabilities()
-            capabilities.textDocumentSync <- TextDocumentSyncKind.Incremental
+            capabilities.textDocumentSync <- TextDocumentSyncKind.Full
 
             let result = new InitializeResult()
             result.capabilities <- capabilities 
@@ -182,3 +279,12 @@ type fswlspServer(input: Stream, output: Stream) =
         //     p
         // )
         base.Initialized()
+
+    override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
+            this._document <- p.textDocument.uri.ToString() 
+
+            this._text <- p.contentChanges.[0].text.ToString()
+
+    override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
+        this._document <- p.textDocument.uri.ToString() 
+        this._text <- p.textDocument.text.ToString()
