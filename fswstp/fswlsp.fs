@@ -41,17 +41,11 @@ type WolframResultParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set
     member val method : string = "onRunInWolfram" with get, set
-    // member val input: string = "" with get, set
-    // member val load: bool = false with get, set
-    // member val print: bool = false with get, set
-    // member val result: string = "" with get, set
-    // member val output: string = "" with get, set
-    // member val position: string = "" with get, set
-    // member val hover: string = "" with get, set
-    // member val messages: List<string> = [] with get, set
-    // member val time: int = 0 with get, set
-    // member val decoration: string = "" with get, set
-    // member val document: JToken = null with get, set
+
+type WolframBusyParams() =
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method : string = "wolframBusy" with get, set
 
 type updateInputsParams() =
     inherit NotificationMessageBase()
@@ -64,7 +58,13 @@ type SetTraceParams() =
 
 type storageUriParams() =
     inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
     member val uri: string = "" with get, set
+
+
+type storageUriResponseParams() =
+    inherit ResponseMessageBase()
+    member val ``params``: JToken = null with get, set
 
 type GetInputParams() =
     inherit RequestMessageBase()
@@ -147,7 +147,13 @@ type fswlspServer(input: Stream, output: Stream) =
                 ()
 
             let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
-                ResponseMessage()
+                let uri = request.Params["uri"].ToString()
+                let result:storageUriResponseParams  = 
+                    storageUriResponseParams()
+                result.``params`` <- JObject()
+                result.``params``.["uri"] <- uri
+                result 
+
 
             let get_input(request: GetInputParams): string = 
 
@@ -185,12 +191,34 @@ type fswlspServer(input: Stream, output: Stream) =
                 // Handle the request to run code in Wolfram
                 // You can implement the logic to run the code here
 
+                let range = request.Params["range"].ToObject<Range>()
+                range.``end``.line <- range.``end``.line + int64(1)
+                
+                let busy = WolframBusyParams()
+                busy.``params`` <- JObject.FromObject({|
+                    busy = true
+                    text = "..."
+                    position = range
+                    |})
+                busy.method <- "wolframBusy"
+                this.SendNotification(
+                    busy
+                )
+
                 let input = get_input request
 
                 this.log_messages(sprintf "Run in Wolfram: %s" input)
 
+                let start_time = DateTime.Now
+
                 let result = this.evaluate_in_kernel(this._ml, input) 
                 // printfn "Result from Wolfram: %d" resultp
+
+                let end_time = DateTime.Now
+                let elapsed_time = end_time - start_time
+                let elapsed_time_seconds = elapsed_time.TotalSeconds
+
+
                 
                 let wolframResult: WolframResultParams = WolframResultParams()
                 wolframResult.``params`` <- JObject.FromObject({|
@@ -199,19 +227,23 @@ type fswlspServer(input: Stream, output: Stream) =
                     print = false
                     result = result
                     output = result
-                    position = request.Params.["range"].["end"].ToString()
+                    position = range.``end``
                     hover = result
                     messages = []
                     time = 0
-                    decoration = result
+                    decoration = sprintf "%0.2f s: %s" elapsed_time_seconds (result.Substring(0, Math.Min(result.Length, 100)))
                     document = request.Params["textDocument"]
                 |})
                 
 
-
-
                 this.SendNotification(
                     wolframResult
+                )
+
+                busy.``params``["busy"] <- false
+                busy.``params``["text"] <- ""
+                this.SendNotification(
+                    busy
                 )
                 ()
 
@@ -288,3 +320,14 @@ type fswlspServer(input: Stream, output: Stream) =
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString() 
         this._text <- p.textDocument.text.ToString()
+
+        let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+        
+        this.evaluate_in_kernel(this._ml, expr) |> ignore
+        // let p = new LogMessageParams()
+        // p.``type`` <- MessageType.Info
+        // p.message <- sprintf "Hello from Wolfram: %s" this._document
+        // this.Window.LogMessage(
+        //     p
+        // )
