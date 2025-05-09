@@ -21,7 +21,6 @@ open System.Text.RegularExpressions
 
 open Wolfram.NETLink
 
-
 type WolframResultParams() =
                 //     let result = json!({
                 //     "input":  code["code"].to_string(),
@@ -58,8 +57,8 @@ type SetTraceParams() =
 
 type storageUriParams() =
     inherit RequestMessageBase()
-    member val Params: JToken = null with get, set
-    member val uri: string = "" with get, set
+    // member val Params: JToken = null with get, set
+    // member val uri: string = "" with get, set
 
 
 type storageUriResponseParams() =
@@ -143,15 +142,18 @@ type fswlspServer(input: Stream, output: Stream) =
             let traceHandler (request: SetTraceParams) : unit =
 
                 let value:JToken = request.Params["value"]
-                // log_messages(sprintf "setTrace: %s" ( value.ToString() ))
+                // log_messages(sprintf "setTrace: %s" ( request.Params.ToString() ))
                 ()
 
             let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
-                let uri = request.Params["uri"].ToString()
+                // log_messages(sprintf "setTrace: %s" ( request.ToString() ))
+                // let uri = request.Params["uri"].ToString()
+                let working_dir_uri = Directory.GetCurrentDirectory()
+
                 let result:storageUriResponseParams  = 
                     storageUriResponseParams()
                 result.``params`` <- JObject()
-                result.``params``.["uri"] <- uri
+                result.``params``.["uri"] <- working_dir_uri
                 result 
 
 
@@ -269,6 +271,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
+            capabilities.hoverProvider <- true
 
             let result = new InitializeResult()
             result.capabilities <- capabilities 
@@ -331,3 +334,32 @@ type fswlspServer(input: Stream, output: Stream) =
         // this.Window.LogMessage(
         //     p
         // )
+    override this.Hover (p: TextDocumentPositionParams): Result<Hover,ResponseError> = 
+        let position = JToken.FromObject(p.position).ToString().Replace("\"", "\\\"")
+
+        let expr = sprintf "getWordAtPosition[\"%s\", ImportString[\"%s\", \"RawJSON\"]]" this._text position
+        this._ml.Evaluate(expr)
+        this._ml.WaitForAnswer() |> ignore
+        let string = this._ml.GetString()
+        
+
+        let result = this.evaluate_in_kernel(
+            this._ml, 
+            sprintf "TimeConstrained[ExportString[ToExpression@%s, \"HTMLFragment\"], 2, \"Timed out\"]" string)
+
+        let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")")
+
+        let hover = new Hover()
+        let range = new Range()
+        range.``start`` <- p.position
+        range.``end`` <- p.position
+
+        let m:MarkupContent = new MarkupContent()
+        m.kind <- MarkupKind.Markdown
+        m.value <- message
+
+        hover.range <- range
+        hover.contents <- MarkupContent()
+        hover.contents <- m
+
+        Result<Hover,ResponseError>.Success(hover)

@@ -516,10 +516,20 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
     attempts += 1;
     console.log("Starting WLSP Kernel: " + attempts)
 
+    let exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "publish", "fswstp");
+    // check if windows 
+    if (process.platform === "win32") {
+        exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "publish", "fswstp.exe");
+    }
+
+    if (process.platform === "darwin") {
+        exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-arm64", "publish", "fswstp");
+    }
+
     // Use the rustwstp binary and standard I/O
     let serverOptions: ServerOptions = {
         run: {
-            command: kernelPath + '/fswstp/bin/Release/net9.0/osx-x64/publish/fswstp', args: [], transport: TransportKind.stdio
+            command: exepath, args: [], transport: TransportKind.stdio
         },
         debug: { command: kernelPath + '/fswstp/bin/Debug/net9.0/fswstp', args: [], transport: TransportKind.stdio }
     };
