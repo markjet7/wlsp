@@ -98,6 +98,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     member val _ml : IKernelLink = null with get, set
+    member val _lsp: IKernelLink = null with get, set
     
     member val Trace = "" with get, set
 
@@ -110,7 +111,7 @@ type fswlspServer(input: Stream, output: Stream) =
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
         p.``type`` <- MessageType.Info
-        p.message <- sprintf "Result from Wolfram: %s" message
+        p.message <- sprintf "Wolfram: %s" message
         this.Window.LogMessage(p)
         ()
 
@@ -209,7 +210,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let input = get_input request
 
-                this.log_messages(sprintf "Run in Wolfram: %s" input)
+                // this.log_messages(sprintf "Run in Wolfram: %s" input)
 
                 let start_time = DateTime.Now
 
@@ -272,6 +273,7 @@ type fswlspServer(input: Stream, output: Stream) =
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
+            capabilities.documentSymbolProvider <- true
 
             let result = new InitializeResult()
             result.capabilities <- capabilities 
@@ -291,6 +293,9 @@ type fswlspServer(input: Stream, output: Stream) =
         // Handle the initialized event
         // You can send notifications or perform actions here
 
+        this._lsp <- MathLinkFactory.CreateKernelLink()
+        this._lsp.WaitAndDiscardAnswer()
+
         this._ml <- MathLinkFactory.CreateKernelLink()
         this._ml.WaitAndDiscardAnswer()
 
@@ -305,7 +310,8 @@ type fswlspServer(input: Stream, output: Stream) =
 
         let current_dir = Directory.GetCurrentDirectory()
         let utils_path = Path.Combine(wlsp_folder, "wolfram", "utils.wl")
-        let utils = this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path) 
+        this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
+        this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
 
         // let p = new LogMessageParams()
         // p.``type`` <- MessageType.Info
@@ -314,6 +320,43 @@ type fswlspServer(input: Stream, output: Stream) =
         //     p
         // )
         base.Initialized()
+
+    override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
+            
+            let input =this._text
+            
+            // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
+            this._lsp.Evaluate("documentSymbols[\"a = 1 + 1\"]")
+            this._lsp.WaitForAnswer() |> ignore
+            let js = this._lsp.GetString()
+
+
+            this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
+
+            // let symbols = 
+            //     js 
+            //     |> Seq.cast<JObject>
+            //     |> Seq.map (fun x -> 
+            //         let name = x.["name"].ToString()
+            //         let kind = x.["kind"].ToObject<int>() |> enum<SymbolKind>
+            //         let range = x.["range"].ToObject<Range>()
+            //         let selectionRange = x.["selectionRange"].ToObject<Range>()
+            //         let symbol = new DocumentSymbol()
+            //         symbol.name <- name
+            //         symbol.kind <- kind
+            //         symbol.range <- range
+            //         symbol.selectionRange <- selectionRange
+            //         symbol
+            //     )
+            //     |> Seq.toArray
+
+            let result = new DocumentSymbolResult([||] : DocumentSymbol array)
+            Result<DocumentSymbolResult,ResponseError>.Success(result)
+
+            // let result = new DocumentSymbolResult(symbols)
+            // Result<DocumentSymbolResult,ResponseError>.Success(result)
+
+
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
             this._document <- p.textDocument.uri.ToString() 

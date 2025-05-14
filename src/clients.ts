@@ -143,15 +143,15 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
      
     
     
-            await launch.startWLSP(0, lspPath).then((client) => {
-                wolframClient = client;
-                onclientReady()
-                // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
-                //     // if (event.newState == State.Running) {
-                //         onclientReady()
-                //     // }
-                // })
-            });
+            // await launch.startWLSP(0, lspPath).then((client) => {
+            //     wolframClient = client;
+            //     onclientReady()
+            //     // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+            //     //     // if (event.newState == State.Running) {
+            //     //         onclientReady()
+            //     //     // }
+            //     // })
+            // });
         });
     } else {
 
@@ -376,6 +376,9 @@ export async function onkernelReady(): Promise<void> {
     wolframKernelClient?.onNotification("errorMessages", errorMessages)
     wolframKernelClient?.onNotification("updateInputs", updateInputs)
     wolframKernelClient?.onNotification("onResult", onResult)
+    
+    wolframClient?.onNotification("updatePositions", updatePositions);
+    wolframClient?.onNotification("updateLintDecorations", updateLintDecorations);
 
 
     wolframKernelClient?.onNotification("onRunInWolfram", (result: any) => {

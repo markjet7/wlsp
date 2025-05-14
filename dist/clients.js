@@ -107,15 +107,15 @@ function startLanguageServer(context0, outputChannel0) {
                 // wolframStatusBar.text = "Wolfram ?";
                 // wolframStatusBar.command = 'wolfram.restart';
                 // wolframStatusBar.show();
-                yield launch.startWLSP(0, lspPath).then((client) => {
-                    exports.wolframClient = client;
-                    onclientReady();
-                    // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
-                    //     // if (event.newState == State.Running) {
-                    //         onclientReady()
-                    //     // }
-                    // })
-                });
+                // await launch.startWLSP(0, lspPath).then((client) => {
+                //     wolframClient = client;
+                //     onclientReady()
+                //     // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+                //     //     // if (event.newState == State.Running) {
+                //     //         onclientReady()
+                //     //     // }
+                //     // })
+                // });
             }));
         }
         else {
@@ -287,6 +287,8 @@ function onkernelReady() {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onResult", onResult);
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updatePositions", updatePositions);
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updateLintDecorations", updateLintDecorations);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
                 onRunInWolfram(result);
             });

@@ -182,3 +182,86 @@ rangeToStartEnd[range_]:=Module[{},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];
+
+symbolDefinitions = <||>;
+documentSymbols[src_]:=Module[{},
+
+	ast = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[{}]];
+	result = funcsDefs[ast, src];
+
+	Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
+	ExportString[result, "RawJSON", "Compact"->True]
+];
+
+funcsDefs[ast_, text_]:=Module[{funcs, defs, kind, uri, text},
+					kind[s_]:= Switch[
+								s, 
+								"Symbol", 13, 
+								"Integer", 16, 
+								"Real", 16,
+								"Complex", 16,
+								"Rational", 16,
+								"List", 18,
+								"Map", 18,
+								"Table", 18,
+								"Association", 23,
+								"Function", 12, 
+								"String", 15, 
+								"Module", 12,
+								_, 19];
+	funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
+		CheckAbort[<|
+		"name"->getStringAtRange[text,x[Source]],
+		"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+		"detail"->getStringAtRange[text,src[Source]],
+		"location"-><|
+		"uri"->uri,
+		"range"->positionToRange[src[Source]]|>
+		|>, Nothing],Infinity];
+
+	defs = Cases[ast,CallNode[LeafNode[Symbol,"Set",_],{(LeafNode[_,_,x_]),y_,___},src_]:>CheckAbort[<|
+		"name"->getStringAtRange[text,x[Source]],
+		"kind"->FirstCase[y,LeafNode[_,h_,_]:>kind[ToString@h],"Symbol",Infinity,Heads->True],
+		"detail"->getStringAtRange[text,src[Source]],
+		"location"-><|
+		"uri"->uri,
+		"range"->positionToRange[src[Source]]|>
+		|>, Nothing],Infinity];
+
+	Join[funcs, defs]
+];
+
+positionToRange[text_String,range_]:=Module[{beforeText, selectedText, afterText},
+	beforeText = StringTake[text,{1, range[[1]]}];
+	selectedText = StringTake[text,{range[[1]], range[[2]]}];
+	afterText = StringTake[text,{range[[2]], -1}];
+
+	<|
+		"start"-><|
+			"line" -> StringCount[beforeText,EndOfLine]-1, 
+			"character"->StringLength[Last@StringSplit[beforeText,EndOfLine]]-1
+		|>,
+		"end"-><|
+			"line" -> StringCount[beforeText,EndOfLine] + StringCount[selectedText,EndOfLine]-2,
+			"character" -> StringLength[
+				Last@
+					StringSplit[
+						beforeText<>selectedText,
+						EndOfLine]
+			]-1
+		|>
+	|>
+];
+
+positionToRange[range_]:=Module[{},
+	<|
+		"start" -> <|
+			"line" -> range[[1,1]]-1,
+			"character" -> range[[1,2]]-1
+		|>,
+		"end" -> <|
+			"line" -> range[[2,1]]-1,
+			"character" -> range[[2,2]]-1
+		|>
+	|>
+];
