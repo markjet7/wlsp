@@ -520,7 +520,7 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
     let debugpath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "publish", "fswstp");
     // check if windows 
     if (process.platform === "win32") {
-        exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "publish", "fswstp.exe");
+        exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
         debugpath = path.join(kernelPath, "fswstp", "bin", "Debug", "net9.0", "fswstp.exe");
     }
 
