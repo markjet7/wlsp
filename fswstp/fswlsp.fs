@@ -323,35 +323,39 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
             
-            let input =this._text
+            let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
+
+            // this.log_messages(sprintf "DocumentSymbols: %s" input)
+
             
             // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
-            this._lsp.Evaluate("documentSymbols[\"a = 1 + 1\"]")
+            this._lsp.Evaluate(input)
+            // this._lsp.Evaluate("1+1")
             this._lsp.WaitForAnswer() |> ignore
-            let js = this._lsp.GetString()
+            let js = this._lsp.GetString() 
 
 
-            this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
+            // this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
 
-            // let symbols = 
-            //     js 
-            //     |> Seq.cast<JObject>
-            //     |> Seq.map (fun x -> 
-            //         let name = x.["name"].ToString()
-            //         let kind = x.["kind"].ToObject<int>() |> enum<SymbolKind>
-            //         let range = x.["range"].ToObject<Range>()
-            //         let selectionRange = x.["selectionRange"].ToObject<Range>()
-            //         let symbol = new DocumentSymbol()
-            //         symbol.name <- name
-            //         symbol.kind <- kind
-            //         symbol.range <- range
-            //         symbol.selectionRange <- selectionRange
-            //         symbol
-            //     )
-            //     |> Seq.toArray
+            let symbols: DocumentSymbol array = 
+                js 
+                |> JArray.Parse
+                |> Seq.map (fun x -> 
+                    let symbol = new DocumentSymbol()
+                    symbol.name <- x["name"].ToString()
+                    symbol.kind <- x["kind"].ToObject<SymbolKind>()
+                    symbol.detail <- x["detail"].ToString()
 
-            let result = new DocumentSymbolResult([||] : DocumentSymbol array)
-            Result<DocumentSymbolResult,ResponseError>.Success(result)
+                    symbol.range <- x["location"].["range"].ToObject<Range>()
+                    symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+
+                    symbol.children <- [||]
+                    symbol
+                )
+                |> Seq.toArray
+
+            let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
+            Result<DocumentSymbolResult,ResponseError>.Success result
 
             // let result = new DocumentSymbolResult(symbols)
             // Result<DocumentSymbolResult,ResponseError>.Success(result)

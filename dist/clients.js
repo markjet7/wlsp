@@ -133,15 +133,15 @@ function startLanguageServer(context0, outputChannel0) {
                 // wolframStatusBar.text = "Wolfram ?";
                 // wolframStatusBar.command = 'wolfram.restart';
                 // wolframStatusBar.show();
-                yield launch.startWLSP(0, lspPath).then((client) => {
-                    exports.wolframClient = client;
-                    onclientReady();
-                    // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
-                    //     // if (event.newState == State.Running) {
-                    //         onclientReady()
-                    //     // }
-                    // })
-                });
+                // await launch.startWLSP(0, lspPath).then((client) => {
+                //     wolframClient = client;
+                //     onclientReady()
+                //     // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+                //     //     // if (event.newState == State.Running) {
+                //     //         onclientReady()
+                //     //     // }
+                //     // })
+                // });
             }));
         }
         vscode.workspace.onDidChangeTextDocument(didChangeTextDocument);
@@ -234,12 +234,16 @@ function restart() {
         wolframStatusBar.show();
         editorDecorations.clear();
         e === null || e === void 0 ? void 0 : e.setDecorations(variableDecorationType, []);
-        yield launch.restart().then((clients) => {
-            exports.wolframClient = clients[0];
-            exports.wolframKernelClient = clients[1];
+        // await launch.restart().then((clients) => {
+        //     wolframClient = clients[0];
+        //     wolframKernelClient = clients[1];
+        //     onkernelReady()
+        //     onclientReady()
+        // })
+        yield launch.startWLSPKernelIO(0, kernelPath).then((client) => __awaiter(this, void 0, void 0, function* () {
             onkernelReady();
-            onclientReady();
-        });
+            exports.wolframKernelClient = client;
+        }));
         return new Promise((resolve) => {
             vscode.workspace.textDocuments.forEach(didOpenTextDocument);
             resolve();
@@ -726,7 +730,7 @@ function sendToWolfram(printOutput = false, sel = undefined, section = false) {
                     }
                     catch (e) { }
                     // outputChannel.appendLine("Kernel stopped. Starting a new kernel");
-                    yield launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
+                    yield launch.startWLSPKernelIO(0, kernelPath).then((client) => {
                         outputChannel.appendLine("Kernel started after not running");
                         exports.wolframKernelClient = client;
                         onkernelReady().then(() => __awaiter(this, void 0, void 0, function* () {

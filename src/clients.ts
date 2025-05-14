@@ -173,15 +173,15 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
 
 
 
-        await launch.startWLSP(0, lspPath).then((client) => {
-            wolframClient = client;
-            onclientReady()
-            // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
-            //     // if (event.newState == State.Running) {
-            //         onclientReady()
-            //     // }
-            // })
-        });
+        // await launch.startWLSP(0, lspPath).then((client) => {
+        //     wolframClient = client;
+        //     onclientReady()
+        //     // wolframClient?.onDidChangeState((event: StateChangeEvent) => {
+        //     //     // if (event.newState == State.Running) {
+        //     //         onclientReady()
+        //     //     // }
+        //     // })
+        // });
     });
     }
 
@@ -315,12 +315,16 @@ export async function restart(): Promise<void> {
     editorDecorations.clear();
     e?.setDecorations(variableDecorationType, []);
 
-    await launch.restart().then((clients) => {
-        wolframClient = clients[0];
-        wolframKernelClient = clients[1];
-        onkernelReady()
-        onclientReady()
-    })
+    // await launch.restart().then((clients) => {
+    //     wolframClient = clients[0];
+    //     wolframKernelClient = clients[1];
+    //     onkernelReady()
+    //     onclientReady()
+    // })
+    await launch.startWLSPKernelIO(0, kernelPath).then(async (client) => {
+        onkernelReady();
+        wolframKernelClient = client;
+    });
 
     return new Promise((resolve) => {
         vscode.workspace.textDocuments.forEach(didOpenTextDocument);
@@ -891,7 +895,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
                     await launch.stopKernel();
                 } catch (e) {}
                 // outputChannel.appendLine("Kernel stopped. Starting a new kernel");
-                await launch.startWLSPKernelSocket(0, kernelPath).then((client) => {
+                await launch.startWLSPKernelIO(0, kernelPath).then((client) => {
                     outputChannel.appendLine("Kernel started after not running");
                     wolframKernelClient = client;
                     onkernelReady().then(async () => {

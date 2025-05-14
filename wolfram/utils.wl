@@ -184,16 +184,16 @@ rangeToStartEnd[range_]:=Module[{},
 ];
 
 symbolDefinitions = <||>;
-documentSymbols[src_]:=Module[{},
+documentSymbols[src_, json_]:=Module[{},
 
-	ast = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[{}]];
-	result = funcsDefs[ast, src];
+	ast = CheckAbort[CodeParse[src], Return[{}]];
+	result = funcsDefs[src, ast, json];
 
 	Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
 	ExportString[result, "RawJSON", "Compact"->True]
 ];
 
-funcsDefs[ast_, text_]:=Module[{funcs, defs, kind, uri, text},
+funcsDefs[text_, ast_, json_]:=Module[{funcs, defs, kind, uri},
 					kind[s_]:= Switch[
 								s, 
 								"Symbol", 13, 
@@ -209,6 +209,7 @@ funcsDefs[ast_, text_]:=Module[{funcs, defs, kind, uri, text},
 								"String", 15, 
 								"Module", 12,
 								_, 19];
+	uri = Lookup[json,"uri", ""];
 	funcs=Cases[ast,CallNode[LeafNode[Symbol,"SetDelayed",_],{CallNode[_,_,x_],y_,___},src_]:>
 		CheckAbort[<|
 		"name"->getStringAtRange[text,x[Source]],
@@ -264,4 +265,4 @@ positionToRange[range_]:=Module[{},
 			"character" -> range[[2,2]]-1
 		|>
 	|>
-];
+]; 
