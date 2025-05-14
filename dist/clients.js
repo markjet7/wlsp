@@ -93,7 +93,7 @@ function startLanguageServer(context0, outputChannel0) {
         // await launch.startWLSPKernelIOClojure(0, wlspPath).then(async (client) => {
         // if on Windows, use the socket
         if (process.platform === "win32") {
-            yield launch.startWLSPKernelSocket(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+            yield launch.startWLSPKernelIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
                 exports.wolframKernelClient = client;
                 onkernelReady();
                 firstKernelLaunched = true;
