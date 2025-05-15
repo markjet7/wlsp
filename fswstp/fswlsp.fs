@@ -303,6 +303,13 @@ type fswlspServer(input: Stream, output: Stream) =
             capabilities.hoverProvider <- true
             capabilities.documentSymbolProvider <- true
 
+            let completionOptions = new CompletionOptions()
+            completionOptions.resolveProvider <- true
+            // completionOptions.triggerCharacters <- [| "["; "," |]
+            completionOptions.resolveProvider <- false
+            capabilities.completionProvider <- new CompletionOptions()
+            capabilities.completionProvider <- completionOptions
+
             let result = new InitializeResult()
             result.capabilities <- capabilities 
 
@@ -460,3 +467,37 @@ type fswlspServer(input: Stream, output: Stream) =
         hover.contents <- m
 
         Result<Hover,ResponseError>.Success(hover)
+
+    override this.Completion (p: CompletionParams): Result<CompletionResult,ResponseError> = 
+            
+            let getDistinctWords text =
+                let matches = Regex.Matches(this._text, @"\b\w+\b")
+                matches |> Seq.cast<Match> |> Seq.map (fun m -> m.Value) |> Seq.distinct |> Seq.toArray
+            
+            // get all the labels from the completions
+            let labels = this.completions |> Seq.cast<JObject> |> Seq.map (fun x -> x.["label"].ToString()) |> Seq.distinct |> Seq.toArray
+
+            // combine the labels with the distinct words
+            let candidates = Array.append labels (getDistinctWords
+            
+            let completions: CompletionItem array = [||]
+            let completionItem = new CompletionItem()
+            completionItem.label <- "test"
+            completionItem.kind <- CompletionItemKind.Text
+            completionItem.detail <- "test"
+            completionItem.documentation <- "test"
+            completionItem.insertTextFormat <- InsertTextFormat.PlainText
+            completionItem.sortText <- "test"
+            completionItem.filterText <- "test"
+            completionItem.textEdit <- new TextEdit()
+
+            let textEditRange = new Range()
+            textEditRange.``start`` <- p.position
+            textEditRange.``end`` <- p.position
+            completionItem.textEdit.range <- textEditRange
+            completionItem.textEdit.newText <- "test"
+
+            this.log_messages(sprintf "Completion: %s" (p.textDocument.uri.ToString()))
+
+            let result = new CompletionResult(completions)
+            Result<CompletionResult,ResponseError>.Success(result)
