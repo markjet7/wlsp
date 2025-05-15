@@ -136,6 +136,26 @@ type fswlspServer(input: Stream, output: Stream) =
         // this.log_messages(sprintf "Result from Wolfram: %s" result)
         result
 
+    member this.get_word_at_position(code: string, position: Position) =
+        let lines = code.Split('\n')
+        let line = lines.[int position.line]
+
+        // get the last word in the line using regex
+        let regex = Regex(@"\w+")
+        let words = regex.Matches(line)
+
+        let word = words |> Seq.cast<Match> |> Seq.tryFind(fun m -> m.Index <= int position.character && m.Index + m.Length >= int position.character)
+        let result = 
+            match word with
+            | Some m -> m.Value
+            | None -> ""
+
+        result
+
+
+
+
+
 
     override this.Initialize(initializeParams: InitializeParams): Result<InitializeResult, ResponseError<InitializeErrorData>> =
         try
@@ -371,39 +391,48 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
             
-            let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
+            try
+                let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
 
-            // this.log_messages(sprintf "DocumentSymbols: %s" input)
+                // this.log_messages(sprintf "DocumentSymbols: %s" input)
 
-            
-            // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
-            this._lsp.Evaluate(input)
-            // this._lsp.Evaluate("1+1")
-            this._lsp.WaitForAnswer() |> ignore
-            let js = this._lsp.GetString() 
+                
+                // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
+                this._lsp.Evaluate(input)
+                // this._lsp.Evaluate("1+1")
+                this._lsp.WaitForAnswer() |> ignore
+                let js = this._lsp.GetString() 
 
 
-            // this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
+                // this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
 
-            let symbols: DocumentSymbol array = 
-                js 
-                |> JArray.Parse
-                |> Seq.map (fun x -> 
-                    let symbol = new DocumentSymbol()
-                    symbol.name <- x["name"].ToString()
-                    symbol.kind <- x["kind"].ToObject<SymbolKind>()
-                    symbol.detail <- x["detail"].ToString()
+                let symbols: DocumentSymbol array = 
+                    js 
+                    |> JArray.Parse
+                    |> Seq.map (fun x -> 
+                        let symbol = new DocumentSymbol()
+                        symbol.name <- x["name"].ToString()
+                        symbol.kind <- x["kind"].ToObject<SymbolKind>()
+                        symbol.detail <- x["detail"].ToString()
 
-                    symbol.range <- x["location"].["range"].ToObject<Range>()
-                    symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+                        symbol.range <- x["location"].["range"].ToObject<Range>()
+                        symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
 
-                    symbol.children <- [||]
-                    symbol
-                )
-                |> Seq.toArray
+                        symbol.children <- [||]
+                        symbol
+                    )
+                    |> Seq.toArray
 
-            let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
-            Result<DocumentSymbolResult,ResponseError>.Success result
+                let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
+                Result<DocumentSymbolResult,ResponseError>.Success result
+            with
+            | ex -> 
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                // Handle the error here, e.g., log it or send a notification to the client
+                Result<DocumentSymbolResult,ResponseError>.Error(error)
+                // let symbols: DocumentSymbol array = [||]
 
             // let result = new DocumentSymbolResult(symbols)
             // Result<DocumentSymbolResult,ResponseError>.Success(result)
@@ -414,6 +443,7 @@ type fswlspServer(input: Stream, output: Stream) =
             this._document <- p.textDocument.uri.ToString() 
 
             this._text <- p.contentChanges.[0].text.ToString()
+
 
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString() 
@@ -430,43 +460,57 @@ type fswlspServer(input: Stream, output: Stream) =
         //     p
         // )
     override this.Hover (p: TextDocumentPositionParams): Result<Hover,ResponseError> = 
-        let position = JToken.FromObject(p.position).ToString().Replace("\"", "\\\"")
 
-        let expr = sprintf "getWordAtPosition[\"%s\", ImportString[\"%s\", \"RawJSON\"]]" this._text position
-        this._ml.Evaluate(expr)
-        this._ml.WaitForAnswer() |> ignore
-        let string = this._ml.GetString()
+        let s = this.get_word_at_position(this._text, p.position)
 
+        // if s == "" then return null
+        if s = "" then
+            let hover = new Hover()
+            let range = new Range()
+            range.``start`` <- p.position
+            range.``end`` <- p.position
+            hover.range <- range
+            let m:MarkupContent = new MarkupContent()
+            m.kind <- MarkupKind.Markdown
+            m.value <- ""
+            hover.range <- range
+            hover.contents <- MarkupContent()
+            hover.contents <- m
+            Result<Hover,ResponseError>.Success(hover)
+        else
+
+            this.log_messages(sprintf "Hover: %s" (s.ToString()))
+            
+
+            let result = this.evaluate_in_kernel(
+                this._ml, 
+                sprintf "TimeConstrained[ExportString[ToExpression@%s, \"HTMLFragment\"], 2, \"Timed out\"]" s)
+
+            let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
+
+            // details object and get the value or null
+            let exists, value = this.details.TryGetValue(s)
+            let detail = if exists then value else new JObject()
+            let message2 = 
+                if detail.["detail"] <> null then
+                    sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
+                else
+                    message
+
+            let hover = new Hover()
+            let range = new Range()
+            range.``start`` <- p.position
+            range.``end`` <- p.position
+
+            let m:MarkupContent = new MarkupContent()
+            m.kind <- MarkupKind.Markdown
+            m.value <- message2
+            hover.range <- range
+            hover.contents <- MarkupContent()
+            hover.contents <- m
+
+            Result<Hover,ResponseError>.Success(hover)
         
-
-        let result = this.evaluate_in_kernel(
-            this._ml, 
-            sprintf "TimeConstrained[ExportString[ToExpression@%s, \"HTMLFragment\"], 2, \"Timed out\"]" string)
-
-        let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
-
-        // details object and get the value or null
-        let exists, value = this.details.TryGetValue(string)
-        let detail = if exists then value else new JObject()
-        let message2 = 
-            if detail.["detail"] <> null then
-                sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
-            else
-                message
-
-        let hover = new Hover()
-        let range = new Range()
-        range.``start`` <- p.position
-        range.``end`` <- p.position
-
-        let m:MarkupContent = new MarkupContent()
-        m.kind <- MarkupKind.Markdown
-        m.value <- message2
-        hover.range <- range
-        hover.contents <- MarkupContent()
-        hover.contents <- m
-
-        Result<Hover,ResponseError>.Success(hover)
 
     override this.Completion (p: CompletionParams): Result<CompletionResult,ResponseError> = 
             
@@ -478,26 +522,46 @@ type fswlspServer(input: Stream, output: Stream) =
             let labels = this.completions |> Seq.cast<JObject> |> Seq.map (fun x -> x.["label"].ToString()) |> Seq.distinct |> Seq.toArray
 
             // combine the labels with the distinct words
-            let candidates = Array.append labels (getDistinctWords
+            let candidates = Array.append labels (getDistinctWords(this._text))
+
+            let string = this.get_word_at_position(this._text, p.position)
+
+            this.log_messages(sprintf "Completion: %s" string)
+
+            // filter the candidates based on whether they start with the string
+            let filteredCandidates = 
+                candidates 
+                |> Array.filter (fun x -> x.StartsWith(string, StringComparison.OrdinalIgnoreCase))
+                |> Array.map (fun x -> 
+                    let completionItem = new CompletionItem()
+                    completionItem.label <- x
+                    completionItem.kind <- CompletionItemKind.Text
+                    completionItem.detail <- x
+                    completionItem.documentation <- x
+                    completionItem.insertTextFormat <- InsertTextFormat.PlainText
+                    completionItem.sortText <- x
+                    completionItem.filterText <- x
+
+                    let textEditRange = new Range()
+                    textEditRange.``start`` <- p.position
+
+                    let endPosition = new Position()
+                    endPosition.line <- p.position.line
+                    endPosition.character <- p.position.character + int64(string.Length)
+
+                    // completionItem.textEdit <- new TextEdit()
+                    // textEditRange.``end`` <- endPosition
+                    // completionItem.textEdit.range <- textEditRange
+                    // completionItem.textEdit.newText <- x
+
+                    completionItem
+                )
+
+            // this.log_messages(sprintf "Completion: %s" (String.Join(", ", filteredCandidates |> Seq.map (fun x -> x.label))))
+
+            let result = new CompletionResult(filteredCandidates)
             
-            let completions: CompletionItem array = [||]
-            let completionItem = new CompletionItem()
-            completionItem.label <- "test"
-            completionItem.kind <- CompletionItemKind.Text
-            completionItem.detail <- "test"
-            completionItem.documentation <- "test"
-            completionItem.insertTextFormat <- InsertTextFormat.PlainText
-            completionItem.sortText <- "test"
-            completionItem.filterText <- "test"
-            completionItem.textEdit <- new TextEdit()
-
-            let textEditRange = new Range()
-            textEditRange.``start`` <- p.position
-            textEditRange.``end`` <- p.position
-            completionItem.textEdit.range <- textEditRange
-            completionItem.textEdit.newText <- "test"
-
-            this.log_messages(sprintf "Completion: %s" (p.textDocument.uri.ToString()))
-
-            let result = new CompletionResult(completions)
             Result<CompletionResult,ResponseError>.Success(result)
+
+    override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 
+            base.SignatureHelp(p: TextDocumentPositionParams)
