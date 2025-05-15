@@ -72,6 +72,14 @@ type GetInputParams() =
 type RunInWolframParams() =
     inherit GetInputParams()
 
+type UpdateConfigurationParams() = 
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+
+type CancelRequestParams() =
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+
     // member val range: Range = null with get, set
     // member val textDocument: TextDocument option = None with get, set
     // member val print: bool = true with get, set
@@ -107,6 +115,9 @@ type fswlspServer(input: Stream, output: Stream) =
     member val _document: string = "" with get, set
 
     member val _text: string = "" with get, set
+
+    member val completions: JArray = null with get, set
+    member val details: JObject = null with get, set
 
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
@@ -250,9 +261,21 @@ type fswlspServer(input: Stream, output: Stream) =
                 )
                 ()
 
+            let updateConfigurationHandler (request: UpdateConfigurationParams): unit = 
+                // Handle the configuration update here
+                // You can access the updated configuration using request.configuration
+                // let config = request.configuration
+                // Perform any necessary actions based on the updated configuration
+                ()
+
             this.RequestHandlers.Set<storageUriParams, ResponseMessageBase>(
                 "storageUri",
                 Func<storageUriParams, CancellationToken, ResponseMessageBase>(storageUriHandler)
+            )
+            
+            this.RequestHandlers.Set<CancelRequestParams, ResponseMessageBase>(
+                "$/cancelRequest",
+                Func<CancelRequestParams, CancellationToken, ResponseMessageBase>(fun _ _ -> null)
             )
 
             this.NotificationHandlers.Set<SetTraceParams>(
@@ -268,6 +291,11 @@ type fswlspServer(input: Stream, output: Stream) =
             this.NotificationHandlers.Set<GetInputParams>(
                 "getInput",
                 Action<GetInputParams>(getInputHandler)
+            )
+
+            this.NotificationHandlers.Set<UpdateConfigurationParams>(
+                "updateConfiguration",
+                Action<UpdateConfigurationParams>(updateConfigurationHandler)
             )
 
             let capabilities = new ServerCapabilities()
@@ -312,6 +340,19 @@ type fswlspServer(input: Stream, output: Stream) =
         let utils_path = Path.Combine(wlsp_folder, "wolfram", "utils.wl")
         this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
+
+        // read the json file and import it
+        this.completions <- File.ReadAllText(Path.Combine(wlsp_folder, "wolfram", "completions.json")) |> JArray.Parse 
+        let details = File.ReadAllText(Path.Combine(wlsp_folder, "wolfram", "details.json")) |> JArray.Parse
+
+        // for each item in details, create a JObject with the key detail and value the item
+        let detailsObject = new JObject()
+        for item in details do
+            let key = item["detail"].ToString().Replace(" details", "")
+            let value = item
+            detailsObject.[key] <- value
+
+        this.details <- detailsObject
 
         // let p = new LogMessageParams()
         // p.``type`` <- MessageType.Info
@@ -388,13 +429,23 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr)
         this._ml.WaitForAnswer() |> ignore
         let string = this._ml.GetString()
+
         
 
         let result = this.evaluate_in_kernel(
             this._ml, 
             sprintf "TimeConstrained[ExportString[ToExpression@%s, \"HTMLFragment\"], 2, \"Timed out\"]" string)
 
-        let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")")
+        let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
+
+        // details object and get the value or null
+        let exists, value = this.details.TryGetValue(string)
+        let detail = if exists then value else new JObject()
+        let message2 = 
+            if detail.["detail"] <> null then
+                sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
+            else
+                message
 
         let hover = new Hover()
         let range = new Range()
@@ -403,8 +454,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         let m:MarkupContent = new MarkupContent()
         m.kind <- MarkupKind.Markdown
-        m.value <- message
-
+        m.value <- message2
         hover.range <- range
         hover.contents <- MarkupContent()
         hover.contents <- m

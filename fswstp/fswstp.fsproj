@@ -19,6 +19,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>  
 
+
     <PackageReference Include="LanguageServerProtocol" Version="7.0.0" />
     <Reference Include="Wolfram.NETLink">
       <HintPath>$(ProjectDir)Wolfram.NETLink.dll</HintPath>
