@@ -671,7 +671,7 @@ function sendToWolfram(printOutput = false, sel = undefined, section = false) {
         ;
         let outputPosition = new vscode.Position(sel.active.line, 0);
         if (plotsProvider._view && (((_a = plotsProvider._view) === null || _a === void 0 ? void 0 : _a.visible) == false || ((_b = plotsProvider._view) === null || _b === void 0 ? void 0 : _b.visible) == undefined)) {
-            vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
+            // vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
         }
         if ((e === null || e === void 0 ? void 0 : e.document.lineCount) == outputPosition.line) {
             e === null || e === void 0 ? void 0 : e.edit(editBuilder => {
@@ -908,7 +908,14 @@ let editorDecorations = new Map();
 function onResult(result) {
     // console.log(result)
 }
+let plotsProviderActive = false;
 function updateInputs(params) {
+    if (plotsProviderActive == false) {
+        plotsProviderActive = true;
+        if (plotsProvider._view == undefined) {
+            vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
+        }
+    }
     plotsProvider.newInput(plotsInputsOutputs.size, params["input"]);
     // add new input to the list of inputs where the key is the length of the map
     plotsInputsOutputs.set(plotsInputsOutputs.size, [
@@ -939,7 +946,7 @@ function updateResults(e, result, print, input = "", file = "") {
                     rawoutput = output;
                 }
                 if (result["params"]["messages"].length > 0) {
-                    output += "<div id='errors'>" +
+                    output += "<div class='errors' style='color: #801f01;'>" +
                         result["params"]["messages"].reduce((acc, cur) => {
                             return acc + "<br>" + cur;
                         }, "") +

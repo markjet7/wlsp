@@ -53,8 +53,18 @@ lineRange[line_,start_,end_]:= ({line, Which[
 ]});
 
 charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},
-	sLines = StringSplit[src, EndOfLine, All];
+	sLines = StringSplit[src, EndOfLin
+	e, All];
 	charIndex = Total[StringLength/@Take[sLines, line-1]] + column
+];
+
+evaluateInKernel[code_]:=Module[{json, result},
+	CheckAbort[result=EvaluationData[code],result=<|"Result":>"Aborted","Success"->False,"MessagesText"->{"Aborted"},"Timing"->0.`,"InputString":>code|>];
+	json ="{
+	\"Result\": \""<>ExportString[result["Result"],"HTMLFragment"] <> "\", 
+	\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>StringRiffle[Take[result["MessagesText"], UpTo[5]],"\", \""]<>"\"",""] <> "]
+	}";
+	json
 ];
 
 getCodeString[src_, rangejs_]:=Module[{range, result, result2},

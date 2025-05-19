@@ -138,6 +138,8 @@ export class PlotsViewProvider implements WebviewViewProvider {
     }
 
     public newInput(row:number, input: string) {
+
+
         this._view?.webview.postMessage({
             text: [],
             row: row,
@@ -282,7 +284,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     margin-left: auto;
                 }
 
-                #errors {
+                .output_row .errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
                     color: #801f01;

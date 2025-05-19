@@ -64,6 +64,7 @@ type storageUriParams() =
 type storageUriResponseParams() =
     inherit ResponseMessageBase()
     member val ``params``: JToken = null with get, set
+    member val ``result``: JToken = null with get, set
 
 type GetInputParams() =
     inherit RequestMessageBase()
@@ -127,14 +128,22 @@ type fswlspServer(input: Stream, output: Stream) =
         ()
 
     member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
-        let toHTML : string = sprintf "ExportString[%s, \"HTMLFragment\"]" code
-        // this.log_messages(sprintf "Result from Wolfram: %s" toHTML)
-        ml.Evaluate(toHTML)
+        let expr = sprintf "evaluateInKernel[Unevaluated[%s]]" code
+        
+        ml.Evaluate(expr)
         ml.WaitForAnswer() |> ignore
-        let result = ml.GetString()
+        let eval = ml.GetString()
+        let json = JToken.Parse( eval)
+        let result = json.["Result"].ToString()
+        let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
+
+        let response = {|
+            result = result
+            errors = errors
+        |}
 
         // this.log_messages(sprintf "Result from Wolfram: %s" result)
-        result
+        response
 
     member this.get_word_at_position(code: string, position: Position) =
         let lines = code.Split('\n')
@@ -184,8 +193,9 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let result:storageUriResponseParams  = 
                     storageUriResponseParams()
-                result.``params`` <- JObject()
-                result.``params``.["uri"] <- working_dir_uri
+                result.``result`` <- JObject()
+                result.``result``.["uri"] <- working_dir_uri
+                result.id <- request.id
                 result 
 
 
@@ -196,7 +206,11 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
 
-                let input = JObject.Parse( this.evaluate_in_kernel(this._ml,eval ))
+                this._ml.Evaluate(eval)
+                this._ml.WaitForAnswer() |> ignore
+
+                let result = this._ml.GetString()
+                let input = JObject.Parse( result)
                 let code = input["code"].ToString()
                 code 
 
@@ -245,7 +259,9 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let start_time = DateTime.Now
 
-                let result = this.evaluate_in_kernel(this._ml, input) 
+                let eval = this.evaluate_in_kernel(this._ml, input) 
+                let result = eval.result
+                let errors = eval.errors
                 // printfn "Result from Wolfram: %d" resultp
 
                 let end_time = DateTime.Now
@@ -263,7 +279,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     output = result
                     position = range.``end``
                     hover = result
-                    messages = []
+                    messages = errors.Split("\n")
                     time = 0
                     decoration = sprintf "%0.2f s: %s" elapsed_time_seconds (result.Substring(0, Math.Min(result.Length, 100)))
                     document = request.Params["textDocument"]
@@ -365,8 +381,12 @@ type fswlspServer(input: Stream, output: Stream) =
 
         let current_dir = Directory.GetCurrentDirectory()
         let utils_path = Path.Combine(wlsp_folder, "wolfram", "utils.wl")
-        this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
-        this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
+        // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
+        // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
+        this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
+        this._ml.WaitAndDiscardAnswer() |> ignore
+        this._lsp.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
+        // this._lsp.WaitForAnswer() |> ignore
 
         // read the json file and import it
         this.completions <- File.ReadAllText(Path.Combine(wlsp_folder, "wolfram", "completions.json")) |> JArray.Parse 
@@ -402,9 +422,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 // this._lsp.Evaluate("1+1")
                 this._lsp.WaitForAnswer() |> ignore
                 let js = this._lsp.GetString() 
-
-
-                // this.log_messages(sprintf "DocumentSymbols: %s" (js.ToString()))
+                // this.log_messages(sprintf "DocumentSymbols: %s" (js))
 
                 let symbols: DocumentSymbol array = 
                     js 
@@ -431,7 +449,8 @@ type fswlspServer(input: Stream, output: Stream) =
                 error.code <- ErrorCodes.InternalError
                 error.message <- ex.Message
                 // Handle the error here, e.g., log it or send a notification to the client
-                Result<DocumentSymbolResult,ResponseError>.Error(error)
+                let result:DocumentSymbolResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+                Result<DocumentSymbolResult,ResponseError>.Success(result)
                 // let symbols: DocumentSymbol array = [||]
 
             // let result = new DocumentSymbolResult(symbols)
@@ -452,7 +471,10 @@ type fswlspServer(input: Stream, output: Stream) =
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
 			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
         
-        this.evaluate_in_kernel(this._ml, expr) |> ignore
+        this._ml.Evaluate(expr) 
+        this._ml.WaitAndDiscardAnswer() |> ignore
+
+        // this.evaluate_in_kernel(this._ml, expr) |> ignore
         // let p = new LogMessageParams()
         // p.``type`` <- MessageType.Info
         // p.message <- sprintf "Hello from Wolfram: %s" this._document
