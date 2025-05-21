@@ -185,7 +185,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
         let result = `<!DOCTYPE html>
         <html lang="en">
         <head>
-            <style type="text/css">
+            <style id="_styles">
     
                 svg {
                     width:100%;

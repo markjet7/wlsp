@@ -58,11 +58,28 @@ charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},
 	charIndex = Total[StringLength/@Take[sLines, line-1]] + column
 ];
 
-evaluateInKernel[code_]:=Module[{json, result},
+escapes[string_]:=StringReplace[string, {
+	"\""->"\\\"",
+	"\\"->"\\\\"
+}];
+
+
+graphicsQ = 
+  FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
+    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}] &;
+
+graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
+
+evaluateInKernel[code_]:=Module[{json, result, formatted},
 	CheckAbort[result=EvaluationData[code],result=<|"Result":>"Aborted","Success"->False,"MessagesText"->{"Aborted"},"Timing"->0.`,"InputString":>code|>];
+	If[
+		(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
+		result["Result"] = Rasterize[result["Result"]];,
+		Nothing
+	];	
 	json ="{
-	\"Result\": \""<>ExportString[result["Result"],"HTMLFragment"] <> "\", 
-	\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>StringRiffle[Take[result["MessagesText"], UpTo[5]],"\", \""]<>"\"",""] <> "]
+	\"Result\": \""<>escapes[ExportString[result["Result"],"HTMLFragment"]] <> "\", 
+	\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\"",""] <> "]
 	}";
 	json
 ];

@@ -1281,12 +1281,12 @@ let wolframBusyQ: boolean = false;
 function wolframBusy(params: any) {
     let outputPosition = new vscode.Position(0, 0);
     if (params.position) {
-        outputPosition = new vscode.Position(params.position.start.line-1, params.position.start.character);
+        outputPosition = new vscode.Position(Math.max(0, params.position.start.line-1), params.position.start.character);
         let e = vscode.window.activeTextEditor;
         if (e) {
 
 
-            let decorationLine = e.document.lineAt(outputPosition.line-1)
+            let decorationLine = e.document.lineAt(Math.max(0, outputPosition.line-1))
             let start = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 10)
             let end = new vscode.Position(decorationLine.lineNumber, decorationLine.range.end.character + 20)
             let range = new vscode.Range(start, end)

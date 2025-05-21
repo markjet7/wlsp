@@ -435,15 +435,15 @@ function startWLSPKernelIO(id, kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
         console.log("Starting WLSP Kernel: " + attempts);
-        let exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "publish", "fswstp");
-        let debugpath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "publish", "fswstp");
+        let exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+        let debugpath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
         // check if windows 
         if (process.platform === "win32") {
             exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
             debugpath = path.join(kernelPath, "fswstp", "bin", "Debug", "net9.0", "fswstp.exe");
         }
         if (process.platform === "darwin") {
-            exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-arm64", "publish", "fswstp");
+            exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
             debugpath = path.join(kernelPath, "fswstp", "bin", "Debug", "net9.0", "fswstp");
         }
         // Use the rustwstp binary and standard I/O

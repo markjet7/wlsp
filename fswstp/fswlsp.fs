@@ -128,14 +128,31 @@ type fswlspServer(input: Stream, output: Stream) =
         ()
 
     member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
-        let expr = sprintf "evaluateInKernel[Unevaluated[%s]]" code
+        // ml
         
-        ml.Evaluate(expr)
-        ml.WaitForAnswer() |> ignore
+        
+        
+        let expr = sprintf "evaluateInKernel[Unevaluated[%s]]" code
+        try
+            ml.Evaluate(expr)
+            ml.WaitForAnswer() |> ignore
+        with
+        | ex -> 
+            let error = new ResponseError<InitializeErrorData>()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            error.data <- null
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error: %s" ex.Message)
+            this.Initialized()
+            ml.Evaluate(expr)
+            ml.WaitForAnswer() |> ignore
+            ()
         let eval = ml.GetString()
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
         let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
+
 
         let response = {|
             result = result
@@ -360,6 +377,7 @@ type fswlspServer(input: Stream, output: Stream) =
             error.data <- errorData
             Result<InitializeResult, ResponseError<InitializeErrorData>>.Error(error)
 
+
     override this.Initialized (): unit = 
         // Handle the initialized event
         // You can send notifications or perform actions here
@@ -373,14 +391,21 @@ type fswlspServer(input: Stream, output: Stream) =
         // get path of binary
         let binary_path = System.Reflection.Assembly.GetExecutingAssembly().Location
 
-        let wlsp_folder = binary_path.Substring(0, binary_path.IndexOf("wlsp")+4)
+        // let wlsp_folder = binary_path.Substring(0, binary_path.IndexOf("wlsp")+4)
+        let binary_folder = System.IO.Path.GetDirectoryName(binary_path)
 
 
         this.Window <- this.Proxy.Window
         
 
         let current_dir = Directory.GetCurrentDirectory()
-        let utils_path = Path.Combine(wlsp_folder, "wolfram", "utils.wl")
+
+        // match wlsp
+        let fswstp_path = binary_folder.Substring(0, binary_folder.IndexOf("fswstp")+6)
+        let wlsp_path = Path.Combine(fswstp_path,  "../")
+
+        let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
+        this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
@@ -389,8 +414,8 @@ type fswlspServer(input: Stream, output: Stream) =
         // this._lsp.WaitForAnswer() |> ignore
 
         // read the json file and import it
-        this.completions <- File.ReadAllText(Path.Combine(wlsp_folder, "wolfram", "completions.json")) |> JArray.Parse 
-        let details = File.ReadAllText(Path.Combine(wlsp_folder, "wolfram", "details.json")) |> JArray.Parse
+        this.completions <- File.ReadAllText(Path.Combine(binary_folder, "completions.json")) |> JArray.Parse 
+        let details = File.ReadAllText(Path.Combine(binary_folder, "details.json")) |> JArray.Parse
 
         // for each item in details, create a JObject with the key detail and value the item
         let detailsObject = new JObject()
@@ -460,8 +485,13 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
             this._document <- p.textDocument.uri.ToString() 
-
             this._text <- p.contentChanges.[0].text.ToString()
+
+            let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+                URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+            
+            this._ml.Evaluate(expr) 
+            this._ml.WaitAndDiscardAnswer() |> ignore
 
 
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
@@ -501,7 +531,7 @@ type fswlspServer(input: Stream, output: Stream) =
             Result<Hover,ResponseError>.Success(hover)
         else
 
-            this.log_messages(sprintf "Hover: %s" (s.ToString()))
+            // this.log_messages(sprintf "Hover: %s" (s.ToString()))
             
 
             let result = this.evaluate_in_kernel(

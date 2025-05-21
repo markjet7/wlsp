@@ -331,9 +331,13 @@ const vscode = acquireVsCodeApi();
     }
 
     if ("command" in message && message.command === "fontSize") {
-
-      let styleElement = document.createElement('style');
-      styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
+styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
+      let styleElement = document.getElementById('_style');
+      // styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
+      if (styleElement) {
+        // styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
+        styleElement.insertRule(`.output_row { font-size: ${message.size}px; }`, styleElement.cssRules.length);
+      }
       document.head.appendChild(styleElement);
       return;
     }

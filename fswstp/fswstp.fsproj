@@ -18,6 +18,12 @@
     <None Include="ml64i4.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>  
+    <None Include="completions.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
+    <None Include="details.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
 
 
     <PackageReference Include="LanguageServerProtocol" Version="7.0.0" />
