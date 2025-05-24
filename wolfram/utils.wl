@@ -71,18 +71,29 @@ graphicsQ =
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
 evaluateInKernel[code_]:=Module[{json, result, formatted},
-	CheckAbort[result=EvaluationData[code],result=<|"Result":>"Aborted","Success"->False,"MessagesText"->{"Aborted"},"Timing"->0.`,"InputString":>code|>];
-	If[
-		(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
-		result["Result"] = Rasterize[result["Result"]];,
-		Nothing
-	];	
-	json ="{
-	\"Result\": \""<>escapes[ExportString[result["Result"],"HTMLFragment"]] <> "\", 
-	\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\"",""] <> "]
-	}";
-	json
+		CheckAbort[
+			result=EvaluationData[ToExpression@code];
+			
+			If[
+				(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
+				result["Result"] = CheckAbort[Rasterize[result["Result"]], result["Result"]];,
+				Nothing
+			];	
+
+			json ="{
+				\"Result\": \""<>CheckAbort[escapes[ExportString[result["Result"],"HTMLFragment"]], "Failed to format output"] <> "\", 
+				\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\"",""] <> "]
+			}";
+			json,
+			
+			json = "{
+				\"Result\": \"$Failed\",
+				\"Errors\":  ["<>"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\""<> "]
+				}";
+			json
+		]
 ];
+SetAttributes[evaluateInKernel, HoldFirst];
 
 getCodeString[src_, rangejs_]:=Module[{range, result, result2},
 	range = ImportString[rangejs, "RawJSON"];
@@ -171,6 +182,7 @@ getTopLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, r
 
 			<|"code"->If[Head@str === String, StringTrim[str], "Failed"], "range"->call[[3]][Source]|>
 		];
+		;
 		result1,
 		
 		<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>
@@ -198,14 +210,14 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 
 rangeToStartEnd[range_List]:=Module[{},
 	{
-		{range[[1]]["line"]+1, range[[1]]["character"]+1},
+		{range[[1]]["line"]+1, range[[1]]["character"]},
 		{range[[2]]["line"]+1, range[[2]]["character"]+1}
 	}
 ];
 
 rangeToStartEnd[range_]:=Module[{},
 	{
-		{range["start", "line"]+1, range["start", "character"]+1},
+		{range["start", "line"]+1, range["start", "character"]},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];

@@ -19,7 +19,7 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Text.RegularExpressions
 
-open Wolfram.NETLink
+open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
 
 type WolframResultParams() =
                 //     let result = json!({
@@ -131,8 +131,10 @@ type fswlspServer(input: Stream, output: Stream) =
         // ml
         
         
-        
-        let expr = sprintf "evaluateInKernel[Unevaluated[%s]]" code
+        this.log_messages(sprintf "Eval: %s" code)
+        let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
+
+        // this.log_messages(sprintf "Eval: %s" expr)
         try
             ml.Evaluate(expr)
             ml.WaitForAnswer() |> ignore
@@ -149,6 +151,9 @@ type fswlspServer(input: Stream, output: Stream) =
             ml.WaitForAnswer() |> ignore
             ()
         let eval = ml.GetString()
+
+        this.log_messages(sprintf "Eval: %s" eval)
+
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
         let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
@@ -377,6 +382,39 @@ type fswlspServer(input: Stream, output: Stream) =
             error.data <- errorData
             Result<InitializeResult, ResponseError<InitializeErrorData>>.Error(error)
 
+    member this.packageArrived(pkt:PacketType) =  
+        // switch statement to handle the packet type
+        match pkt with
+            | PacketType.Illegal -> this.log_messages("Illegal packet received.")
+            | PacketType.Call -> this.log_messages("Call packet received.")
+            | PacketType.Evaluate -> this.log_messages("Evaluate packet received.")
+            | PacketType.Return -> this.log_messages("Return packet received.")
+            | PacketType.InputName -> this.log_messages("InputName packet received.")
+            | PacketType.EnterText -> this.log_messages("EnterText packet received.")
+            | PacketType.EnterExpression -> this.log_messages("EnterExpression packet received.")
+            | PacketType.OutputName -> this.log_messages("OutputName packet received.")
+            | PacketType.ReturnText -> this.log_messages("ReturnText packet received.")
+            | PacketType.ReturnExpression -> this.log_messages("ReturnExpression packet received.")
+            | PacketType.Display -> this.log_messages("Display packet received.")
+            | PacketType.DisplayEnd -> this.log_messages("DisplayEnd packet received.")
+            | PacketType.Message -> 
+                let message = this._ml.GetString()
+                this.log_messages(sprintf "Message packet received: %s" message)
+            | PacketType.Text -> this.log_messages("Text packet received.")
+            | PacketType.Input -> this.log_messages("Input packet received.")
+            | PacketType.InputString -> this.log_messages("InputString packet received.")
+            | PacketType.Menu -> this.log_messages("Menu packet received.")
+            | PacketType.Syntax -> this.log_messages("Syntax packet received.")
+            | PacketType.Suspend -> this.log_messages("Suspend packet received.")
+            | PacketType.Resume -> this.log_messages("Resume packet received.")
+            | PacketType.BeginDialog -> this.log_messages("BeginDialog packet received.")
+            | PacketType.EndDialog -> this.log_messages("EndDialog packet received.")
+            | PacketType.FirstUser -> this.log_messages("FirstUser packet received.")
+            | PacketType.LastUser -> this.log_messages("LastUser packet received.")
+            | PacketType.FrontEnd -> this.log_messages("FrontEnd packet received.")
+            | PacketType.Expression -> this.log_messages("Expression packet received.")
+            | _ -> this.log_messages("Unknown packet type received.")     
+        true
 
     override this.Initialized (): unit = 
         // Handle the initialized event
@@ -387,6 +425,8 @@ type fswlspServer(input: Stream, output: Stream) =
 
         this._ml <- MathLinkFactory.CreateKernelLink()
         this._ml.WaitAndDiscardAnswer()
+
+        // this._ml.OnPacketArrived <- fun pkt -> this.packageArrived pkt
 
         // get path of binary
         let binary_path = System.Reflection.Assembly.GetExecutingAssembly().Location
