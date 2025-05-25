@@ -52,11 +52,12 @@ exports.wolframClient = undefined;
 exports.wolframKernelClient = undefined;
 let firstKernelLaunched = false;
 let plotsInputsOutputs = new Map();
+let wlspPath = "";
 function startLanguageServer(context0, outputChannel0) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         context = context0;
-        let wlspPath = context.asAbsolutePath(path.join(''));
+        wlspPath = context.asAbsolutePath(path.join(''));
         lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
         kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
         cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
@@ -240,9 +241,9 @@ function restart() {
         //     onkernelReady()
         //     onclientReady()
         // })
-        yield launch.startWLSPKernelIO(0, kernelPath).then((client) => __awaiter(this, void 0, void 0, function* () {
-            onkernelReady();
+        yield launch.startWLSPKernelIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
             exports.wolframKernelClient = client;
+            onkernelReady();
         }));
         return new Promise((resolve) => {
             vscode.workspace.textDocuments.forEach(didOpenTextDocument);

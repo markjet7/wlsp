@@ -75,12 +75,13 @@ export let treeDataProvider: workspaceSymbolProvider;
 export let wlspdebugger: WolframDebugAdapterDescriptorFactory;
 
 let plotsInputsOutputs: Map<number, any[]> = new Map();
+let wlspPath = "";
 
 export async function startLanguageServer(context0: vscode.ExtensionContext, outputChannel0: vscode.OutputChannel): Promise<void> {
 
 
     context = context0;
-    let wlspPath = context.asAbsolutePath(path.join(''));
+    wlspPath = context.asAbsolutePath(path.join(''));
     lspPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp.wl'));
     kernelPath = context.asAbsolutePath(path.join('wolfram', 'wolfram-kernel.wl'));
     cursorFile = path.join(context.extensionPath, "wolfram", "cursorLocations.js");
@@ -321,9 +322,9 @@ export async function restart(): Promise<void> {
     //     onkernelReady()
     //     onclientReady()
     // })
-    await launch.startWLSPKernelIO(0, kernelPath).then(async (client) => {
-        onkernelReady();
+    await launch.startWLSPKernelIO(0, wlspPath).then(async (client) => {
         wolframKernelClient = client;
+        onkernelReady();
     });
 
     return new Promise((resolve) => {
