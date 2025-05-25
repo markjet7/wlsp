@@ -291,7 +291,7 @@ function onkernelReady() {
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("errorMessages", errorMessages);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updateInputs", updateInputs);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onResult", onResult);
-            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updatePositions", updatePositions);
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("updatePositions", updatePositions);
             exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification("updateLintDecorations", updateLintDecorations);
             exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification("onRunInWolfram", (result) => {
                 onRunInWolfram(result);
@@ -369,7 +369,7 @@ let movePositions = {};
 function updatePositions(params) {
     return __awaiter(this, void 0, void 0, function* () {
         params["result"].forEach((e) => {
-            if (!(e["location"]["uri"] in movePositions)) {
+            if ("uri" in e["location"] && !(e["location"]["uri"] in movePositions)) {
                 movePositions[e["location"]["uri"]] = {};
             }
             movePositions[e["location"]["uri"]][e["name"]] = e;
@@ -439,30 +439,47 @@ function updateVarTable(vars) {
         dataProvider.updateView(vars);
     });
 }
+function isBefore(a, b) {
+    return a.line < b.line || (a.line === b.line && a.character < b.character);
+}
+function isAfter(a, b) {
+    return a.line > b.line || (a.line === b.line && a.character > b.character);
+}
+function isWithin(pos, range) {
+    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+}
+function findRangeEndsAroundCursor(ranges, cursor) {
+    let current;
+    let next;
+    for (const range of ranges) {
+        if (isWithin(cursor, range)) {
+            if (!current || isBefore(range.end, current))
+                current = range.end;
+        }
+        else if (isAfter(range.start, cursor)) {
+            if (!next || isBefore(range.start, next))
+                next = range.end;
+        }
+    }
+    return { current, next };
+}
 let runningLines = new Map();
 function moveCursor2(position) {
     let e = vscode.window.activeTextEditor;
     let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
-    if (!(uri === undefined) && (uri in movePositions)) {
-        let newPos = Object.values(movePositions[uri]).filter((p) => {
-            let r = p["location"]["range"];
-            return ((r.start.line <= position.line) && (position.line <= r.end.line));
-        });
-        if (newPos.length > 0) {
-            let outputPosition = new vscode.Position(newPos[0]["location"]["range"]["end"]["line"] + 1, 0);
-            if (e) {
-                e.selection = new vscode.Selection(outputPosition, outputPosition);
-                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            }
-            decorateRunningLine(outputPosition);
+    if (!(uri === undefined) && (decodeURIComponent(uri) in movePositions)) {
+        let ranges = [];
+        for (const e of Object.values(movePositions[decodeURIComponent(uri)])) {
+            ranges.push(new vscode.Range(new vscode.Position(e.location.range.start.line, e.location.range.start.character), new vscode.Position(e.location.range.end.line, e.location.range.end.character)));
         }
-        else {
-            if (e) {
-                let outputPosition = new vscode.Position(position["line"] + 1, 0);
-                e.selection = new vscode.Selection(outputPosition, outputPosition);
-                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-                decorateRunningLine(outputPosition);
-            }
+        let { current, next } = findRangeEndsAroundCursor(ranges, position);
+        if (current) {
+            decorateRunningLine(current);
+        }
+        if (next && e) {
+            let nextCharacter = new vscode.Position(next.line, next.character + 1);
+            e.selection = new vscode.Selection(nextCharacter, nextCharacter);
+            e.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
         }
     }
 }
@@ -640,7 +657,7 @@ function runInWolfram(printOutput = false, trace = false, section = false) {
     // vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
     //     cursorMoved = true;
     // })
-    moveCursor(sel);
+    moveCursor2(sel.active);
     let output = true;
     // if (plotsPanel?.visible == true) {
     //     output = true;
@@ -1272,6 +1289,7 @@ function runTextCell(location) {
     let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: false, output: true, trace: false };
     evaluationQueue.unshift(evaluationData);
     sendToWolfram(false);
+    moveCursor2(sel.end);
 }
 function printInWolfram(print = true) {
     runInWolfram(print);

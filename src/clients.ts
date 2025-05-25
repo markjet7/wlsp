@@ -381,7 +381,7 @@ export async function onkernelReady(): Promise<void> {
     wolframKernelClient?.onNotification("updateInputs", updateInputs)
     wolframKernelClient?.onNotification("onResult", onResult)
     
-    wolframClient?.onNotification("updatePositions", updatePositions);
+    wolframKernelClient?.onNotification("updatePositions", updatePositions);
     wolframClient?.onNotification("updateLintDecorations", updateLintDecorations);
 
 
@@ -481,7 +481,7 @@ function clearResults() {
 let movePositions: { [index: string]: any } = {};
 async function updatePositions(params: any) {
     params["result"].forEach((e: any) => {
-        if (!(e["location"]["uri"] in movePositions)) {
+        if ("uri" in e["location"] &&  !(e["location"]["uri"] in movePositions)) {
             movePositions[e["location"]["uri"]] = {}
         }
         movePositions[e["location"]["uri"]][e["name"]] = e;
@@ -575,30 +575,57 @@ function updateVarTable(vars: any) {
     })
 }
 
+function isBefore(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line < b.line || (a.line === b.line && a.character < b.character);
+  }
+  
+  function isAfter(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line > b.line || (a.line === b.line && a.character > b.character);
+  }
+  
+  function isWithin(pos: vscode.Position, range: vscode.Range): boolean {
+    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+  }
+  
+  function findRangeEndsAroundCursor(ranges: vscode.Range[], cursor: vscode.Position): { current?: vscode.Position; next?: vscode.Position } {
+    let current: vscode.Position | undefined;
+    let next: vscode.Position | undefined;
+  
+    for (const range of ranges) {
+      if (isWithin(cursor, range)) {
+        if (!current || isBefore(range.end, current)) current = range.end;
+      } else if (isAfter(range.start, cursor)) {
+        if (!next || isBefore(range.start, next)) next = range.end;
+      }
+    }
+  
+    return { current, next };
+  }
+
 let runningLines: Map<vscode.Range, vscode.DecorationOptions> = new Map();
 function moveCursor2(position: vscode.Position) {
     let e = vscode.window.activeTextEditor;
     let uri = e?.document.uri.toString();
-    if (!(uri === undefined) && (uri in movePositions)) {
-        let newPos: any[] = Object.values(movePositions[uri]).filter((p: any) => {
-            let r = p["location"]["range"] as vscode.Range;
-            return ((r.start.line <= position.line) && (position.line <= r.end.line))
-        })
+    if (!(uri === undefined) && (decodeURIComponent(uri) in movePositions)) {
+        let ranges: vscode.Range[] = [];
+        for (const e of Object.values(movePositions[decodeURIComponent(uri)])) {
+            ranges.push(new vscode.Range(
+            new vscode.Position((e as { location: { range: { start: { line: number; character: number } } } }).location.range.start.line, 
+                                 (e as { location: { range: { start: { line: number; character: number } } } }).location.range.start.character),
+            new vscode.Position((e as { location: { range: { end: { line: number; character: number } } } }).location.range.end.line, 
+                                 (e as { location: { range: { end: { line: number; character: number } } } }).location.range.end.character)
+            ));
+        }
+        let { current, next } = findRangeEndsAroundCursor(ranges, position);
 
-        if (newPos.length > 0) {
-            let outputPosition = new vscode.Position(newPos[0]["location"]["range"]["end"]["line"] + 1, 0);
-            if (e) {
-                e.selection = new vscode.Selection(outputPosition, outputPosition);
-                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-            }
-            decorateRunningLine(outputPosition);
-        } else {
-            if (e) {
-                let outputPosition = new vscode.Position(position["line"] + 1, 0);
-                e.selection = new vscode.Selection(outputPosition, outputPosition);
-                e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
-                decorateRunningLine(outputPosition);
-            }
+        if (current) {
+            decorateRunningLine(current);
+        }
+
+        if (next && e) {
+            let nextCharacter = new vscode.Position(next.line, next.character+1);
+            e.selection = new vscode.Selection(nextCharacter, nextCharacter);
+            e.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
         }
     }
 }
@@ -793,7 +820,7 @@ function runInWolfram(printOutput = false, trace = false, section=false) {
     //     cursorMoved = true;
     // })
 
-    moveCursor(sel)
+    moveCursor2(sel.active)
     let output = true;
     // if (plotsPanel?.visible == true) {
     //     output = true;
@@ -1556,6 +1583,8 @@ function runTextCell(location: vscode.Range) {
     let evaluationData = { range: sel, textDocument: e?.document, print: false, output: true, trace: false };
     evaluationQueue.unshift(evaluationData);
     sendToWolfram(false)
+
+    moveCursor2(sel.end)
 }
 
 function printInWolfram(print = true) {

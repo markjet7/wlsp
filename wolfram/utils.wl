@@ -72,11 +72,13 @@ graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, Rect
 
 evaluateInKernel[code_]:=Module[{json, result, formatted},
 		CheckAbort[
-			result=EvaluationData[ToExpression@code];
+			result=EvaluationData[ToExpression[StringTake[code, SyntaxLength[code]]]];
 			
 			If[
 				(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
-				result["Result"] = CheckAbort[Rasterize[result["Result"]], result["Result"]];,
+				result["Result"] = CheckAbort[
+					Rasterize[result["Result"]], 
+					result["Result"]];,
 				Nothing
 			];	
 
@@ -94,6 +96,86 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 		]
 ];
 SetAttributes[evaluateInKernel, HoldFirst];
+
+updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
+	ast = CodeParse[src];
+	functions = Cases[ast, (
+		_CallNode |
+		_LeafNode
+	),{2}];
+
+	locations = DeleteCases[Table[
+		l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
+		<|
+			"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
+			"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+		|>,
+		{f, functions}
+	], <|
+			"start" -> <|"line"->-1, "character" -> -1|>,
+			"end" -> <|"line"->-1, "character" -> -1|> 
+		|>];
+	
+	ExportString[
+		locations, "RawJSON", "Compact" -> True]
+];
+
+
+createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->100|>|>}|>|>;
+
+getSections[src_, sectionPattern_]:=Module[{},
+	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
+];
+
+
+emptyLineQ[line_] := StringMatchQ[line, StartOfString ~~ WhitespaceCharacter ... ~~ EndOfString];
+
+codeLens[src_]:=Module[{starts, ends, breaks, lens, lines, sections, sectionPattern, ast, isEmptyLines, tripleEmptyPositions, gap, functions},
+		Check[
+			
+			ast = CodeParse[src];
+			
+			lines = StringSplit[src, EndOfLine, All];
+			isEmptyLines = emptyLineQ /@ lines; 
+			tripleEmptyPositions = SequencePosition[isEmptyLines, {True, True, True}];
+			startLines = Prepend[tripleEmptyPositions[[All, 1]]+1, 1];
+			endLines = Append[tripleEmptyPositions[[All, 2]], Length@lines];
+			cellRanges = Select[Transpose[{startLines, endLines}], #[[1]] < #[[2]] &];
+
+			functions=Cases[ast,(CallNode[LeafNode[Symbol,(_),_],___]|LeafNode[_,_,_]),{2}];
+
+			If[Length@functions < 2,
+				lens = {};
+				Return[ExportString[lens, "RawJSON", "Compact" -> True]],
+
+				start = 1;
+				lens = BlockMap[
+					Function[{f},
+						gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
+						If[
+							gap>=3,
+							c = createCell[
+								start,
+								f[[2]][[-1]][Source][[1,1]]-3];
+								start = f[[2]][[-1]][Source][[1,1]];
+							c,
+						Nothing
+						]
+					],
+					functions,
+					2,
+				1];
+				Return[ExportString[lens, "RawJSON", "Compact" -> True]];
+			],
+
+			lens = {};
+			Return[ExportString[lens, "RawJSON", "Compact" -> True]];
+		]
+
+
+];
+
+
 
 getCodeString[src_, rangejs_]:=Module[{range, result, result2},
 	range = ImportString[rangejs, "RawJSON"];

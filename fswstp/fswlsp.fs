@@ -51,6 +51,11 @@ type updateInputsParams() =
     member val ``params``: JToken = null with get, set
     member val method: string = "updateInputs" with get, set
 
+type updatePositionsParams() =
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method: string = "updatePositions" with get, set
+
 type SetTraceParams() =
     inherit RequestMessageBase()
     member val Params: JToken = null with get, set
@@ -120,6 +125,8 @@ type fswlspServer(input: Stream, output: Stream) =
     member val completions: JArray = null with get, set
     member val details: JObject = null with get, set
 
+    member val locations : JArray = null with get, set
+
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
         p.``type`` <- MessageType.Info
@@ -131,7 +138,7 @@ type fswlspServer(input: Stream, output: Stream) =
         // ml
         
         
-        this.log_messages(sprintf "Eval: %s" code)
+        // this.log_messages(sprintf "Eval: %s" code)
         let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
 
         // this.log_messages(sprintf "Eval: %s" expr)
@@ -152,7 +159,7 @@ type fswlspServer(input: Stream, output: Stream) =
             ()
         let eval = ml.GetString()
 
-        this.log_messages(sprintf "Eval: %s" eval)
+        // this.log_messages(sprintf "Eval: %s" eval)
 
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
@@ -291,12 +298,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 let elapsed_time_seconds = elapsed_time.TotalSeconds
 
 
-                
                 let wolframResult: WolframResultParams = WolframResultParams()
                 wolframResult.``params`` <- JObject.FromObject({|
                     input = input
                     load = false
-                    print = false
+                    print = request.Params["print"].ToObject<bool>()
                     result = result
                     output = result
                     position = range.``end``
@@ -359,6 +365,8 @@ type fswlspServer(input: Stream, output: Stream) =
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
+            capabilities.codeLensProvider <- new CodeLensOptions()
+            capabilities.codeLensProvider.resolveProvider <- true
             capabilities.documentSymbolProvider <- true
 
             let completionOptions = new CompletionOptions()
@@ -437,7 +445,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
         this.Window <- this.Proxy.Window
         
-
         let current_dir = Directory.GetCurrentDirectory()
 
         // match wlsp
@@ -522,7 +529,6 @@ type fswlspServer(input: Stream, output: Stream) =
             // Result<DocumentSymbolResult,ResponseError>.Success(result)
 
 
-
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
             this._document <- p.textDocument.uri.ToString() 
             this._text <- p.contentChanges.[0].text.ToString()
@@ -533,16 +539,101 @@ type fswlspServer(input: Stream, output: Stream) =
             this._ml.Evaluate(expr) 
             this._ml.WaitAndDiscardAnswer() |> ignore
 
+            let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"")) 
+
+            this._lsp.Evaluate(expr)
+            this._lsp.WaitForAnswer() |> ignore
+            let locations = 
+                try 
+                    JArray.Parse(this._lsp.GetString())
+                with
+                | ex -> 
+                    this.log_messages(sprintf "Error parsing locations: %s" ex.Message)
+                    JArray()
+            // this.log_messages(sprintf "DidChangeTextDocument: %s" (locations.ToString()))
+
+            let p = new updatePositionsParams()
+            p.``params`` <- JObject.FromObject({|
+                result = locations
+            |})
+
+            this.SendNotification(
+                p
+            )
+            
+    override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
+            if p.textDocument.uri.ToString() <> this._document then
+                // this.log_messages(sprintf "CodeLens: Document URI mismatch: %s != %s" p.textDocument.uri.ToString() this._document)
+                Result<CodeLens array,ResponseError>.Success([||])
+            else
+                // try
+                    let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
+                    this._lsp.Evaluate(input)
+                    this._lsp.WaitForAnswer() |> ignore
+                    let js2 = this._lsp.GetString()
+                    // this.log_messages(sprintf "CodeLens: %s" (js2.ToString()))
+
+                    // this.log_messages(sprintf "CodeLens: %s" js)
+
+                    let codeLenses: CodeLens array = 
+                        js2 
+                        |> JArray.Parse
+                        |> Seq.filter (fun x ->x.ToString().Contains("command"))
+                        |> Seq.map (fun x -> 
+
+                            let command = new Command()
+                            command.title <- x["command"].["title"].ToString()
+                            command.command <- x["command"].["command"].ToString()
+                            command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
+                            let codeLens = new CodeLens()
+                            codeLens.range <- x["range"].ToObject<Range>()
+                            codeLens.command <- command // or set it if needed
+                            codeLens
+                        )
+                        |> Seq.toArray
+
+                    Result<CodeLens array,ResponseError>.Success(codeLenses)
+                // with
+                // | ex -> 
+                //     let error = new ResponseError()
+                //     error.code <- ErrorCodes.InternalError
+                //     error.message <- ex.Message
+                //     Result<CodeLens array,ResponseError>.Error(error)
 
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
-        this._document <- p.textDocument.uri.ToString() 
-        this._text <- p.textDocument.text.ToString()
+        this._document <- p.textDocument.uri.ToString()
+        this._text <- p.textDocument.text
 
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
 			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
         
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
+
+        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"")) 
+
+        this._lsp.Evaluate(expr)
+        this._lsp.WaitForAnswer() |> ignore
+        let locations = 
+            try 
+                let js = this._lsp.GetString()
+                this.log_messages(sprintf "DidOpenTextDocument: %s" js)
+                JArray.Parse(js)
+            with
+            | ex -> 
+                // this.log_messages(sprintf "Error parsing locations: %s" ex.Message)
+                JArray()
+        this.log_messages(sprintf "DidChangeTextDocument: %s" (locations.ToString()))
+
+        let p = new updatePositionsParams()
+        p.``params`` <- JObject.FromObject({|
+            result = locations
+        |})
+
+        this.SendNotification(
+            p
+        )
+
 
         // this.evaluate_in_kernel(this._ml, expr) |> ignore
         // let p = new LogMessageParams()
@@ -576,9 +667,10 @@ type fswlspServer(input: Stream, output: Stream) =
 
             let result = this.evaluate_in_kernel(
                 this._ml, 
-                sprintf "TimeConstrained[ExportString[ToExpression@%s, \"HTMLFragment\"], 2, \"Timed out\"]" s)
+                sprintf "TimeConstrained[%s, 2, \"Large output\"]" s)
 
-            let message = result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
+            // let message = result.result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
+            let message = result.result
 
             // details object and get the value or null
             let exists, value = this.details.TryGetValue(s)
@@ -617,8 +709,6 @@ type fswlspServer(input: Stream, output: Stream) =
             let candidates = Array.append labels (getDistinctWords(this._text))
 
             let string = this.get_word_at_position(this._text, p.position)
-
-            this.log_messages(sprintf "Completion: %s" string)
 
             // filter the candidates based on whether they start with the string
             let filteredCandidates = 
