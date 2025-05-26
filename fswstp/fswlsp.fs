@@ -231,14 +231,19 @@ type fswlspServer(input: Stream, output: Stream) =
             let get_input(request: GetInputParams): string = 
 
                 let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = this._text.Replace("\"", "\\\"")
+                let t = this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
 
                 let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
+
+                this.log_messages(sprintf "GetInput: %s" eval)
 
                 this._ml.Evaluate(eval)
                 this._ml.WaitForAnswer() |> ignore
 
                 let result = this._ml.GetString()
+
+                this.log_messages(sprintf "GetInput2: %s" result)
+
                 let input = JObject.Parse( result)
                 let code = input["code"].ToString()
                 code 
@@ -281,6 +286,8 @@ type fswlspServer(input: Stream, output: Stream) =
                 this.SendNotification(
                     busy
                 )
+
+                // this.log_messages(sprintf "Run in Wolfram: %s" (request.Params.ToString()))
 
                 let input = get_input request
 

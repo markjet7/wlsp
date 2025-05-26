@@ -53,8 +53,7 @@ lineRange[line_,start_,end_]:= ({line, Which[
 ]});
 
 charIndexFromLineColumn[src_, {line_, column_}]:=Module[{sLines, charIndex},
-	sLines = StringSplit[src, EndOfLin
-	e, All];
+	sLines = StringSplit[src, EndOfLine, All];
 	charIndex = Total[StringLength/@Take[sLines, line-1]] + column
 ];
 
@@ -203,8 +202,8 @@ getCode[src_, range_, section_:False]:=Module[{ result},
 		!(range["start"] === range["end"]),
 			<|
 				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
-					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
-					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"] |>
+					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"]+1 |>,
+					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"]+1 |>
 				|>
 			|>,
 		True,
@@ -292,14 +291,14 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 
 rangeToStartEnd[range_List]:=Module[{},
 	{
-		{range[[1]]["line"]+1, range[[1]]["character"]},
+		{range[[1]]["line"]+1, range[[1]]["character"]+1},
 		{range[[2]]["line"]+1, range[[2]]["character"]+1}
 	}
 ];
 
 rangeToStartEnd[range_]:=Module[{},
 	{
-		{range["start", "line"]+1, range["start", "character"]},
+		{range["start", "line"]+1, range["start", "character"]+1},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];
