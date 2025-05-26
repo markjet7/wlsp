@@ -138,10 +138,10 @@ type fswlspServer(input: Stream, output: Stream) =
         // ml
         
         
-        // this.log_messages(sprintf "Eval: %s" code)
+
         let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
 
-        // this.log_messages(sprintf "Eval: %s" expr)
+
         try
             ml.Evaluate(expr)
             ml.WaitForAnswer() |> ignore
@@ -159,7 +159,7 @@ type fswlspServer(input: Stream, output: Stream) =
             ()
         let eval = ml.GetString()
 
-        // this.log_messages(sprintf "Eval: %s" eval)
+
 
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
@@ -171,7 +171,7 @@ type fswlspServer(input: Stream, output: Stream) =
             errors = errors
         |}
 
-        // this.log_messages(sprintf "Result from Wolfram: %s" result)
+
         response
 
     member this.get_word_at_position(code: string, position: Position) =
@@ -235,14 +235,10 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
 
-                this.log_messages(sprintf "GetInput: %s" eval)
-
                 this._ml.Evaluate(eval)
                 this._ml.WaitForAnswer() |> ignore
 
                 let result = this._ml.GetString()
-
-                this.log_messages(sprintf "GetInput2: %s" result)
 
                 let input = JObject.Parse( result)
                 let code = input["code"].ToString()
@@ -287,11 +283,11 @@ type fswlspServer(input: Stream, output: Stream) =
                     busy
                 )
 
-                // this.log_messages(sprintf "Run in Wolfram: %s" (request.Params.ToString()))
+
 
                 let input = get_input request
 
-                // this.log_messages(sprintf "Run in Wolfram: %s" input)
+
 
                 let start_time = DateTime.Now
 
@@ -372,8 +368,8 @@ type fswlspServer(input: Stream, output: Stream) =
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
-            capabilities.codeLensProvider <- new CodeLensOptions()
-            capabilities.codeLensProvider.resolveProvider <- true
+            // capabilities.codeLensProvider <- new CodeLensOptions()
+            // capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- true
 
             let completionOptions = new CompletionOptions()
@@ -397,38 +393,56 @@ type fswlspServer(input: Stream, output: Stream) =
             error.data <- errorData
             Result<InitializeResult, ResponseError<InitializeErrorData>>.Error(error)
 
-    member this.packageArrived(pkt:PacketType) =  
+    member this.packetArrived(pkt:PacketType):bool =  
         // switch statement to handle the packet type
+        // this.log_messages(sprintf "Packet arrived: %A" pkt)
         match pkt with
-            | PacketType.Illegal -> this.log_messages("Illegal packet received.")
-            | PacketType.Call -> this.log_messages("Call packet received.")
-            | PacketType.Evaluate -> this.log_messages("Evaluate packet received.")
-            | PacketType.Return -> this.log_messages("Return packet received.")
-            | PacketType.InputName -> this.log_messages("InputName packet received.")
-            | PacketType.EnterText -> this.log_messages("EnterText packet received.")
-            | PacketType.EnterExpression -> this.log_messages("EnterExpression packet received.")
-            | PacketType.OutputName -> this.log_messages("OutputName packet received.")
-            | PacketType.ReturnText -> this.log_messages("ReturnText packet received.")
-            | PacketType.ReturnExpression -> this.log_messages("ReturnExpression packet received.")
-            | PacketType.Display -> this.log_messages("Display packet received.")
-            | PacketType.DisplayEnd -> this.log_messages("DisplayEnd packet received.")
+            | PacketType.Illegal -> () // this.log_messages("Illegal packet received.")
+            | PacketType.Call -> () // this.log_messages("Call packet received.")
+            | PacketType.Evaluate -> () // this.log_messages("Evaluate packet received.")
+            | PacketType.Return -> ()
+            | PacketType.InputName -> () // this.log_messages("InputName packet received.")
+            | PacketType.EnterText -> () // this.log_messages("EnterText packet received.")
+            | PacketType.EnterExpression -> () // this.log_messages("EnterExpression packet received.")
+            | PacketType.OutputName -> () // this.log_messages("OutputName packet received.")
+            | PacketType.ReturnText -> () // this.log_messages("ReturnText packet received.")
+            | PacketType.ReturnExpression -> () // this.log_messages("ReturnExpression packet received.")
+            | PacketType.Display -> this.log_messages( sprintf "%s" (this._ml.GetString()))
+            | PacketType.DisplayEnd -> this.log_messages(sprintf "%s" (this._ml.GetString()))
             | PacketType.Message -> 
                 let message = this._ml.GetString()
-                this.log_messages(sprintf "Message packet received: %s" message)
-            | PacketType.Text -> this.log_messages("Text packet received.")
-            | PacketType.Input -> this.log_messages("Input packet received.")
-            | PacketType.InputString -> this.log_messages("InputString packet received.")
-            | PacketType.Menu -> this.log_messages("Menu packet received.")
-            | PacketType.Syntax -> this.log_messages("Syntax packet received.")
-            | PacketType.Suspend -> this.log_messages("Suspend packet received.")
-            | PacketType.Resume -> this.log_messages("Resume packet received.")
-            | PacketType.BeginDialog -> this.log_messages("BeginDialog packet received.")
-            | PacketType.EndDialog -> this.log_messages("EndDialog packet received.")
-            | PacketType.FirstUser -> this.log_messages("FirstUser packet received.")
-            | PacketType.LastUser -> this.log_messages("LastUser packet received.")
-            | PacketType.FrontEnd -> this.log_messages("FrontEnd packet received.")
-            | PacketType.Expression -> this.log_messages("Expression packet received.")
-            | _ -> this.log_messages("Unknown packet type received.")     
+                this.log_messages(sprintf "%s" message)
+            | PacketType.Text -> 
+                let text = this._ml.GetString()
+                this.log_messages(sprintf "%s" text)
+                let p = new ShowMessageParams()
+                p.``type`` <- MessageType.Info
+                p.message <- sprintf "%s ... full output in output log" (text.Substring(
+                    0, 
+                    Math.Min(text.Length, 100) // Limit the message length to 100 characters
+                )) // Truncate the message to avoid overflow
+                let actionItem = new MessageActionItem()
+                actionItem.title <- "Open Log"
+                // p.actions <- [| actionItem |]
+                this.Window.ShowMessage(p)
+                ()
+            // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
+            // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
+            // | PacketType.InputText -> () // this.log_messages("InputText packet received.") 
+// ...existing code...
+            | PacketType.Input -> () // this.log_messages("Input packet received.")
+            | PacketType.InputString -> () // this.log_messages("InputString packet received.")
+            | PacketType.Menu -> () // this.log_messages("Menu packet received.")
+            | PacketType.Syntax -> this.log_messages(sprintf "%s" (this._ml.GetString()))
+            | PacketType.Suspend -> () // this.log_messages("Suspend packet received.")
+            | PacketType.Resume -> () // this.log_messages("Resume packet received.")
+            | PacketType.BeginDialog -> () // this.log_messages("BeginDialog packet received.")
+            | PacketType.EndDialog -> () // this.log_messages("EndDialog packet received.")
+            | PacketType.FirstUser -> () // this.log_messages("FirstUser packet received.")
+            | PacketType.LastUser -> () // this.log_messages("LastUser packet received.")
+            | PacketType.FrontEnd -> () // this.log_messages("FrontEnd packet received.")
+            | PacketType.Expression -> () // this.log_messages("Expression packet received.")
+            | _ -> () // this.log_messages("Unknown packet type received.")     
         true
 
     override this.Initialized (): unit = 
@@ -441,7 +455,12 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml <- MathLinkFactory.CreateKernelLink()
         this._ml.WaitAndDiscardAnswer()
 
-        // this._ml.OnPacketArrived <- fun pkt -> this.packageArrived pkt
+        this._ml.add_PacketArrived(PacketHandler(fun _ -> 
+            // this._ml.WaitAndDiscardAnswer() |> ignore
+            this.packetArrived
+        )) |> ignore
+
+        
 
         // get path of binary
         let binary_path = System.Reflection.Assembly.GetExecutingAssembly().Location
@@ -465,6 +484,7 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
         this._ml.WaitAndDiscardAnswer() |> ignore
         this._lsp.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
+        this._lsp.WaitAndDiscardAnswer() |> ignore
         // this._lsp.WaitForAnswer() |> ignore
 
         // read the json file and import it
@@ -493,7 +513,7 @@ type fswlspServer(input: Stream, output: Stream) =
             try
                 let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
 
-                // this.log_messages(sprintf "DocumentSymbols: %s" input)
+
 
                 
                 // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
@@ -501,7 +521,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 // this._lsp.Evaluate("1+1")
                 this._lsp.WaitForAnswer() |> ignore
                 let js = this._lsp.GetString() 
-                // this.log_messages(sprintf "DocumentSymbols: %s" (js))
+
 
                 let symbols: DocumentSymbol array = 
                     js 
@@ -537,76 +557,41 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
-            this._document <- p.textDocument.uri.ToString() 
-            this._text <- p.contentChanges.[0].text.ToString()
 
-            let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
-                URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+
+        this._document <- p.textDocument.uri.ToString() 
+        this._text <- p.contentChanges.[0].text.ToString()
+
+        let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+            URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+        
+        this._ml.Evaluate(expr) 
+        this._ml.WaitAndDiscardAnswer() |> ignore
+
+        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
+
+        this._lsp.Evaluate(expr)
+        this._lsp.WaitForAnswer() |> ignore
+        let locations = 
+            try 
+                let js = this._lsp.GetString()
+                JArray.Parse(js)
+            with
+            | ex -> 
+                JArray()
+
+        let p2 = new updatePositionsParams()
+        p2.``params`` <- JObject.FromObject({|
+            result = [{|
+                location = {| uri = this._document|}
+                locations = locations 
+            |}]
+        |})
+
+        this.SendNotification(
+            p2
+        )
             
-            this._ml.Evaluate(expr) 
-            this._ml.WaitAndDiscardAnswer() |> ignore
-
-            let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"")) 
-
-            this._lsp.Evaluate(expr)
-            this._lsp.WaitForAnswer() |> ignore
-            let locations = 
-                try 
-                    JArray.Parse(this._lsp.GetString())
-                with
-                | ex -> 
-                    this.log_messages(sprintf "Error parsing locations: %s" ex.Message)
-                    JArray()
-            // this.log_messages(sprintf "DidChangeTextDocument: %s" (locations.ToString()))
-
-            let p = new updatePositionsParams()
-            p.``params`` <- JObject.FromObject({|
-                result = locations
-            |})
-
-            this.SendNotification(
-                p
-            )
-            
-    override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-            if p.textDocument.uri.ToString() <> this._document then
-                // this.log_messages(sprintf "CodeLens: Document URI mismatch: %s != %s" p.textDocument.uri.ToString() this._document)
-                Result<CodeLens array,ResponseError>.Success([||])
-            else
-                // try
-                    let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
-                    this._lsp.Evaluate(input)
-                    this._lsp.WaitForAnswer() |> ignore
-                    let js2 = this._lsp.GetString()
-                    // this.log_messages(sprintf "CodeLens: %s" (js2.ToString()))
-
-                    // this.log_messages(sprintf "CodeLens: %s" js)
-
-                    let codeLenses: CodeLens array = 
-                        js2 
-                        |> JArray.Parse
-                        |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                        |> Seq.map (fun x -> 
-
-                            let command = new Command()
-                            command.title <- x["command"].["title"].ToString()
-                            command.command <- x["command"].["command"].ToString()
-                            command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                            let codeLens = new CodeLens()
-                            codeLens.range <- x["range"].ToObject<Range>()
-                            codeLens.command <- command // or set it if needed
-                            codeLens
-                        )
-                        |> Seq.toArray
-
-                    Result<CodeLens array,ResponseError>.Success(codeLenses)
-                // with
-                // | ex -> 
-                //     let error = new ResponseError()
-                //     error.code <- ErrorCodes.InternalError
-                //     error.message <- ex.Message
-                //     Result<CodeLens array,ResponseError>.Error(error)
-
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString()
         this._text <- p.textDocument.text
@@ -617,29 +602,67 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
 
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"")) 
+        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
         let locations = 
             try 
                 let js = this._lsp.GetString()
-                this.log_messages(sprintf "DidOpenTextDocument: %s" js)
                 JArray.Parse(js)
             with
             | ex -> 
-                // this.log_messages(sprintf "Error parsing locations: %s" ex.Message)
                 JArray()
-        this.log_messages(sprintf "DidChangeTextDocument: %s" (locations.ToString()))
 
-        let p = new updatePositionsParams()
-        p.``params`` <- JObject.FromObject({|
-            result = locations
+        let p2 = new updatePositionsParams()
+        p2.``params`` <- JObject.FromObject({|
+            result = [{|
+                location = {| uri = this._document|}
+                locations = locations 
+            |}]
         |})
 
         this.SendNotification(
-            p
+            p2
         )
+    override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
+            
+        
+        if p.textDocument.uri.ToString() <> this._document then
+
+            Result<CodeLens array,ResponseError>.Success([||])
+        else
+            // try
+            let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
+            this._lsp.Evaluate(input)
+            this._lsp.WaitForAnswer() |> ignore
+            let js2 = this._lsp.GetString()
+
+            let codeLenses: CodeLens array = 
+                js2 
+                |> JArray.Parse
+                |> Seq.filter (fun x ->x.ToString().Contains("command"))
+                |> Seq.map (fun x -> 
+
+                    let command = new Command()
+                    command.title <- x["command"].["title"].ToString()
+                    command.command <- x["command"].["command"].ToString()
+                    command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
+                    let codeLens = new CodeLens()
+                    codeLens.range <- x["range"].ToObject<Range>()
+                    codeLens.command <- command // or set it if needed
+                    codeLens
+                )
+                |> Seq.toArray
+
+            Result<CodeLens array,ResponseError>.Success(codeLenses)
+            // with
+            // | ex -> 
+            //     let error = new ResponseError()
+            //     error.code <- ErrorCodes.InternalError
+            //     error.message <- ex.Message
+            //     Result<CodeLens array,ResponseError>.Error(error)
+
 
 
         // this.evaluate_in_kernel(this._ml, expr) |> ignore
@@ -669,7 +692,7 @@ type fswlspServer(input: Stream, output: Stream) =
             Result<Hover,ResponseError>.Success(hover)
         else
 
-            // this.log_messages(sprintf "Hover: %s" (s.ToString()))
+
             
 
             let result = this.evaluate_in_kernel(
@@ -746,7 +769,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     completionItem
                 )
 
-            // this.log_messages(sprintf "Completion: %s" (String.Join(", ", filteredCandidates |> Seq.map (fun x -> x.label))))
+
 
             let result = new CompletionResult(filteredCandidates)
             

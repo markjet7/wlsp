@@ -370,10 +370,12 @@ let movePositions = {};
 function updatePositions(params) {
     return __awaiter(this, void 0, void 0, function* () {
         params["result"].forEach((e) => {
-            if ("uri" in e["location"] && !(e["location"]["uri"] in movePositions)) {
+            if ("location" in e && "uri" in e["location"] && !(e["location"]["uri"] in movePositions)) {
                 movePositions[e["location"]["uri"]] = {};
             }
-            movePositions[e["location"]["uri"]][e["name"]] = e;
+            if ("location" in e && "uri" in e["location"] && (e["location"]["uri"] in movePositions)) {
+                movePositions[e["location"]["uri"]]["locations"] = e["locations"];
+            }
         });
     });
 }
@@ -465,20 +467,21 @@ function findRangeEndsAroundCursor(ranges, cursor) {
     return { current, next };
 }
 let runningLines = new Map();
-function moveCursor2(position) {
+function moveCursor2(position0) {
     let e = vscode.window.activeTextEditor;
     let uri = e === null || e === void 0 ? void 0 : e.document.uri.toString();
+    let position = new vscode.Position(position0.line + 1, position0.character);
     if (!(uri === undefined) && (decodeURIComponent(uri) in movePositions)) {
         let ranges = [];
-        for (const e of Object.values(movePositions[decodeURIComponent(uri)])) {
-            ranges.push(new vscode.Range(new vscode.Position(e.location.range.start.line, e.location.range.start.character), new vscode.Position(e.location.range.end.line, e.location.range.end.character)));
+        for (const e of Object.values(movePositions[decodeURIComponent(uri)]["locations"])) {
+            ranges.push(new vscode.Range(new vscode.Position(e.start.line, e.start.character), new vscode.Position(e.end.line, e.end.character)));
         }
         let { current, next } = findRangeEndsAroundCursor(ranges, position);
         if (current) {
             decorateRunningLine(current);
         }
         if (next && e) {
-            let nextCharacter = new vscode.Position(next.line, next.character + 1);
+            let nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
             e.selection = new vscode.Selection(nextCharacter, nextCharacter);
             e.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
         }

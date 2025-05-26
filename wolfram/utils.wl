@@ -291,14 +291,14 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 
 rangeToStartEnd[range_List]:=Module[{},
 	{
-		{range[[1]]["line"]+1, range[[1]]["character"]+1},
+		{range[[1]]["line"]+1, range[[1]]["character"]},
 		{range[[2]]["line"]+1, range[[2]]["character"]+1}
 	}
 ];
 
 rangeToStartEnd[range_]:=Module[{},
 	{
-		{range["start", "line"]+1, range["start", "character"]+1},
+		{range["start", "line"]+1, range["start", "character"]},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];

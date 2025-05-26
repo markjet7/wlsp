@@ -481,11 +481,13 @@ function clearResults() {
 
 let movePositions: { [index: string]: any } = {};
 async function updatePositions(params: any) {
-    params["result"].forEach((e: any) => {
-        if ("uri" in e["location"] &&  !(e["location"]["uri"] in movePositions)) {
+     params["result"].forEach((e: any) => {
+        if ("location" in e && "uri" in e["location"] &&  !(e["location"]["uri"] in movePositions)) {
             movePositions[e["location"]["uri"]] = {}
+        } 
+        if ("location" in e && "uri" in e["location"] &&  (e["location"]["uri"] in movePositions)) {
+            movePositions[e["location"]["uri"]]["locations"] = e["locations"];
         }
-        movePositions[e["location"]["uri"]][e["name"]] = e;
     });
 }
 
@@ -604,18 +606,18 @@ function isBefore(a: vscode.Position, b: vscode.Position): boolean {
   }
 
 let runningLines: Map<vscode.Range, vscode.DecorationOptions> = new Map();
-function moveCursor2(position: vscode.Position) {
+function moveCursor2(position0: vscode.Position) {
     let e = vscode.window.activeTextEditor;
     let uri = e?.document.uri.toString();
+    let position = new vscode.Position(position0.line+1, position0.character);
     if (!(uri === undefined) && (decodeURIComponent(uri) in movePositions)) {
         let ranges: vscode.Range[] = [];
-        for (const e of Object.values(movePositions[decodeURIComponent(uri)])) {
-            ranges.push(new vscode.Range(
-            new vscode.Position((e as { location: { range: { start: { line: number; character: number } } } }).location.range.start.line, 
-                                 (e as { location: { range: { start: { line: number; character: number } } } }).location.range.start.character),
-            new vscode.Position((e as { location: { range: { end: { line: number; character: number } } } }).location.range.end.line, 
-                                 (e as { location: { range: { end: { line: number; character: number } } } }).location.range.end.character)
-            ));
+        for (const e of Object.values(movePositions[decodeURIComponent(uri)]["locations"])) {
+            ranges.push(new vscode.Range(            
+
+                new vscode.Position((e as vscode.Range).start.line, (e as vscode.Range).start.character),
+                new vscode.Position((e as vscode.Range).end.line, (e as vscode.Range).end.character)
+             ));
         }
         let { current, next } = findRangeEndsAroundCursor(ranges, position);
 
@@ -624,7 +626,7 @@ function moveCursor2(position: vscode.Position) {
         }
 
         if (next && e) {
-            let nextCharacter = new vscode.Position(next.line, next.character+1);
+            let nextCharacter = new vscode.Position(next.line-1, next.character+1);
             e.selection = new vscode.Selection(nextCharacter, nextCharacter);
             e.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
         }
