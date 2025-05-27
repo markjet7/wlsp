@@ -805,7 +805,7 @@ let starttime = 0;
 let inputs: String[] = []; 
 function runInWolfram(printOutput = false, trace = false, section=false) {
 
-    outputChannel.appendLine("Running in Wolfram Kernel: " + wolframKernelClient?.state)
+    // outputChannel.appendLine("Running in Wolfram Kernel: " + wolframKernelClient?.state)
     let unsavedDocumentsQ = false;
     let editors = vscode.window.visibleTextEditors;
     editors.forEach((e: vscode.TextEditor) => {
@@ -874,7 +874,7 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
         // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
 
         // if (!wolframBusyQ) {
-        outputChannel.appendLine("Sending to Wolfram kernel: " + wolframKernelClient?.state)
+        // outputChannel.appendLine("Sending to Wolfram kernel: " + wolframKernelClient?.state)
         if (true) {
             if (evaluationQueue.length == 0) {
                 return
