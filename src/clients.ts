@@ -37,6 +37,7 @@ import { DataViewProvider } from './dataPanel';
 import { PlotsViewProvider } from './plotsView';
 import { send } from 'process';
 import { Int32 } from 'bson';
+import { text } from 'd3';
 
 // let wolfram: cp.ChildProcess;
 // let wolframKernel: cp.ChildProcess;
@@ -510,12 +511,11 @@ function runToLine() {
     // if (plotsPanel?.visible == true) {
     //     output = true;
     // }
-    let evaluationData = { range: r, textDocument: e?.document, print: printOutput, output: output, trace: false };
+    let evaluationData = { range: r, textDocument: e?.document, print: printOutput, output: output, trace: false, text: e?.document.getText() };
     evaluationQueue.unshift(evaluationData);
 
     if (!wolframKernelClient) {
         restart().then(() => {
-            // evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return
         })
@@ -829,7 +829,9 @@ function runInWolfram(printOutput = false, trace = false, section=false) {
     //     output = true;
     // }
 
-    let evaluationData = { range: sel, textDocument: e?.document, print: printOutput, output: output, trace: trace };
+    let evaluationData = { range: sel, textDocument: e?.document, print: printOutput, output: output, trace: trace,
+        text: e?.document.getText()
+     };
     evaluationQueue.unshift(evaluationData);
 
     // showPlots();
@@ -1583,7 +1585,7 @@ function runTextCell(location: vscode.Range) {
         new vscode.Position(location.start.line, location.start.character),
         new vscode.Position(location.end.line - 1, location.end.character)
     );
-    let evaluationData = { range: sel, textDocument: e?.document, print: false, output: true, trace: false };
+    let evaluationData = { range: sel, textDocument: e?.document, print: false, output: true, trace: false, text: e?.document.getText() };
     evaluationQueue.unshift(evaluationData);
     sendToWolfram(false)
 
@@ -1770,8 +1772,16 @@ function createNotebookScript() {
 
 
 function didChangeWindowState(state: vscode.WindowState) {
-    if (wolframClient !== undefined && wolframClient.state === 2) {
-        wolframClient.sendNotification("windowFocused", state.focused);
+    if (wolframKernelClient !== undefined && wolframKernelClient.state === 2) {
+        if (vscode.window.activeTextEditor === undefined) {
+            wolframKernelClient.sendNotification("windowFocused", {
+                "focus": state.focused,
+            });
+        } else {
+        wolframKernelClient.sendNotification("windowFocused", {
+            "focus": state.focused,
+        });
+        }
     }
 }
 

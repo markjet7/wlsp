@@ -86,23 +86,10 @@ type CancelRequestParams() =
     inherit RequestMessageBase()
     member val Params: JToken = null with get, set
 
-    // member val range: Range = null with get, set
-    // member val textDocument: TextDocument option = None with get, set
-    // member val print: bool = true with get, set
-    // member val output: bool = false with get, set
-    // member val trace: bool = false with get, set
-
-    // member val ``params``: Prompt option = None with get, set
-
-    // inherit RunInWolframParams()
-    // member val range: {| start: {| line: int; character: int |}; ``end``: {| line: int; character: int |} |} = {| start = {| line = 0; character = 0 |}; ``end`` = {| line = 0; character = 0 |} |} with get, set
-    // member val textDocument: TextDocumentItem = null with get, set
-    // member val print: bool = false with get, set
-    // member val output: bool = false with get, set
-    // member val trace: bool = false with get, set
-
-
-
+type windowFocusedParams() =
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+    member val method: string = "windowFocused" with get, set
 
 
 
@@ -227,11 +214,19 @@ type fswlspServer(input: Stream, output: Stream) =
                 result.id <- request.id
                 result 
 
+            let windowFocusedHandler (request: windowFocusedParams): unit =
+                // Handle the window focused event
+                // You can perform actions when the window is focused here
+                // For example, you can log a message or update the UI
+
+                // this.log_messages(sprintf "Window focused: %s" (request.Params.ToString()))
+                ()
+
 
             let get_input(request: GetInputParams): string = 
 
                 let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
+                let t = request.Params["text"].ToString().Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
 
                 let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
 
@@ -283,11 +278,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     busy
                 )
 
-
-
                 let input = get_input request
-
-
 
                 let start_time = DateTime.Now
 
@@ -316,7 +307,6 @@ type fswlspServer(input: Stream, output: Stream) =
                     document = request.Params["textDocument"]
                 |})
                 
-
                 this.SendNotification(
                     wolframResult
                 )
@@ -363,6 +353,11 @@ type fswlspServer(input: Stream, output: Stream) =
             this.NotificationHandlers.Set<UpdateConfigurationParams>(
                 "updateConfiguration",
                 Action<UpdateConfigurationParams>(updateConfigurationHandler)
+            )
+
+            this.NotificationHandlers.Set<windowFocusedParams>(
+                "windowFocused",
+                Action<windowFocusedParams>(windowFocusedHandler)
             )
 
             let capabilities = new ServerCapabilities()

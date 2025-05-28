@@ -390,11 +390,10 @@ function runToLine() {
     // if (plotsPanel?.visible == true) {
     //     output = true;
     // }
-    let evaluationData = { range: r, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: false };
+    let evaluationData = { range: r, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: false, text: e === null || e === void 0 ? void 0 : e.document.getText() };
     evaluationQueue.unshift(evaluationData);
     if (!exports.wolframKernelClient) {
         restart().then(() => {
-            // evaluationQueue.unshift(evaluationData);
             sendToWolfram(printOutput);
             return;
         });
@@ -646,7 +645,7 @@ function abort() {
 let starttime = 0;
 let inputs = [];
 function runInWolfram(printOutput = false, trace = false, section = false) {
-    outputChannel.appendLine("Running in Wolfram Kernel: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
+    // outputChannel.appendLine("Running in Wolfram Kernel: " + wolframKernelClient?.state)
     let unsavedDocumentsQ = false;
     let editors = vscode.window.visibleTextEditors;
     editors.forEach((e) => {
@@ -666,7 +665,9 @@ function runInWolfram(printOutput = false, trace = false, section = false) {
     // if (plotsPanel?.visible == true) {
     //     output = true;
     // }
-    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: trace };
+    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: printOutput, output: output, trace: trace,
+        text: e === null || e === void 0 ? void 0 : e.document.getText()
+    };
     evaluationQueue.unshift(evaluationData);
     // showPlots();
     // check if wolframkernelclient is undefined
@@ -709,7 +710,7 @@ function sendToWolfram(printOutput = false, sel = undefined, section = false) {
             // e.revealRange(new vscode.Range(outputPosition, outputPosition), vscode.TextEditorRevealType.Default);
             // wolframKernelClient.sendNotification("moveCursor", {range:sel, textDocument:e.document});
             // if (!wolframBusyQ) {
-            outputChannel.appendLine("Sending to Wolfram kernel: " + (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state));
+            // outputChannel.appendLine("Sending to Wolfram kernel: " + wolframKernelClient?.state)
             if (true) {
                 if (evaluationQueue.length == 0) {
                     return;
@@ -1290,7 +1291,7 @@ function connectKernelClient(outputChannel, context) {
 function runTextCell(location) {
     let e = vscode.window.activeTextEditor;
     let sel = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line - 1, location.end.character));
-    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: false, output: true, trace: false };
+    let evaluationData = { range: sel, textDocument: e === null || e === void 0 ? void 0 : e.document, print: false, output: true, trace: false, text: e === null || e === void 0 ? void 0 : e.document.getText() };
     evaluationQueue.unshift(evaluationData);
     sendToWolfram(false);
     moveCursor2(sel.end);
@@ -1428,8 +1429,17 @@ function createNotebookScript() {
     // });
 }
 function didChangeWindowState(state) {
-    if (exports.wolframClient !== undefined && exports.wolframClient.state === 2) {
-        exports.wolframClient.sendNotification("windowFocused", state.focused);
+    if (exports.wolframKernelClient !== undefined && exports.wolframKernelClient.state === 2) {
+        if (vscode.window.activeTextEditor === undefined) {
+            exports.wolframKernelClient.sendNotification("windowFocused", {
+                "focus": state.focused,
+            });
+        }
+        else {
+            exports.wolframKernelClient.sendNotification("windowFocused", {
+                "focus": state.focused,
+            });
+        }
     }
 }
 function startWolframTerminal() {
