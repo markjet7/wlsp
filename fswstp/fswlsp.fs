@@ -222,7 +222,6 @@ type fswlspServer(input: Stream, output: Stream) =
                 // this.log_messages(sprintf "Window focused: %s" (request.Params.ToString()))
                 ()
 
-
             let get_input(request: GetInputParams): string = 
 
                 let range = request.Params["range"].ToString().Replace("\"", "\\\"")
@@ -264,6 +263,16 @@ type fswlspServer(input: Stream, output: Stream) =
                 // Handle the request to run code in Wolfram
                 // You can implement the logic to run the code here
 
+                this._document <- request.Params.["textDocument"].["uri"].["external"].ToString() 
+
+                let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+                    URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+
+                this._ml.Evaluate(expr)
+                this._ml.WaitForAnswer() |> ignore
+                this._ml.GetString() |> ignore
+
+
                 let range = request.Params["range"].ToObject<Range>()
                 range.``end``.line <- range.``end``.line + int64(1)
                 
@@ -290,7 +299,6 @@ type fswlspServer(input: Stream, output: Stream) =
                 let end_time = DateTime.Now
                 let elapsed_time = end_time - start_time
                 let elapsed_time_seconds = elapsed_time.TotalSeconds
-
 
                 let wolframResult: WolframResultParams = WolframResultParams()
                 wolframResult.``params`` <- JObject.FromObject({|
@@ -553,7 +561,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
-
         this._document <- p.textDocument.uri.ToString() 
         this._text <- p.contentChanges.[0].text.ToString()
 
@@ -668,56 +675,68 @@ type fswlspServer(input: Stream, output: Stream) =
         //     p
         // )
     override this.Hover (p: TextDocumentPositionParams): Result<Hover,ResponseError> = 
+        try
 
-        let s = this.get_word_at_position(this._text, p.position)
+            let s = this.get_word_at_position(this._text, p.position)
 
-        // if s == "" then return null
-        if s = "" then
+            // if s == "" then return null
+            if s = "" then
+                let hover = new Hover()
+                let range = new Range()
+                range.``start`` <- p.position
+                range.``end`` <- p.position
+                hover.range <- range
+                let m:MarkupContent = new MarkupContent()
+                m.kind <- MarkupKind.Markdown
+                m.value <- ""
+                hover.range <- range
+                hover.contents <- MarkupContent()
+                hover.contents <- m
+                Result<Hover,ResponseError>.Success(hover)
+            else
+                let result = this.evaluate_in_kernel(
+                    this._ml, 
+                    sprintf "TimeConstrained[%s, 2, \"Large output\"]" s)
+
+                // let message = result.result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
+                let message = result.result
+
+                // details object and get the value or null
+                let exists, value = this.details.TryGetValue(s)
+                let detail = if exists then value else new JObject()
+                let message2 = 
+                    if detail.["detail"] <> null then
+                        sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
+                    else
+                        message
+
+                let hover = new Hover()
+                let range = new Range()
+                range.``start`` <- p.position
+                range.``end`` <- p.position
+
+                let m:MarkupContent = new MarkupContent()
+                m.kind <- MarkupKind.Markdown
+                m.value <- message2
+                hover.range <- range
+                hover.contents <- MarkupContent()
+                hover.contents <- m
+
+                Result<Hover,ResponseError>.Success(hover)
+        with
+        | ex -> 
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            // Handle the error here, e.g., log it or send a notification to the client
             let hover = new Hover()
             let range = new Range()
             range.``start`` <- p.position
             range.``end`` <- p.position
-            hover.range <- range
-            let m:MarkupContent = new MarkupContent()
-            m.kind <- MarkupKind.Markdown
-            m.value <- ""
+            let m = new MarkupContent()
             hover.range <- range
             hover.contents <- MarkupContent()
             hover.contents <- m
-            Result<Hover,ResponseError>.Success(hover)
-        else
-
-
-            
-
-            let result = this.evaluate_in_kernel(
-                this._ml, 
-                sprintf "TimeConstrained[%s, 2, \"Large output\"]" s)
-
-            // let message = result.result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
-            let message = result.result
-
-            // details object and get the value or null
-            let exists, value = this.details.TryGetValue(s)
-            let detail = if exists then value else new JObject()
-            let message2 = 
-                if detail.["detail"] <> null then
-                    sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
-                else
-                    message
-
-            let hover = new Hover()
-            let range = new Range()
-            range.``start`` <- p.position
-            range.``end`` <- p.position
-
-            let m:MarkupContent = new MarkupContent()
-            m.kind <- MarkupKind.Markdown
-            m.value <- message2
-            hover.range <- range
-            hover.contents <- MarkupContent()
-            hover.contents <- m
-
             Result<Hover,ResponseError>.Success(hover)
         
 

@@ -370,11 +370,15 @@ let movePositions = {};
 function updatePositions(params) {
     return __awaiter(this, void 0, void 0, function* () {
         params["result"].forEach((e) => {
-            if ("location" in e && "uri" in e["location"] && !(e["location"]["uri"] in movePositions)) {
-                movePositions[e["location"]["uri"]] = {};
+            let uri = "";
+            if ("location" in e && "uri" in e["location"]) {
+                uri = decodeURIComponent(e["location"]["uri"]);
             }
-            if ("location" in e && "uri" in e["location"] && (e["location"]["uri"] in movePositions)) {
-                movePositions[e["location"]["uri"]]["locations"] = e["locations"];
+            if ("location" in e && "uri" in e["location"] && !(uri in movePositions)) {
+                movePositions[uri] = {};
+            }
+            if ("location" in e && "uri" in e["location"] && (uri in movePositions)) {
+                movePositions[uri]["locations"] = e["locations"];
             }
         });
     });

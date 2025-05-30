@@ -352,6 +352,11 @@ styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
 
     const outputDiv = document.getElementById("outputs");
     if (message.input && message.input.length > 0) {
+
+      if (message.input.length > 210) {
+        message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100);
+      }
+
       lastInput =
         "<div class='input_row' id='" + message.row + "'><hr>In[" +
        message.row +
@@ -362,9 +367,6 @@ styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
     }
     
     var width, height;
-    if (message.output == "") {
-      message.output = " ";
-    }
     
     if (message.output && message.output.length > 0) {
 

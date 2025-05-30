@@ -30,9 +30,9 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges, result},
 	sRanges= getSourceRanges[range];
 
 	result = StringJoin@Table[
-		StringTake[
+		Quiet@Check[StringTake[
 				sLines[[l[[1]]]],
-			l[[2]]],
+			l[[2]]], ""],
 		{l, sRanges}];
 	
 	If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
