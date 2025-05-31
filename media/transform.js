@@ -359,7 +359,7 @@ const vscode = acquireVsCodeApi();
     if (message.input ) {
 
       if (message.input.length > 210) {
-        message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100);
+        message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100, message.input.length);
       }
 
       // check if there is a previous input with the same row id
@@ -370,10 +370,8 @@ const vscode = acquireVsCodeApi();
         // "]: " +
         // message.input +
         // "<hr>";
-        console.log("previousInput", message.input);
         // replace the input in the previous input
         let innerDiv = previousInput.getElementsByTagName("div")[0];
-        console.log("innerDiv", innerDiv.innerHTML);
         innerDiv.innerHTML = message.input;
       } else {
 

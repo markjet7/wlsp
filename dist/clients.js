@@ -224,6 +224,11 @@ function onkernelReady() {
                     temporaryDir = result;
                     resolve();
                 });
+                exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendRequest("getVersion").then((result) => {
+                    wolframVersionText = "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
+                    wolframStatusBar.text = wolframVersionText;
+                    wolframStatusBar.show();
+                });
             }
             else {
                 resolve();

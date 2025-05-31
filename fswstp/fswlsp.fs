@@ -91,6 +91,14 @@ type windowFocusedParams() =
     member val Params: JToken = null with get, set
     member val method: string = "windowFocused" with get, set
 
+type GetVersionParams() =
+    inherit RequestMessageBase()
+
+type GetVersionResponseParams() =
+    inherit ResponseMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val ``result``: JToken = null with get, set
+
 
 
 type fswlspServer(input: Stream, output: Stream) = 
@@ -337,6 +345,17 @@ type fswlspServer(input: Stream, output: Stream) =
                 // let config = request.configuration
                 // Perform any necessary actions based on the updated configuration
                 ()
+            // let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
+            let getVersionHandler(request: GetVersionParams) (cancellationToken: CancellationToken): ResponseMessageBase =
+                this._ml.Evaluate("Round[$VersionNumber, 0.1]")
+                this._ml.WaitForAnswer() |> ignore
+                let version = this._ml.GetString()
+                let response = new GetVersionResponseParams()
+                response.``result`` <- JObject.FromObject({|
+                    version = version
+                |})
+                response.id <- request.id
+                response
 
             this.RequestHandlers.Set<storageUriParams, ResponseMessageBase>(
                 "storageUri",
@@ -348,10 +367,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 Func<CancelRequestParams, CancellationToken, ResponseMessageBase>(fun _ _ -> null)
             )
 
-            this.NotificationHandlers.Set<SetTraceParams>(
-                "$/setTrace",
-                Action<SetTraceParams>(traceHandler)
+            this.RequestHandlers.Set<GetVersionParams, ResponseMessageBase>(
+                "getVersion",
+                Func<GetVersionParams, CancellationToken, ResponseMessageBase>(getVersionHandler)
             )
+            
 
             this.NotificationHandlers.Set<RunInWolframParams>(
                 "runInWolfram",

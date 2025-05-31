@@ -283,13 +283,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     width: 95vw;
                 }
 
-                .output_row img{
-                    width: 92vw;
-                    object-fit:contain;
-                    display: block;
-                    margin-left: auto;
-                }
-
                 .output_row .errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
@@ -300,8 +293,6 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     width:90vw;
                     max-height:95vh;
                     object-fit:contain;
-                    /* margin: 0; */
-                    /* min-height: 200px; */
                     width: auto;
                     margin-bottom: 5px;
                     margin-left: auto;

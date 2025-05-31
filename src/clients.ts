@@ -296,6 +296,11 @@ export async function onkernelReady(): Promise<void> {
                 temporaryDir = result;
                 resolve();
             });
+            wolframKernelClient?.sendRequest("getVersion").then((result: any) => { 
+                wolframVersionText =  "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
+                wolframStatusBar.text = wolframVersionText;
+                wolframStatusBar.show();
+            });
         } else {
             resolve();
         }
