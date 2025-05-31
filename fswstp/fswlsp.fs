@@ -244,7 +244,11 @@ type fswlspServer(input: Stream, output: Stream) =
 
                     // send notification to client
                     let p = new updateInputsParams()
-                    p.``params`` <- {| input = input |} |> JObject.FromObject
+                    p.``params`` <- {| 
+                        id = request.Params["id"]
+                        input = input
+                        
+                         |} |> JObject.FromObject
 
                     this.SendNotification(
                         p
@@ -302,6 +306,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let wolframResult: WolframResultParams = WolframResultParams()
                 wolframResult.``params`` <- JObject.FromObject({|
+                    id = request.Params["id"]
                     input = input
                     load = false
                     print = request.Params["print"].ToObject<bool>()

@@ -331,7 +331,12 @@ const vscode = acquireVsCodeApi();
     }
 
     if ("command" in message && message.command === "fontSize") {
-styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
+      let styleSheet = document.getElementById("_style");
+      if (!styleSheet) {
+        styleSheet = document.createElement("style");
+        styleSheet.id = "_style";
+      }
+      styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
       let styleElement = document.getElementById('_style');
       // styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
       if (styleElement) {
@@ -351,26 +356,43 @@ styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
     }
 
     const outputDiv = document.getElementById("outputs");
-    if (message.input && message.input.length > 0) {
+    if (message.input ) {
 
       if (message.input.length > 210) {
         message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100);
       }
 
+      // check if there is a previous input with the same row id
+      let previousInput = document.getElementById(message.row);
+      if (previousInput) {
+        // previousInput.innerHTML = "<hr>In[" +
+        // index +
+        // "]: " +
+        // message.input +
+        // "<hr>";
+        console.log("previousInput", message.input);
+        // replace the input in the previous input
+        let innerDiv = previousInput.getElementsByTagName("div")[0];
+        console.log("innerDiv", innerDiv.innerHTML);
+        innerDiv.innerHTML = message.input;
+      } else {
+
       lastInput =
         "<div class='input_row' id='" + message.row + "'><hr>In[" +
-       message.row +
-        "]: " +
+       index+
+        "]: <div class='input_text'>" +
         message.input +
-        "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";
+        "</div><hr></div><div class='output_row loading' id='o" + message.row + "'>Loading...</div>";
+        index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
+      }
     }
     
     var width, height;
     
-    if (message.output && message.output.length > 0) {
+    if (message.output) {
 
-      let output = `<div class="output_row" data-content="${message.output.replace(/"/g, '&quot;')}">` +
+      let output = `<div class="output_row" id="o${message.row}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
        message.output // +
       // "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
       // "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
@@ -389,13 +411,19 @@ styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
       //   createPasteButton(i);
       // }
 
-      let outputDivs = outputDiv.getElementsByClassName("output_row");
+      // let outputDivs = outputDiv.getElementsByClassName("output_row");
       // select output div with id = message.row
-      for (const o of outputDivs) {
-        if (o.id == message.row) {
-          let outputDiv = o;
-          outputDiv.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
-        }
+
+      let existingOutput = document.getElementById("o"+message.row);
+      if (existingOutput) {
+        existingOutput.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
+      } else {
+        let newCell = "<div class='input_row' id='" + message.row + "'><hr>In[" +
+        message.row +
+         "]: " +
+         message.input +
+         "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";
+         outputDiv.innerHTML = newCell + outputDiv.innerHTML;
       }
 
       let inputRows = document.getElementsByClassName("input_row");

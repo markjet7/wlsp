@@ -255,6 +255,12 @@ export class PlotsViewProvider implements WebviewViewProvider {
                     background: var(--vscode-tree-tableOddRowsBackground);
                 }
 
+                .input_text {
+                    position: relative;
+                    left: 50px;
+                    top: -18px;
+                    }
+
                 @keyframes loading {
                     from {
                         transform: rotate(0deg);
