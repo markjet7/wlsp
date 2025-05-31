@@ -5,6 +5,8 @@ wlsp.log
 cursorLocations.js
 extension.js 
 extension.js.map
+clients.js 
+clients.js.map
 wolfram/cursorLocations.js
 wolfram/varTable.js
 wolfram/cursorLocations.js

@@ -1014,15 +1014,24 @@ function updateResults(e, result, print, input = "", file = "") {
                 if (nextline >= e.document.lineCount) {
                     nextline = e.document.lineCount - 1;
                 }
-                // add the output to the latest input where the output is ""
+                // select the key that has the same input as the result["params"]["input"]
+                let inputKey = undefined;
                 for (const [key, value] of plotsInputsOutputs.entries()) {
-                    if (value[1] == "...") {
-                        plotsInputsOutputs.set(key, [value[0], outputSnippet]);
-                        plotsProvider.newOutput(key, outputSnippet);
+                    if (value[0] == input) {
+                        inputKey = key;
                         break;
                     }
                 }
-                outputChannel.appendLine("Time to update plots: " + (Date.now() - now) + " ms");
+                if (inputKey === undefined) {
+                    // if the input is not found, add a new input
+                    inputKey = plotsInputsOutputs.size;
+                    plotsInputsOutputs.set(inputKey, [inputSnippet, outputSnippet]);
+                }
+                else {
+                    // if the input is found, update the output
+                    plotsInputsOutputs.set(inputKey, [inputSnippet, outputSnippet]);
+                }
+                plotsProvider.newOutput(inputKey, outputSnippet);
                 let startChar = e.document.lineAt(nextline).range.end.character;
                 if (print) {
                     let sel = e.selection;

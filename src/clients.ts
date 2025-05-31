@@ -518,6 +518,7 @@ function runToLine() {
     // }
     let evaluationData = { range: r, textDocument: e?.document, print: printOutput, output: output, trace: false, text: e?.document.getText() };
     evaluationQueue.unshift(evaluationData);
+    
 
     if (!wolframKernelClient) {
         restart().then(() => {
@@ -882,6 +883,8 @@ async function sendToWolfram(printOutput = false, sel: vscode.Selection | undefi
 
         // if (!wolframBusyQ) {
         // outputChannel.appendLine("Sending to Wolfram kernel: " + wolframKernelClient?.state)
+        let inputLine: string = e.document.lineAt(sel.active.line).text;
+
         if (true) {
             if (evaluationQueue.length == 0) {
                 return
@@ -1357,46 +1360,6 @@ function wolframBusy(params: any) {
         wolframStatusBar.show();
 
 
-        // progressStatus = vscode.window.withProgress({
-        //     location: vscode.ProgressLocation.Notification,
-        //     title: "Running line " + (outputPosition.line) + " in Wolfram",
-        //     cancellable: true
-        // }, (prog, withProgressCancellation) => {
-        //     return new Promise((resolve, reject) => {
-
-        //         // withProgressCancellation = new vscode.CancellationTokenSource();
-        //         withProgressCancellation.onCancellationRequested(ev => {
-        //             console.log("Aborting Wolfram evaluation");
-        //             // withProgressCancellation?.dispose();
-        //             // stopWolfram(undefined, wolframKernel);
-        //             let notification = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-        //             notification.text = "$(alert) Wolfram evaluation aborted";
-        //             setTimeout(() => {
-        //                 notification.dispose();
-        //             }, 2000);
-        //             // progressStatus.dispose();
-        //             restartKernel();
-        //             resolve(false)
-        //         })
-
-        //         wolframKernelClient?.onNotification("onRunInWolfram", (result: any) => {
-        //             onRunInWolfram(result)
-        //             resolve(true)
-        //         })
-
-        //         wolframKernelClient?.onNotification("onRunInWolframIO", (result: any) => {
-        //             onRunInWolframIO(result)
-        //             resolve(true);
-        //         })
-
-
-        //     }).catch((err) => {
-        //         console.log("Error in sendToWolfram")
-        //         console.log(err);
-        //         restart()
-        //     })
-
-        // })
 
 
     } else {
