@@ -430,22 +430,38 @@ function handleNonRunningKernel(evalNext) {
         });
     });
 }
-function moveCursor2(position0) {
+function clearDecorationAroundCursor(ranges, position) {
+    var _a;
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
     const uri = editor.document.uri.toString();
-    const position = new vscode.Position(position0.line + 1, position0.character);
-    if (!(decodeURIComponent(uri) in movePositions))
-        return;
-    const ranges = extractRangesFromPositions(uri);
-    const { current, next } = findRangeEndsAroundCursor(ranges, position);
-    if (current) {
-        decorateRunningLine(current);
-    }
-    if (next) {
-        moveCursorToPosition(editor, next);
-    }
+    const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
+    const filteredDecorations = decorations.filter(d => {
+        return !ranges.some(range => isWithin(position, range));
+    });
+    editorDecorations.set(uri, filteredDecorations);
+    editor.setDecorations(variableDecorationType, filteredDecorations);
+}
+function moveCursor2(position0) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        const uri = editor.document.uri.toString();
+        const position = new vscode.Position(position0.line + 1, position0.character);
+        if (!(decodeURIComponent(uri) in movePositions))
+            return;
+        const ranges = extractRangesFromPositions(uri);
+        const { current, next } = findRangeEndsAroundCursor(ranges, position);
+        clearDecorationAroundCursor(ranges, position);
+        if (current) {
+            decorateRunningLine(current);
+        }
+        if (next) {
+            moveCursorToPosition(editor, next);
+        }
+    });
 }
 function extractRangesFromPositions(uri) {
     const ranges = [];
@@ -623,7 +639,7 @@ function updateResultInPlotsProvider(evaluationId, output) {
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId);
         plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output }]);
-        plotsProvider.newOutput(evaluationId, output);
+        plotsProvider.newOutput(evaluationId, output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
     }
 }
 function handleFileBasedResult(params) {
@@ -732,6 +748,7 @@ function prepareOutput(result, file) {
     }
     else {
         output = result.params.output;
+        output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
         rawoutput = output;
     }
     if (result.params.messages.length > 0) {

@@ -74,10 +74,11 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 			result=EvaluationData[ToExpression[StringTake[code, SyntaxLength[code]]]];
 			
 			If[
-				(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
+				!(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
 				result["Result"] = CheckAbort[
 					Rasterize[result["Result"]], 
-					result["Result"]];,
+					result["Result"]
+					];,
 				Nothing
 			];	
 

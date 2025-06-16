@@ -119,13 +119,29 @@ class PlotsViewProvider {
         });
     }
     getOutputContent(webview, extensionUri) {
+        //  <link href="DataTables/datatables.min.css" rel="stylesheet">
+        // <script src="DataTables/datatables.min.js"></script>
+        const jqueryUri = getUri(webview, extensionUri, [
+            "media",
+            "jquery-3.7.1.min.js"
+        ]);
+        const datatablescssUri = getUri(webview, extensionUri, [
+            "media",
+            "DataTables",
+            "datatables.min.css"
+        ]);
+        const datatablesUri = getUri(webview, extensionUri, [
+            "media",
+            "DataTables",
+            "datatables.min.js"
+        ]);
         const toolkitUri = getUri(webview, extensionUri, [
             "media",
             "toolkit.js"
         ]);
         const transformUri = getUri(webview, extensionUri, [
             "media",
-            "transform.js"
+            "plotsViewCode.js"
         ]);
         const d3Uri = getUri(webview, extensionUri, [
             "media",
@@ -236,13 +252,6 @@ class PlotsViewProvider {
                     width: 95vw;
                 }
 
-                .output_row img{
-                    width: 92vw;
-                    object-fit:contain;
-                    display: block;
-                    margin-left: auto;
-                }
-
                 .output_row .errors {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
@@ -253,8 +262,6 @@ class PlotsViewProvider {
                     width:90vw;
                     max-height:95vh;
                     object-fit:contain;
-                    /* margin: 0; */
-                    /* min-height: 200px; */
                     width: auto;
                     margin-bottom: 5px;
                     margin-left: auto;
@@ -313,6 +320,9 @@ class PlotsViewProvider {
             /> 
 
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script src="${jqueryUri}"></script>
+            <script src="${datatablesUri}"></script>
+            <link href="${datatablescssUri}" rel="stylesheet">
             <script type="module" src="${transformUri}"></script>
             <title>Plots</title>
         </head>

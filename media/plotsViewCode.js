@@ -336,14 +336,19 @@ const vscode = acquireVsCodeApi();
         styleSheet = document.createElement("style");
         styleSheet.id = "_style";
       }
-      styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
+      if (styleSheet.cssRules)
+      {styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);}
       let styleElement = document.getElementById('_style');
       // styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
       if (styleElement) {
         // styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
         styleElement.insertRule(`.output_row { font-size: ${message.size}px; }`, styleElement.cssRules.length);
       }
-      document.head.appendChild(styleElement);
+      try {
+        document.head.appendChild(styleElement);
+      } catch (error) {
+        console.error("Failed to append style element:", error);
+      }
       return;
     }
 
@@ -351,7 +356,11 @@ const vscode = acquireVsCodeApi();
 
       let styleElement = document.createElement('style');
       styleElement.innerHTML = `#outputs { background: ${message.background}; }`;
-      document.head.appendChild(styleElement);
+      try {
+        document.head.appendChild(styleElement);
+      } catch (error) {
+        console.error("Failed to append style element:", error);
+      }
       return;
     }
 
@@ -383,6 +392,10 @@ const vscode = acquireVsCodeApi();
         "</div><hr></div><div class='output_row loading' id='o" + message.row + "'>Loading...</div>";
         index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
+
+      let table = new DataTable('#myTable', {
+        // options
+    });
       }
     }
     
@@ -417,7 +430,7 @@ const vscode = acquireVsCodeApi();
         existingOutput.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
       } else {
         let newCell = "<div class='input_row' id='" + message.row + "'><hr>In[" +
-        message.row +
+        index +
          "]: " +
          message.input +
          "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";

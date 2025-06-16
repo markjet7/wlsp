@@ -513,7 +513,22 @@ async function handleNonRunningKernel(evalNext: EvaluationData): Promise<void> {
     });
 }
 
-function moveCursor2(position0: vscode.Position): void {
+function clearDecorationAroundCursor(ranges: vscode.Range[], position: vscode.Position): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const uri = editor.document.uri.toString();
+    const decorations = editorDecorations.get(uri) ?? [];
+    
+    const filteredDecorations = decorations.filter(d => {
+        return !ranges.some(range => isWithin(position, range));
+    });
+
+    editorDecorations.set(uri, filteredDecorations);
+    editor.setDecorations(variableDecorationType, filteredDecorations);
+}
+
+async function moveCursor2(position0: vscode.Position): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
@@ -524,6 +539,7 @@ function moveCursor2(position0: vscode.Position): void {
 
     const ranges = extractRangesFromPositions(uri);
     const { current, next } = findRangeEndsAroundCursor(ranges, position);
+    clearDecorationAroundCursor(ranges, position);
 
     if (current) {
         decorateRunningLine(current);
@@ -612,16 +628,16 @@ function generateVariableTableHtml(): string {
     return vars;
 }
 
-function isBefore(a: vscode.Position, b: vscode.Position): boolean {
-    return a.line < b.line || (a.line === b.line && a.character < b.character);
+function isEqualOrBefore(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line < b.line || (a.line === b.line && a.character <= b.character);
 }
 
-function isAfter(a: vscode.Position, b: vscode.Position): boolean {
-    return a.line > b.line || (a.line === b.line && a.character > b.character);
+function isEqualOrAfter(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line > b.line || (a.line === b.line && a.character >= b.character);
 }
 
 function isWithin(pos: vscode.Position, range: vscode.Range): boolean {
-    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+    return !isEqualOrBefore(pos, range.start) && !isEqualOrAfter(pos, range.end);
 }
 
 function findRangeEndsAroundCursor(ranges: vscode.Range[], cursor: vscode.Position): { current?: vscode.Position; next?: vscode.Position } {
@@ -630,9 +646,9 @@ function findRangeEndsAroundCursor(ranges: vscode.Range[], cursor: vscode.Positi
 
     for (const range of ranges) {
         if (isWithin(cursor, range)) {
-            if (!current || isBefore(range.end, current)) current = range.end;
-        } else if (isAfter(range.start, cursor)) {
-            if (!next || isBefore(range.start, next)) next = range.end;
+            if (!current || isEqualOrBefore(range.end, current)) current = range.end;
+        } else if (isEqualOrAfter(range.start, cursor)) {
+            if (!next || isEqualOrBefore(range.start, next)) next = range.end;
         }
     }
 
@@ -739,7 +755,8 @@ function updateResultInPlotsProvider(evaluationId: number, output: string): void
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId)!;
         plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output }]);
-        plotsProvider.newOutput(evaluationId, output);
+        plotsProvider.newOutput(evaluationId, 
+            output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
     }
 }
 
@@ -861,6 +878,8 @@ function prepareOutput(result: any, file: any): { output: string; rawoutput: str
         rawoutput = output;
     } else {
         output = result.params.output;
+
+        output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
         rawoutput = output;
     }
 
