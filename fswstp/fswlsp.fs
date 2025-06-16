@@ -99,6 +99,11 @@ type GetVersionResponseParams() =
     member val ``params``: JToken = null with get, set
     member val ``result``: JToken = null with get, set
 
+type PublishDiagnosticsNotification() = 
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method: string = "textDocument/publishDiagnostics" with get, set
+
 
 
 type fswlspServer(input: Stream, output: Stream) = 
@@ -540,9 +545,6 @@ type fswlspServer(input: Stream, output: Stream) =
             
             try
                 let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
-
-
-
                 
                 // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
                 this._lsp.Evaluate(input)
@@ -594,6 +596,8 @@ type fswlspServer(input: Stream, output: Stream) =
         
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
+
+        this.validate(p)
 
         let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
 
@@ -652,6 +656,48 @@ type fswlspServer(input: Stream, output: Stream) =
         this.SendNotification(
             p2
         )
+
+    member this.validate(Params: obj) = 
+        let textDocument = 
+            match Params with
+            | :? DidSaveTextDocumentParams as saveParams -> saveParams.textDocument
+            | :? DidChangeTextDocumentParams as changeParams -> changeParams.textDocument
+            | _ -> failwith "Unsupported parameter type"
+
+        // You can implement your validation logic here
+        let expr = sprintf "validate[\"%s\", \"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")) (this._document.Replace("\"", "\\\""))
+
+        this._lsp.Evaluate(expr)
+        this._lsp.WaitForAnswer() |> ignore
+        let js = this._lsp.GetString()
+
+        let diagnostics  = JObject.Parse(js)
+        let p = new PublishDiagnosticsParams()
+        p.uri <- textDocument.uri
+        p.diagnostics <- diagnostics.["params"].["diagnostics"].ToObject<Diagnostic[]>()
+
+        let pd = new PublishDiagnosticsNotification()
+        pd.``params`` <- JObject.FromObject(p)
+        this.SendNotification(
+            pd
+        )
+        ()
+
+    override this.DidSaveTextDocument (Params: DidSaveTextDocumentParams): unit = 
+            try
+                this._document <- Params.textDocument.uri.ToString()
+                this.validate(Params)
+                ()
+            with
+            | ex -> 
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                // Handle the error here, e.g., log it or send a notification to the client
+                this.log_messages(sprintf "Error: %s" ex.Message)
+                ()
+
+
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
             
         
@@ -761,7 +807,6 @@ type fswlspServer(input: Stream, output: Stream) =
             let m = new MarkupContent()
             hover.range <- range
             hover.contents <- MarkupContent()
-            hover.contents <- m
             Result<Hover,ResponseError>.Success(hover)
         
 
@@ -816,3 +861,35 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 
             base.SignatureHelp(p: TextDocumentPositionParams)
+
+
+    override this.Exit (): unit = 
+        try
+            if this._ml <> null then
+                this._ml.Close()
+            if this._lsp <> null then
+                this._lsp.Close() 
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error during cleanup: %s" ex.Message)
+        
+        base.Exit()
+        Environment.Exit(0)
+
+    override this.Shutdown (): VoidResult<ResponseError> =
+        try
+            if this._ml <> null then
+                this._ml.Close()
+            if this._lsp <> null then
+                this._lsp.Close() 
+            // base.Shutdown()
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Success()
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error during shutdown: %s" ex.Message)
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Error(error)

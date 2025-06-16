@@ -93,26 +93,32 @@ class workspaceSymbolProvider {
         return __awaiter(this, void 0, void 0, function* () {
             if (((_a = workspace.children) === null || _a === void 0 ? void 0 : _a.length) === 0) {
                 function getFolderFiles(folder) {
-                    if (!fs.existsSync(folder)) {
+                    if (!fs.existsSync(folder) || !fs.lstatSync(folder).isDirectory()) {
+                        console.error(`Folder ${folder} does not exist or is not a directory.`);
                         return;
                     }
-                    let files = fs.readdirSync(folder, { withFileTypes: true });
-                    files.forEach((file) => {
-                        var _a;
-                        if (path.extname(file.name) == ".wl") {
-                            let item = new TreeItem(path.basename(file.name), []);
-                            item.tooltip = file.name;
-                            item.children = [];
-                            item.lazyload = "getFileSymbols[\"" + folder + "/" + file.name + "\", \"" + vscode.Uri.parse(file.name) + "\"]";
-                            item.location = file.name;
-                            item.resourceUri = vscode.Uri.parse(file.name);
-                            item.iconPath = new vscode.ThemeIcon("file-code");
-                            item.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(file.name)], title: 'Open' };
-                            (_a = workspace.children) === null || _a === void 0 ? void 0 : _a.push(item);
+                    fs.readdir(folder, { withFileTypes: true }, (err, files) => {
+                        if (err) {
+                            console.error(`Error reading directory ${folder}:`, err);
+                            return;
                         }
-                        if (file.isDirectory()) {
-                            getFolderFiles(folder + "/" + file.name);
-                        }
+                        files.forEach((file) => {
+                            var _a;
+                            if (path.extname(file.name) == ".wl") {
+                                let item = new TreeItem(path.basename(file.name), []);
+                                item.tooltip = file.name;
+                                item.children = [];
+                                item.lazyload = "getFileSymbols[\"" + folder + "/" + file.name + "\", \"" + vscode.Uri.parse(file.name) + "\"]";
+                                item.location = file.name;
+                                item.resourceUri = vscode.Uri.parse(file.name);
+                                item.iconPath = new vscode.ThemeIcon("file-code");
+                                item.command = { command: 'vscode.open', arguments: [vscode.Uri.parse(file.name)], title: 'Open' };
+                                (_a = workspace.children) === null || _a === void 0 ? void 0 : _a.push(item);
+                            }
+                            if (file.isDirectory()) {
+                                getFolderFiles(folder + "/" + file.name);
+                            }
+                        });
                     });
                 }
                 let folders = vscode.workspace.workspaceFolders;

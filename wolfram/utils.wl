@@ -1,6 +1,8 @@
 (* ::Package:: *)
 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
+Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
+Needs["CodeParser`Scoping`"];
 
 getStringAtRange[string_, rangejs_String]:=Module[{sLines, sRanges, range},
 	range = ImportString[rangejs, "JSON"];
@@ -67,7 +69,7 @@ graphicsQ =
   FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
     x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}] &;
 
-graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
+graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
 evaluateInKernel[code_]:=Module[{json, result, formatted},
 		CheckAbort[
@@ -97,27 +99,80 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 ];
 SetAttributes[evaluateInKernel, HoldFirst];
 
-updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
-	ast = CodeParse[src];
-	functions = Cases[ast, (
-		_CallNode |
-		_LeafNode
-	),{2}];
 
-	locations = DeleteCases[Table[
-		l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
-		<|
-			"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
-			"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+
+lintToDecoration[lint_]:=Module[{},
+	<|
+		"range"-><|
+			"start" -> <| "line" -> lint[[4, 1, 1, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1096 |>,
+			"end" -> <| "line" -> lint[[4, 1, 2, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1196 |>
 		|>,
-		{f, functions}
-	], <|
-			"start" -> <|"line"->-1, "character" -> -1|>,
-			"end" -> <|"line"->-1, "character" -> -1|> 
-		|>];
-	
-	ExportString[
-		locations, "RawJSON", "Compact" -> True]
+		"renderOptions" -> <|
+			"after" -> <|
+				"contentText" -> lint[[2]],
+				"backgroundColor" -> "editor.background",
+				"foregroundColor" -> "editor.foreground",
+				"color" -> Switch[lint[[3]], "Error", "red", "Warning", "orange", "Information","white", "Hint","blue", _, "orange"],
+				"opacity" -> "0.4",
+				"fontStyle" -> "italic",
+				"margin" -> "0 0 0 10px",
+				"rangeBehavior" -> 4
+			|>,
+			"rangeBehavior"->4
+		|>
+	|>
+];
+
+validate[src_, uri_]:=Module[{lints, severities, msgs, response},
+	CheckAbort[
+		workspaceLintDecorations = <||>;
+		(* uri = json["params", "textDocument"]["uri"];
+		src = documents[json["params","textDocument","uri"]]; *)
+		lints = Check[CodeInspect[src], {}];
+		severities = <| "Error"->1, "Warning"->2, "Information"->3, "Hint"->4 |>;
+		msgs = Map[Check[<|  
+			"message"->#[[2]], 
+			"range"-><|
+				"start" -> <| "line" -> #[[4, 1, 1, 1]]-1, "character" -> #[[4, 1, 1, 2]]-1 |>,
+				"end" -> <| "line" -> #[[4, 1, 2, 1]]-1, "character" -> #[[4, 1, 2, 2]]-1 |>
+			|>,
+			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]], 2] |>, Nothing] &, lints];
+		
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
+		ExportString[response, "RawJSON", "Compact" -> True]
+		,
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> {} |>|>;
+		ExportString[response, "RawJSON", "Compact" -> True]
+	]
+];
+
+
+
+updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
+	Check[
+		ast = CodeParse[src];
+		functions = Cases[ast, (
+			_CallNode |
+			_LeafNode
+		),{2}];
+
+		locations = DeleteCases[Table[
+			l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
+			<|
+				"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
+				"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+			|>,
+			{f, functions}
+		], <|
+				"start" -> <|"line"->-1, "character" -> -1|>,
+				"end" -> <|"line"->-1, "character" -> -1|> 
+			|>];
+		
+		ExportString[
+			locations, "RawJSON", "Compact" -> True],
+
+		"[]"
+	]
 ];
 
 
@@ -168,8 +223,7 @@ codeLens[src_]:=Module[{starts, ends, breaks, lens, lines, sections, sectionPatt
 				Return[ExportString[lens, "RawJSON", "Compact" -> True]];
 			],
 
-			lens = {};
-			Return[ExportString[lens, "RawJSON", "Compact" -> True]];
+			Return["[]"];
 		]
 
 
@@ -305,9 +359,8 @@ rangeToStartEnd[range_]:=Module[{},
 ];
 
 symbolDefinitions = <||>;
-documentSymbols[src_, json_]:=Module[{},
-
-	ast = CheckAbort[CodeParse[src], Return[{}]];
+documentSymbols[src_, json_]:=Module[{ast, result},
+	ast = CheckAbort[CodeParse[src], Return["[]"]];
 	result = funcsDefs[src, ast, json];
 
 	Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];

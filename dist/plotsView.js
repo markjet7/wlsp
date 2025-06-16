@@ -152,10 +152,10 @@ class PlotsViewProvider {
             "graphicToSVG.js"
         ]);
         let result = `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <style id="_styles">
-    
+            <html lang="en">
+            <head>
+                <style id="_styles">
+            
                 svg {
                     width:100%;
                 }
@@ -164,39 +164,39 @@ class PlotsViewProvider {
                     overflow-x:hidden;
                     height:100%;
                 }
-    
+            
                 body.vscode-light {
                     background: var(--vscode-editor-background);
                     color: var(--vscode-editor-foreground);
                     font: var(--vscode-editor-font-family);
                 }
-    
+            
                 body.vscode-dark {
                     background: var(--vscode-editor-background);
                     color: var(--vscode-editor-foreground);
                     font: var(--vscode-editor-font-family);
                 }
-    
+            
                 body.vscode-high-contrast {
                     background: var(--vscode-editor-background);
                     color: var(--vscode-editor-foreground);
                     font: var(--vscode-editor-font-family);
                 }
-    
+            
                 #expression {
                     background: var(--vscode-editor-background);
                     color: var(--vscode-editor-foreground);
                     font: var(--vscode-editor-font-family);
                     width: 100%;
                 }
-    
+            
                 .outer {
                     height:100vh;
                     width:99vw;
                     display:block;
                     position:relative;
                 }
-    
+            
                 #result-header {
                     display:block;
                     margin-top: 5px;
@@ -204,7 +204,7 @@ class PlotsViewProvider {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
                 }
-    
+            
                 #result {
                     font-family: var(--vscode-editor-font-family);
                     font-size: ${this._fontSize}px;
@@ -230,18 +230,6 @@ class PlotsViewProvider {
                     top: -18px;
                     }
 
-                @keyframes loading {
-                    from {
-                        transform: rotate(0deg);
-                    }
-                    to {
-                        transform: rotate(360deg);
-                    }
-
-                .loading {
-                    animation: loading 1s infinite;
-                }
-
                 .output_row {
                     background: var(--vscode-tree-tableEvenRowsBackground);
                     overflow-x: scroll;
@@ -257,12 +245,11 @@ class PlotsViewProvider {
                     font-size: var(--vscode-editor-font-size);
                     color: #801f01;
                 }
-    
-                .output_row img{
+            
+                .output_row img {
                     width:90vw;
                     max-height:95vh;
                     object-fit:contain;
-                    width: auto;
                     margin-bottom: 5px;
                     margin-left: auto;
                     margin-right: auto;
@@ -273,6 +260,36 @@ class PlotsViewProvider {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
 
+                }
+
+                @keyframes loading {
+                    0% {
+                    width: 0%;
+                    }
+                    50% {
+                    width: 100%;
+                    }
+                    100% {
+                    width: 0%;
+                    }
+                }
+
+                .loading {
+                    height: 3px;
+                    border-radius: 2px;
+                    overflow: hidden;
+                    position: relative;
+                    margin: 10px 0;
+                }
+
+                .loading::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    height: 100%;
+                    background-color: var(--vscode-progressBar-background);
+                    animation: loading 2s infinite;
                 }
 
                 .vertical {
@@ -289,7 +306,7 @@ class PlotsViewProvider {
                     border-top: 1px solid #ccc;
                     width: auto;
                 }
-    
+            
                 .horizontal {
                     display: flex;
                     flex-direction: row;
@@ -306,34 +323,32 @@ class PlotsViewProvider {
                 .horizontal-element:last-child {
                     border-right: none;
                 }
-    
-            </style>
-            <meta charset="UTF-8">
-    
-            <meta
+            
+                </style>
+                <meta charset="UTF-8">
+            
+                <meta
                 http-equiv="Content-Security-Policy"
                 content="default-src 'none'; 
                 img-src 'self' data: ${webview.cspSource} file: vscode-resource: https:; 
                 script-src 'self' ${webview.cspSource} 'unsafe-inline'; 
                 style-src 'self' ${webview.cspSource} 'unsafe-inline';
                 object-src 'self' ${webview.cspSource} 'unsafe-inline';"
-            /> 
+                /> 
 
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="${jqueryUri}"></script>
-            <script src="${datatablesUri}"></script>
-            <link href="${datatablescssUri}" rel="stylesheet">
-            <script type="module" src="${transformUri}"></script>
-            <title>Plots</title>
-        </head>
-        <body onload="">
-            <div class="outer">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script type="module" src="${transformUri}"></script>
+                <title>Plots</title>
+            </head>
+            <body onload="">
+                <div class="outer">
+                <div id="progress" class=""></div>
                 <div class="inner" id='outputs'>
                     <p>In: ... </p>
                 </div>
-            </div>
-        </body>
-        </html>` + invalidator();
+                </div>
+            </body>
+            </html>` + invalidator();
         return result;
     }
 }

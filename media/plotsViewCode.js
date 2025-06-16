@@ -1,6 +1,8 @@
 // transform.js
 // import * as d3 from "./d3.min.js";
 
+// const { exit } = require("process");
+
 // const { image } = require("d3");
 
 const parser = new DOMParser();
@@ -335,19 +337,13 @@ const vscode = acquireVsCodeApi();
       if (!styleSheet) {
         styleSheet = document.createElement("style");
         styleSheet.id = "_style";
+        document.head.appendChild(styleSheet);
       }
-      if (styleSheet.cssRules)
-      {styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);}
-      let styleElement = document.getElementById('_style');
-      // styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
-      if (styleElement) {
-        // styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
-        styleElement.insertRule(`.output_row { font-size: ${message.size}px; }`, styleElement.cssRules.length);
-      }
-      try {
-        document.head.appendChild(styleElement);
-      } catch (error) {
-        console.error("Failed to append style element:", error);
+
+      let rules = styleSheet.cssRules || styleSheet.rules;
+
+      if (styleSheet && styleSheet.insertRule) {
+        styleSheet.insertRule(`.output_row { font-size: ${message.size}px; }`, rules.length);
       }
       return;
     }
@@ -366,6 +362,11 @@ const vscode = acquireVsCodeApi();
 
     const outputDiv = document.getElementById("outputs");
     if (message.input ) {
+      let progress = document.getElementById("progress");
+      if (progress && progress.classList.contains("loading")) {
+        progress.classList.remove("loading");
+      } 
+        progress.classList.add(["loading"]);
 
       if (message.input.length > 210) {
         message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100, message.input.length);
@@ -389,7 +390,7 @@ const vscode = acquireVsCodeApi();
        index+
         "]: <div class='input_text'>" +
         message.input +
-        "</div><hr></div><div class='output_row loading' id='o" + message.row + "'>Loading...</div>";
+        "</div><hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
         index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
 
@@ -402,6 +403,10 @@ const vscode = acquireVsCodeApi();
     var width, height;
     
     if (message.output) {
+      let progress = document.getElementById("progress");
+      if (progress && progress.classList.contains("loading")) {
+        progress.classList.remove("loading");
+      }
 
       let output = `<div class="output_row" id="o${message.row}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
        message.output // +
@@ -433,7 +438,7 @@ const vscode = acquireVsCodeApi();
         index +
          "]: " +
          message.input +
-         "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";
+         "<hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
          outputDiv.innerHTML = newCell + outputDiv.innerHTML;
       }
 
