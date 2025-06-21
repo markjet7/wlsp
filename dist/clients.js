@@ -115,6 +115,7 @@ function initializeGlobals(context0, outputChannel0) {
 function registerCommands() {
     const commands = [
         ['wolfram.runInWolfram', () => runInWolfram()],
+        ['wolfram.runInWolframMove', () => runInWolframMove()],
         ['wolfram.runToLine', () => runToLine()],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
@@ -296,7 +297,7 @@ function resetState() {
     withProgressCancellation === null || withProgressCancellation === void 0 ? void 0 : withProgressCancellation.cancel();
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.show();
-    editorDecorations.clear();
+    editorDecorations = new Map();
     editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
 }
 function startNewKernel() {
@@ -323,12 +324,27 @@ function runToLine() {
     });
     processEvaluationQueue();
 }
-function runInWolfram(printOutput = false, trace = false, section = false) {
+function runInWolframMove(printOutput = false, trace = false, section = false) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
     const selection = editor.selection;
     moveCursor2(selection.active);
+    queueEvaluation({
+        range: selection,
+        textDocument: editor.document,
+        print: printOutput,
+        output: true,
+        trace,
+        text: editor.document.getText()
+    });
+    sendToWolfram(printOutput, undefined, section);
+}
+function runInWolfram(printOutput = false, trace = false, section = false) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return;
+    const selection = editor.selection;
     queueEvaluation({
         range: selection,
         textDocument: editor.document,
@@ -437,8 +453,13 @@ function clearDecorationAroundCursor(ranges, position) {
         return;
     const uri = editor.document.uri.toString();
     const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
+    const rangeAroundCursor = ranges.filter(range => {
+        return isWithin(position, range);
+    });
+    if (rangeAroundCursor.length === 0)
+        return;
     const filteredDecorations = decorations.filter(d => {
-        return !ranges.some(range => isWithin(position, range));
+        return !isWithin(d.range.start, rangeAroundCursor[0]);
     });
     editorDecorations.set(uri, filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
@@ -528,25 +549,25 @@ function generateVariableTableHtml() {
     vars += "</vscode-data-grid>";
     return vars;
 }
-function isBefore(a, b) {
-    return a.line < b.line || (a.line === b.line && a.character < b.character);
+function isEqualOrBefore(a, b) {
+    return a.line < b.line || (a.line === b.line && a.character <= b.character);
 }
-function isAfter(a, b) {
-    return a.line > b.line || (a.line === b.line && a.character > b.character);
+function isEqualOrAfter(a, b) {
+    return a.line > b.line || (a.line === b.line && a.character >= b.character);
 }
 function isWithin(pos, range) {
-    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+    return !isEqualOrBefore(pos, range.start) && !isEqualOrAfter(pos, range.end);
 }
 function findRangeEndsAroundCursor(ranges, cursor) {
     let current;
     let next;
     for (const range of ranges) {
         if (isWithin(cursor, range)) {
-            if (!current || isBefore(range.end, current))
+            if (!current || isEqualOrBefore(range.end, current))
                 current = range.end;
         }
-        else if (isAfter(range.start, cursor)) {
-            if (!next || isBefore(range.start, next))
+        else if (isEqualOrAfter(range.start, cursor)) {
+            if (!next || isEqualOrBefore(range.start, next))
                 next = range.end;
         }
     }
@@ -576,7 +597,7 @@ function decorateRunningLine(outputPosition) {
 function removeExistingDecorationAtLine(editor, line) {
     var _a;
     const decorations = (_a = editorDecorations.get(editor.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
-    const filteredDecorations = decorations.filter(d => d.range.start.line !== line);
+    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -805,7 +826,7 @@ function updateEditorDecorations(editor, decoration, line) {
     var _a;
     const uri = editor.document.uri.toString();
     let decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
-    decorations = decorations.filter(d => d.range.start.line !== line);
+    decorations = decorations.filter(d => d.range.start.line <= line);
     decorations.push(decoration);
     editorDecorations.set(uri, decorations);
     editor.setDecorations(variableDecorationType, decorations);
@@ -919,8 +940,8 @@ function processDecorationUpdate(editor, data) {
         if (newDecorations[uri] === workspaceDecorations[uri])
             return;
         workspaceDecorations[uri] = newDecorations[uri];
-        const editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
-        editor.setDecorations(variableDecorationType, editorDecorations);
+        editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
+        editor.setDecorations(variableDecorationType, editorDecorations.get(uri) || []);
         editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
     }
     catch (_a) {
@@ -928,12 +949,19 @@ function processDecorationUpdate(editor, data) {
     }
 }
 function createDecorationsFromData(decorationData) {
-    const editorDecorations = [];
+    // const editorDecorations: vscode.DecorationOptions[] = [];
+    var _a;
+    let editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return new Map();
+    const uri = editor.document.uri.toString();
+    const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
     Object.keys(decorationData).forEach((d) => {
         const decoration = decorationData[d];
         decoration.hoverMessage = createMarkdownHoverMessage(decoration.hoverMessage);
-        editorDecorations.push(decoration);
+        decorations.push(decoration);
     });
+    editorDecorations.set(uri, decorations);
     return editorDecorations;
 }
 function updateLintDecorations(decorationfile) {
@@ -975,7 +1003,7 @@ function runTextCell(location) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line - 1, location.end.character));
+    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, location.end.character));
     queueEvaluation({
         range: selection,
         textDocument: editor.document,
@@ -1061,6 +1089,9 @@ function clearDecorations() {
     const editor = vscode.window.activeTextEditor;
     const uri = editor === null || editor === void 0 ? void 0 : editor.document.uri.toString();
     if (uri && uri in workspaceDecorations) {
+        editorDecorations.set(uri, []);
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, []);
     }
 }
 function isUntitled(document) {

@@ -162,6 +162,7 @@ function initializeGlobals(context0: vscode.ExtensionContext, outputChannel0: vs
 function registerCommands(): void {
     const commands: [string, (...args: any[]) => any][] = [
         ['wolfram.runInWolfram', () => runInWolfram()],
+        ['wolfram.runInWolframMove', () => runInWolframMove()],
         ['wolfram.runToLine', () => runToLine()],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
@@ -370,7 +371,7 @@ function resetState(): void {
     withProgressCancellation?.cancel();
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.show();
-    editorDecorations.clear();
+    editorDecorations = new Map();
     editor?.setDecorations(variableDecorationType, []);
 }
 
@@ -400,12 +401,30 @@ function runToLine(): void {
     processEvaluationQueue();
 }
 
-function runInWolfram(printOutput = false, trace = false, section = false): void {
+function runInWolframMove(printOutput = false, trace = false, section = false): void {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
     const selection = editor.selection;
     moveCursor2(selection.active);
+
+    queueEvaluation({
+        range: selection,
+        textDocument: editor.document,
+        print: printOutput,
+        output: true,
+        trace,
+        text: editor.document.getText()
+    });
+
+    sendToWolfram(printOutput, undefined, section);
+}
+
+function runInWolfram(printOutput = false, trace = false, section = false): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const selection = editor.selection;
 
     queueEvaluation({
         range: selection,
@@ -519,9 +538,15 @@ function clearDecorationAroundCursor(ranges: vscode.Range[], position: vscode.Po
 
     const uri = editor.document.uri.toString();
     const decorations = editorDecorations.get(uri) ?? [];
+
+    const rangeAroundCursor = ranges.filter(range => {
+        return isWithin(position, range);
+    });
+
+    if (rangeAroundCursor.length === 0) return;
     
     const filteredDecorations = decorations.filter(d => {
-        return !ranges.some(range => isWithin(position, range));
+        return !isWithin(d.range.start, rangeAroundCursor[0])
     });
 
     editorDecorations.set(uri, filteredDecorations);
@@ -681,7 +706,8 @@ function decorateRunningLine(outputPosition: vscode.Position): void {
 
 function removeExistingDecorationAtLine(editor: vscode.TextEditor, line: number): void {
     const decorations = editorDecorations.get(editor.document.uri.toString()) ?? [];
-    const filteredDecorations = decorations.filter(d => d.range.start.line !== line);
+
+    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -947,7 +973,7 @@ function updateEditorDecorations(editor: vscode.TextEditor, decoration: vscode.D
     const uri = editor.document.uri.toString();
     let decorations = editorDecorations.get(uri) ?? [];
 
-    decorations = decorations.filter(d => d.range.start.line !== line);
+    decorations = decorations.filter(d => d.range.start.line <= line);
     decorations.push(decoration);
 
     editorDecorations.set(uri, decorations);
@@ -1079,23 +1105,29 @@ function processDecorationUpdate(editor: vscode.TextEditor, data: string): void 
         if (newDecorations[uri] === workspaceDecorations[uri]) return;
 
         workspaceDecorations[uri] = newDecorations[uri];
-        const editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
+        editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
 
-        editor.setDecorations(variableDecorationType, editorDecorations);
+        editor.setDecorations(variableDecorationType, editorDecorations.get(uri) || []);
         editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
     } catch {
         newDecorations = {};
     }
 }
 
-function createDecorationsFromData(decorationData: any): vscode.DecorationOptions[] {
-    const editorDecorations: vscode.DecorationOptions[] = [];
+function createDecorationsFromData(decorationData: any): Map<string, vscode.DecorationOptions[]> {
+    // const editorDecorations: vscode.DecorationOptions[] = [];
+
+    let editor = vscode.window.activeTextEditor;
+    if (!editor) return new Map();
+    const uri = editor.document.uri.toString();
+    const decorations = editorDecorations.get(uri) ?? [];
     
     Object.keys(decorationData).forEach((d: any) => {
         const decoration: vscode.DecorationOptions = decorationData[d];
         decoration.hoverMessage = createMarkdownHoverMessage(decoration.hoverMessage as string);
-        editorDecorations.push(decoration);
+        decorations.push(decoration);
     });
+    editorDecorations.set(uri, decorations);
 
     return editorDecorations;
 }
@@ -1151,7 +1183,7 @@ function runTextCell(location: vscode.Range): void {
 
     const selection = new vscode.Selection(
         new vscode.Position(location.start.line, location.start.character),
-        new vscode.Position(location.end.line - 1, location.end.character)
+        new vscode.Position(location.end.line, location.end.character)
     );
     
     queueEvaluation({
@@ -1253,6 +1285,9 @@ function clearDecorations(): void {
     const uri = editor?.document.uri.toString();
 
     if (uri && uri in workspaceDecorations) {
+        editorDecorations.set(uri, []);
+        editor?.setDecorations(variableDecorationType, []);
+        editor?.setDecorations(runningDecorationType, []);
     }
 }
 

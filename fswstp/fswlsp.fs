@@ -401,8 +401,8 @@ type fswlspServer(input: Stream, output: Stream) =
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
-            // capabilities.codeLensProvider <- new CodeLensOptions()
-            // capabilities.codeLensProvider.resolveProvider <- false
+            capabilities.codeLensProvider <- new CodeLensOptions()
+            capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- true
 
             let completionOptions = new CompletionOptions()
@@ -542,18 +542,17 @@ type fswlspServer(input: Stream, output: Stream) =
         base.Initialized()
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
-            
-            try
+        try
+            // Create a Task that will run the document symbols operation
+            let task = Task.Run(fun () ->
                 let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
                 
-                // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
                 this._lsp.Evaluate(input)
-                // this._lsp.Evaluate("1+1")
                 this._lsp.WaitForAnswer() |> ignore
                 let js = this._lsp.GetString() 
 
-
-                let symbols: DocumentSymbol array = 
+                // Parse symbols from the JSON response
+                let symbols = 
                     js 
                     |> JArray.Parse
                     |> Seq.map (fun x -> 
@@ -561,29 +560,30 @@ type fswlspServer(input: Stream, output: Stream) =
                         symbol.name <- x["name"].ToString()
                         symbol.kind <- x["kind"].ToObject<SymbolKind>()
                         symbol.detail <- x["detail"].ToString()
-
                         symbol.range <- x["location"].["range"].ToObject<Range>()
                         symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-
                         symbol.children <- [||]
                         symbol
                     )
                     |> Seq.toArray
 
-                let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
-                Result<DocumentSymbolResult,ResponseError>.Success result
-            with
-            | ex -> 
-                let error = new ResponseError()
-                error.code <- ErrorCodes.InternalError
-                error.message <- ex.Message
-                // Handle the error here, e.g., log it or send a notification to the client
-                let result:DocumentSymbolResult = new DocumentSymbolResult([||]: DocumentSymbol array)
-                Result<DocumentSymbolResult,ResponseError>.Success(result)
-                // let symbols: DocumentSymbol array = [||]
-
-            // let result = new DocumentSymbolResult(symbols)
-            // Result<DocumentSymbolResult,ResponseError>.Success(result)
+                let result = new DocumentSymbolResult(symbols)
+                result
+            )
+            
+            // Wait for the task to complete with a timeout
+            if task.Wait(TimeSpan.FromSeconds(5.0)) then
+                Result<DocumentSymbolResult,ResponseError>.Success task.Result
+            else
+                // Handle timeout case
+                this.log_messages("DocumentSymbols operation timed out")
+                let emptyResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+                Result<DocumentSymbolResult,ResponseError>.Success emptyResult
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
+            let result = new DocumentSymbolResult([||]: DocumentSymbol array)
+            Result<DocumentSymbolResult,ResponseError>.Success(result)
 
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
@@ -700,7 +700,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
             
-        
+        this.log_messages(sprintf "CodeLens request for document: %s" (p.textDocument.uri.ToString()))
         if p.textDocument.uri.ToString() <> this._document then
 
             Result<CodeLens array,ResponseError>.Success([||])
@@ -710,6 +710,8 @@ type fswlspServer(input: Stream, output: Stream) =
             this._lsp.Evaluate(input)
             this._lsp.WaitForAnswer() |> ignore
             let js2 = this._lsp.GetString()
+
+            this.log_messages(sprintf "CodeLens response: %s" js2)
 
             let codeLenses: CodeLens array = 
                 js2 

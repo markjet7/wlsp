@@ -13,7 +13,8 @@ import {
     NotificationType,
     State,
     StateChangeEvent,
-    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
+    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message,
+    DocumentSelector
 } from 'vscode-LanguageClient/node';
 
 import { outputChannel } from "./extension"
@@ -178,7 +179,8 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     let clientErrorHandler = new ClientErrorHandler();
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         initializationOptions: {
             debuggerPort: 7777
@@ -341,7 +343,8 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
 
         let clientOptions: LanguageClientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             markdown: {
@@ -391,7 +394,10 @@ async function startWLSPIO(id: number): Promise<void> {
     };
 
     let clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'wolfram' }],
+        documentSelector: [
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
+        ],
         diagnosticCollectionName: 'Wolfram Language',
         outputChannel: outputChannel,
         revealOutputChannelOn: 1
@@ -442,7 +448,8 @@ export async function startWLSPKernelIOClojure(id: number, kernelPath: string): 
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -484,7 +491,8 @@ export async function startWLSPKernelIORust(id: number, kernelPath: string): Pro
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -539,7 +547,8 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -547,7 +556,7 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
             isTrusted: true,
             supportHtml: true
         },
-    };
+        };
 
     return new Promise(async (resolve) => {
 

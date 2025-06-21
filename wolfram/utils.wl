@@ -66,8 +66,8 @@ escapes[string_]:=StringReplace[string, {
 
 
 graphicsQ = 
-  FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
-    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}] &;
+  TimeConstrained[FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
+    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}], 10, False] &;
 
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
 
@@ -76,7 +76,8 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 			result=EvaluationData[ToExpression[StringTake[code, SyntaxLength[code]]]];
 			
 			If[
-				!(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
+				(* (graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]), *)
+				(MemberQ[graphicHeads, Head[result["Result"]]]),
 				result["Result"] = CheckAbort[
 					Rasterize[result["Result"]], 
 					result["Result"]

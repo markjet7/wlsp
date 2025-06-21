@@ -226,7 +226,7 @@ class PlotsViewProvider {
 
                 .input_text {
                     position: relative;
-                    left: 50px;
+                    left: 60px;
                     top: -18px;
                     }
 

@@ -146,7 +146,8 @@ function startWLSP(id, path) {
         let clientErrorHandler = new ClientErrorHandler();
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             initializationOptions: {
                 debuggerPort: 7777
@@ -289,7 +290,8 @@ function startWLSPKernelSocket(id, path) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             markdown: {
@@ -331,7 +333,10 @@ function startWLSPIO(id) {
             debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
         };
         let clientOptions = {
-            documentSelector: [{ scheme: 'file', language: 'wolfram' }],
+            documentSelector: [
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
+            ],
             diagnosticCollectionName: 'Wolfram Language',
             outputChannel: extension_1.outputChannel,
             revealOutputChannelOn: 1
@@ -372,7 +377,8 @@ function startWLSPKernelIOClojure(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
@@ -408,7 +414,8 @@ function startWLSPKernelIORust(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
@@ -455,7 +462,8 @@ function startWLSPKernelIO(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,

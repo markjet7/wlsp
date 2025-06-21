@@ -24,109 +24,6 @@ function pasteOutput(output) {
   });
 }
 
-function createDefault(parentSelection, children) {
-  const selection = parentSelection;
-  // console.log("createDefault", children);
-  createList(selection, children);
-}
-
-function createColumn(parentSelection, children) {
-  const selection = parentSelection.append("g").attr("class", "column");
-
-  children.forEach((child, index) => {
-    if (typeof child === "string" || typeof child === "number") {
-      selection
-        .append("text")
-        .attr("class", "column-item")
-        .attr("x", 0)
-        .attr("y", index * 20)
-        .text(child);
-    }
-
-    // check if child is a nested array
-    if (Array.isArray(child) && typeof child[0] === "string") {
-      selection
-        .append("g")
-        .attr("class", "column-item")
-        .attr("x", 0)
-        .attr("y", index * 20);
-      processArray(child, selection);
-    }
-  });
-  return selection;
-}
-
-function createGraphics(parentSelection, children) {
-  let selection = parentSelection.append("g").attr("class", "graphics");
-
-  selection = graphicToSVG(selection, children);
-  return selection;
-}
-
-function createDisk(parentSelection, children) {
-  let cx = 100,
-    cy = 100,
-    r = 10;
-
-  if (
-    children &&
-    children.length > 1 &&
-    Array.isArray(children[0]) &&
-    children[0].length > 2
-  ) {
-    cx = children[0][1];
-    cy = children[0][2];
-    r = children[1];
-  }
-
-  return parentSelection
-    .append("circle")
-    .attr("class", "disk")
-    .attr("cx", cx)
-    .attr("cy", cy)
-    .attr("r", r)
-    .style("fill", "red");
-}
-
-function createList(parentSelection, children) {
-  const selection = parentSelection;
-  // console.log("createList", children);
-
-  // Check if all children are strings or numbers
-  const allText = children.every(
-    (child) => typeof child === "string" || typeof child === "number"
-  );
-  // Append text elements for each list item
-  if (allText) {
-    let text = children.reduce((acc, child) => acc + child + ", ", "");
-    // console.log("text", text);
-    selection
-      .append("text")
-      .attr("class", "list-item")
-      .text(text)
-      .attr("x", 0)
-      .attr("y", "50%");
-    return selection;
-  } else {
-    children.forEach((child, index) => {
-      if (typeof child === "string" || typeof child === "number") {
-        selection
-          .append("text")
-          .attr("class", "list-item")
-          .attr("x", 0)
-          .attr("y", index * 20)
-          .text(child);
-      }
-
-      // check if child is a nested array
-      if (Array.isArray(child) && typeof child[0] === "string") {
-        processArray(child, selection);
-      }
-    });
-    return selection;
-  }
-}
-
   // Function to create a download button for the given image element
   const createDownloadButton = (imageElement) => {
     // Create a button element
@@ -394,9 +291,9 @@ const vscode = acquireVsCodeApi();
         index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
 
-      let table = new DataTable('#myTable', {
-        // options
-    });
+    //   let table = new DataTable('#myTable', {
+    //     // options
+    // });
       }
     }
     
@@ -408,27 +305,10 @@ const vscode = acquireVsCodeApi();
         progress.classList.remove("loading");
       }
 
-      let output = `<div class="output_row" id="o${message.row}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
-       message.output // +
-      // "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
-      // "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
+      let output = `<div class="output_row" id="o${index}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
+       message.output 
 
       let doc = parser.parseFromString(output, "text/html");
-      // let outs = doc.getElementsByTagName("output_row");
-      // let imgs = doc.getElementsByTagName("img");
-      // for (const o of outs) {
-      //   createDownloadButton(o);
-      //   createOpenButton(o);
-      //   createPasteButton(o);
-      // }
-      // for (const i of imgs) {
-      //   createDownloadButton(i);
-      //   createOpenButton(i);
-      //   createPasteButton(i);
-      // }
-
-      // let outputDivs = outputDiv.getElementsByClassName("output_row");
-      // select output div with id = message.row
 
       let existingOutput = document.getElementById("o"+message.row);
       if (existingOutput) {
