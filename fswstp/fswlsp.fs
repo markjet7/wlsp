@@ -18,8 +18,14 @@ open LanguageServer.Json
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Text.RegularExpressions
+open System.Text.Json
+open System.Text
+open System.Text.Encodings.Web
+open System.Text.Json
 
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
+
+
 
 type WolframResultParams() =
                 //     let result = json!({
@@ -109,8 +115,6 @@ type PublishDiagnosticsNotification() =
 type fswlspServer(input: Stream, output: Stream) = 
     inherit ServiceConnection(input, output)
 
-
-
     member val _ml : IKernelLink = null with get, set
     member val _lsp: IKernelLink = null with get, set
     
@@ -127,6 +131,42 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member val locations : JArray = null with get, set
 
+    member this.JsonToWolfram(input: string) = 
+        this.escapeWolframString(this.unescapeWolframString(input))
+
+    member this.unescapeWolframString (input: string) =
+    // Check if the string is enclosed in quotes
+        let content = input
+        // Replace escaped sequences with their actual characters
+        content
+            .Replace("\\\\", "\\")
+            .Replace("\\n", "\n")
+            .Replace("\\r", "\r")
+            .Replace("\\t", "\t")
+            .Replace("\\/", "/")
+            // Handle Unicode escapes like \u0022
+            |> (fun s -> Regex.Replace(s, "\\\\u([0-9a-fA-F]{4})", 
+                    (fun m -> 
+                        let hex = m.Groups.[1].Value
+                        Char.ConvertFromUtf32(Int32.Parse(hex, System.Globalization.NumberStyles.HexNumber)))))
+    member this.escapeWolframString (input: string) =
+        let sb = StringBuilder()
+        sb.Append('"') |> ignore
+        for c in input do
+            match c with
+            | '\\' -> sb.Append("\\\\") |> ignore
+            | '"'  -> sb.Append("\\\"") |> ignore 
+            | '\n' -> sb.Append("\\n") |> ignore
+            | '\r' -> sb.Append("\\r") |> ignore
+            | '\t' -> sb.Append("\\t") |> ignore
+            // | _ when int c < 0x20 || int c > 0x7E ->
+            //     // Use Wolfram's hex notation for non-printable characters
+            //     sb.Append(sprintf "\\:%04X" (int c)) |> ignore
+            | _ ->
+                sb.Append(c) |> ignore
+        sb.Append('"') |> ignore
+        sb.ToString()
+
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
         p.``type`` <- MessageType.Info
@@ -139,7 +179,7 @@ type fswlspServer(input: Stream, output: Stream) =
         
         
 
-        let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
+        let expr = sprintf "evaluateInKernel[%s]" ( this.escapeWolframString(code))
 
 
         try
@@ -175,8 +215,9 @@ type fswlspServer(input: Stream, output: Stream) =
         response
 
     member this.get_word_at_position(code: string, position: Position) =
-        let lines = code.Split('\n')
-        let line = lines.[int position.line]
+        let lines = code.Split("\\n")
+
+        let line = lines.[min (int position.line) (lines.Length - 1)]
 
         // get the last word in the line using regex
         let regex = Regex(@"\w+")
@@ -197,7 +238,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.Initialize(initializeParams: InitializeParams): Result<InitializeResult, ResponseError<InitializeErrorData>> =
         try
-
             let log_messages(message :string) = 
                 let p = new LogMessageParams()
                 p.``type`` <- MessageType.Info
@@ -237,10 +277,10 @@ type fswlspServer(input: Stream, output: Stream) =
 
             let get_input(request: GetInputParams): string = 
 
-                let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = request.Params["text"].ToString().Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
+                let range = this.escapeWolframString (request.Params["range"].ToString())
+                let text = this.escapeWolframString (this.unescapeWolframString (request.Params["text"].ToString()))
 
-                let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
+                let eval = sprintf "getCodeString[%s, %s]" text range
 
                 this._ml.Evaluate(eval)
                 this._ml.WaitForAnswer() |> ignore
@@ -303,6 +343,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 this.SendNotification(
                     busy
                 )
+
 
                 let input = get_input request
 
@@ -398,6 +439,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 Action<windowFocusedParams>(windowFocusedHandler)
             )
 
+            this.NotificationHandlers.Set<SetTraceParams>(
+                "$/setTrace",
+                Action<SetTraceParams>(traceHandler)
+            )
+
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
@@ -458,6 +504,17 @@ type fswlspServer(input: Stream, output: Stream) =
                 actionItem.title <- "Open Log"
                 // p.actions <- [| actionItem |]
                 this.Window.ShowMessage(p)
+
+                let p2 = new ShowMessageRequestParams()
+                p2.``type`` <- MessageType.Info
+                p2.message <- sprintf "%s ... full output in output log" (text.Substring(
+                    0, 
+                    Math.Min(text.Length, 100) // Limit the message length to 100 characters
+                )) // Truncate the message to avoid overflow
+                p2.actions <- [| actionItem |]
+                // this.Window.ShowMessageRequest(
+                //     p2
+                // ) |> ignore
                 ()
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
@@ -511,7 +568,7 @@ type fswlspServer(input: Stream, output: Stream) =
         let wlsp_path = Path.Combine(fswstp_path,  "../")
 
         let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
-        this.log_messages(sprintf "Wolfram: %s" utils_path)
+        // this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
@@ -545,7 +602,7 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             // Create a Task that will run the document symbols operation
             let task = Task.Run(fun () ->
-                let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
+                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) (p.textDocument.uri.ToString())
                 
                 this._lsp.Evaluate(input)
                 this._lsp.WaitForAnswer() |> ignore
@@ -558,7 +615,10 @@ type fswlspServer(input: Stream, output: Stream) =
                     |> Seq.map (fun x -> 
                         let symbol = new DocumentSymbol()
                         symbol.name <- x["name"].ToString()
-                        symbol.kind <- x["kind"].ToObject<SymbolKind>()
+                        symbol.kind <- 
+                            match x["kind"].ToObject<SymbolKind>() with
+                            | _ -> SymbolKind.Struct // Provide a default value
+                            | kind -> kind
                         symbol.detail <- x["detail"].ToString()
                         symbol.range <- x["location"].["range"].ToObject<Range>()
                         symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
@@ -589,7 +649,7 @@ type fswlspServer(input: Stream, output: Stream) =
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
         this._document <- p.textDocument.uri.ToString() 
-        this._text <- p.contentChanges.[0].text.ToString()
+        this._text <- this.JsonToWolfram(p.contentChanges.[0].text)
 
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
             URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
@@ -599,7 +659,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         this.validate(p)
 
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
+        let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -625,7 +685,7 @@ type fswlspServer(input: Stream, output: Stream) =
             
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString()
-        this._text <- p.textDocument.text
+        this._text <- this.JsonToWolfram(p.textDocument.text)
 
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
 			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
@@ -633,7 +693,7 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
 
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
+        let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -657,15 +717,16 @@ type fswlspServer(input: Stream, output: Stream) =
             p2
         )
 
-    member this.validate(Params: obj) = 
+    member this.validate(paramsI: obj) = 
         let textDocument = 
-            match Params with
+            match paramsI with
             | :? DidSaveTextDocumentParams as saveParams -> saveParams.textDocument
             | :? DidChangeTextDocumentParams as changeParams -> changeParams.textDocument
             | _ -> failwith "Unsupported parameter type"
 
+
         // You can implement your validation logic here
-        let expr = sprintf "validate[\"%s\", \"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")) (this._document.Replace("\"", "\\\""))
+        let expr = sprintf "validate[%s, %s]" (this._text) (this.escapeWolframString(this._document))
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -700,43 +761,40 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
             
-        this.log_messages(sprintf "CodeLens request for document: %s" (p.textDocument.uri.ToString()))
         if p.textDocument.uri.ToString() <> this._document then
 
             Result<CodeLens array,ResponseError>.Success([||])
         else
-            // try
-            let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
-            this._lsp.Evaluate(input)
-            this._lsp.WaitForAnswer() |> ignore
-            let js2 = this._lsp.GetString()
+            try
+                let input = sprintf "codeLens[%s]" (this._text)
+                this._lsp.Evaluate(input)
+                this._lsp.WaitForAnswer() |> ignore
+                let js2 = this._lsp.GetString()
 
-            this.log_messages(sprintf "CodeLens response: %s" js2)
+                let codeLenses: CodeLens array = 
+                    js2 
+                    |> JArray.Parse
+                    |> Seq.filter (fun x ->x.ToString().Contains("command"))
+                    |> Seq.map (fun x -> 
 
-            let codeLenses: CodeLens array = 
-                js2 
-                |> JArray.Parse
-                |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                |> Seq.map (fun x -> 
+                        let command = new Command()
+                        command.title <- x["command"].["title"].ToString()
+                        command.command <- x["command"].["command"].ToString()
+                        command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
+                        let codeLens = new CodeLens()
+                        codeLens.range <- x["range"].ToObject<Range>()
+                        codeLens.command <- command // or set it if needed
+                        codeLens
+                    )
+                    |> Seq.toArray
 
-                    let command = new Command()
-                    command.title <- x["command"].["title"].ToString()
-                    command.command <- x["command"].["command"].ToString()
-                    command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                    let codeLens = new CodeLens()
-                    codeLens.range <- x["range"].ToObject<Range>()
-                    codeLens.command <- command // or set it if needed
-                    codeLens
-                )
-                |> Seq.toArray
-
-            Result<CodeLens array,ResponseError>.Success(codeLenses)
-            // with
-            // | ex -> 
-            //     let error = new ResponseError()
-            //     error.code <- ErrorCodes.InternalError
-            //     error.message <- ex.Message
-            //     Result<CodeLens array,ResponseError>.Error(error)
+                Result<CodeLens array,ResponseError>.Success(codeLenses)
+            with
+                | ex -> 
+                    let error = new ResponseError()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    Result<CodeLens array,ResponseError>.Error(error)
 
 
 
@@ -779,7 +837,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 let detail = if exists then value else new JObject()
                 let message2 = 
                     if detail.["detail"] <> null then
-                        sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
+                        sprintf "%s\n\n%s" message (this.escapeWolframString(detail.["documentation"].ToString()) )
                     else
                         message
 
@@ -813,7 +871,7 @@ type fswlspServer(input: Stream, output: Stream) =
         
 
     override this.Completion (p: CompletionParams): Result<CompletionResult,ResponseError> = 
-            
+        try    
             let getDistinctWords text =
                 let matches = Regex.Matches(this._text, @"\b\w+\b")
                 matches |> Seq.cast<Match> |> Seq.map (fun m -> m.Value) |> Seq.distinct |> Seq.toArray
@@ -859,6 +917,15 @@ type fswlspServer(input: Stream, output: Stream) =
 
             let result = new CompletionResult(filteredCandidates)
             
+            Result<CompletionResult,ResponseError>.Success(result)
+        with
+        | ex -> 
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error in Completion: %s" ex.Message)
+            let result = new CompletionResult([||])
             Result<CompletionResult,ResponseError>.Success(result)
 
     override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 

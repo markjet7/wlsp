@@ -62,7 +62,7 @@ function pasteOutput(output) {
     // imageElement.parentNode.style.position = "relative";
 
     // Insert the button into the parent of the image element
-    // imageElement.parentNode.appendChild(button);
+    imageElement.parentNode.appendChild(button);
   };
 
   const handleImageClick = (imageElement) => {
@@ -376,9 +376,9 @@ const vscode = acquireVsCodeApi();
 
   const updateImageElements = () => {
     var downloadlinks = document.querySelectorAll("#download-link");
-    for (const downloadlink of downloadlinks) {
-      downloadlink.remove();
-    }
+    // for (const downloadlink of downloadlinks) {
+    //   downloadlink.remove();
+    // }
 
     // Get all image elements on the page
     var imageElements = document.getElementsByClassName("output_row");
@@ -388,6 +388,9 @@ const vscode = acquireVsCodeApi();
       // get the image tag inside the output_row
       const img = imageElement.getElementsByTagName("img")[0];
 
+      if (!img) {
+        continue;
+      }
       createDownloadButton(img);
       // createOpenButton(imageElement);
       // createPasteButton(imageElement);

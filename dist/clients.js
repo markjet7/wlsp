@@ -314,15 +314,24 @@ function runToLine() {
         return;
     const selection = editor.selection.active;
     const range = new vscode.Selection(0, 0, selection.line, selection.character);
-    queueEvaluation({
-        range,
-        textDocument: editor.document,
-        print: false,
-        output: true,
-        trace: false,
-        text: editor.document.getText()
-    });
-    processEvaluationQueue();
+    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line + 1);
+    let text = editor.document.getText();
+    for (const r of rangesBeforeCursor) {
+        if (isEqualOrBefore(range.start, selection) && isEqualOrAfter(range.end, selection)) {
+            let s = new vscode.Selection(new vscode.Position(r.start.line - 1, r.start.character), new vscode.Position(r.end.line - 1, r.end.character));
+            console.log(s.start.line, s.start.character, s.end.line, s.end.character);
+            queueEvaluation({
+                range: s,
+                textDocument: editor.document,
+                print: false,
+                output: true,
+                trace: false,
+                text: text
+            });
+            processEvaluationQueue();
+        }
+    }
 }
 function runInWolframMove(printOutput = false, trace = false, section = false) {
     const editor = vscode.window.activeTextEditor;
@@ -486,6 +495,8 @@ function moveCursor2(position0) {
 }
 function extractRangesFromPositions(uri) {
     const ranges = [];
+    if (!movePositions || !movePositions[decodeURIComponent(uri)])
+        return ranges;
     const locations = movePositions[decodeURIComponent(uri)]["locations"];
     for (const location of Object.values(locations)) {
         const range = location;
