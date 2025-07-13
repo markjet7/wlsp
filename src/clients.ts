@@ -750,7 +750,7 @@ async function updatePositions(params: any): Promise<void> {
         }
         if ("location" in e && "uri" in e["location"] && (uri in movePositions)) {
             movePositions[uri]["locations"] = e["locations"];
-
+            positionsDecorations = [];
             for (const location of e["locations"]) {
                 let range = new vscode.Range(
                     new vscode.Position(location["start"]["line"], location["start"]["character"]),
@@ -774,8 +774,8 @@ async function updatePositions(params: any): Promise<void> {
                     }
                 } as vscode.DecorationOptions;
 
-                positionsDecorations.push(positionDecoration);
-                editor.setDecorations(positionsDecorationType, positionsDecorations);
+                // positionsDecorations.push(positionDecoration);
+                // editor.setDecorations(positionsDecorationType, positionsDecorations);
             }
         }
     });
