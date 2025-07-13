@@ -116,7 +116,7 @@ function registerCommands() {
     const commands = [
         ['wolfram.runInWolfram', () => runInWolfram()],
         ['wolfram.runInWolframMove', () => runInWolframMove()],
-        ['wolfram.runToLine', () => runToLine()],
+        ['wolfram.runToLine', (line) => runToLine(line)],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
         ['wolfram.runTextCell', (location) => runTextCell(location)],
@@ -198,20 +198,20 @@ function setupTreeDataProvider() {
     vscode.window.registerTreeDataProvider("wolframSymbols", exports.treeDataProvider);
 }
 function handleWorkspaceFolderChanges(event) {
-    var _a, _b, _c;
-    for (const folder of event.removed) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            clients.delete(folder.uri.toString());
-            (_a = client[0]) === null || _a === void 0 ? void 0 : _a.stop();
-            (_b = client[1]) === null || _b === void 0 ? void 0 : _b.stop();
-        }
-    }
+    // for (const folder of event.removed) {
+    //     const client = clients.get(folder.uri.toString());
+    //     if (client) {
+    //         clients.delete(folder.uri.toString());
+    //         client[0]?.stop();
+    //         client[1]?.stop();
+    //     }
+    // }
     for (const folder of event.added) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            (_c = client[1]) === null || _c === void 0 ? void 0 : _c.sendNotification("didChangeWorkspaceFolders", folder);
-        }
+        // const client = clients.get(folder.uri.toString());
+        // if (client) {
+        //     client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
+        // }
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
     }
 }
 function onkernelReady() {
@@ -260,12 +260,12 @@ function handleWorkspaceFiles() {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor)
         return;
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
-    if (workspaceFolder) {
-        vscode.workspace.findFiles("**/*.wl*").then(result => {
-            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", result);
-        });
-    }
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders)
+        return;
+    workspaceFolders.forEach((folder) => {
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+    });
 }
 function updateConfiguration() {
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
@@ -308,12 +308,20 @@ function startNewKernel() {
         }));
     });
 }
-function runToLine() {
+function runToLine(line) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const selection = editor.selection.active;
-    const range = new vscode.Selection(0, 0, selection.line, selection.character);
+    let selection;
+    let range;
+    if (!line) {
+        selection = editor.selection.active;
+        range = new vscode.Selection(0, 0, selection.line, selection.character);
+    }
+    else {
+        selection = new vscode.Position(line - 1, 0);
+        range = new vscode.Selection(0, 0, line - 1, 0);
+    }
     const ranges = extractRangesFromPositions(editor.document.uri.toString());
     const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line + 1);
     let text = editor.document.getText();
@@ -479,7 +487,7 @@ function moveCursor2(position0) {
         if (!editor)
             return;
         const uri = editor.document.uri.toString();
-        const position = new vscode.Position(position0.line + 1, position0.character);
+        const position = new vscode.Position(position0.line + 2, position0.character);
         if (!(decodeURIComponent(uri) in movePositions))
             return;
         const ranges = extractRangesFromPositions(uri);
@@ -490,6 +498,9 @@ function moveCursor2(position0) {
         }
         if (next) {
             moveCursorToPosition(editor, next);
+        }
+        else {
+            moveCursorToPosition(editor, new vscode.Position(position.line, 0));
         }
     });
 }
@@ -505,6 +516,19 @@ function extractRangesFromPositions(uri) {
     return ranges;
 }
 function moveCursorToPosition(editor, next) {
+    if (!editor)
+        return;
+    if (next.line < 0) {
+        next = new vscode.Position(0, 0);
+    }
+    if (next.line >= editor.document.lineCount) {
+        // insert a new line at the end
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        editor.edit(editBuilder => {
+            editBuilder.insert(new vscode.Position(editor.document.lineCount, 0), "\n");
+        });
+        next = new vscode.Position(editor.document.lineCount + 1, 0);
+    }
     const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);

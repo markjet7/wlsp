@@ -70,7 +70,7 @@ graphicsQ =
   TimeConstrained[FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
     x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}], 10, False] &;
 
-graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture, Dataset};
+graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture, Dataset, InformationData};
 
 evaluateInKernel[code_]:=Module[{json, result, formatted},
 		CheckAbort[
@@ -204,16 +204,19 @@ codeLens[src_]:=Module[{starts, ends, breaks, lens, lines, sections, sectionPatt
 				Return[ExportString[lens, "RawJSON", "Compact" -> True]],
 
 				start = 1;
-				lens = BlockMap[
+				lens = Flatten@BlockMap[
 					Function[{f},
 						gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
 						If[
 							gap>=3,
-							c = createCell[
+							c1 = createRunCell[
+								start,
+								f[[2]][[-1]][Source][[1,1]]-3];
+							c2 = createRunAbove[
 								start,
 								f[[2]][[-1]][Source][[1,1]]-3];
 								start = f[[2]][[-1]][Source][[1,1]];
-							c,
+							{c1, c2},
 						Nothing
 						]
 					],
@@ -230,7 +233,7 @@ codeLens[src_]:=Module[{starts, ends, breaks, lens, lines, sections, sectionPatt
 
 ];
 
-createCell[starts_, ends_]:=<|
+createRunCell[starts_, ends_]:=<|
 	"range"-><|
 		"start"-><|
 			"line"->starts-1,"character"->0
@@ -240,6 +243,18 @@ createCell[starts_, ends_]:=<|
 			|>|>,
 			"command"->
 				<|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->100|>|>}|>|>;
+
+createRunAbove[starts_, ends_]:=If[starts === 1, Nothing, <|
+	"range"-><|
+		"start"-><|
+			"line"->starts-1,"character"->0
+			|>,
+			"end"-><|
+			"line"->ends-1,"character"->0
+			|>|>,
+			"command"->
+				<|"title"->"Run above ("<>ToString[starts]<>" line(s))","command"->"wolfram.runToLine","arguments"->{ends}|>|>
+];
 
 
 

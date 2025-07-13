@@ -703,18 +703,18 @@ function stop() {
     return __awaiter(this, void 0, void 0, function* () {
         // wolframKernelClient?.sendNotification("Shutdown");
         // wolframClient?.sendNotification("Shutdown");
-        console.log("Stopping Wolfram Clients");
-        try {
-            // await wolframClient?.stop();
-            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.dispose());
-        }
-        catch (e) {
-            console.log(e.message);
-        }
         try {
             // kernelSocket.destroy();
             // await wolframKernelClient?.stop();
             yield (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.dispose());
+        }
+        catch (e) {
+            console.log(e.message);
+        }
+        console.log("Stopping Wolfram Clients");
+        try {
+            // await wolframClient?.stop();
+            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.dispose());
         }
         catch (e) {
             console.log(e.message);

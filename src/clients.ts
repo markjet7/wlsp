@@ -14,7 +14,8 @@ import {
     NotificationType,
     State,
     StateChangeEvent,
-    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
+    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message,
+    integer
 } from 'vscode-LanguageClient/node';
 import { resolve } from 'path';
 import { deactivate } from './notebook';
@@ -163,7 +164,7 @@ function registerCommands(): void {
     const commands: [string, (...args: any[]) => any][] = [
         ['wolfram.runInWolfram', () => runInWolfram()],
         ['wolfram.runInWolframMove', () => runInWolframMove()],
-        ['wolfram.runToLine', () => runToLine()],
+        ['wolfram.runToLine', (line:integer) => runToLine(line)],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
         ['wolfram.runTextCell', (location: vscode.Range) => runTextCell(location)],
@@ -268,20 +269,21 @@ function setupTreeDataProvider(): void {
 }
 
 function handleWorkspaceFolderChanges(event: vscode.WorkspaceFoldersChangeEvent): void {
-    for (const folder of event.removed) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            clients.delete(folder.uri.toString());
-            client[0]?.stop();
-            client[1]?.stop();
-        }
-    }
+    // for (const folder of event.removed) {
+    //     const client = clients.get(folder.uri.toString());
+    //     if (client) {
+    //         clients.delete(folder.uri.toString());
+    //         client[0]?.stop();
+    //         client[1]?.stop();
+    //     }
+    // }
 
     for (const folder of event.added) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
-        }
+        // const client = clients.get(folder.uri.toString());
+        // if (client) {
+        //     client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
+        // }
+        wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
     }
 }
 
@@ -332,12 +334,11 @@ function handleWorkspaceFiles(): void {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) return;
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
-    if (workspaceFolder) {
-        vscode.workspace.findFiles("**/*.wl*").then(result => {
-            wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", result);
-        });
-    }
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) return;
+    workspaceFolders.forEach((folder: WorkspaceFolder) => {
+        wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
+    });
 }
 
 function updateConfiguration(): void {
@@ -382,12 +383,20 @@ async function startNewKernel(): Promise<void> {
     });
 }
 
-function runToLine(): void {
+function runToLine(line:integer): void {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    const selection = editor.selection.active;
-    const range = new vscode.Selection(0, 0, selection.line, selection.character);
+    let selection: vscode.Position;
+    let range: vscode.Range;
+
+    if (!line) {
+        selection = editor.selection.active;
+        range = new vscode.Selection(0, 0, selection.line, selection.character);
+    } else {
+        selection = new vscode.Position(line - 1, 0);
+        range = new vscode.Selection(0, 0, line - 1, 0);
+    }
 
     const ranges = extractRangesFromPositions(editor.document.uri.toString());
     const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line+1);  
@@ -580,7 +589,7 @@ async function moveCursor2(position0: vscode.Position): Promise<void> {
     if (!editor) return;
 
     const uri = editor.document.uri.toString();
-    const position = new vscode.Position(position0.line + 1, position0.character);
+    const position = new vscode.Position(position0.line + 2, position0.character);
     
     if (!(decodeURIComponent(uri) in movePositions)) return;
 
@@ -594,6 +603,8 @@ async function moveCursor2(position0: vscode.Position): Promise<void> {
 
     if (next) {
         moveCursorToPosition(editor, next);
+    } else {
+        moveCursorToPosition(editor, new vscode.Position(position.line, 0));
     }
 }
 
@@ -614,6 +625,21 @@ function extractRangesFromPositions(uri: string): vscode.Range[] {
 }
 
 function moveCursorToPosition(editor: vscode.TextEditor, next: vscode.Position): void {
+    if (!editor) return;
+
+    if (next.line < 0) {
+        next = new vscode.Position(0, 0);
+    }
+
+    if (next. line >= editor.document.lineCount) {
+        // insert a new line at the end
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        editor.edit(editBuilder => {
+            editBuilder.insert(new vscode.Position(editor.document.lineCount, 0), "\n");
+        });
+        next = new vscode.Position(editor.document.lineCount+1, 0);
+    }
+
     const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);

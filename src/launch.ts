@@ -814,6 +814,14 @@ export async function stop(): Promise<void> {
     // wolframKernelClient?.sendNotification("Shutdown");
     // wolframClient?.sendNotification("Shutdown");
 
+    try {
+        // kernelSocket.destroy();
+        // await wolframKernelClient?.stop();
+        await wolframKernelClient?.dispose();
+    } catch (e) {
+        console.log((e as Error).message)
+    }
+    
     console.log("Stopping Wolfram Clients")
     try {
         // await wolframClient?.stop();
@@ -822,13 +830,6 @@ export async function stop(): Promise<void> {
         console.log((e as Error).message)
     }
 
-    try {
-        // kernelSocket.destroy();
-        // await wolframKernelClient?.stop();
-        await wolframKernelClient?.dispose();
-    } catch (e) {
-        console.log((e as Error).message)
-    }
 
 
     // if (socket) {

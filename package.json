@@ -125,18 +125,7 @@
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.wl"
-                    }
-                ]
-            },
-            {
-                "id": "wolfram-notebook",
-                "type": "wolfram-notebook",
-                "displayName": "Wolfram Notebook (experimental)",
-                "priority": "option",
-                "selector": [
-                    {
-                        "filenamePattern": "*.nb"
+                        "filenamePattern": "*.wls"
                     }
                 ]
             }
@@ -149,9 +138,8 @@
                     "Wolfram"
                 ],
                 "extensions": [
-                    ".nb",
-                    ".wl",
-                    ".wls"
+                    ".wls",
+                    ".wl"
                 ],
                 "configuration": "./language-configuration.json"
             }
