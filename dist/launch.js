@@ -348,16 +348,10 @@ function startWLSPIO(id, lspPath) {
         };
         let clientOptions = {
             documentSelector: [
-<<<<<<< HEAD
+                { scheme: 'untitled', language: 'wolfram' },
                 "wolfram"
             ],
             diagnosticCollectionName: 'wolfram-lsp',
-=======
-                { scheme: 'untitled', language: 'wolfram' },
-                { scheme: 'file', language: 'wolfram' }
-            ],
-            diagnosticCollectionName: 'Wolfram Language',
->>>>>>> cd712ecec650e75b37777f21bd419d97cbf208ca
             outputChannel: extension_1.outputChannel,
             markdown: {
                 isTrusted: true,

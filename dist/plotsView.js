@@ -250,10 +250,6 @@ class PlotsViewProvider {
                     width:90vw;
                     max-height:95vh;
                     object-fit:contain;
-<<<<<<< HEAD
-                    width: auto;
-=======
->>>>>>> cd712ecec650e75b37777f21bd419d97cbf208ca
                     margin-bottom: 5px;
                     margin-left: auto;
                     margin-right: auto;

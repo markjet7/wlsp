@@ -280,6 +280,17 @@ const vscode = acquireVsCodeApi();
         // replace the input in the previous input
         let innerDiv = previousInput.getElementsByTagName("div")[0];
         innerDiv.innerHTML = message.input;
+
+      } else if (document.getElementById('outputs').innerHTML === "<p>In: ... </p>") {
+        // if there is no previous input, add the first input
+        lastInput =
+          "<div class='input_row' id='" + message.row + "'><hr>In[" +
+          index +
+          "]: <div class='input_text'>" +
+          message.input +
+          "</div><hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
+        index++;
+        outputDiv.innerHTML = lastInput;
       } else {
 
       lastInput =
@@ -418,7 +429,7 @@ const vscode = acquireVsCodeApi();
     index = 0;
     vscode.setState([]);
     const outputDiv = document.getElementById("outputs");
-    outputDiv.innerHTML = "";
+    outputDiv.innerHTML = "<p>In: ... </p>";
   }
 
   var restartButton = document.getElementById("btn_restart");

@@ -218,11 +218,6 @@ function setupTreeDataProvider() {
     vscode.window.registerTreeDataProvider("wolframSymbols", exports.treeDataProvider);
 }
 function handleWorkspaceFolderChanges(event) {
-<<<<<<< HEAD
-    for (const folder of event.added) {
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
-        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("didChangeWorkspaceFolders", folder);
-=======
     // for (const folder of event.removed) {
     //     const client = clients.get(folder.uri.toString());
     //     if (client) {
@@ -232,12 +227,8 @@ function handleWorkspaceFolderChanges(event) {
     //     }
     // }
     for (const folder of event.added) {
-        // const client = clients.get(folder.uri.toString());
-        // if (client) {
-        //     client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
-        // }
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
->>>>>>> cd712ecec650e75b37777f21bd419d97cbf208ca
+        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("didChangeWorkspaceFolders", folder);
     }
 }
 function onlspReady() {
