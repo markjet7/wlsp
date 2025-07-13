@@ -447,7 +447,7 @@ function runInWolfram(printOutput = false, trace = false, section = false) {
         textDocument: editor.document,
         print: printOutput,
         output: true,
-        trace,
+        trace: false,
         text: editor.document.getText()
     });
     sendToWolfram(printOutput, undefined, section);
@@ -464,12 +464,12 @@ function queueEvaluation(evaluationData) {
         let line = evaluationWithId.range.start.line;
         inputSnippet = editor.document.lineAt(line).text;
     }
-    plotsInputsOutputs.set(id, [{ input: inputSnippet, output: "..." }]);
+    plotsInputsOutputs.set(id, [{ input: inputSnippet, output: "...", range: evaluationWithId.range }]);
     if (!plotsProviderActive) {
         plotsProviderActive = true;
-        if (!plotsProvider._view) {
-            vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
-        }
+    }
+    if (!plotsProvider._view) {
+        vscode.commands.executeCommand('wolfram.plotsView.focus', { preserveFocus: true });
     }
     plotsProvider.newInput(id, inputSnippet);
     return id;
@@ -631,6 +631,7 @@ function updatePositions(params) {
             }
             if ("location" in e && "uri" in e["location"] && (uri in movePositions)) {
                 movePositions[uri]["locations"] = e["locations"];
+                positionsDecorations = [];
                 for (const location of e["locations"]) {
                     let range = new vscode.Range(new vscode.Position(location["start"]["line"], location["start"]["character"]), new vscode.Position(location["end"]["line"], location["end"]["character"]));
                     let editor = vscode.window.visibleTextEditors.find(ed => decodeURIComponent(ed.document.uri.toString()) === uri);
@@ -648,8 +649,8 @@ function updatePositions(params) {
                             }
                         }
                     };
-                    positionsDecorations.push(positionDecoration);
-                    editor.setDecorations(positionsDecorationType, positionsDecorations);
+                    // positionsDecorations.push(positionDecoration);
+                    // editor.setDecorations(positionsDecorationType, positionsDecorations);
                 }
             }
         });
@@ -759,7 +760,12 @@ function updateInputs(params) {
         }
     }
     plotsProvider.newInput(evaluationId, params["input"]);
-    plotsInputsOutputs.set(evaluationId, [{ input: params["input"], output: "..." }]);
+    if (plotsInputsOutputs.has(evaluationId)) {
+        let currentEntry = plotsInputsOutputs.get(evaluationId);
+        currentEntry[0].input = params["input"];
+        currentEntry[0].output = "...";
+        plotsInputsOutputs.set(evaluationId, currentEntry);
+    }
 }
 function onRunInWolframIO(result) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -800,7 +806,7 @@ function onRunInWolfram(params) {
 function updateResultInPlotsProvider(evaluationId, output) {
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId);
-        plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output }]);
+        plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output: output, range: currentEntry[0].range }]);
         plotsProvider.newOutput(evaluationId, output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
     }
 }
@@ -892,7 +898,7 @@ function updateResults(editor, result, print, input = "", file = "") {
             if (print) {
                 insertPrintOutput(editBuilder, result, rawoutput);
             }
-            updatePlotsProvider(input, output);
+            updatePlotsProvider(input, output, result.params.id);
             logExecutionTime();
         });
     });
@@ -981,26 +987,16 @@ function insertPrintOutput(editBuilder, result, rawoutput) {
         console.log("Error: " + error);
     }
 }
-function updatePlotsProvider(input, output) {
+function updatePlotsProvider(input, output, id) {
     const inputSnippet = input.length > 1000 ?
-        input.slice(0, 250) + "..." + input.slice(-250) : input;
-    let inputKey = findInputKey(input);
-    if (inputKey === undefined) {
-        inputKey = plotsInputsOutputs.size;
-        plotsInputsOutputs.set(inputKey, [{ input: inputSnippet, output: output }]);
+        input.slice(0, 250) + "..." + input.slice(-250) : input.trim();
+    if (plotsInputsOutputs.has(id)) {
+        const currentEntry = plotsInputsOutputs.get(id);
+        currentEntry[0].input = inputSnippet;
+        currentEntry[0].output = output;
+        plotsInputsOutputs.set(id, currentEntry);
     }
-    else {
-        plotsInputsOutputs.set(inputKey, [{ input: inputSnippet, output: output }]);
-    }
-    plotsProvider.newOutput(inputKey, output);
-}
-function findInputKey(input) {
-    for (const [key, value] of plotsInputsOutputs.entries()) {
-        if (value[0].input === input) {
-            return key;
-        }
-    }
-    return undefined;
+    plotsProvider.newOutput(id, output);
 }
 function logExecutionTime() {
     outputChannel.appendLine("Time to update decorations: " + (Date.now() - now) + " ms");
@@ -1144,16 +1140,27 @@ function runTextCell(location) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, location.end.character));
-    queueEvaluation({
-        range: selection,
-        textDocument: editor.document,
-        print: false,
-        output: true,
-        trace: false,
-        text: editor.document.getText()
-    });
-    sendToWolfram(false);
+    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, 0));
+    // get all the ranges that are within the selection
+    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.end.line + 1);
+    if (rangesBeforeCursor.length === 0)
+        return;
+    // run the evaluation for each range before the cursor
+    for (const r of rangesBeforeCursor) {
+        if (r.start.line >= selection.start.line) {
+            let s = new vscode.Selection(new vscode.Position(r.start.line, r.start.character), new vscode.Position(r.end.line, r.end.character));
+            queueEvaluation({
+                range: s,
+                textDocument: editor.document,
+                print: false,
+                output: true,
+                trace: false,
+                text: editor.document.getText()
+            });
+        }
+    }
+    sendToWolfram(false, undefined, false);
     moveCursor2(selection.end);
 }
 function printInWolfram(print = true) {

@@ -113,7 +113,7 @@ class PlotsViewProvider {
         // console.log(img)
         (_a = this._view) === null || _a === void 0 ? void 0 : _a.webview.postMessage({
             text: [],
-            row,
+            row: row,
             input: "",
             output: img
         });

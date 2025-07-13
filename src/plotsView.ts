@@ -157,7 +157,7 @@ export class PlotsViewProvider implements WebviewViewProvider {
 
         this._view?.webview.postMessage({
             text: [],
-            row,
+            row: row,
             input: "",
             output: img
         })
