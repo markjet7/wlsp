@@ -160,8 +160,8 @@ updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
 		locations = DeleteCases[Table[
 			l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
 			<|
-				"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
-				"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+				"start" -> <|"line"->l[[1,1]]-1, "character" -> l[[1,2]]-1|>,
+				"end" -> <|"line"->l[[2,1]]-1, "character" -> l[[2,2]]+1 |> 
 			|>,
 			{f, functions}
 		], <|

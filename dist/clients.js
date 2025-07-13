@@ -314,7 +314,20 @@ function handleWorkspaceFiles() {
     if (!workspaceFolders)
         return;
     workspaceFolders.forEach((folder) => {
-        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+        if ((exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.state) !== node_1.State.Running || (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.state) !== node_1.State.Running) {
+            outputChannel.appendLine("Wolfram Kernel or Client not running, cannot send workspace folders.");
+            return;
+        }
+        try {
+            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+        }
+        catch (error) {
+        }
+        try {
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("didChangeWorkspaceFolders", folder);
+        }
+        catch (error) {
+        }
     });
 }
 function updateConfiguration() {
@@ -350,8 +363,14 @@ function resetState() {
     wolframStatusBar.show();
     editorDecorations = new Map();
     editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
-    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop();
-    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop();
+    try {
+        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop();
+    }
+    catch (e) { }
+    try {
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop();
+    }
+    catch (e) { }
 }
 function startNewLSP() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -548,16 +567,16 @@ function moveCursor2(position0) {
         if (!editor)
             return;
         const uri = editor.document.uri.toString();
-        const position = new vscode.Position(position0.line + 2, position0.character);
+        const position = new vscode.Position(position0.line, position0.character + 1);
         if (!(decodeURIComponent(uri) in movePositions))
             return;
         const ranges = extractRangesFromPositions(uri);
         const { current, next } = findRangeEndsAroundCursor(ranges, position);
-        clearDecorationAroundCursor(ranges, position);
         if (current) {
             decorateRunningLine(current);
         }
         if (next) {
+            clearDecorationAroundCursor(ranges, next);
             moveCursorToPosition(editor, next);
         }
         else {
@@ -590,10 +609,16 @@ function moveCursorToPosition(editor, next) {
         });
         next = new vscode.Position(editor.document.lineCount + 1, 0);
     }
-    const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
+    const nextCharacter = new vscode.Position(next.line, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
 }
+// create a positions decorator type
+const positionsDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'rgba(255, 255, 0, 0.3)',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+});
+let positionsDecorations = [];
 function updatePositions(params) {
     return __awaiter(this, void 0, void 0, function* () {
         params["result"].forEach((e) => {
@@ -606,6 +631,26 @@ function updatePositions(params) {
             }
             if ("location" in e && "uri" in e["location"] && (uri in movePositions)) {
                 movePositions[uri]["locations"] = e["locations"];
+                for (const location of e["locations"]) {
+                    let range = new vscode.Range(new vscode.Position(location["start"]["line"], location["start"]["character"]), new vscode.Position(location["end"]["line"], location["end"]["character"]));
+                    let editor = vscode.window.visibleTextEditors.find(ed => decodeURIComponent(ed.document.uri.toString()) === uri);
+                    if (!editor)
+                        return;
+                    let positionDecoration = {
+                        range: range,
+                        hoverMessage: editor.document.getText(range),
+                        renderOptions: {
+                            after: {
+                                contentText: e["name"],
+                                color: "black",
+                                fontWeight: "bold",
+                                margin: "0 0 0 10px"
+                            }
+                        }
+                    };
+                    positionsDecorations.push(positionDecoration);
+                    editor.setDecorations(positionsDecorationType, positionsDecorations);
+                }
             }
         });
     });
@@ -693,7 +738,7 @@ function decorateRunningLine(outputPosition) {
 function removeExistingDecorationAtLine(editor, line) {
     var _a;
     const decorations = (_a = editorDecorations.get(editor.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
-    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
+    const filteredDecorations = decorations.filter(d => d.range.start.line <= line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -747,7 +792,7 @@ function onRunInWolfram(params) {
         if (editor && editor.document.uri.scheme !== 'vscode-notebook-cell') {
             now = Date.now();
             updateResults(editor, result, result.params.print, params.input, params);
-            updateResultInPlotsProvider(params.id, params.output);
+            // updateResultInPlotsProvider(params.id, params.output);
         }
         processNextEvaluation();
     });

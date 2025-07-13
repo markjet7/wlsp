@@ -1,11 +1,12 @@
 // transform.js
 // import * as d3 from "./d3.min.js";
-
 // const { exit } = require("process");
 
 // const { image } = require("d3");
 
 const parser = new DOMParser();
+
+let outputs = {};
 
 function openOutputInNewDocument(output) {
 
@@ -76,6 +77,69 @@ function pasteOutput(output) {
     // Trigger the click event on the link element to start the download
     link.click();
   };
+
+  const createFullOutputButton = (imageElement) => {
+    // Create a button element that replaces the output content with the content in the data-content attribute
+    const button = document.createElement("button");
+    button.id = "full-output-link"; 
+    // Set the button's text
+    button.textContent = "🔍"
+    // Add a click event listener to the button
+    button.addEventListener("click", () => {
+      if (!outputs[imageElement.id]) {
+        console.error("No output found for image element with id:", imageElement.id);
+        return;
+      }
+
+      // Get the content from the data-content attribute
+      const shortQ = imageElement.getAttribute('short');
+      // Get the subdiv with class 'content' inside the imageElement
+      let contentDiv = imageElement.querySelector('.content');
+      if (!contentDiv) {
+        console.error("No content div found in the image element");
+        return;
+      }
+
+      if (shortQ && shortQ === "1") {
+        // Replace the current output with the full content
+        let fullContent = outputs[imageElement.id]["full"];
+        contentDiv.innerText = fullContent;
+        // Scroll to the bottom of the output div
+        contentDiv.scrollTop = contentDiv.scrollHeight; 
+        // Toggle the short attribute
+        imageElement.setAttribute('short', "0");
+      } else {
+        // Replace the current output with the full content
+        let fullContent = outputs[imageElement.id]["short"];
+        contentDiv.innerText = fullContent;
+        // Scroll to the bottom of the output div
+        contentDiv.scrollTop = contentDiv.scrollHeight; 
+        // Toggle the short attribute
+        imageElement.setAttribute('short', "1");
+      }
+    });
+
+    button.style.position = "absolute";
+    button.style.top = "2px";
+    button.style.right = "110px";
+    button.style.opacity = 0.3;
+
+    // on hover increase opacity
+    button.addEventListener("mouseover", () => {
+      button.style.opacity = 1;
+    }
+    )
+
+    button.addEventListener("mouseout", () => {
+      button.style.opacity = 0.3;
+    }
+    ) 
+
+    // Ensure the image element's parent is positioned relatively
+    imageElement.style.position = "relative";
+    // Insert the button into the parent of the image element
+    imageElement.appendChild(button);
+  }
 
   const createOpenButton = (imageElement) => {
     // Create a button element
@@ -259,6 +323,13 @@ const vscode = acquireVsCodeApi();
 
     const outputDiv = document.getElementById("outputs");
     if (message.input ) {
+
+      outputs["o" + message.row] = {
+        input: message.input,
+        full: "",
+        short: ""
+      }
+
       let progress = document.getElementById("progress");
       if (progress && progress.classList.contains("loading")) {
         progress.classList.remove("loading");
@@ -288,7 +359,7 @@ const vscode = acquireVsCodeApi();
           index +
           "]: <div class='input_text'>" +
           message.input +
-          "</div><hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
+          "</div><hr></div><div class='output_row' short='1' id='o" + message.row + "'><div class='content'>Loading...</div>";
         index++;
         outputDiv.innerHTML = lastInput;
       } else {
@@ -298,7 +369,7 @@ const vscode = acquireVsCodeApi();
        index+
         "]: <div class='input_text'>" +
         message.input +
-        "</div><hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
+        "</div><hr></div><div class='output_row' short='1' id='o" + message.row + "'><div class='content'>Loading...</div></div>";
         index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
 
@@ -316,20 +387,40 @@ const vscode = acquireVsCodeApi();
         progress.classList.remove("loading");
       }
 
-      let output = `<div class="output_row" id="o${index}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
-       message.output 
+      let fullOutput = message.output;
+      let summary = ""
+      if (fullOutput.length > 1000 && !(fullOutput.includes("<img"))) {
+        summary = fullOutput.substring(0, 300) + " ... " + fullOutput.substring(fullOutput.length - 300, fullOutput.length);
+      } else {
+        summary = fullOutput;
+      }
+
+      let output = `<div class="output_row" id="o${index}" short="1"><div class='content'>` +
+       summary + "</div></div>";
+
+      if (message.row in outputs) {
+        outputs["o" + message.row].full = fullOutput;
+        outputs["o" + message.row].short = summary;
+      } else {
+        outputs["o" + message.row] = {
+          input: "",
+          full: fullOutput,
+          short: summary
+        }
+      }
 
       let doc = parser.parseFromString(output, "text/html");
 
       let existingOutput = document.getElementById("o"+message.row);
       if (existingOutput) {
-        existingOutput.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
+        existingOutput.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;
+        // existingOutput.setAttribute('data-content', message.output.replace(/"/g, '&quot;'));      
       } else {
         let newCell = "<div class='input_row' id='" + message.row + "'><hr>In[" +
         index +
          "]: " +
          message.input +
-         "<hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
+         "<hr></div><div class='output_row' short='1' id='o" + message.row + "'><div class='content'>Loading...</div>";
          outputDiv.innerHTML = newCell + outputDiv.innerHTML;
       }
 
@@ -381,6 +472,7 @@ const vscode = acquireVsCodeApi();
     for (const o of outs) {
       createOpenButton(o);
       createPasteButton(o);
+      createFullOutputButton(o);
     }
 
   }
@@ -402,7 +494,10 @@ const vscode = acquireVsCodeApi();
       if (!img) {
         continue;
       }
-      createDownloadButton(img);
+      // Check if a download button already exists
+      if (!img.parentNode.querySelector("#download-link")) {
+        createDownloadButton(img);
+      }
       // createOpenButton(imageElement);
       // createPasteButton(imageElement);
     }

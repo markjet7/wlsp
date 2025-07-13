@@ -386,10 +386,28 @@ function handleWorkspaceFiles(): void {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) return;
 
+
+
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) return;
     workspaceFolders.forEach((folder: WorkspaceFolder) => {
+        
+        if (wolframKernelClient?.state !== State.Running || wolframClient?.state !== State.Running) {
+            outputChannel.appendLine("Wolfram Kernel or Client not running, cannot send workspace folders.");
+            return;
+        }
+
+        try {
+            
         wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
+        } catch (error) {
+            
+        }
+
+        try {
+            wolframClient?.sendNotification("didChangeWorkspaceFolders", folder);
+        } catch (error) {
+        }
     });
 }
 
@@ -427,8 +445,13 @@ function resetState(): void {
     wolframStatusBar.show();
     editorDecorations = new Map();
     editor?.setDecorations(variableDecorationType, []);
-    wolframClient?.stop();
-    wolframKernelClient?.stop();
+    try {
+        wolframClient?.stop();
+    } catch (e) {}
+    
+    try {
+        wolframKernelClient?.stop();
+    } catch (e) {}
 }
 
 async function startNewLSP(): Promise<void> {
@@ -651,19 +674,19 @@ async function moveCursor2(position0: vscode.Position): Promise<void> {
     if (!editor) return;
 
     const uri = editor.document.uri.toString();
-    const position = new vscode.Position(position0.line + 2, position0.character);
+    const position = new vscode.Position(position0.line, position0.character+1);
     
     if (!(decodeURIComponent(uri) in movePositions)) return;
 
     const ranges = extractRangesFromPositions(uri);
     const { current, next } = findRangeEndsAroundCursor(ranges, position);
-    clearDecorationAroundCursor(ranges, position);
 
     if (current) {
         decorateRunningLine(current);
     }
 
     if (next) {
+        clearDecorationAroundCursor(ranges, next);
         moveCursorToPosition(editor, next);
     } else {
         moveCursorToPosition(editor, new vscode.Position(position.line, 0));
@@ -702,12 +725,20 @@ function moveCursorToPosition(editor: vscode.TextEditor, next: vscode.Position):
         next = new vscode.Position(editor.document.lineCount+1, 0);
     }
 
-    const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
+    const nextCharacter = new vscode.Position(next.line, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
 }
 
+// create a positions decorator type
+const positionsDecorationType: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'rgba(255, 255, 0, 0.3)',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+});
+let positionsDecorations: vscode.DecorationOptions[] = [];
+
 async function updatePositions(params: any): Promise<void> {
+
     params["result"].forEach((e: any) => {
         let uri: string = "";
         if ("location" in e && "uri" in e["location"]) {
@@ -719,6 +750,33 @@ async function updatePositions(params: any): Promise<void> {
         }
         if ("location" in e && "uri" in e["location"] && (uri in movePositions)) {
             movePositions[uri]["locations"] = e["locations"];
+
+            for (const location of e["locations"]) {
+                let range = new vscode.Range(
+                    new vscode.Position(location["start"]["line"], location["start"]["character"]),
+                    new vscode.Position(location["end"]["line"], location["end"]["character"])
+                );
+
+                let editor = vscode.window.visibleTextEditors.find(ed =>decodeURIComponent(ed.document.uri.toString()) === uri);
+                if (!editor) return;
+
+
+                let positionDecoration = {
+                    range: range,
+                    hoverMessage: editor.document.getText(range),
+                    renderOptions: {
+                        after: {
+                            contentText: e["name"],
+                            color: "black",
+                            fontWeight: "bold",
+                            margin: "0 0 0 10px"
+                        }
+                    }
+                } as vscode.DecorationOptions;
+
+                positionsDecorations.push(positionDecoration);
+                editor.setDecorations(positionsDecorationType, positionsDecorations);
+            }
         }
     });
 }
@@ -818,7 +876,7 @@ function decorateRunningLine(outputPosition: vscode.Position): void {
 function removeExistingDecorationAtLine(editor: vscode.TextEditor, line: number): void {
     const decorations = editorDecorations.get(editor.document.uri.toString()) ?? [];
 
-    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
+    const filteredDecorations = decorations.filter(d => d.range.start.line <= line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -882,7 +940,7 @@ async function onRunInWolfram(params: any): Promise<void> {
     if (editor && editor.document.uri.scheme !== 'vscode-notebook-cell') {
         now = Date.now();
         updateResults(editor, result, result.params.print, params.input, params);
-        updateResultInPlotsProvider(params.id, params.output);
+        // updateResultInPlotsProvider(params.id, params.output);
     }
 
     processNextEvaluation();
