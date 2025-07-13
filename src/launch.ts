@@ -13,7 +13,8 @@ import {
     NotificationType,
     State,
     StateChangeEvent,
-    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
+    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message,
+    DocumentSelector
 } from 'vscode-LanguageClient/node';
 
 import { outputChannel } from "./extension"
@@ -178,7 +179,8 @@ export async function startWLSP(id: number, path: string): Promise<LanguageClien
     let clientErrorHandler = new ClientErrorHandler();
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         initializationOptions: {
             debuggerPort: 7777
@@ -341,7 +343,8 @@ export function startWLSPKernelSocket(id: number, path: string): Promise<Languag
 
         let clientOptions: LanguageClientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             markdown: {
@@ -409,7 +412,10 @@ export async function startWLSPIO(id: number, lspPath:string): Promise<LanguageC
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
+            { scheme: 'untitled', language: 'wolfram' },
+            
             "wolfram"
+        
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -450,7 +456,8 @@ export async function startWLSPKernelIOClojure(id: number, kernelPath: string): 
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -492,7 +499,8 @@ export async function startWLSPKernelIORust(id: number, kernelPath: string): Pro
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -547,7 +555,8 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
 
     let clientOptions: LanguageClientOptions = {
         documentSelector: [
-            "wolfram"
+            { scheme: 'untitled', language: 'wolfram' },
+            { scheme: 'file', language: 'wolfram' }
         ],
         diagnosticCollectionName: 'wolfram-lsp',
         outputChannel: outputChannel,
@@ -555,7 +564,7 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
             isTrusted: true,
             supportHtml: true
         },
-    };
+        };
 
     return new Promise(async (resolve) => {
 
@@ -813,6 +822,14 @@ export async function stop(): Promise<void> {
     // wolframKernelClient?.sendNotification("Shutdown");
     // wolframClient?.sendNotification("Shutdown");
 
+    try {
+        // kernelSocket.destroy();
+        // await wolframKernelClient?.stop();
+        await wolframKernelClient?.dispose();
+    } catch (e) {
+        console.log((e as Error).message)
+    }
+    
     console.log("Stopping Wolfram Clients")
     try {
         // await wolframClient?.stop();
@@ -821,13 +838,6 @@ export async function stop(): Promise<void> {
         console.log((e as Error).message)
     }
 
-    try {
-        // kernelSocket.destroy();
-        // await wolframKernelClient?.stop();
-        await wolframKernelClient?.dispose();
-    } catch (e) {
-        console.log((e as Error).message)
-    }
 
 
     // if (socket) {

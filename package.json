@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.3.7",
+    "version": "0.4.3",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -125,18 +125,7 @@
                 "priority": "option",
                 "selector": [
                     {
-                        "filenamePattern": "*.wl"
-                    }
-                ]
-            },
-            {
-                "id": "wolfram-notebook",
-                "type": "wolfram-notebook",
-                "displayName": "Wolfram Notebook (experimental)",
-                "priority": "option",
-                "selector": [
-                    {
-                        "filenamePattern": "*.nb"
+                        "filenamePattern": "*.wls"
                     }
                 ]
             }
@@ -149,9 +138,8 @@
                     "Wolfram"
                 ],
                 "extensions": [
-                    ".nb",
-                    ".wl",
-                    ".wls"
+                    ".wls",
+                    ".wl"
                 ],
                 "configuration": "./language-configuration.json"
             }
@@ -254,7 +242,11 @@
                 "title": "Wolfram: Run"
             },
             {
-                "command": "wolfram.runSectionInWolfram",
+                "command": "wolfram.runInWolframMove",
+                "title": "Wolfram: Run and Move"
+            },
+            {
+                "command": "wolfram.sendSectionToWolfram",
                 "title": "Wolfram: Run Section"
             },
             {
@@ -395,11 +387,16 @@
         "keybindings": [
             {
                 "command": "wolfram.runInWolfram",
+                "key": "ctrl+enter",
+                "when": "editorTextFocus && editorLangId == 'wolfram'"
+            },
+            {
+                "command": "wolfram.runInWolframMove",
                 "key": "shift+enter",
                 "when": "editorTextFocus && editorLangId == 'wolfram'"
             },
             {
-                "command": "wolfram.runSectionInWolfram",
+                "command": "wolfram.sendSectionToWolfram",
                 "key": "option+enter",
                 "when": "editorTextFocus && editorLangId == 'wolfram'"
             },

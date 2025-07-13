@@ -14,7 +14,8 @@ import {
     NotificationType,
     State,
     StateChangeEvent,
-    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message
+    ErrorHandler, ErrorAction, CloseHandlerResult, CloseAction, ErrorHandlerResult, Message,
+    integer
 } from 'vscode-LanguageClient/node';
 import { resolve } from 'path';
 import { deactivate } from './notebook';
@@ -163,7 +164,8 @@ function initializeGlobals(context0: vscode.ExtensionContext, outputChannel0: vs
 function registerCommands(): void {
     const commands: [string, (...args: any[]) => any][] = [
         ['wolfram.runInWolfram', () => runInWolfram()],
-        ['wolfram.runToLine', () => runToLine()],
+        ['wolfram.runInWolframMove', () => runInWolframMove()],
+        ['wolfram.runToLine', (line:integer) => runToLine(line)],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
         ['wolfram.runTextCell', (location: vscode.Range) => runTextCell(location)],
@@ -288,6 +290,14 @@ function setupTreeDataProvider(): void {
 }
 
 function handleWorkspaceFolderChanges(event: vscode.WorkspaceFoldersChangeEvent): void {
+    // for (const folder of event.removed) {
+    //     const client = clients.get(folder.uri.toString());
+    //     if (client) {
+    //         clients.delete(folder.uri.toString());
+    //         client[0]?.stop();
+    //         client[1]?.stop();
+    //     }
+    // }
 
     for (const folder of event.added) {
             wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
@@ -376,12 +386,11 @@ function handleWorkspaceFiles(): void {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) return;
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
-    if (workspaceFolder) {
-        vscode.workspace.findFiles("**/*.wl*").then(result => {
-            wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", result);
-        });
-    }
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) return;
+    workspaceFolders.forEach((folder: WorkspaceFolder) => {
+        wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
+    });
 }
 
 function updateConfiguration(): void {
@@ -416,7 +425,7 @@ function resetState(): void {
     withProgressCancellation?.cancel();
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.show();
-    editorDecorations.clear();
+    editorDecorations = new Map();
     editor?.setDecorations(variableDecorationType, []);
     wolframClient?.stop();
     wolframKernelClient?.stop();
@@ -436,23 +445,72 @@ async function startNewKernel(): Promise<void> {
     });
 }
 
-function runToLine(): void {
+function runToLine(line:integer): void {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    const selection = editor.selection.active;
-    const range = new vscode.Selection(0, 0, selection.line, selection.character);
-    
+    let selection: vscode.Position;
+    let range: vscode.Range;
+
+    if (!line) {
+        selection = editor.selection.active;
+        range = new vscode.Selection(0, 0, selection.line, selection.character);
+    } else {
+        selection = new vscode.Position(line - 1, 0);
+        range = new vscode.Selection(0, 0, line - 1, 0);
+    }
+
+    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line+1);  
+
+    let text = editor.document.getText();
+    for (const r of rangesBeforeCursor) {
+        if (isEqualOrBefore(range.start, selection) && isEqualOrAfter(range.end, selection)) {
+
+            let s:vscode.Selection = new vscode.Selection(
+                new vscode.Position(
+                    r.start.line-1, 
+                    r.start.character 
+                ),
+                new vscode.Position(
+                    r.end.line-1,
+                    r.end.character 
+                ));
+            
+                console.log(s.start.line, s.start.character, s.end.line, s.end.character);
+            queueEvaluation({
+                range: s,
+                textDocument: editor.document,
+                print: false,
+                output: true,
+                trace: false,
+                text: text
+            });
+            processEvaluationQueue();
+
+        }
+    }
+  
+
+}
+
+function runInWolframMove(printOutput = false, trace = false, section = false): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const selection = editor.selection;
+    moveCursor2(selection.active);
+
     queueEvaluation({
-        range,
+        range: selection,
         textDocument: editor.document,
-        print: false,
+        print: printOutput,
         output: true,
-        trace: false,
+        trace,
         text: editor.document.getText()
     });
 
-    processEvaluationQueue();
+    sendToWolfram(printOutput, undefined, section);
 }
 
 function runInWolfram(printOutput = false, trace = false, section = false): void {
@@ -460,7 +518,6 @@ function runInWolfram(printOutput = false, trace = false, section = false): void
     if (!editor) return;
 
     const selection = editor.selection;
-    moveCursor2(selection.active);
 
     queueEvaluation({
         range: selection,
@@ -568,17 +625,39 @@ async function handleNonRunningKernel(evalNext: EvaluationData): Promise<void> {
     });
 }
 
-function moveCursor2(position0: vscode.Position): void {
+function clearDecorationAroundCursor(ranges: vscode.Range[], position: vscode.Position): void {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
     const uri = editor.document.uri.toString();
-    const position = new vscode.Position(position0.line + 1, position0.character);
+    const decorations = editorDecorations.get(uri) ?? [];
+
+    const rangeAroundCursor = ranges.filter(range => {
+        return isWithin(position, range);
+    });
+
+    if (rangeAroundCursor.length === 0) return;
+    
+    const filteredDecorations = decorations.filter(d => {
+        return !isWithin(d.range.start, rangeAroundCursor[0])
+    });
+
+    editorDecorations.set(uri, filteredDecorations);
+    editor.setDecorations(variableDecorationType, filteredDecorations);
+}
+
+async function moveCursor2(position0: vscode.Position): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const uri = editor.document.uri.toString();
+    const position = new vscode.Position(position0.line + 2, position0.character);
     
     if (!(decodeURIComponent(uri) in movePositions)) return;
 
     const ranges = extractRangesFromPositions(uri);
     const { current, next } = findRangeEndsAroundCursor(ranges, position);
+    clearDecorationAroundCursor(ranges, position);
 
     if (current) {
         decorateRunningLine(current);
@@ -586,11 +665,14 @@ function moveCursor2(position0: vscode.Position): void {
 
     if (next) {
         moveCursorToPosition(editor, next);
+    } else {
+        moveCursorToPosition(editor, new vscode.Position(position.line, 0));
     }
 }
 
 function extractRangesFromPositions(uri: string): vscode.Range[] {
     const ranges: vscode.Range[] = [];
+    if (!movePositions || !movePositions[decodeURIComponent(uri)]) return ranges;
     const locations = movePositions[decodeURIComponent(uri)]["locations"];
     
     for (const location of Object.values(locations)) {
@@ -605,6 +687,21 @@ function extractRangesFromPositions(uri: string): vscode.Range[] {
 }
 
 function moveCursorToPosition(editor: vscode.TextEditor, next: vscode.Position): void {
+    if (!editor) return;
+
+    if (next.line < 0) {
+        next = new vscode.Position(0, 0);
+    }
+
+    if (next. line >= editor.document.lineCount) {
+        // insert a new line at the end
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        editor.edit(editBuilder => {
+            editBuilder.insert(new vscode.Position(editor.document.lineCount, 0), "\n");
+        });
+        next = new vscode.Position(editor.document.lineCount+1, 0);
+    }
+
     const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
@@ -667,16 +764,16 @@ function generateVariableTableHtml(): string {
     return vars;
 }
 
-function isBefore(a: vscode.Position, b: vscode.Position): boolean {
-    return a.line < b.line || (a.line === b.line && a.character < b.character);
+function isEqualOrBefore(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line < b.line || (a.line === b.line && a.character <= b.character);
 }
 
-function isAfter(a: vscode.Position, b: vscode.Position): boolean {
-    return a.line > b.line || (a.line === b.line && a.character > b.character);
+function isEqualOrAfter(a: vscode.Position, b: vscode.Position): boolean {
+    return a.line > b.line || (a.line === b.line && a.character >= b.character);
 }
 
 function isWithin(pos: vscode.Position, range: vscode.Range): boolean {
-    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+    return !isEqualOrBefore(pos, range.start) && !isEqualOrAfter(pos, range.end);
 }
 
 function findRangeEndsAroundCursor(ranges: vscode.Range[], cursor: vscode.Position): { current?: vscode.Position; next?: vscode.Position } {
@@ -685,9 +782,9 @@ function findRangeEndsAroundCursor(ranges: vscode.Range[], cursor: vscode.Positi
 
     for (const range of ranges) {
         if (isWithin(cursor, range)) {
-            if (!current || isBefore(range.end, current)) current = range.end;
-        } else if (isAfter(range.start, cursor)) {
-            if (!next || isBefore(range.start, next)) next = range.end;
+            if (!current || isEqualOrBefore(range.end, current)) current = range.end;
+        } else if (isEqualOrAfter(range.start, cursor)) {
+            if (!next || isEqualOrBefore(range.start, next)) next = range.end;
         }
     }
 
@@ -720,7 +817,8 @@ function decorateRunningLine(outputPosition: vscode.Position): void {
 
 function removeExistingDecorationAtLine(editor: vscode.TextEditor, line: number): void {
     const decorations = editorDecorations.get(editor.document.uri.toString()) ?? [];
-    const filteredDecorations = decorations.filter(d => d.range.start.line !== line);
+
+    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -794,7 +892,8 @@ function updateResultInPlotsProvider(evaluationId: number, output: string): void
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId)!;
         plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output }]);
-        plotsProvider.newOutput(evaluationId, output);
+        plotsProvider.newOutput(evaluationId, 
+            output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
     }
 }
 
@@ -916,6 +1015,8 @@ function prepareOutput(result: any, file: any): { output: string; rawoutput: str
         rawoutput = output;
     } else {
         output = result.params.output;
+
+        output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
         rawoutput = output;
     }
 
@@ -983,7 +1084,7 @@ function updateEditorDecorations(editor: vscode.TextEditor, decoration: vscode.D
     const uri = editor.document.uri.toString();
     let decorations = editorDecorations.get(uri) ?? [];
 
-    decorations = decorations.filter(d => d.range.start.line !== line);
+    decorations = decorations.filter(d => d.range.start.line <= line);
     decorations.push(decoration);
 
     editorDecorations.set(uri, decorations);
@@ -1115,23 +1216,29 @@ function processDecorationUpdate(editor: vscode.TextEditor, data: string): void 
         if (newDecorations[uri] === workspaceDecorations[uri]) return;
 
         workspaceDecorations[uri] = newDecorations[uri];
-        const editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
+        editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
 
-        editor.setDecorations(variableDecorationType, editorDecorations);
+        editor.setDecorations(variableDecorationType, editorDecorations.get(uri) || []);
         editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
     } catch {
         newDecorations = {};
     }
 }
 
-function createDecorationsFromData(decorationData: any): vscode.DecorationOptions[] {
-    const editorDecorations: vscode.DecorationOptions[] = [];
+function createDecorationsFromData(decorationData: any): Map<string, vscode.DecorationOptions[]> {
+    // const editorDecorations: vscode.DecorationOptions[] = [];
+
+    let editor = vscode.window.activeTextEditor;
+    if (!editor) return new Map();
+    const uri = editor.document.uri.toString();
+    const decorations = editorDecorations.get(uri) ?? [];
     
     Object.keys(decorationData).forEach((d: any) => {
         const decoration: vscode.DecorationOptions = decorationData[d];
         decoration.hoverMessage = createMarkdownHoverMessage(decoration.hoverMessage as string);
-        editorDecorations.push(decoration);
+        decorations.push(decoration);
     });
+    editorDecorations.set(uri, decorations);
 
     return editorDecorations;
 }
@@ -1187,7 +1294,7 @@ function runTextCell(location: vscode.Range): void {
 
     const selection = new vscode.Selection(
         new vscode.Position(location.start.line, location.start.character),
-        new vscode.Position(location.end.line - 1, location.end.character)
+        new vscode.Position(location.end.line, location.end.character)
     );
     
     queueEvaluation({
@@ -1289,6 +1396,9 @@ function clearDecorations(): void {
     const uri = editor?.document.uri.toString();
 
     if (uri && uri in workspaceDecorations) {
+        editorDecorations.set(uri, []);
+        editor?.setDecorations(variableDecorationType, []);
+        editor?.setDecorations(runningDecorationType, []);
     }
 }
 

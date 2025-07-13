@@ -1,6 +1,8 @@
 (* ::Package:: *)
 
 Check[Needs["CodeParser`"], PacletInstall["CodeParser"]; Needs["CodeParser`"]];
+Check[Needs["CodeInspector`"], PacletInstall["CodeInspector"]; Needs["CodeInspector`"]]; 
+Needs["CodeParser`Scoping`"];
 
 getStringAtRange[string_, rangejs_String]:=Module[{sLines, sRanges, range},
 	range = ImportString[rangejs, "JSON"];
@@ -30,12 +32,13 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges, result},
 	sRanges= getSourceRanges[range];
 
 	result = StringJoin@Table[
-		Quiet@Check[StringTake[
+		Check[
+			StringTake[
 				sLines[[l[[1]]]],
 			l[[2]]], ""],
 		{l, sRanges}];
 	
-	If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
+	If[result != "" && StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
 		result = StringDrop[result, 1];
 	];
 	result
@@ -64,20 +67,22 @@ escapes[string_]:=StringReplace[string, {
 
 
 graphicsQ = 
-  FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
-    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}] &;
+  TimeConstrained[FreeQ[Union @@ ImageData @ Image[Graphics[#], ImageSize -> 30], 
+    x_ /; x == {1.`, 0.9176470588235294`, 0.9176470588235294`}], 10, False] &;
 
-graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture};
+graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture, Dataset, InformationData};
 
 evaluateInKernel[code_]:=Module[{json, result, formatted},
 		CheckAbort[
 			result=EvaluationData[ToExpression[StringTake[code, SyntaxLength[code]]]];
 			
 			If[
-				(graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]),
+				(* (graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]), *)
+				(MemberQ[graphicHeads, Head[result["Result"]]]),
 				result["Result"] = CheckAbort[
 					Rasterize[result["Result"]], 
-					result["Result"]];,
+					result["Result"]
+					];,
 				Nothing
 			];	
 
@@ -96,31 +101,82 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 ];
 SetAttributes[evaluateInKernel, HoldFirst];
 
-updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
-	ast = CodeParse[src];
-	functions = Cases[ast, (
-		_CallNode |
-		_LeafNode
-	),{2}];
 
-	locations = DeleteCases[Table[
-		l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
-		<|
-			"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
-			"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+
+lintToDecoration[lint_]:=Module[{},
+	<|
+		"range"-><|
+			"start" -> <| "line" -> lint[[4, 1, 1, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1096 |>,
+			"end" -> <| "line" -> lint[[4, 1, 2, 1]]-1, "character" -> lint[[4, 1, 2, 2]]+1196 |>
 		|>,
-		{f, functions}
-	], <|
-			"start" -> <|"line"->-1, "character" -> -1|>,
-			"end" -> <|"line"->-1, "character" -> -1|> 
-		|>];
-	
-	ExportString[
-		locations, "RawJSON", "Compact" -> True]
+		"renderOptions" -> <|
+			"after" -> <|
+				"contentText" -> lint[[2]],
+				"backgroundColor" -> "editor.background",
+				"foregroundColor" -> "editor.foreground",
+				"color" -> Switch[lint[[3]], "Error", "red", "Warning", "orange", "Information","white", "Hint","blue", _, "orange"],
+				"opacity" -> "0.4",
+				"fontStyle" -> "italic",
+				"margin" -> "0 0 0 10px",
+				"rangeBehavior" -> 4
+			|>,
+			"rangeBehavior"->4
+		|>
+	|>
+];
+
+validate[src_, uri_]:=Module[{lints, severities, msgs, response},
+	CheckAbort[
+		workspaceLintDecorations = <||>;
+
+		lints = Check[CodeInspect[src], {}];
+		severities = <| "Error"->1, "Warning"->2, "Information"->3, "Hint"->4 |>;
+		msgs = Map[Check[<|  
+			"message"->#[[2]], 
+			"range"-><|
+				"start" -> <| "line" -> #[[4, 1, 1, 1]]-1, "character" -> #[[4, 1, 1, 2]]-1 |>,
+				"end" -> <| "line" -> #[[4, 1, 2, 1]]-1, "character" -> #[[4, 1, 2, 2]]-1 |>
+			|>,
+			"severity" -> If[MemberQ[Keys@severities,#[[3]]],severities[#[[3]]], 2] |>, Nothing] &, lints];
+		
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> msgs |>|>;
+		ExportString[response, "RawJSON", "Compact" -> True]
+		,
+		response = <| "method" -> "textDocument/publishDiagnostics", "params" -> <|"uri" -> uri, "diagnostics" -> {} |>|>;
+		ExportString[response, "RawJSON", "Compact" -> True]
+	]
 ];
 
 
-createCell[starts_, ends_]:=<|"range"-><|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->0|>|>,"command"-><|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->100|>|>}|>|>;
+
+updateCursorLocations[src_]:=Module[{ ast, functions, l, locations},
+	Check[
+		ast = CodeParse[src];
+		functions = Cases[ast, (
+			_CallNode |
+			_LeafNode
+		),{2}];
+
+		locations = DeleteCases[Table[
+			l = Last[Cases[f, <|Source -> x_, ___|> :> x, 3], {{-1,-1},{-1,-1}}];
+			<|
+				"start" -> <|"line"->l[[1,1]], "character" -> l[[1,2]]-1|>,
+				"end" -> <|"line"->l[[2,1]], "character" -> l[[2,2]]+1 |> 
+			|>,
+			{f, functions}
+		], <|
+				"start" -> <|"line"->-1, "character" -> -1|>,
+				"end" -> <|"line"->-1, "character" -> -1|> 
+			|>];
+		
+		ExportString[
+			locations, "RawJSON", "Compact" -> True],
+
+		"[]"
+	]
+];
+
+
 
 getSections[src_, sectionPattern_]:=Module[{},
 	BlockMap[StringTrim@Check[StringTake[src, {#[[1,1]], #[[2,2]]}], ""] &, Join[StringPosition[src, sectionPattern, Overlaps -> False], StringPosition[src, EndOfString, Overlaps -> False]], 2,1]
@@ -148,35 +204,62 @@ codeLens[src_]:=Module[{starts, ends, breaks, lens, lines, sections, sectionPatt
 				Return[ExportString[lens, "RawJSON", "Compact" -> True]],
 
 				start = 1;
-				lens = BlockMap[
+				lens = Flatten@BlockMap[
 					Function[{f},
 						gap=f[[2]][[-1]][Source][[1,1]]-f[[1]][[-1]][Source][[2,1]];
 						If[
 							gap>=3,
-							c = createCell[
+							c1 = createRunCell[
+								start,
+								f[[2]][[-1]][Source][[1,1]]-3];
+							c2 = createRunAbove[
 								start,
 								f[[2]][[-1]][Source][[1,1]]-3];
 								start = f[[2]][[-1]][Source][[1,1]];
-							c,
+							{c1, c2},
 						Nothing
 						]
 					],
 					functions,
 					2,
 				1];
+
 				Return[ExportString[lens, "RawJSON", "Compact" -> True]];
 			],
 
-			lens = {};
-			Return[ExportString[lens, "RawJSON", "Compact" -> True]];
+			Return["[]"];
 		]
 
 
 ];
 
+createRunCell[starts_, ends_]:=<|
+	"range"-><|
+		"start"-><|
+			"line"->starts-1,"character"->0
+			|>,
+			"end"-><|
+			"line"->ends-1,"character"->0
+			|>|>,
+			"command"->
+				<|"title"->"Run cell ("<>ToString[ends-starts+1]<>" line(s))","command"->"wolfram.runTextCell","arguments"->{<|"start"-><|"line"->starts-1,"character"->0|>,"end"-><|"line"->ends-1,"character"->100|>|>}|>|>;
+
+createRunAbove[starts_, ends_]:=If[starts === 1, Nothing, <|
+	"range"-><|
+		"start"-><|
+			"line"->starts-1,"character"->0
+			|>,
+			"end"-><|
+			"line"->ends-1,"character"->0
+			|>|>,
+			"command"->
+				<|"title"->"Run above ("<>ToString[starts]<>" line(s))","command"->"wolfram.runToLine","arguments"->{ends}|>|>
+];
+
 
 
 getCodeString[src_, rangejs_]:=Module[{range, result, result2},
+
 	range = ImportString[rangejs, "RawJSON"];
 	result = getCode[src, range];
 	result2 = <|"code" -> result["code"], "range" -> <|"start" -> <|"line" -> result["range"][[1,1]], "character" -> result["range"][[1,2]]|>, "end" -> <|"line" -> result["range"][[2,1]], "character" -> result["range"][[2,2]]|>|>|>;
@@ -291,22 +374,21 @@ inCodeRangeQ[source_, pos_] := Module[{start, end},
 
 rangeToStartEnd[range_List]:=Module[{},
 	{
-		{range[[1]]["line"]+1, range[[1]]["character"]},
+		{range[[1]]["line"]+1, range[[1]]["character"]+1},
 		{range[[2]]["line"]+1, range[[2]]["character"]+1}
 	}
 ];
 
 rangeToStartEnd[range_]:=Module[{},
 	{
-		{range["start", "line"]+1, range["start", "character"]},
+		{range["start", "line"]+1, range["start", "character"]+1},
 		{range["end", "line"]+1, range["end", "character"]+1}
 	}
 ];
 
 symbolDefinitions = <||>;
-documentSymbols[src_, json_]:=Module[{},
-
-	ast = CheckAbort[CodeParse[src], Return[{}]];
+documentSymbols[src_, json_]:=Module[{ast, result},
+	ast = CheckAbort[CodeParse[src], Return["[]"]];
 	result = funcsDefs[src, ast, json];
 
 	Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];

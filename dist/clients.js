@@ -116,7 +116,8 @@ function initializeGlobals(context0, outputChannel0) {
 function registerCommands() {
     const commands = [
         ['wolfram.runInWolfram', () => runInWolfram()],
-        ['wolfram.runToLine', () => runToLine()],
+        ['wolfram.runInWolframMove', () => runInWolframMove()],
+        ['wolfram.runToLine', (line) => runToLine(line)],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
         ['wolfram.runTextCell', (location) => runTextCell(location)],
@@ -217,9 +218,26 @@ function setupTreeDataProvider() {
     vscode.window.registerTreeDataProvider("wolframSymbols", exports.treeDataProvider);
 }
 function handleWorkspaceFolderChanges(event) {
+<<<<<<< HEAD
     for (const folder of event.added) {
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
         exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("didChangeWorkspaceFolders", folder);
+=======
+    // for (const folder of event.removed) {
+    //     const client = clients.get(folder.uri.toString());
+    //     if (client) {
+    //         clients.delete(folder.uri.toString());
+    //         client[0]?.stop();
+    //         client[1]?.stop();
+    //     }
+    // }
+    for (const folder of event.added) {
+        // const client = clients.get(folder.uri.toString());
+        // if (client) {
+        //     client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
+        // }
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+>>>>>>> cd712ecec650e75b37777f21bd419d97cbf208ca
     }
 }
 function onlspReady() {
@@ -301,12 +319,12 @@ function handleWorkspaceFiles() {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor)
         return;
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
-    if (workspaceFolder) {
-        vscode.workspace.findFiles("**/*.wl*").then(result => {
-            exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", result);
-        });
-    }
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders)
+        return;
+    workspaceFolders.forEach((folder) => {
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+    });
 }
 function updateConfiguration() {
     if (vscode.workspace.getConfiguration().get("wlsp.liveDocument")) {
@@ -339,7 +357,7 @@ function resetState() {
     withProgressCancellation === null || withProgressCancellation === void 0 ? void 0 : withProgressCancellation.cancel();
     wolframStatusBar.text = "Wolfram ?";
     wolframStatusBar.show();
-    editorDecorations.clear();
+    editorDecorations = new Map();
     editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
     exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop();
     exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop();
@@ -360,28 +378,60 @@ function startNewKernel() {
         }));
     });
 }
-function runToLine() {
+function runToLine(line) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const selection = editor.selection.active;
-    const range = new vscode.Selection(0, 0, selection.line, selection.character);
+    let selection;
+    let range;
+    if (!line) {
+        selection = editor.selection.active;
+        range = new vscode.Selection(0, 0, selection.line, selection.character);
+    }
+    else {
+        selection = new vscode.Position(line - 1, 0);
+        range = new vscode.Selection(0, 0, line - 1, 0);
+    }
+    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line + 1);
+    let text = editor.document.getText();
+    for (const r of rangesBeforeCursor) {
+        if (isEqualOrBefore(range.start, selection) && isEqualOrAfter(range.end, selection)) {
+            let s = new vscode.Selection(new vscode.Position(r.start.line - 1, r.start.character), new vscode.Position(r.end.line - 1, r.end.character));
+            console.log(s.start.line, s.start.character, s.end.line, s.end.character);
+            queueEvaluation({
+                range: s,
+                textDocument: editor.document,
+                print: false,
+                output: true,
+                trace: false,
+                text: text
+            });
+            processEvaluationQueue();
+        }
+    }
+}
+function runInWolframMove(printOutput = false, trace = false, section = false) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return;
+    const selection = editor.selection;
+    moveCursor2(selection.active);
     queueEvaluation({
-        range,
+        range: selection,
         textDocument: editor.document,
-        print: false,
+        print: printOutput,
         output: true,
-        trace: false,
+        trace,
         text: editor.document.getText()
     });
-    processEvaluationQueue();
+    sendToWolfram(printOutput, undefined, section);
 }
 function runInWolfram(printOutput = false, trace = false, section = false) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
     const selection = editor.selection;
-    moveCursor2(selection.active);
     queueEvaluation({
         range: selection,
         textDocument: editor.document,
@@ -483,25 +533,51 @@ function handleNonRunningKernel(evalNext) {
         });
     });
 }
-function moveCursor2(position0) {
+function clearDecorationAroundCursor(ranges, position) {
+    var _a;
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
     const uri = editor.document.uri.toString();
-    const position = new vscode.Position(position0.line + 1, position0.character);
-    if (!(decodeURIComponent(uri) in movePositions))
+    const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
+    const rangeAroundCursor = ranges.filter(range => {
+        return isWithin(position, range);
+    });
+    if (rangeAroundCursor.length === 0)
         return;
-    const ranges = extractRangesFromPositions(uri);
-    const { current, next } = findRangeEndsAroundCursor(ranges, position);
-    if (current) {
-        decorateRunningLine(current);
-    }
-    if (next) {
-        moveCursorToPosition(editor, next);
-    }
+    const filteredDecorations = decorations.filter(d => {
+        return !isWithin(d.range.start, rangeAroundCursor[0]);
+    });
+    editorDecorations.set(uri, filteredDecorations);
+    editor.setDecorations(variableDecorationType, filteredDecorations);
+}
+function moveCursor2(position0) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        const uri = editor.document.uri.toString();
+        const position = new vscode.Position(position0.line + 2, position0.character);
+        if (!(decodeURIComponent(uri) in movePositions))
+            return;
+        const ranges = extractRangesFromPositions(uri);
+        const { current, next } = findRangeEndsAroundCursor(ranges, position);
+        clearDecorationAroundCursor(ranges, position);
+        if (current) {
+            decorateRunningLine(current);
+        }
+        if (next) {
+            moveCursorToPosition(editor, next);
+        }
+        else {
+            moveCursorToPosition(editor, new vscode.Position(position.line, 0));
+        }
+    });
 }
 function extractRangesFromPositions(uri) {
     const ranges = [];
+    if (!movePositions || !movePositions[decodeURIComponent(uri)])
+        return ranges;
     const locations = movePositions[decodeURIComponent(uri)]["locations"];
     for (const location of Object.values(locations)) {
         const range = location;
@@ -510,6 +586,19 @@ function extractRangesFromPositions(uri) {
     return ranges;
 }
 function moveCursorToPosition(editor, next) {
+    if (!editor)
+        return;
+    if (next.line < 0) {
+        next = new vscode.Position(0, 0);
+    }
+    if (next.line >= editor.document.lineCount) {
+        // insert a new line at the end
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        editor.edit(editBuilder => {
+            editBuilder.insert(new vscode.Position(editor.document.lineCount, 0), "\n");
+        });
+        next = new vscode.Position(editor.document.lineCount + 1, 0);
+    }
     const nextCharacter = new vscode.Position(next.line - 1, next.character + 1);
     editor.selection = new vscode.Selection(nextCharacter, nextCharacter);
     editor.revealRange(new vscode.Range(nextCharacter, nextCharacter), vscode.TextEditorRevealType.Default);
@@ -565,25 +654,25 @@ function generateVariableTableHtml() {
     vars += "</vscode-data-grid>";
     return vars;
 }
-function isBefore(a, b) {
-    return a.line < b.line || (a.line === b.line && a.character < b.character);
+function isEqualOrBefore(a, b) {
+    return a.line < b.line || (a.line === b.line && a.character <= b.character);
 }
-function isAfter(a, b) {
-    return a.line > b.line || (a.line === b.line && a.character > b.character);
+function isEqualOrAfter(a, b) {
+    return a.line > b.line || (a.line === b.line && a.character >= b.character);
 }
 function isWithin(pos, range) {
-    return !isBefore(pos, range.start) && !isAfter(pos, range.end);
+    return !isEqualOrBefore(pos, range.start) && !isEqualOrAfter(pos, range.end);
 }
 function findRangeEndsAroundCursor(ranges, cursor) {
     let current;
     let next;
     for (const range of ranges) {
         if (isWithin(cursor, range)) {
-            if (!current || isBefore(range.end, current))
+            if (!current || isEqualOrBefore(range.end, current))
                 current = range.end;
         }
-        else if (isAfter(range.start, cursor)) {
-            if (!next || isBefore(range.start, next))
+        else if (isEqualOrAfter(range.start, cursor)) {
+            if (!next || isEqualOrBefore(range.start, next))
                 next = range.end;
         }
     }
@@ -613,7 +702,7 @@ function decorateRunningLine(outputPosition) {
 function removeExistingDecorationAtLine(editor, line) {
     var _a;
     const decorations = (_a = editorDecorations.get(editor.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
-    const filteredDecorations = decorations.filter(d => d.range.start.line !== line);
+    const filteredDecorations = decorations.filter(d => d.range.start.line < line);
     editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
@@ -676,7 +765,7 @@ function updateResultInPlotsProvider(evaluationId, output) {
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId);
         plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output }]);
-        plotsProvider.newOutput(evaluationId, output);
+        plotsProvider.newOutput(evaluationId, output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
     }
 }
 function handleFileBasedResult(params) {
@@ -785,6 +874,7 @@ function prepareOutput(result, file) {
     }
     else {
         output = result.params.output;
+        output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
         rawoutput = output;
     }
     if (result.params.messages.length > 0) {
@@ -841,7 +931,7 @@ function updateEditorDecorations(editor, decoration, line) {
     var _a;
     const uri = editor.document.uri.toString();
     let decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
-    decorations = decorations.filter(d => d.range.start.line !== line);
+    decorations = decorations.filter(d => d.range.start.line <= line);
     decorations.push(decoration);
     editorDecorations.set(uri, decorations);
     editor.setDecorations(variableDecorationType, decorations);
@@ -955,8 +1045,8 @@ function processDecorationUpdate(editor, data) {
         if (newDecorations[uri] === workspaceDecorations[uri])
             return;
         workspaceDecorations[uri] = newDecorations[uri];
-        const editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
-        editor.setDecorations(variableDecorationType, editorDecorations);
+        editorDecorations = createDecorationsFromData(workspaceDecorations[uri]);
+        editor.setDecorations(variableDecorationType, editorDecorations.get(uri) || []);
         editor.setDecorations(runningDecorationType, Array.from(runningLines.values()));
     }
     catch (_a) {
@@ -964,12 +1054,19 @@ function processDecorationUpdate(editor, data) {
     }
 }
 function createDecorationsFromData(decorationData) {
-    const editorDecorations = [];
+    // const editorDecorations: vscode.DecorationOptions[] = [];
+    var _a;
+    let editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return new Map();
+    const uri = editor.document.uri.toString();
+    const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
     Object.keys(decorationData).forEach((d) => {
         const decoration = decorationData[d];
         decoration.hoverMessage = createMarkdownHoverMessage(decoration.hoverMessage);
-        editorDecorations.push(decoration);
+        decorations.push(decoration);
     });
+    editorDecorations.set(uri, decorations);
     return editorDecorations;
 }
 function updateLintDecorations(decorationfile) {
@@ -1011,7 +1108,7 @@ function runTextCell(location) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line - 1, location.end.character));
+    const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, location.end.character));
     queueEvaluation({
         range: selection,
         textDocument: editor.document,
@@ -1097,6 +1194,9 @@ function clearDecorations() {
     const editor = vscode.window.activeTextEditor;
     const uri = editor === null || editor === void 0 ? void 0 : editor.document.uri.toString();
     if (uri && uri in workspaceDecorations) {
+        editorDecorations.set(uri, []);
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
+        editor === null || editor === void 0 ? void 0 : editor.setDecorations(runningDecorationType, []);
     }
 }
 function isUntitled(document) {

@@ -18,8 +18,14 @@ open LanguageServer.Json
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Text.RegularExpressions
+open System.Text.Json
+open System.Text
+open System.Text.Encodings.Web
+open System.Text.Json
 
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
+
+
 
 type WolframResultParams() =
                 //     let result = json!({
@@ -55,6 +61,10 @@ type updatePositionsParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set
     member val method: string = "updatePositions" with get, set
+
+type changeWorkspaceFoldersParams() =
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
 
 type SetTraceParams() =
     inherit RequestMessageBase()
@@ -99,12 +109,23 @@ type GetVersionResponseParams() =
     member val ``params``: JToken = null with get, set
     member val ``result``: JToken = null with get, set
 
+type PublishDiagnosticsNotification() = 
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val method: string = "textDocument/publishDiagnostics" with get, set
+
+// type WorkspaceSymbolParams() =
+//     inherit RequestMessageBase()
+//     member val ``params``: JToken = null with get, set
+
+type WorkspaceSymbolResponse() =
+    inherit ResponseMessageBase()
+    member val ``params``: JToken = null with get, set
+    member val ``result``: JToken = null with get, set
 
 
 type fswlspServer(input: Stream, output: Stream) = 
     inherit ServiceConnection(input, output)
-
-
 
     member val _ml : IKernelLink = null with get, set
     member val _lsp: IKernelLink = null with get, set
@@ -122,6 +143,52 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member val locations : JArray = null with get, set
 
+    // Dictionary of file paths and their document symbols
+    // member val _document_symbols: Map<string, DocumentSymbol array> = Map.empty with get set
+    member val _workspace_symbols:  Map<string, DocumentSymbol array> = Map.empty with get, set
+
+    member this.pulse() =
+        // this.log_messages("Pulse called")
+        // this._ml.Pulse() |> ignore
+        // this._lsp.Pulse() |> ignore
+        ()
+
+    member this.JsonToWolfram(input: string) = 
+        this.escapeWolframString(this.unescapeWolframString(input))
+
+    member this.unescapeWolframString (input: string) =
+    // Check if the string is enclosed in quotes
+        let content = input
+        // Replace escaped sequences with their actual characters
+        content
+            .Replace("\\\\", "\\")
+            // .Replace("\\n", "\n")
+            .Replace("\\r", "\r")
+            .Replace("\\t", "\t")
+            .Replace("\\/", "/")
+            // Handle Unicode escapes like \u0022
+            |> (fun s -> Regex.Replace(s, "\\\\u([0-9a-fA-F]{4})", 
+                    (fun m -> 
+                        let hex = m.Groups.[1].Value
+                        Char.ConvertFromUtf32(Int32.Parse(hex, System.Globalization.NumberStyles.HexNumber)))))
+    member this.escapeWolframString (input: string) =
+        let sb = StringBuilder()
+        sb.Append('"') |> ignore
+        for c in input do
+            match c with
+            | '\\' -> sb.Append("\\\\") |> ignore
+            | '"'  -> sb.Append("\\\"") |> ignore 
+            // | '\n' -> sb.Append("\\n") |> ignore
+            | '\r' -> sb.Append("\\r") |> ignore
+            | '\t' -> sb.Append("\\t") |> ignore
+            // | _ when int c < 0x20 || int c > 0x7E ->
+            //     // Use Wolfram's hex notation for non-printable characters
+            //     sb.Append(sprintf "\\:%04X" (int c)) |> ignore
+            | _ ->
+                sb.Append(c) |> ignore
+        sb.Append('"') |> ignore
+        sb.ToString()
+
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
         p.``type`` <- MessageType.Info
@@ -134,7 +201,7 @@ type fswlspServer(input: Stream, output: Stream) =
         
         
 
-        let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
+        let expr = sprintf "evaluateInKernel[%s]" ( this.escapeWolframString(code))
 
 
         try
@@ -170,8 +237,9 @@ type fswlspServer(input: Stream, output: Stream) =
         response
 
     member this.get_word_at_position(code: string, position: Position) =
-        let lines = code.Split('\n')
-        let line = lines.[int position.line]
+        let lines = code.Split("\n")
+
+        let line = lines.[min (int position.line) (lines.Length - 1)]
 
         // get the last word in the line using regex
         let regex = Regex(@"\w+")
@@ -192,7 +260,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.Initialize(initializeParams: InitializeParams): Result<InitializeResult, ResponseError<InitializeErrorData>> =
         try
-
             let log_messages(message :string) = 
                 let p = new LogMessageParams()
                 p.``type`` <- MessageType.Info
@@ -202,6 +269,122 @@ type fswlspServer(input: Stream, output: Stream) =
                     p
                 )
                 ()
+
+            let workspaceFoldersChangeHandler (p: changeWorkspaceFoldersParams) : unit =
+                // Handle the workspace folders change event
+                // You can perform actions when workspace folders are added or removed here
+                // For example, you can log a message or update the UI
+
+                // try
+                let task = Task.Run(fun () ->
+                    let uri = p.Params.["uri"].ToString()
+                    let path = p.Params.["uri"].["path"].ToString()
+
+                    try
+                        let allFiles = 
+                            Directory.GetFiles(path, "*.wl*", SearchOption.AllDirectories)
+                            |> Seq.filter (fun file -> 
+                                // Filter out files that are not Wolfram Language files
+                                file.EndsWith(".wl") || file.EndsWith(".wls") 
+                            )
+                            |> Seq.toArray
+
+                        // this.log_messages(sprintf "Workspace folders changed: %s" (String.Join(", ", allFiles)))
+
+                        allFiles
+                        |> Seq.iter (fun file ->
+                            try
+                                this.log_messages(sprintf "Reading file: %s" file)
+                                let fileText = 
+                                    try
+                                        File.ReadAllText(file)
+                                    with
+                                    | :? FileNotFoundException -> 
+                                        this.log_messages(sprintf "File not found: %s" file)
+                                        ""
+                                    | ex -> 
+                                        this.log_messages(sprintf "Error reading file %s: %s" file ex.Message)
+                                        ""
+                                
+                                if fileText <> "" then
+                                    let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString fileText) file
+                                    
+                                    // this.log_messages(sprintf "Evaluating documentSymbols for file: %s" file)
+
+                                    this._lsp.Evaluate(input)
+                                    this._lsp.WaitForAnswer() |> ignore
+                                    let js = this._lsp.GetString()
+
+                                    this.log_messages(sprintf "Processing file: %s" file)
+
+                                    let symbols = 
+                                        js
+                                        |> JArray.Parse
+                                        |> Seq.map (fun x ->
+                                            let symbol = new DocumentSymbol()
+                                            symbol.name <- x["name"].ToString()     
+                                            symbol.kind <- 
+                                                try
+                                                    x["kind"].ToObject<SymbolKind>()
+                                                with
+                                                | _ -> SymbolKind.Struct // Provide a default value
+                                            symbol.detail <- x["detail"].ToString()     
+                                            symbol.range <- x["location"].["range"].ToObject<Range>()
+                                            symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+                                            symbol.children <- [||]
+                                            symbol
+                                        )
+                                        |> Seq.toArray
+
+                                    // this.log_messages(sprintf "Adding %d symbols for file: %s" symbols.Length file)
+                                    this._workspace_symbols <- this._workspace_symbols.Add(file, symbols)
+                            with
+                            | ex -> 
+                                this.log_messages(sprintf "Error processing file %s: %s" file ex.Message)
+                        )
+                    with
+                    | ex -> 
+                        this.log_messages(sprintf "Error processing workspace folder %s: %s" path ex.Message)
+                )       
+                // Wait for the task to complete with a timeout
+                if task.Wait(TimeSpan.FromSeconds(60.0)) then
+                    this.log_messages(sprintf "Found %d symbols in workspace folders" this._workspace_symbols.Count)
+                    ()
+                    // Result<DocumentSymbolResult,ResponseError>.Success(result)
+                else
+                    this.log_messages(sprintf "Timed out adding symbols" )
+                    ()
+                    // Handle timeout case
+                    // let uri = p.Params.["uri"].ToString()
+                    // this.log_messages(sprintf "Timed out adding symbols for URI: %s" uri)
+                    // let emptyResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+                    // Result<DocumentSymbolResult,ResponseError>.Success emptyResult
+                // with
+                // | ex -> 
+                //     this.log_messages(sprintf "Error in DidChangeWorkspaceFolders: %s" ex.Message)
+                //     // let result = new DocumentSymbolResult([||]: DocumentSymbol array)
+                //     // // Result<DocumentSymbolResult,ResponseError>.Success(result)  
+                // ()
+
+            // let workplaceSymbolsHandler (request: WorkspaceSymbolParams) (cancellationToken: CancellationToken): ResponseMessageBase =
+            //     // Handle the request to get workspace symbols
+            //     let _, query = 
+            //         request.``params``.ToObject<JObject>().TryGetValue("query")
+
+            //     this.log_messages(sprintf "WorkspaceSymbolParams: %d" (this._workspace_symbols.Length))
+                
+            //     let response = new WorkspaceSymbolResponse()
+            //     response.result <-
+            //         if query = null || query.ToString() = "" then
+            //              JToken.FromObject(this._workspace_symbols)
+            //         else
+            //             let symbols = 
+            //                 this._workspace_symbols 
+            //                 |> Array.filter (fun s -> s.name.Contains(query.ToString(), StringComparison.OrdinalIgnoreCase))
+            //             // Create a response with the filtered symbols
+            //             this.log_messages(sprintf "Filtered symbols: %d" (symbols.Length))
+            //             JToken.FromObject(symbols)
+            //     response
 
 
             let traceHandler (request: SetTraceParams) : unit =
@@ -232,10 +415,10 @@ type fswlspServer(input: Stream, output: Stream) =
 
             let get_input(request: GetInputParams): string = 
 
-                let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = request.Params["text"].ToString().Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
+                let range = this.escapeWolframString (request.Params["range"].ToString())
+                let text = this.escapeWolframString (this.unescapeWolframString (request.Params["text"].ToString()))
 
-                let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
+                let eval = sprintf "getCodeString[%s, %s]" text range
 
                 this._ml.Evaluate(eval)
                 this._ml.WaitForAnswer() |> ignore
@@ -298,6 +481,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 this.SendNotification(
                     busy
                 )
+
 
                 let input = get_input request
 
@@ -371,6 +555,16 @@ type fswlspServer(input: Stream, output: Stream) =
                 "getVersion",
                 Func<GetVersionParams, CancellationToken, ResponseMessageBase>(getVersionHandler)
             )
+
+            this.RequestHandlers.Set<CancelRequestParams, ResponseMessageBase>(
+                "$/cancelRequest",
+                Func<CancelRequestParams, CancellationToken, ResponseMessageBase>(fun _ _ -> null)
+            )
+
+            // this.RequestHandlers.Set<WorkspaceSymbolParams, ResponseMessageBase>(
+            //     "workspace/symbol",
+            //     Func<WorkspaceSymbolParams, CancellationToken, ResponseMessageBase>(workplaceSymbolsHandler)
+            // )
             
 
             this.NotificationHandlers.Set<RunInWolframParams>(
@@ -393,19 +587,37 @@ type fswlspServer(input: Stream, output: Stream) =
                 Action<windowFocusedParams>(windowFocusedHandler)
             )
 
+            this.NotificationHandlers.Set<SetTraceParams>(
+                "$/setTrace",
+                Action<SetTraceParams>(traceHandler)
+            )
+
+            this.NotificationHandlers.Set<changeWorkspaceFoldersParams>(
+                "didChangeWorkspaceFolders",
+                Action<changeWorkspaceFoldersParams>(workspaceFoldersChangeHandler)
+            )
+
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
-            // capabilities.codeLensProvider <- new CodeLensOptions()
-            // capabilities.codeLensProvider.resolveProvider <- false
+            capabilities.codeLensProvider <- new CodeLensOptions()
+            capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- true
+            capabilities.foldingRangeProvider <- true
 
             let completionOptions = new CompletionOptions()
-            completionOptions.resolveProvider <- true
+            // completionOptions.resolveProvider <- true
             // completionOptions.triggerCharacters <- [| "["; "," |]
             completionOptions.resolveProvider <- false
-            capabilities.completionProvider <- new CompletionOptions()
             capabilities.completionProvider <- completionOptions
+
+            capabilities.workspaceSymbolProvider <- true
+
+            // capabilities.workspace <- new WorkspaceOptions()
+            // capabilities.workspace.workspaceFolders <- new WorkspaceFoldersOptions()
+            // capabilities.workspace.workspaceFolders.supported <- true
+            // capabilities.workspace.workspaceFolders.changeNotifications <- new ChangeNotificationsOptions(true)
+            
 
             let result = new InitializeResult()
             result.capabilities <- capabilities 
@@ -453,6 +665,17 @@ type fswlspServer(input: Stream, output: Stream) =
                 actionItem.title <- "Open Log"
                 // p.actions <- [| actionItem |]
                 this.Window.ShowMessage(p)
+
+                let p2 = new ShowMessageRequestParams()
+                p2.``type`` <- MessageType.Info
+                p2.message <- sprintf "%s ... full output in output log" (text.Substring(
+                    0, 
+                    Math.Min(text.Length, 100) // Limit the message length to 100 characters
+                )) // Truncate the message to avoid overflow
+                p2.actions <- [| actionItem |]
+                // this.Window.ShowMessageRequest(
+                //     p2
+                // ) |> ignore
                 ()
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
@@ -506,7 +729,7 @@ type fswlspServer(input: Stream, output: Stream) =
         let wlsp_path = Path.Combine(fswstp_path,  "../")
 
         let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
-        this.log_messages(sprintf "Wolfram: %s" utils_path)
+        // this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
@@ -537,57 +760,98 @@ type fswlspServer(input: Stream, output: Stream) =
         base.Initialized()
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
-            
-            try
-                let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
-
-
-
+        try
+            // Create a Task that will run the document symbols operation
+            let task = Task.Run(fun () ->
+                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) (p.textDocument.uri.ToString())
                 
-                // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
                 this._lsp.Evaluate(input)
-                // this._lsp.Evaluate("1+1")
                 this._lsp.WaitForAnswer() |> ignore
                 let js = this._lsp.GetString() 
 
-
-                let symbols: DocumentSymbol array = 
+                // Parse symbols from the JSON response
+                let symbols = 
                     js 
                     |> JArray.Parse
                     |> Seq.map (fun x -> 
                         let symbol = new DocumentSymbol()
                         symbol.name <- x["name"].ToString()
-                        symbol.kind <- x["kind"].ToObject<SymbolKind>()
+                        symbol.kind <- 
+                            try
+                                x["kind"].ToObject<SymbolKind>()
+                            with
+                            | _ -> SymbolKind.Struct // Provide a default value
                         symbol.detail <- x["detail"].ToString()
-
                         symbol.range <- x["location"].["range"].ToObject<Range>()
                         symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-
                         symbol.children <- [||]
                         symbol
                     )
                     |> Seq.toArray
 
-                let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
-                Result<DocumentSymbolResult,ResponseError>.Success result
-            with
-            | ex -> 
-                let error = new ResponseError()
-                error.code <- ErrorCodes.InternalError
-                error.message <- ex.Message
-                // Handle the error here, e.g., log it or send a notification to the client
-                let result:DocumentSymbolResult = new DocumentSymbolResult([||]: DocumentSymbol array)
-                Result<DocumentSymbolResult,ResponseError>.Success(result)
-                // let symbols: DocumentSymbol array = [||]
+                let result = new DocumentSymbolResult(symbols)
+                result
+            )
+            
+            // Wait for the task to complete with a timeout
+            if task.Wait(TimeSpan.FromSeconds(5.0)) then
+                Result<DocumentSymbolResult,ResponseError>.Success task.Result
+            else
+                // Handle timeout case
+                this.log_messages("DocumentSymbols operation timed out")
+                let emptyResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+                Result<DocumentSymbolResult,ResponseError>.Success emptyResult
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
+            let result = new DocumentSymbolResult([||]: DocumentSymbol array)
+            Result<DocumentSymbolResult,ResponseError>.Success(result)
 
-            // let result = new DocumentSymbolResult(symbols)
-            // Result<DocumentSymbolResult,ResponseError>.Success(result)
+
+    override this.FoldingRange (p: FoldingRangeRequestParam): Result<FoldingRange array,ResponseError> = 
+            // base.FoldingRange(params: FoldingRangeRequestParam)
+        try
+
+            let expr = sprintf "updateCursorLocations[%s]" (this._text)
+
+            this._lsp.Evaluate(expr)
+            this._lsp.WaitForAnswer() |> ignore
+            let locations = 
+                try 
+                    let js = this._lsp.GetString()
+                    JArray.Parse(js)
+                with
+                | ex -> 
+                    JArray()
+
+            let result = 
+                locations |> 
+                Seq.map (fun x -> 
+                    let range = new FoldingRange()
+                    range.startLine <- x.["start"].["line"].ToObject<int64>() - 1L
+                    range.startCharacter <- x.["start"].["character"].ToObject<int64>()
+                    range.endLine <- x.["end"].["line"].ToObject<int64>()-1L
+                    range.endCharacter <- x.["end"].["character"].ToObject<int64>()
+                    range.kind <- FoldingRangeKind.Region
+                    range
+                ) |> 
+                Seq.toArray
+            
+            Result<FoldingRange array,ResponseError>.Success(result)
+        with
+        | ex -> 
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error: %s" ex.Message)
+            Result<FoldingRange array,ResponseError>.Error(error)
 
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
         this._document <- p.textDocument.uri.ToString() 
-        this._text <- p.contentChanges.[0].text.ToString()
+        this._text <- this.JsonToWolfram(p.contentChanges.[0].text)
 
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
             URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
@@ -595,7 +859,9 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
 
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
+        this.validate(p)
+
+        let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -621,7 +887,7 @@ type fswlspServer(input: Stream, output: Stream) =
             
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString()
-        this._text <- p.textDocument.text
+        this._text <- this.JsonToWolfram(p.textDocument.text)
 
         let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
 			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
@@ -629,7 +895,7 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
 
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
+        let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -652,43 +918,85 @@ type fswlspServer(input: Stream, output: Stream) =
         this.SendNotification(
             p2
         )
+
+    member this.validate(paramsI: obj) = 
+        let textDocument = 
+            match paramsI with
+            | :? DidSaveTextDocumentParams as saveParams -> saveParams.textDocument
+            | :? DidChangeTextDocumentParams as changeParams -> changeParams.textDocument
+            | _ -> failwith "Unsupported parameter type"
+
+
+        // You can implement your validation logic here
+        let expr = sprintf "validate[%s, %s]" (this._text) (this.escapeWolframString(this._document))
+
+        this._lsp.Evaluate(expr)
+        this._lsp.WaitForAnswer() |> ignore
+        let js = this._lsp.GetString()
+
+        let diagnostics  = JObject.Parse(js)
+        let p = new PublishDiagnosticsParams()
+        p.uri <- textDocument.uri
+        p.diagnostics <- diagnostics.["params"].["diagnostics"].ToObject<Diagnostic[]>()
+
+        let pd = new PublishDiagnosticsNotification()
+        pd.``params`` <- JObject.FromObject(p)
+        this.SendNotification(
+            pd
+        )
+        ()
+
+    override this.DidSaveTextDocument (Params: DidSaveTextDocumentParams): unit = 
+            try
+                this._document <- Params.textDocument.uri.ToString()
+                this.validate(Params)
+                ()
+            with
+            | ex -> 
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                // Handle the error here, e.g., log it or send a notification to the client
+                this.log_messages(sprintf "Error: %s" ex.Message)
+                ()
+
+
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
             
-        
         if p.textDocument.uri.ToString() <> this._document then
 
             Result<CodeLens array,ResponseError>.Success([||])
         else
-            // try
-            let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
-            this._lsp.Evaluate(input)
-            this._lsp.WaitForAnswer() |> ignore
-            let js2 = this._lsp.GetString()
+            try
+                let input = sprintf "codeLens[%s]" (this._text)
+                this._lsp.Evaluate(input)
+                this._lsp.WaitForAnswer() |> ignore
+                let js2 = this._lsp.GetString()
 
-            let codeLenses: CodeLens array = 
-                js2 
-                |> JArray.Parse
-                |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                |> Seq.map (fun x -> 
+                let codeLenses: CodeLens array = 
+                    js2 
+                    |> JArray.Parse
+                    |> Seq.filter (fun x ->x.ToString().Contains("command"))
+                    |> Seq.map (fun x -> 
 
-                    let command = new Command()
-                    command.title <- x["command"].["title"].ToString()
-                    command.command <- x["command"].["command"].ToString()
-                    command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                    let codeLens = new CodeLens()
-                    codeLens.range <- x["range"].ToObject<Range>()
-                    codeLens.command <- command // or set it if needed
-                    codeLens
-                )
-                |> Seq.toArray
+                        let command = new Command()
+                        command.title <- x["command"].["title"].ToString()
+                        command.command <- x["command"].["command"].ToString()
+                        command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
+                        let codeLens = new CodeLens()
+                        codeLens.range <- x["range"].ToObject<Range>()
+                        codeLens.command <- command // or set it if needed
+                        codeLens
+                    )
+                    |> Seq.toArray
 
-            Result<CodeLens array,ResponseError>.Success(codeLenses)
-            // with
-            // | ex -> 
-            //     let error = new ResponseError()
-            //     error.code <- ErrorCodes.InternalError
-            //     error.message <- ex.Message
-            //     Result<CodeLens array,ResponseError>.Error(error)
+                Result<CodeLens array,ResponseError>.Success(codeLenses)
+            with
+                | ex -> 
+                    let error = new ResponseError()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    Result<CodeLens array,ResponseError>.Error(error)
 
 
 
@@ -731,7 +1039,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 let detail = if exists then value else new JObject()
                 let message2 = 
                     if detail.["detail"] <> null then
-                        sprintf "%s\n\n%s" message (detail.["documentation"].ToString().Replace("\n", "\n\n"))
+                        sprintf "%s\n\n%s" message (this.escapeWolframString(detail.["documentation"].ToString()) )
                     else
                         message
 
@@ -761,12 +1069,11 @@ type fswlspServer(input: Stream, output: Stream) =
             let m = new MarkupContent()
             hover.range <- range
             hover.contents <- MarkupContent()
-            hover.contents <- m
             Result<Hover,ResponseError>.Success(hover)
         
 
     override this.Completion (p: CompletionParams): Result<CompletionResult,ResponseError> = 
-            
+        try    
             let getDistinctWords text =
                 let matches = Regex.Matches(this._text, @"\b\w+\b")
                 matches |> Seq.cast<Match> |> Seq.map (fun m -> m.Value) |> Seq.distinct |> Seq.toArray
@@ -813,6 +1120,181 @@ type fswlspServer(input: Stream, output: Stream) =
             let result = new CompletionResult(filteredCandidates)
             
             Result<CompletionResult,ResponseError>.Success(result)
+        with
+        | ex -> 
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error in Completion: %s" ex.Message)
+            let result = new CompletionResult([||])
+            Result<CompletionResult,ResponseError>.Success(result)
 
-    override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 
-            base.SignatureHelp(p: TextDocumentPositionParams)
+    override this.Symbol (p: WorkspaceSymbolParams): Result<SymbolInformation array,ResponseError> = 
+            // base.Symbol(p: WorkspaceSymbolParams)
+                // Handle the request to get workspace symbols
+        let query = p.query
+        // this.log_messages(sprintf "WorkspaceSymbolParams: %s" (JObject.FromObject(p).ToString()))
+
+        // this.log_messages(sprintf "WorkspaceSymbolParams: %d" (this._workspace_symbols.Count))
+
+        let symbols: SymbolInformation array =
+            if query = null || query.ToString() = "" then 
+                this.log_messages("No query provided, returning all symbols.")
+                this._workspace_symbols
+                |> Map.toSeq
+                |> Seq.collect (fun (key, value) -> 
+                    this.log_messages(sprintf "Symbol: %s" key)
+                    value 
+                    |> Array.map (fun x -> 
+                        this.log_messages(sprintf "Symbol: %s" key)
+                        // let jsonObject = JObject.Parse(key)
+                        // let externalUriString = jsonObject.["external"].ToString()
+                        let uri = Uri(key)
+
+                        let symbolInfo = new SymbolInformation()
+                        symbolInfo.name <- x.name
+                        symbolInfo.kind <- x.kind
+                        symbolInfo.location <- new Location()
+                        symbolInfo.location.uri <- uri
+                        symbolInfo.location.range <- x.range
+                        symbolInfo
+                    )
+                )
+                |> Seq.toArray
+            else
+                this._workspace_symbols
+                |> Map.toSeq
+                |> Seq.collect (fun (key, value) -> 
+                    value 
+                    |> Array.map (fun x -> 
+                        // let jsonObject = JObject.Parse(key)
+                        // let externalUriString = jsonObject.["external"].ToString()
+                        let uri = Uri(key)
+
+                        let symbolInfo = new SymbolInformation()
+                        symbolInfo.name <- x.name
+                        symbolInfo.kind <- x.kind
+                        symbolInfo.location <- new Location()
+                        symbolInfo.location.uri <- uri
+                        symbolInfo.location.range <- x.range
+                        symbolInfo
+                    )
+                )
+                |> Seq.toArray
+                |> Seq.filter (fun symbol -> 
+                    // Check if the symbol name contains the query string
+                    symbol.name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
+                )
+                |> Seq.toArray
+
+        // log all the symbols found by sending the name of each symbol to the log
+        // this.log_messages(sprintf "Found %d symbols in workspace folders" symbols.Length)
+        // for symbol in symbols do
+        //     this.log_messages(sprintf "Symbol: %s" symbol.name)
+
+
+        let response = symbols
+        Result<SymbolInformation array,ResponseError>.Success(response)
+
+
+    // override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 
+    //         base.SignatureHelp(p: TextDocumentPositionParams)
+    //         let result = new SignatureHelp()
+    //         let signature = new SignatureInformation()
+    //         signature.label <- "Signature Help Example"
+    //         signature.documentation <- "This is an example of signature help."
+    //         signature.parameters <- [| new ParameterInformation("param1", "The first parameter") | new ParameterInformation("param2", "The second parameter") |]
+    //         result.signatures <- [| signature |]
+    //         result.activeSignature <- 0
+    //         result.activeParameter <- 0
+    //         Result<SignatureHelp,ResponseError>.Success(result) 
+
+    // override this.DidChangeWorkspaceFolders (p: DidChangeWorkspaceFoldersParams): unit = 
+    //     this.log_messages(sprintf "DidChangeWorkspaceFolders" )
+    //         // create a task that will find all .wl and .wls files in the workspace and get the documentSymbols for each file using the Wolfram Language
+    //     try
+    //         let task = Task.Run(fun () ->
+    //             let workspaceFolders = p.event.added |> Seq.map (fun x -> x.uri.ToString()) |> Seq.toArray
+    //             let allFiles = 
+    //                 workspaceFolders
+    //                 |> Seq.collect (fun folder ->
+    //                     Directory.GetFiles(folder, "*.wl", SearchOption.AllDirectories)
+    //                     |> Seq.append (Directory.GetFiles(folder, "*.wls", SearchOption.AllDirectories))
+    //                 )       
+    //             let symbols = 
+    //                 allFiles
+    //                 |> Seq.map (fun file ->
+    //                     let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString(file)) file
+    //                     this._lsp.Evaluate(input)
+    //                     this._lsp.WaitForAnswer() |> ignore
+    //                     let js = this._lsp.GetString()
+    //                     js
+    //                     |> JArray.Parse
+    //                     |> Seq.map (fun x ->
+    //                         let symbol = new DocumentSymbol()
+    //                         symbol.name <- x["name"].ToString()     
+    //                         symbol.kind <- 
+    //                             try
+    //                                 x["kind"].ToObject<SymbolKind>()
+    //                             with
+    //                             | _ -> SymbolKind.Struct // Provide a default value
+    //                         symbol.detail <- x["detail"].ToString()     
+    //                         symbol.range <- x["location"].["range"].ToObject<Range>()
+    //                         symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+    //                         symbol.children <- [||]
+    //                         symbol
+    //                     )
+    //                     |> Seq.toArray
+    //                 )
+    //             symbols
+    //         )       
+    //         // Wait for the task to complete with a timeout
+    //         if task.Wait(TimeSpan.FromSeconds(5.0)) then
+    //             let symbols = task.Result |> Seq.concat |> Seq.toArray
+    //             let result = new DocumentSymbolResult(symbols)
+    //             this.log_messages(sprintf "Found %d symbols in workspace folders" symbols.Length)
+    //             this._workspace_symbols <- symbols
+    //             // Result<DocumentSymbolResult,ResponseError>.Success(result)
+    //         else
+    //             // Handle timeout case
+    //             this.log_messages("DidChangeWorkspaceFolders operation timed out")
+    //             // let emptyResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+    //             // Result<DocumentSymbolResult,ResponseError>.Success emptyResult
+    //     with
+    //     | ex -> 
+    //         this.log_messages(sprintf "Error in DidChangeWorkspaceFolders: %s" ex.Message)
+    //         // let result = new DocumentSymbolResult([||]: DocumentSymbol array)
+    //         // // Result<DocumentSymbolResult,ResponseError>.Success(result)  
+
+
+    override this.Exit (): unit = 
+        try
+            if this._ml <> null then
+                this._ml.Close()
+            if this._lsp <> null then
+                this._lsp.Close() 
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error during cleanup: %s" ex.Message)
+        
+        base.Exit()
+        Environment.Exit(0)
+
+    override this.Shutdown (): VoidResult<ResponseError> =
+        try
+            if this._ml <> null then
+                this._ml.Close()
+            if this._lsp <> null then
+                this._lsp.Close() 
+            // base.Shutdown()
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Success()
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error during shutdown: %s" ex.Message)
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Error(error)

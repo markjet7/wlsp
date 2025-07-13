@@ -146,7 +146,8 @@ function startWLSP(id, path) {
         let clientErrorHandler = new ClientErrorHandler();
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             initializationOptions: {
                 debuggerPort: 7777
@@ -289,7 +290,8 @@ function startWLSPKernelSocket(id, path) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             markdown: {
@@ -346,9 +348,16 @@ function startWLSPIO(id, lspPath) {
         };
         let clientOptions = {
             documentSelector: [
+<<<<<<< HEAD
                 "wolfram"
             ],
             diagnosticCollectionName: 'wolfram-lsp',
+=======
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
+            ],
+            diagnosticCollectionName: 'Wolfram Language',
+>>>>>>> cd712ecec650e75b37777f21bd419d97cbf208ca
             outputChannel: extension_1.outputChannel,
             markdown: {
                 isTrusted: true,
@@ -382,7 +391,8 @@ function startWLSPKernelIOClojure(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
@@ -418,7 +428,8 @@ function startWLSPKernelIORust(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
@@ -465,7 +476,8 @@ function startWLSPKernelIO(id, kernelPath) {
         };
         let clientOptions = {
             documentSelector: [
-                "wolfram"
+                { scheme: 'untitled', language: 'wolfram' },
+                { scheme: 'file', language: 'wolfram' }
             ],
             diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
@@ -705,18 +717,18 @@ function stop() {
     return __awaiter(this, void 0, void 0, function* () {
         // wolframKernelClient?.sendNotification("Shutdown");
         // wolframClient?.sendNotification("Shutdown");
-        console.log("Stopping Wolfram Clients");
-        try {
-            // await wolframClient?.stop();
-            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.dispose());
-        }
-        catch (e) {
-            console.log(e.message);
-        }
         try {
             // kernelSocket.destroy();
             // await wolframKernelClient?.stop();
             yield (exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.dispose());
+        }
+        catch (e) {
+            console.log(e.message);
+        }
+        console.log("Stopping Wolfram Clients");
+        try {
+            // await wolframClient?.stop();
+            yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.dispose());
         }
         catch (e) {
             console.log(e.message);

@@ -109,11 +109,16 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
         if (workspace.children?.length===0) {
 
             function getFolderFiles(folder:string) {
-                if (!fs.existsSync(folder)) {
+                if (!fs.existsSync(folder) || !fs.lstatSync(folder).isDirectory()) {
+                    console.error(`Folder ${folder} does not exist or is not a directory.`);
                     return;
                 }
 
-                let files = fs.readdirSync(folder, {withFileTypes: true});
+            fs.readdir(folder, {withFileTypes: true}, (err, files) => {
+                if (err) {
+                    console.error(`Error reading directory ${folder}:`, err);
+                    return;
+                }
                 files.forEach((file:fs.Dirent) => {
                     if(path.extname(file.name) == ".wl") { 
                         let item = new TreeItem(path.basename(file.name), []);
@@ -132,6 +137,7 @@ export class workspaceSymbolProvider implements vscode.TreeDataProvider<TreeItem
                         getFolderFiles(folder + "/" + file.name);
                     }
                 })
+            });
             }
 
             let folders = vscode.workspace.workspaceFolders;

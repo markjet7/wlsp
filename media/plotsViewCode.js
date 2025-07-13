@@ -1,6 +1,8 @@
 // transform.js
 // import * as d3 from "./d3.min.js";
 
+// const { exit } = require("process");
+
 // const { image } = require("d3");
 
 const parser = new DOMParser();
@@ -20,109 +22,6 @@ function pasteOutput(output) {
     // data: span1.textContent || span1.innerText
     data: output.textContent,
   });
-}
-
-function createDefault(parentSelection, children) {
-  const selection = parentSelection;
-  // console.log("createDefault", children);
-  createList(selection, children);
-}
-
-function createColumn(parentSelection, children) {
-  const selection = parentSelection.append("g").attr("class", "column");
-
-  children.forEach((child, index) => {
-    if (typeof child === "string" || typeof child === "number") {
-      selection
-        .append("text")
-        .attr("class", "column-item")
-        .attr("x", 0)
-        .attr("y", index * 20)
-        .text(child);
-    }
-
-    // check if child is a nested array
-    if (Array.isArray(child) && typeof child[0] === "string") {
-      selection
-        .append("g")
-        .attr("class", "column-item")
-        .attr("x", 0)
-        .attr("y", index * 20);
-      processArray(child, selection);
-    }
-  });
-  return selection;
-}
-
-function createGraphics(parentSelection, children) {
-  let selection = parentSelection.append("g").attr("class", "graphics");
-
-  selection = graphicToSVG(selection, children);
-  return selection;
-}
-
-function createDisk(parentSelection, children) {
-  let cx = 100,
-    cy = 100,
-    r = 10;
-
-  if (
-    children &&
-    children.length > 1 &&
-    Array.isArray(children[0]) &&
-    children[0].length > 2
-  ) {
-    cx = children[0][1];
-    cy = children[0][2];
-    r = children[1];
-  }
-
-  return parentSelection
-    .append("circle")
-    .attr("class", "disk")
-    .attr("cx", cx)
-    .attr("cy", cy)
-    .attr("r", r)
-    .style("fill", "red");
-}
-
-function createList(parentSelection, children) {
-  const selection = parentSelection;
-  // console.log("createList", children);
-
-  // Check if all children are strings or numbers
-  const allText = children.every(
-    (child) => typeof child === "string" || typeof child === "number"
-  );
-  // Append text elements for each list item
-  if (allText) {
-    let text = children.reduce((acc, child) => acc + child + ", ", "");
-    // console.log("text", text);
-    selection
-      .append("text")
-      .attr("class", "list-item")
-      .text(text)
-      .attr("x", 0)
-      .attr("y", "50%");
-    return selection;
-  } else {
-    children.forEach((child, index) => {
-      if (typeof child === "string" || typeof child === "number") {
-        selection
-          .append("text")
-          .attr("class", "list-item")
-          .attr("x", 0)
-          .attr("y", index * 20)
-          .text(child);
-      }
-
-      // check if child is a nested array
-      if (Array.isArray(child) && typeof child[0] === "string") {
-        processArray(child, selection);
-      }
-    });
-    return selection;
-  }
 }
 
   // Function to create a download button for the given image element
@@ -163,7 +62,7 @@ function createList(parentSelection, children) {
     // imageElement.parentNode.style.position = "relative";
 
     // Insert the button into the parent of the image element
-    // imageElement.parentNode.appendChild(button);
+    imageElement.parentNode.appendChild(button);
   };
 
   const handleImageClick = (imageElement) => {
@@ -335,15 +234,14 @@ const vscode = acquireVsCodeApi();
       if (!styleSheet) {
         styleSheet = document.createElement("style");
         styleSheet.id = "_style";
+        document.head.appendChild(styleSheet);
       }
-      styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
-      let styleElement = document.getElementById('_style');
-      // styleElement.innerHTML = `.output_row { font-size: ${message.size}px; }`;
-      if (styleElement) {
-        // styleSheet.insertRule('.my-class { color: blue; }', styleSheet.cssRules.length);
-        styleElement.insertRule(`.output_row { font-size: ${message.size}px; }`, styleElement.cssRules.length);
+
+      let rules = styleSheet.cssRules || styleSheet.rules;
+
+      if (styleSheet && styleSheet.insertRule) {
+        styleSheet.insertRule(`.output_row { font-size: ${message.size}px; }`, rules.length);
       }
-      document.head.appendChild(styleElement);
       return;
     }
 
@@ -351,12 +249,21 @@ const vscode = acquireVsCodeApi();
 
       let styleElement = document.createElement('style');
       styleElement.innerHTML = `#outputs { background: ${message.background}; }`;
-      document.head.appendChild(styleElement);
+      try {
+        document.head.appendChild(styleElement);
+      } catch (error) {
+        console.error("Failed to append style element:", error);
+      }
       return;
     }
 
     const outputDiv = document.getElementById("outputs");
     if (message.input ) {
+      let progress = document.getElementById("progress");
+      if (progress && progress.classList.contains("loading")) {
+        progress.classList.remove("loading");
+      } 
+        progress.classList.add(["loading"]);
 
       if (message.input.length > 210) {
         message.input = message.input.substring(0, 100) + " ... " + message.input.substring(message.input.length - 100, message.input.length);
@@ -380,47 +287,38 @@ const vscode = acquireVsCodeApi();
        index+
         "]: <div class='input_text'>" +
         message.input +
-        "</div><hr></div><div class='output_row loading' id='o" + message.row + "'>Loading...</div>";
+        "</div><hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
         index++;
       outputDiv.innerHTML = lastInput + outputDiv.innerHTML;
+
+    //   let table = new DataTable('#myTable', {
+    //     // options
+    // });
       }
     }
     
     var width, height;
     
     if (message.output) {
+      let progress = document.getElementById("progress");
+      if (progress && progress.classList.contains("loading")) {
+        progress.classList.remove("loading");
+      }
 
-      let output = `<div class="output_row" id="o${message.row}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
-       message.output // +
-      // "<br><button type='button' name='open' textContent='Open' onclick='openOutputInNewDocument(this.parentNode.getAttribute(\"data-content\"))'>Open</button>" +
-      // "<button type='button' name='paste' textContent='Paste' onclick='pasteOutput(this.parentNode.getAttribute(\"data-content\"))'>Insert</button><br></div>";
+      let output = `<div class="output_row" id="o${index}" data-content="${message.output.replace(/"/g, '&quot;')}">` +
+       message.output 
 
       let doc = parser.parseFromString(output, "text/html");
-      // let outs = doc.getElementsByTagName("output_row");
-      // let imgs = doc.getElementsByTagName("img");
-      // for (const o of outs) {
-      //   createDownloadButton(o);
-      //   createOpenButton(o);
-      //   createPasteButton(o);
-      // }
-      // for (const i of imgs) {
-      //   createDownloadButton(i);
-      //   createOpenButton(i);
-      //   createPasteButton(i);
-      // }
-
-      // let outputDivs = outputDiv.getElementsByClassName("output_row");
-      // select output div with id = message.row
 
       let existingOutput = document.getElementById("o"+message.row);
       if (existingOutput) {
         existingOutput.innerHTML = doc.body.getElementsByClassName("output_row")[0].innerHTML;      
       } else {
         let newCell = "<div class='input_row' id='" + message.row + "'><hr>In[" +
-        message.row +
+        index +
          "]: " +
          message.input +
-         "<hr></div><div class='output_row loading' id='" + message.row + "'>Loading...</div>";
+         "<hr></div><div class='output_row' id='o" + message.row + "'>Loading...</div>";
          outputDiv.innerHTML = newCell + outputDiv.innerHTML;
       }
 
@@ -478,9 +376,9 @@ const vscode = acquireVsCodeApi();
 
   const updateImageElements = () => {
     var downloadlinks = document.querySelectorAll("#download-link");
-    for (const downloadlink of downloadlinks) {
-      downloadlink.remove();
-    }
+    // for (const downloadlink of downloadlinks) {
+    //   downloadlink.remove();
+    // }
 
     // Get all image elements on the page
     var imageElements = document.getElementsByClassName("output_row");
@@ -490,6 +388,9 @@ const vscode = acquireVsCodeApi();
       // get the image tag inside the output_row
       const img = imageElement.getElementsByTagName("img")[0];
 
+      if (!img) {
+        continue;
+      }
       createDownloadButton(img);
       // createOpenButton(imageElement);
       // createPasteButton(imageElement);
