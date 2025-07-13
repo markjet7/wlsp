@@ -142,6 +142,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     initializeGlobals(context0, outputChannel0);
     registerCommands();
     initializeProviders();
+    await startWLSP();
     await startKernel();
     registerEventHandlers();
     await setupNotebookSerializers();
@@ -206,6 +207,26 @@ function initializeProviders(): void {
     );
 }
 
+async function startWLSP(): Promise<void> {
+    outputChannel.appendLine("Starting Wolfram Language Server Protocol (WLSP)...");
+    
+    let lspStarter = launch.startWLSPIO(0, wlspPath);
+
+    await lspStarter.then(async (client) => {
+        wolframClient = client;
+        outputChannel.appendLine("Wolfram Language Server started: " + wolframClient?.state);
+        
+        if (wolframClient?.state === State.Running) {
+            await onlspReady();
+        } else {
+            outputChannel.appendLine("Wolfram Language Server failed to start.");
+        }
+    }).catch((error) => {
+        outputChannel.appendLine("Error starting Wolfram Language Server: " + error);
+        vscode.window.showErrorMessage("Failed to start Wolfram Language Server. Check the output for details.");
+    });
+}
+
 async function startKernel(): Promise<void> {
     const kernelStarter = process.platform === "win32" 
         ? () => launch.startWLSPKernelIO(0, wlspPath)
@@ -267,21 +288,34 @@ function setupTreeDataProvider(): void {
 }
 
 function handleWorkspaceFolderChanges(event: vscode.WorkspaceFoldersChangeEvent): void {
-    for (const folder of event.removed) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            clients.delete(folder.uri.toString());
-            client[0]?.stop();
-            client[1]?.stop();
-        }
-    }
 
     for (const folder of event.added) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            client[1]?.sendNotification("didChangeWorkspaceFolders", folder);
+            wolframKernelClient?.sendNotification("didChangeWorkspaceFolders", folder);
+            wolframClient?.sendNotification("didChangeWorkspaceFolders", folder);
         }
-    }
+}
+
+export async function onlspReady(): Promise<void> {
+    return new Promise((resolve) => {
+        outputChannel.appendLine("Wolfram Language Server ready: " + wolframClient?.state);
+        
+        setupLSPNotifications();
+        handleWorkspaceFiles();
+        
+        if (wolframClient?.state === State.Running) {
+            wolframClient?.sendRequest("storageUri").then((result: any) => {
+                temporaryDir = result;
+                resolve();
+            });
+            wolframClient?.sendRequest("getVersion").then((result: any) => { 
+                wolframVersionText =  "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
+                wolframStatusBar.text = wolframVersionText;
+                wolframStatusBar.show();
+            });
+        } else {
+            resolve();
+        }
+    });
 }
 
 export async function onkernelReady(): Promise<void> {
@@ -307,6 +341,18 @@ export async function onkernelReady(): Promise<void> {
     });
 }
 
+function setupLSPNotifications(): void {
+    if (!wolframClient) return;
+
+    const notifications: [string, (...args: any[]) => void][] = [
+        ['updatePositions', updatePositions],
+    ];
+
+    notifications.forEach(([event, handler]) => {
+        wolframClient?.onNotification(event, handler);
+    });
+}
+
 function setupKernelNotifications(): void {
     if (!wolframKernelClient) return;
 
@@ -316,7 +362,6 @@ function setupKernelNotifications(): void {
         ['errorMessages', errorMessages],
         ['updateInputs', updateInputs],
         ['onResult', onResult],
-        ['updatePositions', updatePositions],
         ['updateLintDecorations', updateLintDecorations],
         ['onRunInWolfram', onRunInWolfram],
         ['onRunInWolframIO', onRunInWolframIO]
@@ -359,6 +404,7 @@ export async function restartKernel(): Promise<LanguageClient | undefined> {
 
 export async function restart(): Promise<void> {
     resetState();
+    await startNewLSP();
     await startNewKernel();
     vscode.workspace.textDocuments.forEach(didOpenTextDocument);
 }
@@ -372,6 +418,15 @@ function resetState(): void {
     wolframStatusBar.show();
     editorDecorations.clear();
     editor?.setDecorations(variableDecorationType, []);
+    wolframClient?.stop();
+    wolframKernelClient?.stop();
+}
+
+async function startNewLSP(): Promise<void> {
+    await launch.startWLSPIO(0, wlspPath).then(async (client) => {
+        wolframClient = client;
+        onlspReady();
+    });
 }
 
 async function startNewKernel(): Promise<void> {

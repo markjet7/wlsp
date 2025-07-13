@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restart = exports.restartKernel = exports.onkernelReady = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.interactiveNotebookSerializer = exports.interactiveController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.restart = exports.restartKernel = exports.onkernelReady = exports.onlspReady = exports.startLanguageServer = exports.wlspdebugger = exports.treeDataProvider = exports.scriptController = exports.interactiveNotebookSerializer = exports.interactiveController = exports.notebookcontroller = exports.notebookSerializer = exports.scriptserializer = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const fp = require('find-free-port');
@@ -95,6 +95,7 @@ function startLanguageServer(context0, outputChannel0) {
         initializeGlobals(context0, outputChannel0);
         registerCommands();
         initializeProviders();
+        yield startWLSP();
         yield startKernel();
         registerEventHandlers();
         yield setupNotebookSerializers();
@@ -152,6 +153,25 @@ function initializeProviders() {
     dataProvider = new dataPanel_1.DataViewProvider(context.extensionUri);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(dataPanel_1.DataViewProvider.viewType, dataProvider));
 }
+function startWLSP() {
+    return __awaiter(this, void 0, void 0, function* () {
+        outputChannel.appendLine("Starting Wolfram Language Server Protocol (WLSP)...");
+        let lspStarter = launch.startWLSPIO(0, wlspPath);
+        yield lspStarter.then((client) => __awaiter(this, void 0, void 0, function* () {
+            exports.wolframClient = client;
+            outputChannel.appendLine("Wolfram Language Server started: " + (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.state));
+            if ((exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.state) === node_1.State.Running) {
+                yield onlspReady();
+            }
+            else {
+                outputChannel.appendLine("Wolfram Language Server failed to start.");
+            }
+        })).catch((error) => {
+            outputChannel.appendLine("Error starting Wolfram Language Server: " + error);
+            vscode.window.showErrorMessage("Failed to start Wolfram Language Server. Check the output for details.");
+        });
+    });
+}
 function startKernel() {
     return __awaiter(this, void 0, void 0, function* () {
         const kernelStarter = process.platform === "win32"
@@ -197,22 +217,35 @@ function setupTreeDataProvider() {
     vscode.window.registerTreeDataProvider("wolframSymbols", exports.treeDataProvider);
 }
 function handleWorkspaceFolderChanges(event) {
-    var _a, _b, _c;
-    for (const folder of event.removed) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            clients.delete(folder.uri.toString());
-            (_a = client[0]) === null || _a === void 0 ? void 0 : _a.stop();
-            (_b = client[1]) === null || _b === void 0 ? void 0 : _b.stop();
-        }
-    }
     for (const folder of event.added) {
-        const client = clients.get(folder.uri.toString());
-        if (client) {
-            (_c = client[1]) === null || _c === void 0 ? void 0 : _c.sendNotification("didChangeWorkspaceFolders", folder);
-        }
+        exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.sendNotification("didChangeWorkspaceFolders", folder);
+        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendNotification("didChangeWorkspaceFolders", folder);
     }
 }
+function onlspReady() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve) => {
+            outputChannel.appendLine("Wolfram Language Server ready: " + (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.state));
+            setupLSPNotifications();
+            handleWorkspaceFiles();
+            if ((exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.state) === node_1.State.Running) {
+                exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("storageUri").then((result) => {
+                    temporaryDir = result;
+                    resolve();
+                });
+                exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.sendRequest("getVersion").then((result) => {
+                    wolframVersionText = "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
+                    wolframStatusBar.text = wolframVersionText;
+                    wolframStatusBar.show();
+                });
+            }
+            else {
+                resolve();
+            }
+        });
+    });
+}
+exports.onlspReady = onlspReady;
 function onkernelReady() {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve) => {
@@ -237,6 +270,16 @@ function onkernelReady() {
     });
 }
 exports.onkernelReady = onkernelReady;
+function setupLSPNotifications() {
+    if (!exports.wolframClient)
+        return;
+    const notifications = [
+        ['updatePositions', updatePositions],
+    ];
+    notifications.forEach(([event, handler]) => {
+        exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.onNotification(event, handler);
+    });
+}
 function setupKernelNotifications() {
     if (!exports.wolframKernelClient)
         return;
@@ -246,7 +289,6 @@ function setupKernelNotifications() {
         ['errorMessages', errorMessages],
         ['updateInputs', updateInputs],
         ['onResult', onResult],
-        ['updatePositions', updatePositions],
         ['updateLintDecorations', updateLintDecorations],
         ['onRunInWolfram', onRunInWolfram],
         ['onRunInWolframIO', onRunInWolframIO]
@@ -284,6 +326,7 @@ exports.restartKernel = restartKernel;
 function restart() {
     return __awaiter(this, void 0, void 0, function* () {
         resetState();
+        yield startNewLSP();
         yield startNewKernel();
         vscode.workspace.textDocuments.forEach(didOpenTextDocument);
     });
@@ -298,6 +341,16 @@ function resetState() {
     wolframStatusBar.show();
     editorDecorations.clear();
     editor === null || editor === void 0 ? void 0 : editor.setDecorations(variableDecorationType, []);
+    exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.stop();
+    exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.stop();
+}
+function startNewLSP() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield launch.startWLSPIO(0, wlspPath).then((client) => __awaiter(this, void 0, void 0, function* () {
+            exports.wolframClient = client;
+            onlspReady();
+        }));
+    });
 }
 function startNewKernel() {
     return __awaiter(this, void 0, void 0, function* () {

@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <FSharpResolveNamespaces>true</FSharpResolveNamespaces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="fswlspk.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>  
+    <None Include="mathlink.framework\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
+    <None Include="ml64i4.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
+    <None Include="completions.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
+    <None Include="details.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>  
+
+
+    <PackageReference Include="LanguageServerProtocol" Version="7.0.0" />
+    <Reference Include="Wolfram.NETLink">
+      <HintPath>$(ProjectDir)Wolfram.NETLink.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

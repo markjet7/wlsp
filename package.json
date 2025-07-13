@@ -533,17 +533,17 @@
     },
     "scripts": {
         "vscode:prepublish_old": "tsc -p ./",
-        "watch": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
-        "compile": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
+        "watch": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj && tsc -p ./",
+        "compile": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj && tsc -p ./",
         "lint": "node ./node_modules/tslint/bin/tslint ../src/*.ts",
         "pretest": "npm run compile",
         "test": "node ./out/test/runTest.js",
-        "vscode:prepublish": "export NODE_OPTIONS=--openssl-legacy-provider && dotnet build fswstp/fswstp.fsproj -c Release -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
-        "vscode:prepublish:windows": "dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
-        "vscode:prepublish:linux": "dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
-        "webpack": "dotnet build fswstp/fswstp.fsproj && webpack --mode development",
-        "webpack-dev": "dotnet build fswstp/fswstp.fsproj && webpack --mode development --watch",
-        "test-compile": "dotnet build fswstp/fswstp.fsproj && tsc -p ./",
-        "cargo-build": "dotnet build fswstp/fswstp.fsproj"
+        "vscode:prepublish": "export NODE_OPTIONS=--openssl-legacy-provider && dotnet build fswstp/fswstp.fsproj -c Release -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && dotnet build fswstpk/fswstp.fsproj -c Release -r win-x64 && dotnet build fswstpk/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
+        "vscode:prepublish:windows": "dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && dotnet build fswstpk/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstpk/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
+        "vscode:prepublish:linux": "dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstp/fswstp.fsproj -c Release --self-contained -r osx-x64 && dotnet build fswstpk/fswstp.fsproj -c Release --self-contained -r win-x64 && dotnet build fswstpk/fswstp.fsproj -c Release --self-contained -r osx-x64 && webpack --mode production",
+        "webpack": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj && webpack --mode development",
+        "webpack-dev": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj && webpack --mode development --watch",
+        "test-compile": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj && tsc -p ./",
+        "cargo-build": "dotnet build fswstp/fswstp.fsproj && dotnet build fswstpk/fswstp.fsproj"
     }
 }

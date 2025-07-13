@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelIO = exports.startWLSPKernelIORust = exports.startWLSPKernelIOClojure = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
+exports.stopKernel = exports.stop = exports.restartKernel = exports.restart = exports.startWLSPKernelIO = exports.startWLSPKernelIORust = exports.startWLSPKernelIOClojure = exports.startWLSPIO = exports.startWLSPKernelSocket = exports.startWLSP = exports.wolframKernelClient = exports.wolframClient = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const net = require("net");
@@ -322,43 +322,53 @@ function startWLSPKernelSocket(id, path) {
     }));
 }
 exports.startWLSPKernelSocket = startWLSPKernelSocket;
-function startWLSPIO(id) {
+function startWLSPIO(id, lspPath) {
     return __awaiter(this, void 0, void 0, function* () {
+        attempts += 1;
+        console.log("Starting WLSP LSP: " + attempts);
+        let exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+        let debugpath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+        // check if windows 
+        if (process.platform === "win32") {
+            exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
+            debugpath = path.join(lspPath, "fswstp", "bin", "Debug", "net9.0", "fswstp.exe");
+        }
+        if (process.platform === "darwin") {
+            exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+            debugpath = path.join(lspPath, "fswstp", "bin", "Debug", "net9.0", "fswstp");
+        }
+        // Use the rustwstp binary and standard I/O
         let serverOptions = {
             run: {
-                command: "/usr/local/bin/wolframscript", args: ["-file", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio
+                command: exepath, args: [], transport: node_1.TransportKind.stdio
             },
-            debug: { command: "/usr/local/bin/wolframscript", args: ["-script", path.join(context.asAbsolutePath(path.join('wolfram', 'wolfram-lsp-io.wl')))], transport: node_1.TransportKind.stdio }
+            debug: { command: debugpath, args: [], transport: node_1.TransportKind.stdio }
         };
         let clientOptions = {
-            documentSelector: [{ scheme: 'file', language: 'wolfram' }],
-            diagnosticCollectionName: 'Wolfram Language',
+            documentSelector: [
+                "wolfram"
+            ],
+            diagnosticCollectionName: 'wolfram-lsp',
             outputChannel: extension_1.outputChannel,
-            revealOutputChannelOn: 1
+            markdown: {
+                isTrusted: true,
+                supportHtml: true
+            },
         };
-        exports.wolframClient = new node_1.LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions);
-        exports.wolframClient.registerProposedFeatures();
-        exports.wolframClient.traceOutputChannel.show();
-        exports.wolframClient.onDidChangeState((event) => {
-            console.log("state changed");
-            console.log(event.newState);
-        });
-        yield (exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start());
-        console.log("client ready");
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            // wolframClient = new LanguageClient('wolfram', 'Wolfram Language', serverOptions, clientOptions, true);
-            // wolframClient.registerProposedFeatures();
-            // wolframClient?.start();
-            resolve();
-            // onclientReady();
-            // setTimeout(() => {
-            //     let disposible: vscode.Disposable | undefined;
-            //     wolframClient?.start();
-            //     resolve();
-            // }, 2000)
+            exports.wolframClient = new node_1.LanguageClient('wolfram-lsp', 'Wolfram Language Kernel Server', serverOptions, clientOptions);
+            let disposible;
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.start().then((value) => {
+                resolve(exports.wolframClient);
+            });
+            exports.wolframClient === null || exports.wolframClient === void 0 ? void 0 : exports.wolframClient.outputChannel.appendLine("LSP Client Started");
+            // outputChannel.appendLine(new Date().toLocaleTimeString())
+            // if (disposible) {context.subscriptions.push(disposible)};
+            // resolve(wolframKernelClient)
         }));
     });
 }
+exports.startWLSPIO = startWLSPIO;
 function startWLSPKernelIOClojure(id, kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
@@ -435,16 +445,16 @@ function startWLSPKernelIO(id, kernelPath) {
     return __awaiter(this, void 0, void 0, function* () {
         attempts += 1;
         console.log("Starting WLSP Kernel: " + attempts);
-        let exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-        let debugpath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+        let exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+        let debugpath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
         // check if windows 
         if (process.platform === "win32") {
-            exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
-            debugpath = path.join(kernelPath, "fswstp", "bin", "Debug", "net9.0", "fswstp.exe");
+            exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
+            debugpath = path.join(kernelPath, "fswstpk", "bin", "Debug", "net9.0", "fswstp.exe");
         }
         if (process.platform === "darwin") {
-            exepath = path.join(kernelPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-            debugpath = path.join(kernelPath, "fswstp", "bin", "Debug", "net9.0", "fswstp");
+            exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
+            debugpath = path.join(kernelPath, "fswstpk", "bin", "Debug", "net9.0", "fswstp");
         }
         // Use the rustwstp binary and standard I/O
         let serverOptions = {

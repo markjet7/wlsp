@@ -1,0 +1,4 @@
+/Users/markmw/Github/wlsp/fswstp/obj/Debug/net6.0/fswstp.fsproj.AssemblyReference.cache
+/Users/markmw/Github/wlsp/fswstp/obj/Debug/net6.0/fswstp.AssemblyInfoInputs.cache
+/Users/markmw/Github/wlsp/fswstp/obj/Debug/net6.0/fswstp.AssemblyInfo.fs
+/Users/markmw/Github/wlsp/fswstp/obj/Debug/net6.0/fswstp.fsproj.CoreCompileInputs.cache
