@@ -382,7 +382,6 @@ const vscode = acquireVsCodeApi();
     var width, height;
     
     if (message.output) {
-      console.log("message.output", message);
       let progress = document.getElementById("progress");
       if (progress && progress.classList.contains("loading")) {
         progress.classList.remove("loading");
