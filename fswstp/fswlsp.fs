@@ -51,7 +51,7 @@ type WolframPrintParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set  
     member val method : string = "onPrintMessage" with get, set
-    
+
 type WolframBusyParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set
@@ -893,7 +893,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         // check if file exists
         if not (File.Exists(this._document)) then
-            this.log_messages(sprintf "File %s does not exist" this._document)
+            
             ()
         else
             this._document <- p.textDocument.uri.LocalPath.Replace("file://", "") 
@@ -934,7 +934,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         //  check if file exists 
         if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
-            this.log_messages(sprintf "File %s does not exist"( p.textDocument.uri.LocalPath.Replace("file://", "")))
+     
             ()
         else
             this._document <- p.textDocument.uri.LocalPath.Replace("file://", "")
@@ -979,7 +979,16 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
         // You can implement your validation logic here
-        let expr = sprintf "validate[%s, %s]" (this._text) (this.escapeWolframString(this._document))
+        let escapeAscii (s: string) =
+            let sb = StringBuilder()
+            for c in s do
+                if int c < 32 || int c > 126 then
+                    sb.Append(sprintf "\\u%04X" (int c)) |> ignore
+                else
+                    sb.Append(c) |> ignore
+            sb.ToString()
+
+        let expr = sprintf "validate[%s, %s]" (escapeAscii this._text) (this.escapeWolframString(this._document))
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
@@ -1021,7 +1030,6 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             // check if file exists
             if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
-                this.log_messages(sprintf "File %s does not exist" (p.textDocument.uri.LocalPath.Replace("file://", "")))
                 Result<CodeLens array,ResponseError>.Success([||])
                 // return empty array
             else
