@@ -27,7 +27,7 @@ const treeDataProvider_1 = require("./treeDataProvider");
 const dataPanel_1 = require("./dataPanel");
 const plotsView_1 = require("./plotsView");
 const DEBUG_PORT = 7810;
-const MAX_PRINT_RESULTS = 20;
+const MAX_PRINT_RESULTS = 50;
 const EXECUTION_TIMEOUT_MS = 120000;
 let context;
 let outputChannel;
@@ -118,6 +118,7 @@ function registerCommands() {
         ['wolfram.runInWolfram', () => runInWolfram()],
         ['wolfram.runInWolframMove', () => runInWolframMove()],
         ['wolfram.runToLine', (line) => runToLine(line)],
+        ['wolfram.runFromLine', (line) => runFromLine(line)],
         ['wolfram.sendSectionToWolfram', () => sendSectionToWolfram()],
         ['wolfram.printInWolfram', () => printInWolfram()],
         ['wolfram.runTextCell', (location) => runTextCell(location)],
@@ -300,7 +301,8 @@ function setupKernelNotifications() {
         ['onResult', onResult],
         ['updateLintDecorations', updateLintDecorations],
         ['onRunInWolfram', onRunInWolfram],
-        ['onRunInWolframIO', onRunInWolframIO]
+        ['onRunInWolframIO', onRunInWolframIO],
+        ['onPrintMessage', onPrintMessage]
     ];
     notifications.forEach(([event, handler]) => {
         exports.wolframKernelClient === null || exports.wolframKernelClient === void 0 ? void 0 : exports.wolframKernelClient.onNotification(event, handler);
@@ -388,6 +390,38 @@ function startNewKernel() {
         }));
     });
 }
+function runFromLine(line) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor)
+        return;
+    let selection;
+    let range;
+    if (!line) {
+        selection = editor.selection.active;
+        range = new vscode.Selection(0, 0, selection.line, selection.character);
+    }
+    else {
+        selection = new vscode.Position(line - 1, 0);
+        range = new vscode.Selection(0, 0, line - 1, 0);
+    }
+    const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
+    const rangesAfterCursor = ranges.filter(range => range.start.line >= selection.line);
+    let text = editor.document.getText();
+    for (const r of rangesAfterCursor) {
+        if (isEqualOrAfter(r.start, selection)) {
+            let s = new vscode.Selection(new vscode.Position(r.start.line, r.start.character), new vscode.Position(r.end.line, r.end.character));
+            queueEvaluation({
+                range: s,
+                textDocument: editor.document,
+                print: false,
+                output: true,
+                trace: false,
+                text: text
+            });
+        }
+    }
+    processEvaluationQueue();
+}
 function runToLine(line) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
@@ -402,13 +436,12 @@ function runToLine(line) {
         selection = new vscode.Position(line - 1, 0);
         range = new vscode.Selection(0, 0, line - 1, 0);
     }
-    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
     const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.line + 1);
     let text = editor.document.getText();
     for (const r of rangesBeforeCursor) {
         if (isEqualOrBefore(range.start, selection) && isEqualOrAfter(range.end, selection)) {
-            let s = new vscode.Selection(new vscode.Position(r.start.line - 1, r.start.character), new vscode.Position(r.end.line - 1, r.end.character));
-            console.log(s.start.line, s.start.character, s.end.line, s.end.character);
+            let s = new vscode.Selection(new vscode.Position(r.start.line, r.start.character), new vscode.Position(r.end.line, r.end.character));
             queueEvaluation({
                 range: s,
                 textDocument: editor.document,
@@ -464,7 +497,7 @@ function queueEvaluation(evaluationData) {
         let line = evaluationWithId.range.start.line;
         inputSnippet = editor.document.lineAt(line).text;
     }
-    plotsInputsOutputs.set(id, [{ input: inputSnippet, output: "...", range: evaluationWithId.range }]);
+    plotsInputsOutputs.set(id, [{ input: inputSnippet, output: "", range: evaluationWithId.range }]);
     if (!plotsProviderActive) {
         plotsProviderActive = true;
     }
@@ -481,7 +514,7 @@ function processEvaluationQueue() {
         });
         return;
     }
-    if (evaluationQueue.length === 1) {
+    if (evaluationQueue.length >= 1) {
         sendToWolfram(false);
     }
 }
@@ -548,7 +581,7 @@ function clearDecorationAroundCursor(ranges, position) {
     const editor = vscode.window.activeTextEditor;
     if (!editor)
         return;
-    const uri = editor.document.uri.toString();
+    const uri = editor.document.uri.fsPath.toString();
     const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
     const rangeAroundCursor = ranges.filter(range => {
         return isWithin(position, range);
@@ -566,7 +599,7 @@ function moveCursor2(position0) {
         const editor = vscode.window.activeTextEditor;
         if (!editor)
             return;
-        const uri = editor.document.uri.toString();
+        const uri = editor.document.uri.fsPath.toString();
         const position = new vscode.Position(position0.line, position0.character + 1);
         if (!(decodeURIComponent(uri) in movePositions))
             return;
@@ -580,7 +613,7 @@ function moveCursor2(position0) {
             moveCursorToPosition(editor, next);
         }
         else {
-            moveCursorToPosition(editor, new vscode.Position(position.line, 0));
+            moveCursorToPosition(editor, new vscode.Position(position.line + 1, 0));
         }
     });
 }
@@ -738,9 +771,9 @@ function decorateRunningLine(outputPosition) {
 }
 function removeExistingDecorationAtLine(editor, line) {
     var _a;
-    const decorations = (_a = editorDecorations.get(editor.document.uri.toString())) !== null && _a !== void 0 ? _a : [];
+    const decorations = (_a = editorDecorations.get(editor.document.uri.fsPath.toString())) !== null && _a !== void 0 ? _a : [];
     const filteredDecorations = decorations.filter(d => d.range.start.line <= line);
-    editorDecorations.set(editor.document.uri.toString(), filteredDecorations);
+    editorDecorations.set(editor.document.uri.fsPath.toString(), filteredDecorations);
     editor.setDecorations(variableDecorationType, filteredDecorations);
 }
 function abort() {
@@ -763,9 +796,23 @@ function updateInputs(params) {
     if (plotsInputsOutputs.has(evaluationId)) {
         let currentEntry = plotsInputsOutputs.get(evaluationId);
         currentEntry[0].input = params["input"];
-        currentEntry[0].output = "...";
+        currentEntry[0].output = "";
         plotsInputsOutputs.set(evaluationId, currentEntry);
     }
+}
+function onPrintMessage(params) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let message = params["message"];
+        // add the print message to the last output in the plots provider
+        const evaluationId = evaluationIdCounter;
+        if (!plotsInputsOutputs.has(evaluationId)) {
+            plotsInputsOutputs.set(evaluationId, [{ input: "", output: "", range: new vscode.Range(0, 0, 0, 0) }]);
+        }
+        const currentEntry = plotsInputsOutputs.get(evaluationId);
+        currentEntry[0].output = message + "<br>" + currentEntry[0].output;
+        plotsInputsOutputs.set(evaluationId, currentEntry);
+        plotsProvider.newOutput(evaluationId, message);
+    });
 }
 function onRunInWolframIO(result) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -807,7 +854,7 @@ function updateResultInPlotsProvider(evaluationId, output) {
     if (plotsInputsOutputs.has(evaluationId)) {
         const currentEntry = plotsInputsOutputs.get(evaluationId);
         plotsInputsOutputs.set(evaluationId, [{ input: currentEntry[0].input, output: output, range: currentEntry[0].range }]);
-        plotsProvider.newOutput(evaluationId, output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\""));
+        plotsProvider.newOutput(evaluationId, output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"") + "<br>" + currentEntry[0].output);
     }
 }
 function handleFileBasedResult(params) {
@@ -893,8 +940,18 @@ function updateResults(editor, result, print, input = "", file = "") {
         editor.edit(editBuilder => {
             const { output, rawoutput } = prepareOutput(result, file);
             updatePrintResults(input, output);
-            const decoration = createResultDecoration(result, rawoutput, output);
-            updateEditorDecorations(editor, decoration, result.params.position.line - 1);
+            let decoration = createResultDecoration(result, rawoutput, output);
+            let position = result.params.position.line - 1;
+            // find the movePositions containing the position
+            if (movePositions && decodeURIComponent(editor.document.uri.fsPath.toString()) in movePositions) {
+                const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
+                const rangeAroundCursor = ranges.find(range => range.start.line <= position && range.end.line >= position);
+                if (rangeAroundCursor) {
+                    position = rangeAroundCursor.end.line;
+                    decoration.range = new vscode.Range(new vscode.Position(position, 0), new vscode.Position(position, 200));
+                }
+            }
+            updateEditorDecorations(editor, decoration, position);
             if (print) {
                 insertPrintOutput(editBuilder, result, rawoutput);
             }
@@ -971,7 +1028,7 @@ function createMarkdownHoverMessage(content) {
 }
 function updateEditorDecorations(editor, decoration, line) {
     var _a;
-    const uri = editor.document.uri.toString();
+    const uri = editor.document.uri.fsPath.toString();
     let decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
     decorations = decorations.filter(d => d.range.start.line <= line);
     decorations.push(decoration);
@@ -993,8 +1050,9 @@ function updatePlotsProvider(input, output, id) {
     if (plotsInputsOutputs.has(id)) {
         const currentEntry = plotsInputsOutputs.get(id);
         currentEntry[0].input = inputSnippet;
-        currentEntry[0].output = output;
+        currentEntry[0].output = output + "<br>" + currentEntry[0].output;
         plotsInputsOutputs.set(id, currentEntry);
+        output = currentEntry[0].output;
     }
     plotsProvider.newOutput(id, output);
 }
@@ -1073,7 +1131,7 @@ function updateDecorations(decorationfile) {
 function processDecorationUpdate(editor, data) {
     try {
         newDecorations = JSON.parse(data);
-        const uri = editor.document.uri.toString();
+        const uri = editor.document.uri.fsPath.toString();
         if (newDecorations[uri] === workspaceDecorations[uri])
             return;
         workspaceDecorations[uri] = newDecorations[uri];
@@ -1091,7 +1149,7 @@ function createDecorationsFromData(decorationData) {
     let editor = vscode.window.activeTextEditor;
     if (!editor)
         return new Map();
-    const uri = editor.document.uri.toString();
+    const uri = editor.document.uri.fsPath.toString();
     const decorations = (_a = editorDecorations.get(uri)) !== null && _a !== void 0 ? _a : [];
     Object.keys(decorationData).forEach((d) => {
         const decoration = decorationData[d];
@@ -1116,7 +1174,7 @@ function updateLintDecorations(decorationfile) {
 }
 function processLintDecorationUpdate(editor, data) {
     newDecorations = JSON.parse(data);
-    const uri = editor.document.uri.toString();
+    const uri = editor.document.uri.fsPath.toString();
     if (newDecorations[uri] === workspaceDecorations[uri])
         return;
     workspaceLintDecorations[uri] = newDecorations[uri];
@@ -1142,7 +1200,7 @@ function runTextCell(location) {
         return;
     const selection = new vscode.Selection(new vscode.Position(location.start.line, location.start.character), new vscode.Position(location.end.line, 0));
     // get all the ranges that are within the selection
-    const ranges = extractRangesFromPositions(editor.document.uri.toString());
+    const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
     const rangesBeforeCursor = ranges.filter(range => range.end.line <= selection.end.line + 1);
     if (rangesBeforeCursor.length === 0)
         return;
@@ -1202,7 +1260,7 @@ function didChangeTextDocument(event) {
             var _a;
             const editor = vscode.window.activeTextEditor;
             const selection = (_a = editor === null || editor === void 0 ? void 0 : editor.selection) === null || _a === void 0 ? void 0 : _a.active;
-            if (!editor || event.document.uri.toString() !== editor.document.uri.toString() ||
+            if (!editor || event.document.uri.toString() !== editor.document.uri.fsPath.toString() ||
                 event.contentChanges.length === 0) {
                 resolve();
                 return;
@@ -1228,9 +1286,9 @@ function updateEditorDecorationsAfterChange(editor, selection) {
     var _a;
     if (!selection)
         return;
-    const newEditorDecorations = ((_a = editorDecorations.get(editor.document.uri.toString())) !== null && _a !== void 0 ? _a : [])
+    const newEditorDecorations = ((_a = editorDecorations.get(editor.document.uri.fsPath.toString())) !== null && _a !== void 0 ? _a : [])
         .filter((d) => d.range.start.line < selection.line);
-    editorDecorations.set(editor.document.uri.toString(), newEditorDecorations);
+    editorDecorations.set(editor.document.uri.fsPath.toString(), newEditorDecorations);
     editor.setDecorations(variableDecorationType, newEditorDecorations);
 }
 function clearDecorations() {
@@ -1332,7 +1390,7 @@ function help() {
         return;
     const selectedText = getSelectedText(editor);
     const url = `https://reference.wolfram.com/language/ref/${selectedText}.html`;
-    createHelpPanel(url);
+    createHelpPanel(url, selectedText);
 }
 function getSelectedText(editor) {
     const selections = editor.selections;
@@ -1342,8 +1400,8 @@ function getSelectedText(editor) {
     }
     return text;
 }
-function createHelpPanel(url) {
-    const helpPanel = vscode.window.createWebviewPanel("wolframHelp", "Wolfram Help", 2, {
+function createHelpPanel(url, text) {
+    const helpPanel = vscode.window.createWebviewPanel("wolframHelp", "Doc: " + text, 2, {
         enableScripts: true,
         retainContextWhenHidden: true
     });
@@ -1360,16 +1418,16 @@ function generateHelpPanelHtml(url) {
             <input action="action" onclick="window.history.go(-1); return false;" type="button" value="Back" />
             <input action="action" onclick="window.history.forward(); return false;" type="button" value="Forward" />
         </span>
-        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals"></iframe>
+        <iframe src="${url}" style="height:100vh; width:100%" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-modals allow-clipboard-read allow-clipboard-write"></iframe>
     </body>
     </html>`;
 }
 function wolframHelp(url) {
-    createHelpPanel(url);
+    createHelpPanel(url, "");
 }
 function stringHelp(string) {
     const url = `https://reference.wolfram.com/language/ref/${string}.html`;
-    createHelpPanel(url);
+    createHelpPanel(url, string);
 }
 function textToSection() {
     const editor = vscode.window.activeTextEditor;

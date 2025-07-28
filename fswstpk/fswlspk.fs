@@ -18,6 +18,7 @@ open LanguageServer.Json
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Text.RegularExpressions
+open System.Text
 
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
 
@@ -40,6 +41,11 @@ type WolframResultParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set
     member val method : string = "onRunInWolfram" with get, set
+
+type WolframPrintParams() =
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set  
+    member val method : string = "onPrintMessage" with get, set
 
 type WolframBusyParams() =
     inherit NotificationMessageBase()
@@ -132,9 +138,7 @@ type fswlspServer(input: Stream, output: Stream) =
     member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
         // ml
         
-        
-
-        let expr = sprintf "evaluateInKernel[\"%s\"]" (code.Replace("\"", "\\\""))
+        let expr = sprintf "evaluateInKernel[%s]" (this.escapeWolframString( this.unescapeWolframString(code)))
 
 
         try
@@ -233,9 +237,9 @@ type fswlspServer(input: Stream, output: Stream) =
             let get_input(request: GetInputParams): string = 
 
                 let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = request.Params["text"].ToString().Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r")
+                let t = this.escapeWolframString( this.unescapeWolframString(request.Params["text"].ToString()))
 
-                let eval = sprintf "getCodeString[\"%s\", \"%s\"]" t range
+                let eval = sprintf "getCodeString[%s, \"%s\"]" t range
 
                 this._ml.Evaluate(eval)
                 this._ml.WaitForAnswer() |> ignore
@@ -421,6 +425,42 @@ type fswlspServer(input: Stream, output: Stream) =
             error.data <- errorData
             Result<InitializeResult, ResponseError<InitializeErrorData>>.Error(error)
 
+    member this.JsonToWolfram(input: string) = 
+        this.escapeWolframString(this.unescapeWolframString(input))
+
+    member this.unescapeWolframString (input: string) =
+    // Check if the string is enclosed in quotes
+        let content = input
+        // Replace escaped sequences with their actual characters
+        content
+            .Replace("\\\\", "\\")
+            // .Replace("\\n", "\n")
+            .Replace("\\r", "\r")
+            .Replace("\\t", "\t")
+            .Replace("\\/", "/")
+            // Handle Unicode escapes like \u0022
+            |> (fun s -> Regex.Replace(s, "\\\\u([0-9a-fA-F]{4})", 
+                    (fun m -> 
+                        let hex = m.Groups.[1].Value
+                        Char.ConvertFromUtf32(Int32.Parse(hex, System.Globalization.NumberStyles.HexNumber)))))
+    member this.escapeWolframString (input: string) =
+        let sb = StringBuilder()
+        sb.Append('"') |> ignore
+        for c in input do
+            match c with
+            | '\\' -> sb.Append("\\\\") |> ignore
+            | '"'  -> sb.Append("\\\"") |> ignore 
+            // | '\n' -> sb.Append("\\n") |> ignore
+            | '\r' -> sb.Append("\\r") |> ignore
+            | '\t' -> sb.Append("\\t") |> ignore
+            // | _ when int c < 0x20 || int c > 0x7E ->
+            //     // Use Wolfram's hex notation for non-printable characters
+            //     sb.Append(sprintf "\\:%04X" (int c)) |> ignore
+            | _ ->
+                sb.Append(c) |> ignore
+        sb.Append('"') |> ignore
+        sb.ToString()
+
     member this.packetArrived(pkt:PacketType):bool =  
         // switch statement to handle the packet type
         // this.log_messages(sprintf "Packet arrived: %A" pkt)
@@ -453,6 +493,17 @@ type fswlspServer(input: Stream, output: Stream) =
                 actionItem.title <- "Open Log"
                 // p.actions <- [| actionItem |]
                 this.Window.ShowMessage(p)
+
+                let printMessage = WolframPrintParams()
+                printMessage.``params`` <- JObject.FromObject({|
+                    id = "printMessage"
+                    message = text
+                    |})
+                printMessage.method <- "onPrintMessage"
+                this.SendNotification(
+                    printMessage
+                )
+
                 ()
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
@@ -477,16 +528,36 @@ type fswlspServer(input: Stream, output: Stream) =
         // Handle the initialized event
         // You can send notifications or perform actions here
 
-        this._lsp <- MathLinkFactory.CreateKernelLink()
-        this._lsp.WaitAndDiscardAnswer()
+        try
+            this._lsp <- MathLinkFactory.CreateKernelLink()
+            this._lsp.WaitAndDiscardAnswer()
 
-        this._ml <- MathLinkFactory.CreateKernelLink()
-        this._ml.WaitAndDiscardAnswer()
+            this._ml <- MathLinkFactory.CreateKernelLink()
+            this._ml.WaitAndDiscardAnswer()
 
-        this._ml.add_PacketArrived(PacketHandler(fun _ -> 
-            // this._ml.WaitAndDiscardAnswer() |> ignore
-            this.packetArrived
-        )) |> ignore
+            this._ml.add_PacketArrived(PacketHandler(fun _ -> 
+                // this._ml.WaitAndDiscardAnswer() |> ignore
+                this.packetArrived
+            )) |> ignore
+        with
+        | ex -> 
+            let error = new ResponseError<InitializeErrorData>()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            error.data <- null
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error: %s" ex.Message)
+            let showMessageParams = new ShowMessageParams()
+            showMessageParams.``type`` <- MessageType.Error
+            showMessageParams.message <- sprintf "Error starting Wolfram. This may be due to installation or licensing problems: %s" ex.Message
+
+            this.Window.ShowMessage(
+                showMessageParams
+            )
+            
+            // this.Initialized()
+            exit 1 // Exit the program with an error code
+            ()
 
         
 
@@ -816,3 +887,22 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.SignatureHelp (p: TextDocumentPositionParams): Result<SignatureHelp,ResponseError> = 
             base.SignatureHelp(p: TextDocumentPositionParams)
+
+
+    override this.Shutdown (): VoidResult<ResponseError> =
+        try
+            if this._ml <> null then
+                this._ml.Close()
+            if this._lsp <> null then
+                this._lsp.Close() 
+            // base.Shutdown()
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Success()
+        with
+        | ex -> 
+            this.log_messages(sprintf "Error during shutdown: %s" ex.Message)
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            Environment.Exit(0)
+            VoidResult<ResponseError>.Error(error)

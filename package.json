@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.4.3",
+    "version": "0.5.5",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -240,6 +240,10 @@
             {
                 "command": "wolfram.runInWolfram",
                 "title": "Wolfram: Run"
+            },
+            {
+                "command": "wolfram.runFromLine",
+                "title": "Wolfram: Run from line to end"
             },
             {
                 "command": "wolfram.runInWolframMove",

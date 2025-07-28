@@ -425,13 +425,13 @@ const vscode = acquireVsCodeApi();
       }
 
       let inputRows = document.getElementsByClassName("input_row");
-      if (inputRows.length > 19) {
+      if (inputRows.length > 99) {
         let lastInputRow = inputRows[inputRows.length - 1];
         lastInputRow.remove();
       }
 
       let outputRows = document.getElementsByClassName("output_row");
-      if (outputRows.length > 19) {
+      if (outputRows.length > 99) {
         let lastOutputRow = outputRows[outputRows.length - 1];
         lastOutputRow.remove();
       }

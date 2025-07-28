@@ -47,6 +47,11 @@ type WolframResultParams() =
     member val ``params``: JToken = null with get, set
     member val method : string = "onRunInWolfram" with get, set
 
+type WolframPrintParams() =
+    inherit NotificationMessageBase()
+    member val ``params``: JToken = null with get, set  
+    member val method : string = "onPrintMessage" with get, set
+    
 type WolframBusyParams() =
     inherit NotificationMessageBase()
     member val ``params``: JToken = null with get, set
@@ -676,6 +681,18 @@ type fswlspServer(input: Stream, output: Stream) =
                 // this.Window.ShowMessageRequest(
                 //     p2
                 // ) |> ignore
+
+
+                let printMessage = WolframResultParams()
+                printMessage.``params`` <- JObject.FromObject({|
+                    id = "printMessage"
+                    message = text
+                    |})
+                printMessage.method <- "onPrintMessage"
+                this.SendNotification(
+                    printMessage
+                )
+
                 ()
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
@@ -697,19 +714,37 @@ type fswlspServer(input: Stream, output: Stream) =
         true
 
     override this.Initialized (): unit = 
-        // Handle the initialized event
-        // You can send notifications or perform actions here
 
-        this._lsp <- MathLinkFactory.CreateKernelLink()
-        this._lsp.WaitAndDiscardAnswer()
+        try
+            this._lsp <- MathLinkFactory.CreateKernelLink()
+            this._lsp.WaitAndDiscardAnswer()
 
-        this._ml <- MathLinkFactory.CreateKernelLink()
-        this._ml.WaitAndDiscardAnswer()
+            this._ml <- MathLinkFactory.CreateKernelLink()
+            this._ml.WaitAndDiscardAnswer()
 
-        this._ml.add_PacketArrived(PacketHandler(fun _ -> 
-            // this._ml.WaitAndDiscardAnswer() |> ignore
-            this.packetArrived
-        )) |> ignore
+            this._ml.add_PacketArrived(PacketHandler(fun _ -> 
+                // this._ml.WaitAndDiscardAnswer() |> ignore
+                this.packetArrived
+            )) |> ignore
+        with
+        | ex -> 
+            let error = new ResponseError<InitializeErrorData>()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            error.data <- null
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error: %s" ex.Message)
+            let showMessageParams = new ShowMessageParams()
+            showMessageParams.``type`` <- MessageType.Error
+            showMessageParams.message <- sprintf "Error starting Wolfram. This may be due to installation or licensing problems: %s" ex.Message
+
+            this.Window.ShowMessage(
+                showMessageParams
+            )
+            
+            // this.Initialized()
+            exit 1
+            ()
 
         
 
@@ -763,7 +798,7 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             // Create a Task that will run the document symbols operation
             let task = Task.Run(fun () ->
-                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) (p.textDocument.uri.ToString())
+                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) (p.textDocument.uri.LocalPath.Replace("file://", ""))
                 
                 this._lsp.Evaluate(input)
                 this._lsp.WaitForAnswer() |> ignore
@@ -811,6 +846,65 @@ type fswlspServer(input: Stream, output: Stream) =
     override this.FoldingRange (p: FoldingRangeRequestParam): Result<FoldingRange array,ResponseError> = 
             // base.FoldingRange(params: FoldingRangeRequestParam)
         try
+            //check if file exists
+            if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InvalidParams
+                error.message <- sprintf "File %s does not exist" (p.textDocument.uri.LocalPath.Replace("file://", ""))
+                Result<FoldingRange array,ResponseError>.Success([||] : FoldingRange array)
+            else
+                let expr = sprintf "updateCursorLocations[%s]" (this._text)
+
+                this._lsp.Evaluate(expr)
+                this._lsp.WaitForAnswer() |> ignore
+                let locations = 
+                    try 
+                        let js = this._lsp.GetString()
+                        JArray.Parse(js)
+                    with
+                    | ex -> 
+                        JArray()
+
+                let result = 
+                    locations |> 
+                    Seq.map (fun x -> 
+                        let range = new FoldingRange()
+                        range.startLine <- x.["start"].["line"].ToObject<int64>() - 1L
+                        range.startCharacter <- x.["start"].["character"].ToObject<int64>()
+                        range.endLine <- x.["end"].["line"].ToObject<int64>()-1L
+                        range.endCharacter <- x.["end"].["character"].ToObject<int64>()
+                        range.kind <- FoldingRangeKind.Region
+                        range
+                    ) |> 
+                    Seq.toArray
+                
+                Result<FoldingRange array,ResponseError>.Success(result)
+        with
+        | ex -> 
+            let error = new ResponseError()
+            error.code <- ErrorCodes.InternalError
+            error.message <- ex.Message
+            // Handle the error here, e.g., log it or send a notification to the client
+            this.log_messages(sprintf "Error: %s" ex.Message)
+            Result<FoldingRange array,ResponseError>.Error(error)
+
+
+    override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
+
+        // check if file exists
+        if not (File.Exists(this._document)) then
+            this.log_messages(sprintf "File %s does not exist" this._document)
+            ()
+        else
+            this._document <- p.textDocument.uri.LocalPath.Replace("file://", "") 
+            this._text <- this.JsonToWolfram(p.contentChanges.[0].text)
+            let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+                URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+            
+            this._ml.Evaluate(expr) 
+            this._ml.WaitAndDiscardAnswer() |> ignore
+
+            this.validate(p)
 
             let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
@@ -824,100 +918,57 @@ type fswlspServer(input: Stream, output: Stream) =
                 | ex -> 
                     JArray()
 
-            let result = 
-                locations |> 
-                Seq.map (fun x -> 
-                    let range = new FoldingRange()
-                    range.startLine <- x.["start"].["line"].ToObject<int64>() - 1L
-                    range.startCharacter <- x.["start"].["character"].ToObject<int64>()
-                    range.endLine <- x.["end"].["line"].ToObject<int64>()-1L
-                    range.endCharacter <- x.["end"].["character"].ToObject<int64>()
-                    range.kind <- FoldingRangeKind.Region
-                    range
-                ) |> 
-                Seq.toArray
-            
-            Result<FoldingRange array,ResponseError>.Success(result)
-        with
-        | ex -> 
-            let error = new ResponseError()
-            error.code <- ErrorCodes.InternalError
-            error.message <- ex.Message
-            // Handle the error here, e.g., log it or send a notification to the client
-            this.log_messages(sprintf "Error: %s" ex.Message)
-            Result<FoldingRange array,ResponseError>.Error(error)
+            let p2 = new updatePositionsParams()
+            p2.``params`` <- JObject.FromObject({|
+                result = [{|
+                    location = {| uri = this._document|}
+                    locations = locations 
+                |}]
+            |})
 
-
-    override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
-
-        this._document <- p.textDocument.uri.ToString() 
-        this._text <- this.JsonToWolfram(p.contentChanges.[0].text)
-
-        let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
-            URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
-        
-        this._ml.Evaluate(expr) 
-        this._ml.WaitAndDiscardAnswer() |> ignore
-
-        this.validate(p)
-
-        let expr = sprintf "updateCursorLocations[%s]" (this._text)
-
-        this._lsp.Evaluate(expr)
-        this._lsp.WaitForAnswer() |> ignore
-        let locations = 
-            try 
-                let js = this._lsp.GetString()
-                JArray.Parse(js)
-            with
-            | ex -> 
-                JArray()
-
-        let p2 = new updatePositionsParams()
-        p2.``params`` <- JObject.FromObject({|
-            result = [{|
-                location = {| uri = this._document|}
-                locations = locations 
-            |}]
-        |})
-
-        this.SendNotification(
-            p2
-        )
+            this.SendNotification(
+                p2
+            )
             
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
-        this._document <- p.textDocument.uri.ToString()
-        this._text <- this.JsonToWolfram(p.textDocument.text)
 
-        let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
-			URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
-        
-        this._ml.Evaluate(expr) 
-        this._ml.WaitAndDiscardAnswer() |> ignore
+        //  check if file exists 
+        if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
+            this.log_messages(sprintf "File %s does not exist"( p.textDocument.uri.LocalPath.Replace("file://", "")))
+            ()
+        else
+            this._document <- p.textDocument.uri.LocalPath.Replace("file://", "")
+            this._text <- this.JsonToWolfram(p.textDocument.text)
 
-        let expr = sprintf "updateCursorLocations[%s]" (this._text)
+            let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+                URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+            
+            this._ml.Evaluate(expr) 
+            this._ml.WaitAndDiscardAnswer() |> ignore
 
-        this._lsp.Evaluate(expr)
-        this._lsp.WaitForAnswer() |> ignore
-        let locations = 
-            try 
-                let js = this._lsp.GetString()
-                JArray.Parse(js)
-            with
-            | ex -> 
-                JArray()
+            let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
-        let p2 = new updatePositionsParams()
-        p2.``params`` <- JObject.FromObject({|
-            result = [{|
-                location = {| uri = this._document|}
-                locations = locations 
-            |}]
-        |})
+            this._lsp.Evaluate(expr)
+            this._lsp.WaitForAnswer() |> ignore
+            let locations = 
+                try 
+                    let js = this._lsp.GetString()
+                    JArray.Parse(js)
+                with
+                | ex -> 
+                    JArray()
 
-        this.SendNotification(
-            p2
-        )
+            let p2 = new updatePositionsParams()
+            p2.``params`` <- JObject.FromObject({|
+                result = [{|
+                    location = {| uri = this._document|}
+                    locations = locations 
+                |}]
+            |})
+
+            this.SendNotification(
+                p2
+            )
 
     member this.validate(paramsI: obj) = 
         let textDocument = 
@@ -948,7 +999,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DidSaveTextDocument (Params: DidSaveTextDocumentParams): unit = 
             try
-                this._document <- Params.textDocument.uri.ToString()
+                this._document <- Params.textDocument.uri.LocalPath.Replace("file://", "")
                 this.validate(Params)
                 ()
             with
@@ -962,12 +1013,18 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-            
-        if p.textDocument.uri.ToString() <> this._document then
+        // this.log_messages(sprintf "CodeLens for %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))    
+        // if p.textDocument.uri.LocalPath.Replace("file://", "") <> this._document then
 
-            Result<CodeLens array,ResponseError>.Success([||])
-        else
-            try
+        //     Result<CodeLens array,ResponseError>.Success([||])
+        // else
+        try
+            // check if file exists
+            if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
+                this.log_messages(sprintf "File %s does not exist" (p.textDocument.uri.LocalPath.Replace("file://", "")))
+                Result<CodeLens array,ResponseError>.Success([||])
+                // return empty array
+            else
                 let input = sprintf "codeLens[%s]" (this._text)
                 this._lsp.Evaluate(input)
                 this._lsp.WaitForAnswer() |> ignore
@@ -991,12 +1048,12 @@ type fswlspServer(input: Stream, output: Stream) =
                     |> Seq.toArray
 
                 Result<CodeLens array,ResponseError>.Success(codeLenses)
-            with
-                | ex -> 
-                    let error = new ResponseError()
-                    error.code <- ErrorCodes.InternalError
-                    error.message <- ex.Message
-                    Result<CodeLens array,ResponseError>.Error(error)
+        with
+            | ex -> 
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                Result<CodeLens array,ResponseError>.Error(error)
 
 
 
