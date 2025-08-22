@@ -804,29 +804,29 @@ let kill = function (pid) {
 // };
 class ClientErrorHandler {
     error(error, message, count) {
-        console.log("Error: " + error.message);
+        extension_1.outputChannel.appendLine("Error: " + error.message);
         return {
             action: node_1.ErrorAction.Continue
         };
     }
     closed() {
-        console.log("Closed");
+        extension_1.outputChannel.appendLine("Closed");
         return {
-            action: node_1.CloseAction.Restart
+            action: node_1.CloseAction.DoNotRestart
         };
     }
 }
 class KernelClientErrorHandler {
     error(error, message, count) {
-        console.log("Error: " + error.message);
+        extension_1.outputChannel.appendLine("Error: " + error.message);
         return {
             action: node_1.ErrorAction.Continue
         };
     }
     closed() {
-        console.log("Closed");
+        extension_1.outputChannel.appendLine("Closed");
         return {
-            action: node_1.CloseAction.Restart
+            action: node_1.CloseAction.DoNotRestart
         };
     }
 }

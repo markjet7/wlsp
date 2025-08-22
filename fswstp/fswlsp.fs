@@ -609,6 +609,7 @@ type fswlspServer(input: Stream, output: Stream) =
             capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- true
             capabilities.foldingRangeProvider <- true
+            capabilities.colorProvider <- true
 
             let completionOptions = new CompletionOptions()
             // completionOptions.resolveProvider <- true
@@ -742,8 +743,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 showMessageParams
             )
             
-            // this.Initialized()
-            exit 1
+            // exit 1
             ()
 
         
@@ -1332,6 +1332,99 @@ type fswlspServer(input: Stream, output: Stream) =
     //         // let result = new DocumentSymbolResult([||]: DocumentSymbol array)
     //         // // Result<DocumentSymbolResult,ResponseError>.Success(result)  
 
+    override this.ColorPresentation (p: ColorPresentationParams): Result<ColorPresentation array,ResponseError> = 
+            if p.textDocument.uri.LocalPath.Replace("file://", "") <> this._document then
+                Result<ColorPresentation array,ResponseError>.Success([||])
+            else
+                try
+                    let r = p.color.red
+                    let g = p.color.green
+                    let b = p.color.blue
+                    let a = p.color.alpha
+  
+                    let colorPresentation = new ColorPresentation()
+                    colorPresentation.label <- sprintf "RGBColor[%f, %f, %f, %f]" r g b a
+                    colorPresentation.textEdit <- new TextEdit()
+                    colorPresentation.textEdit.range <- p.range
+                    colorPresentation.textEdit.newText <- sprintf "RGBColor[%f, %f, %f, %f]" r g b a
+
+                    Result<ColorPresentation array,ResponseError>.Success([| colorPresentation |])
+                with
+                | ex -> 
+                    let error = new ResponseError()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    // Handle the error here, e.g., log it or send a notification to the client
+                    this.log_messages(sprintf "Error in ColorPresentation: %s" ex.Message)
+                    Result<ColorPresentation array,ResponseError>.Error(error)
+
+    override this.DocumentColor (p: DocumentColorParams): Result<ColorInformation array,ResponseError> = 
+            if p.textDocument.uri.LocalPath.Replace("file://", "") <> this._document then
+                Result<ColorInformation array,ResponseError>.Success([||])
+            else
+                try
+                    // get all instances of text matching the pattern RGBColor[r_, g_, b_] or RGBColor[r_, g_, b_, a_]
+                    let pattern = @"RGBColor\[\s*([0-9]+(?:\.[0-9]+)?)\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*(?:,\s*([0-9]+(?:\.[0-9]+)?))?\s*\]"
+                    let regex = new Regex(pattern)
+                    let matches = regex.Matches(this._text) 
+
+                    let calculateLineAndCharacter (text: string) (index: int) =
+                        let lines = text.Split('\n')
+                        let rec findLine i currentIndex =
+                            if i >= lines.Length then
+                                (lines.Length - 1, 0) // Default to the last line if not found
+                            else
+                                let lineLength = lines.[i].Length + 1 // Include newline character
+                                if currentIndex + lineLength > index then
+                                    let character = index - currentIndex
+                                    (i, character)
+                                else
+                                    findLine (i + 1) (currentIndex + lineLength)
+                        findLine 0 0
+
+                    let colors = 
+                        matches 
+                        |> Seq.cast<Match>
+                        |> Seq.map (fun m -> 
+                            let r = float m.Groups.[1].Value
+                            let g = float m.Groups.[2].Value
+                            let b = float m.Groups.[3].Value
+                            let a = 
+                                if m.Groups.Count > 4 then
+                                    try float m.Groups.[4].Value 
+                                    with _ -> 1.0 // Default alpha value if not provided
+                                else 
+                                    1.0
+
+
+                            let start = new Position()
+                            let l, c = calculateLineAndCharacter this._text m.Index
+                            start.line <- l
+                            start.character <- c
+
+                            let endPos = new Position()
+                            let endLine, endCharacter = calculateLineAndCharacter this._text (m.Index + m.Length)
+                            endPos.line <- endLine
+                            endPos.character <- endCharacter
+
+                            let colorInfo = new ColorInformation()
+                            colorInfo.range <- new Range()
+                            colorInfo.range.``start`` <- start
+                            colorInfo.range.``end`` <- endPos
+                            colorInfo.color <- new Color(r, g, b, a)
+                            colorInfo
+                        )
+                        |> Seq.toArray
+
+                    Result<ColorInformation array,ResponseError>.Success(colors)
+                with
+                | ex -> 
+                    let error = new ResponseError()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    // Handle the error here, e.g., log it or send a notification to the client
+                    this.log_messages(sprintf "Error in DocumentColor: %s" ex.Message)
+                    Result<ColorInformation array,ResponseError>.Error(error)
 
     override this.Exit (): unit = 
         try

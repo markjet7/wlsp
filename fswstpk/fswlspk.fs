@@ -191,9 +191,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
 
-
-
-
     override this.Initialize(initializeParams: InitializeParams): Result<InitializeResult, ResponseError<InitializeErrorData>> =
         try
 
@@ -235,20 +232,30 @@ type fswlspServer(input: Stream, output: Stream) =
                 ()
 
             let get_input(request: GetInputParams): string = 
+                try 
 
-                let range = request.Params["range"].ToString().Replace("\"", "\\\"")
-                let t = this.escapeWolframString( this.unescapeWolframString(request.Params["text"].ToString()))
+                    let range = request.Params["range"].ToString().Replace("\"", "\\\"")
+                    let t = this.escapeWolframString( this.unescapeWolframString(request.Params["text"].ToString()))
 
-                let eval = sprintf "getCodeString[%s, \"%s\"]" t range
+                    let eval = sprintf "getCodeString[%s, \"%s\"]" t range
 
-                this._ml.Evaluate(eval)
-                this._ml.WaitForAnswer() |> ignore
+                    this._ml.Evaluate(eval)
+                    this._ml.WaitForAnswer() |> ignore
 
-                let result = this._ml.GetString()
+                    let result = this._ml.GetString()
 
-                let input = JObject.Parse( result)
-                let code = input["code"].ToString()
-                code 
+                    let input = JObject.Parse( result)
+                    let code = input["code"].ToString()
+                    code 
+                with
+                | ex -> 
+                    let error = new ResponseError<InitializeErrorData>()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    error.data <- null
+                    // Handle the error here, e.g., log it or send a notification to the client
+                    this.log_messages(sprintf "Error: %s" ex.Message)
+                    "Print[\"Error getting input: " + ex.Message.Replace("\"", "\\\"") + "\"];"
 
             let getInputHandler (request: GetInputParams): unit = 
                 try
@@ -284,9 +291,19 @@ type fswlspServer(input: Stream, output: Stream) =
                 let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
                     URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
 
-                this._ml.Evaluate(expr)
-                this._ml.WaitForAnswer() |> ignore
-                this._ml.GetString() |> ignore
+                try
+                    this._ml.Evaluate(expr)
+                    this._ml.WaitForAnswer() |> ignore
+                    this._ml.GetString() |> ignore
+                with
+                | ex -> 
+                    let error = new ResponseError<InitializeErrorData>()
+                    error.code <- ErrorCodes.InternalError
+                    error.message <- ex.Message
+                    error.data <- null
+                    // Handle the error here, e.g., log it or send a notification to the client
+                    this.log_messages(sprintf "Error: %s" ex.Message)
+                    ()
 
 
                 let range = request.Params["range"].ToObject<Range>()
@@ -556,7 +573,7 @@ type fswlspServer(input: Stream, output: Stream) =
             )
             
             // this.Initialized()
-            exit 1 // Exit the program with an error code
+            // exit 1 // Exit the program with an error code
             ()
 
         

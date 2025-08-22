@@ -144,8 +144,8 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     initializeGlobals(context0, outputChannel0);
     registerCommands();
     initializeProviders();
-    await startWLSP();
     await startKernel();
+    startWLSP();
     registerEventHandlers();
     await setupNotebookSerializers();
     setupDebugger();
@@ -1123,23 +1123,25 @@ async function updateResults(editor: vscode.TextEditor | undefined, result: any,
         
         let decoration = createResultDecoration(result, rawoutput, output);
 
-        let position = result.params.position.line - 1;
+        let line = result.params.position.line - 1;
+        let startLine = line;
         // find the movePositions containing the position
         if (movePositions && decodeURIComponent(editor.document.uri.fsPath.toString()) in movePositions) {
             const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
-            const rangeAroundCursor = ranges.find(range => range.start.line <= position && range.end.line >= position);
+            const rangeAroundCursor = ranges.find(range => range.start.line <= line && range.end.line >= line);
             if (rangeAroundCursor) {
-                position = rangeAroundCursor.end.line;
+                line = rangeAroundCursor.end.line;
+                startLine = rangeAroundCursor.start.line;
 
                 decoration.range = new vscode.Range(
-                    new vscode.Position(position, 0),
-                    new vscode.Position(position, 200)
+                    new vscode.Position(line, 0),
+                    new vscode.Position(line, 200)
                 );
 
             }
         }
 
-        updateEditorDecorations(editor, decoration, position);
+        updateEditorDecorations(editor, decoration, startLine);
         
         if (print) {
             insertPrintOutput(editBuilder, result, rawoutput);
@@ -1231,7 +1233,7 @@ function updateEditorDecorations(editor: vscode.TextEditor, decoration: vscode.D
     const uri = editor.document.uri.fsPath.toString();
     let decorations = editorDecorations.get(uri) ?? [];
 
-    decorations = decorations.filter(d => d.range.start.line <= line);
+    decorations = decorations.filter(d => d.range.start.line < line);
     decorations.push(decoration);
 
     editorDecorations.set(uri, decorations);

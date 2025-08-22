@@ -921,16 +921,16 @@ let kill = function (pid: any): Promise<void> {
 
 class ClientErrorHandler implements ErrorHandler {
     error(error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult {
-        console.log("Error: " + error.message)
+        outputChannel.appendLine("Error: " + error.message)
         return {
             action: ErrorAction.Continue
         }
     }
 
     closed(): CloseHandlerResult {
-        console.log("Closed")
+        outputChannel.appendLine("Closed")
         return {
-            action: CloseAction.Restart
+            action: CloseAction.DoNotRestart
         }
     }
 
@@ -938,16 +938,16 @@ class ClientErrorHandler implements ErrorHandler {
 
 class KernelClientErrorHandler implements ErrorHandler {
     error(error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult {
-        console.log("Error: " + error.message)
+        outputChannel.appendLine("Error: " + error.message)
         return {
             action: ErrorAction.Continue
         }
     }
 
     closed(): CloseHandlerResult {
-        console.log("Closed")
+        outputChannel.appendLine("Closed")
         return {
-            action: CloseAction.Restart
+            action: CloseAction.DoNotRestart
         }
     }
 
