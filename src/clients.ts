@@ -479,16 +479,16 @@ function runFromLine(line: integer): void {
     let selection: vscode.Position;
     let range: vscode.Range;
 
-    if (!line) {
+    if (!line || line === 0) {
         selection = editor.selection.active;
-        range = new vscode.Selection(0, 0, selection.line, selection.character);
+        range = new vscode.Selection(0, 0, 0, 0);
     } else {
         selection = new vscode.Position(line - 1, 0);
         range = new vscode.Selection(0, 0, line - 1, 0);
     }
 
     const ranges = extractRangesFromPositions(editor.document.uri.fsPath.toString());
-    const rangesAfterCursor = ranges.filter(range => range.start.line >= selection.line);
+    const rangesAfterCursor = ranges.filter(range => range.end.line >= selection.line);
 
     let text = editor.document.getText();
     for (const r of rangesAfterCursor) {
