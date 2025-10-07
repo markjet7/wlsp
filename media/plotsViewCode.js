@@ -78,6 +78,16 @@ function pasteOutput(output) {
     link.click();
   };
 
+  function escapeHtml(str) {
+    if (str == null) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   const createFullOutputButton = (imageElement) => {
     // Create a button element that replaces the output content with the content in the data-content attribute
     const button = document.createElement("button");
@@ -103,7 +113,8 @@ function pasteOutput(output) {
       if (shortQ && shortQ === "1") {
         // Replace the current output with the full content
         let fullContent = outputs[imageElement.id]["full"];
-        contentDiv.innerText = fullContent;
+        // escape HTML so the full content doesn't break surrounding markup
+        contentDiv.innerHTML = escapeHtml(fullContent);
         // Scroll to the bottom of the output div
         contentDiv.scrollTop = contentDiv.scrollHeight; 
         // Toggle the short attribute

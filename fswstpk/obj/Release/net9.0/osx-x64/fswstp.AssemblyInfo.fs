@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("fswstp")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Release")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+00922d0504ba2f771683efea04019fc1c0531088")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+adf3a3e4dcf5c12629a284893b2020f7539b1d05")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("fswstp")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("fswstp")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]

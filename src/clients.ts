@@ -1510,7 +1510,7 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
         const editor = vscode.window.activeTextEditor;
         const selection = editor?.selection?.active;
 
-        if (!editor || event.document.uri.toString() !== editor.document.uri.fsPath.toString() || 
+        if (!editor || event.document.uri.fsPath.toString() !== editor.document.uri.fsPath.toString() || 
             event.contentChanges.length === 0) {
             resolve();
             return;

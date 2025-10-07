@@ -1262,7 +1262,7 @@ function didChangeTextDocument(event) {
             var _a;
             const editor = vscode.window.activeTextEditor;
             const selection = (_a = editor === null || editor === void 0 ? void 0 : editor.selection) === null || _a === void 0 ? void 0 : _a.active;
-            if (!editor || event.document.uri.toString() !== editor.document.uri.fsPath.toString() ||
+            if (!editor || event.document.uri.fsPath.toString() !== editor.document.uri.fsPath.toString() ||
                 event.contentChanges.length === 0) {
                 resolve();
                 return;

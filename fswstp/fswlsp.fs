@@ -169,6 +169,7 @@ type fswlspServer(input: Stream, output: Stream) =
             .Replace("\\\\", "\\")
             // .Replace("\\n", "\n")
             .Replace("\\r", "\r")
+            .Replace("\\u", "\u")
             .Replace("\\t", "\t")
             .Replace("\\/", "/")
             // Handle Unicode escapes like \u0022
@@ -983,12 +984,12 @@ type fswlspServer(input: Stream, output: Stream) =
             let sb = StringBuilder()
             for c in s do
                 if int c < 32 || int c > 126 then
-                    sb.Append(sprintf "\\u%04X" (int c)) |> ignore
+                    sb.Append(sprintf "\\\\u%04X" (int c)) |> ignore
                 else
                     sb.Append(c) |> ignore
             sb.ToString()
 
-        let expr = sprintf "validate[%s, %s]" (escapeAscii this._text) (this.escapeWolframString(this._document))
+        let expr = sprintf "validate[%s, %s]" this._text (this.escapeWolframString(this._document))
 
         this._lsp.Evaluate(expr)
         this._lsp.WaitForAnswer() |> ignore
