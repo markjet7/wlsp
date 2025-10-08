@@ -140,7 +140,7 @@ type fswlspServer(input: Stream, output: Stream) =
         
         let expr = sprintf "evaluateInKernel[%s]" (this.escapeWolframString( this.unescapeWolframString(code)))
 
-        this.log_messages(sprintf "Eval: %s" expr)
+        // this.log_messages(sprintf "Eval: %s" expr)
 
 
         try
@@ -160,7 +160,7 @@ type fswlspServer(input: Stream, output: Stream) =
             ()
         let eval = ml.GetString()
 
-        this.log_messages(sprintf "Eval: %s" eval)
+        // this.log_messages(sprintf "Eval: %s" eval)
 
 
 

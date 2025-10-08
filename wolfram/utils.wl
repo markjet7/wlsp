@@ -88,12 +88,14 @@ evaluateInKernel[code_]:=Module[{json, result, formatted},
 
 			json ="{
 				\"Result\": \""<>CheckAbort[escapes[ExportString[result["Result"],"HTMLFragment"]], "Failed to format output"] <> "\", 
+				\"Raw\": \""<>CheckAbort[escapes[ToString[result["Result"], InputForm]], "Failed to format output"] <> "\",
 				\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\"",""] <> "]
 			}";
 			json,
 			
 			json = "{
 				\"Result\": \"$Failed\",
+				\"Raw\": \"Evaluation Failed\",
 				\"Errors\":  ["<>"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\""<> "]
 				}";
 			json
