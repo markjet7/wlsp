@@ -933,6 +933,28 @@ function setDecorations(result) {
 }
 function onResult(result) {
 }
+function unescapeHtml(html) {
+    if (!html)
+        return '';
+    const entities = {
+        amp: '&',
+        lt: '<',
+        gt: '>',
+        quot: '"',
+        apos: "'",
+        arrow: "->",
+        rarr: "->"
+    };
+    return html.replace(/&(#x?[0-9a-fA-F]+|\w+);/g, (_match, ent) => {
+        var _a, _b;
+        if (ent.charAt(0) === '#') {
+            const isHex = ((_a = ent.charAt(1)) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'x';
+            const num = isHex ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10);
+            return isNaN(num) ? _match : String.fromCodePoint(num);
+        }
+        return (_b = entities[ent]) !== null && _b !== void 0 ? _b : _match;
+    });
+}
 function updateResults(editor, result, print, input = "", file = "") {
     return __awaiter(this, void 0, void 0, function* () {
         if (!editor)
@@ -976,13 +998,14 @@ function prepareOutput(result, file) {
     else {
         output = result.params.output;
         output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
-        rawoutput = output;
+        rawoutput = result.params.raw || output;
     }
     if (result.params.messages.length > 0) {
         output += "<div class='errors' style='color: #801f01;'>" +
             result.params.messages.reduce((acc, cur) => acc + "<br>" + cur, "") +
             "</div>";
     }
+    output = unescapeHtml(output);
     return { output, rawoutput };
 }
 function updatePrintResults(input, output) {
@@ -1040,7 +1063,7 @@ function updateEditorDecorations(editor, decoration, line) {
 function insertPrintOutput(editBuilder, result, rawoutput) {
     const outputPosition = new vscode.Position(result.params.position.line + 1, 0);
     try {
-        editBuilder.insert(outputPosition, (rawoutput + "\n\n").slice(0, 8192));
+        editBuilder.insert(outputPosition, ("\n" + unescapeHtml(rawoutput) + "\n\n").slice(0, 8192));
     }
     catch (error) {
         console.log("Error: " + error);
