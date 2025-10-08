@@ -1114,6 +1114,28 @@ function setDecorations(result: any): void {
 function onResult(result: any): void {
 }
 
+function unescapeHtml(html: string): string {
+    if (!html) return '';
+    const entities: { [key: string]: string } = {
+        amp: '&',
+        lt: '<',
+        gt: '>',
+        quot: '"',
+        apos: "'",
+        arrow: "->",
+        rarr: "->"
+    };
+
+    return html.replace(/&(#x?[0-9a-fA-F]+|\w+);/g, (_match, ent) => {
+        if (ent.charAt(0) === '#') {
+            const isHex = ent.charAt(1)?.toLowerCase() === 'x';
+            const num = isHex ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10);
+            return isNaN(num) ? _match : String.fromCodePoint(num);
+        }
+        return entities[ent] ?? _match;
+    });
+}
+
 async function updateResults(editor: vscode.TextEditor | undefined, result: any, print: boolean, input: string = "", file: any = ""): Promise<void> {
     if (!editor) return;
 
@@ -1166,7 +1188,7 @@ function prepareOutput(result: any, file: any): { output: string; rawoutput: str
         output = result.params.output;
 
         output = output.replace("class=\"grid\"", "id=\"myTable\" class=\"datatable\"");
-        rawoutput = output;
+        rawoutput = result.params.raw || output;
     }
 
     if (result.params.messages.length > 0) {
@@ -1174,6 +1196,8 @@ function prepareOutput(result: any, file: any): { output: string; rawoutput: str
             result.params.messages.reduce((acc: any, cur: any) => acc + "<br>" + cur, "") +
             "</div>";
     }
+
+    output = unescapeHtml(output);
 
     return { output, rawoutput };
 }
@@ -1243,7 +1267,7 @@ function updateEditorDecorations(editor: vscode.TextEditor, decoration: vscode.D
 function insertPrintOutput(editBuilder: vscode.TextEditorEdit, result: any, rawoutput: string): void {
     const outputPosition = new vscode.Position(result.params.position.line + 1, 0);
     try {
-        editBuilder.insert(outputPosition, (rawoutput + "\n\n").slice(0, 8192));
+        editBuilder.insert(outputPosition, ("\n" + unescapeHtml(rawoutput) + "\n\n").slice(0, 8192));
     } catch (error) {
         console.log("Error: " + error);
     }

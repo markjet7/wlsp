@@ -140,6 +140,8 @@ type fswlspServer(input: Stream, output: Stream) =
         
         let expr = sprintf "evaluateInKernel[%s]" (this.escapeWolframString( this.unescapeWolframString(code)))
 
+        this.log_messages(sprintf "Eval: %s" expr)
+
 
         try
             ml.Evaluate(expr)
@@ -158,15 +160,19 @@ type fswlspServer(input: Stream, output: Stream) =
             ()
         let eval = ml.GetString()
 
+        this.log_messages(sprintf "Eval: %s" eval)
+
 
 
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
+        let raw = json.["Raw"].ToString()
         let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
 
 
         let response = {|
             result = result
+            raw = raw
             errors = errors
         |}
 
@@ -326,6 +332,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let eval = this.evaluate_in_kernel(this._ml, input) 
                 let result = eval.result
+                let raw = eval.raw
                 let errors = eval.errors
                 // printfn "Result from Wolfram: %d" resultp
 
@@ -341,6 +348,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     print = request.Params["print"].ToObject<bool>()
                     result = result
                     output = result
+                    raw = raw
                     position = range.``end``
                     hover = result
                     messages = errors.Split("\n")
