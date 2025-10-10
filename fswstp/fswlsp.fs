@@ -222,8 +222,18 @@ type fswlspServer(input: Stream, output: Stream) =
             // Handle the error here, e.g., log it or send a notification to the client
             this.log_messages(sprintf "Error: %s" ex.Message)
             this.Initialized()
-            ml.Evaluate(expr)
-            ml.WaitForAnswer() |> ignore
+            try
+                ml.Evaluate(expr)
+                ml.WaitForAnswer() |> ignore
+            with
+            | ex -> 
+                let error = new ResponseError<InitializeErrorData>()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                error.data <- null
+                // Handle the error here, e.g., log it or send a notification to the client
+                this.log_messages(sprintf "Error: %s" ex.Message)
+                ()
             ()
         let eval = ml.GetString()
 
@@ -1007,10 +1017,10 @@ type fswlspServer(input: Stream, output: Stream) =
         )
         ()
 
-    override this.DidSaveTextDocument (Params: DidSaveTextDocumentParams): unit = 
+    override this.DidSaveTextDocument (p: DidSaveTextDocumentParams): unit = 
             try
-                this._document <- Params.textDocument.uri.LocalPath.Replace("file://", "")
-                this.validate(Params)
+                this._document <- p.textDocument.uri.LocalPath.Replace("file://", "")
+                this.validate(p)
                 ()
             with
             | ex -> 

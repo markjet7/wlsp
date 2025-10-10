@@ -155,8 +155,18 @@ type fswlspServer(input: Stream, output: Stream) =
             // Handle the error here, e.g., log it or send a notification to the client
             this.log_messages(sprintf "Error: %s" ex.Message)
             this.Initialized()
-            ml.Evaluate(expr)
-            ml.WaitForAnswer() |> ignore
+            try
+                ml.Evaluate(expr)
+                ml.WaitForAnswer() |> ignore
+            with
+            | ex -> 
+                let error = new ResponseError<InitializeErrorData>()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                error.data <- null
+                // Handle the error here, e.g., log it or send a notification to the client
+                this.log_messages(sprintf "Error: %s" ex.Message)       
+                
             ()
         let eval = ml.GetString()
 
@@ -918,8 +928,8 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             if this._ml <> null then
                 this._ml.Close()
-            if this._lsp <> null then
-                this._lsp.Close() 
+            // if this._lsp <> null then
+            //     this._lsp.Close() 
             // base.Shutdown()
             Environment.Exit(0)
             VoidResult<ResponseError>.Success()

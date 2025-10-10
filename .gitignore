@@ -47,12 +47,12 @@ rustwstp/target
 
 fswstpold
 
-fswstp/bin/*
-fswstp/obj/*
+fswstp/bin/
+fswstp/obj/
 fswstp/mathlink.framework
 fswstp/wstp.framework
 
-fswstpk/bin/*
-fswstpk/obj/* 
+fswstpk/bin/
+fswstpk/obj/ 
 fswstpk/mathlink.framework
 fswstpk/wstp.framework
