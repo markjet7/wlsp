@@ -56,3 +56,5 @@ fswstpk/bin/
 fswstpk/obj/ 
 fswstpk/mathlink.framework
 fswstpk/wstp.framework
+
+dist/
