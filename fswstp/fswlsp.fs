@@ -583,15 +583,15 @@ type fswlspServer(input: Stream, output: Stream) =
             // )
             
 
-            this.NotificationHandlers.Set<RunInWolframParams>(
-                "runInWolfram",
-                Action<RunInWolframParams>(runInWolframHandler)
-            )
+            // this.NotificationHandlers.Set<RunInWolframParams>(
+            //     "runInWolfram",
+            //     Action<RunInWolframParams>(runInWolframHandler)
+            // )
 
-            this.NotificationHandlers.Set<GetInputParams>(
-                "getInput",
-                Action<GetInputParams>(getInputHandler)
-            )
+            // this.NotificationHandlers.Set<GetInputParams>(
+            //     "getInput",
+            //     Action<GetInputParams>(getInputHandler)
+            // )
 
             this.NotificationHandlers.Set<UpdateConfigurationParams>(
                 "updateConfiguration",
@@ -709,7 +709,6 @@ type fswlspServer(input: Stream, output: Stream) =
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
             // | PacketType.InputText -> () // this.log_messages("InputText packet received.") 
-// ...existing code...
             | PacketType.Input -> () // this.log_messages("Input packet received.")
             | PacketType.InputString -> () // this.log_messages("InputString packet received.")
             | PacketType.Menu -> () // this.log_messages("Menu packet received.")
@@ -807,46 +806,50 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
         try
-            // Create a Task that will run the document symbols operation
-            let task = Task.Run(fun () ->
-                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) (p.textDocument.uri.LocalPath.Replace("file://", ""))
-                
-                this._lsp.Evaluate(input)
-                this._lsp.WaitForAnswer() |> ignore
-                let js = this._lsp.GetString() 
+            // Return cached symbols if available, otherwise kick off a background computation and return immediately
+            let filePath = p.textDocument.uri.LocalPath.Replace("file://", "")
+            let cached = this._workspace_symbols.TryFind(filePath)
 
-                // Parse symbols from the JSON response
-                let symbols = 
-                    js 
-                    |> JArray.Parse
-                    |> Seq.map (fun x -> 
-                        let symbol = new DocumentSymbol()
-                        symbol.name <- x["name"].ToString()
-                        symbol.kind <- 
-                            try
-                                x["kind"].ToObject<SymbolKind>()
-                            with
-                            | _ -> SymbolKind.Struct // Provide a default value
-                        symbol.detail <- x["detail"].ToString()
-                        symbol.range <- x["location"].["range"].ToObject<Range>()
-                        symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-                        symbol.children <- [||]
-                        symbol
-                    )
-                    |> Seq.toArray
+            if cached.IsNone then
+                Task.Run(fun () ->
+                    try
+                        let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) filePath
+                        this._lsp.Evaluate(input)
+                        this._lsp.WaitForAnswer() |> ignore
+                        let js = this._lsp.GetString()
 
-                let result = new DocumentSymbolResult(symbols)
-                result
-            )
-            
-            // Wait for the task to complete with a timeout
-            if task.Wait(TimeSpan.FromSeconds(5.0)) then
-                Result<DocumentSymbolResult,ResponseError>.Success task.Result
-            else
-                // Handle timeout case
-                this.log_messages("DocumentSymbols operation timed out")
-                let emptyResult = new DocumentSymbolResult([||]: DocumentSymbol array)
-                Result<DocumentSymbolResult,ResponseError>.Success emptyResult
+                        let symbols = 
+                            js 
+                            |> JArray.Parse
+                            |> Seq.map (fun x -> 
+                                let symbol = new DocumentSymbol()
+                                symbol.name <- x["name"].ToString()
+                                symbol.kind <- 
+                                    try
+                                        x["kind"].ToObject<SymbolKind>()
+                                    with
+                                    | _ -> SymbolKind.Struct
+                                symbol.detail <- x["detail"].ToString()
+                                symbol.range <- x["location"].["range"].ToObject<Range>()
+                                symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+                                symbol.children <- [||]
+                                symbol
+                            )
+                            |> Seq.toArray
+
+                        // Update cache
+                        this._workspace_symbols <- this._workspace_symbols.Add(filePath, symbols)
+                    with
+                    | ex -> this.log_messages(sprintf "Background DocumentSymbols error: %s" ex.Message)
+                ) |> ignore
+
+            let resultSymbols =
+                match cached with
+                | Some s -> s
+                | None -> [||]
+
+            let result = new DocumentSymbolResult(resultSymbols)
+            Result<DocumentSymbolResult,ResponseError>.Success(result)
         with
         | ex -> 
             this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)

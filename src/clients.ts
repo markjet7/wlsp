@@ -1215,6 +1215,17 @@ function updatePrintResults(input: string, output: string): void {
     }
 }
 
+
+  function escapeHtml(str:String) {
+    if (str == null) return "";
+    return String(str)
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+      .replace(/&/g, "&amp;");
+  }
+
 function createResultDecoration(result: any, rawoutput: string, output: string): vscode.DecorationOptions {
     const nextline = Math.min(result.params.position.line - 1, 
         vscode.window.activeTextEditor?.document.lineCount ?? 1 - 1);

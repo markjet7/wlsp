@@ -89,6 +89,11 @@ function pasteOutput(output) {
   }
 
   const createFullOutputButton = (imageElement) => {
+    // check if the button already exists
+    if (imageElement.querySelector("#full-output-link")) {
+      return;
+    }
+
     // Create a button element that replaces the output content with the content in the data-content attribute
     const button = document.createElement("button");
     button.id = "full-output-link"; 
@@ -110,19 +115,23 @@ function pasteOutput(output) {
         return;
       }
 
+
+
       if (shortQ && shortQ === "1") {
+        console.log("Short content: ", outputs[imageElement.id]["short"]);
+        console.log("Full content: ", outputs[imageElement.id]["full"]);
         // Replace the current output with the full content
         let fullContent = outputs[imageElement.id]["full"];
         // escape HTML so the full content doesn't break surrounding markup
-        contentDiv.innerHTML = escapeHtml(fullContent);
+        contentDiv.innerHTML = fullContent;
         // Scroll to the bottom of the output div
         contentDiv.scrollTop = contentDiv.scrollHeight; 
         // Toggle the short attribute
         imageElement.setAttribute('short', "0");
       } else {
         // Replace the current output with the full content
-        let fullContent = outputs[imageElement.id]["short"];
-        contentDiv.innerText = fullContent;
+        let shortContent = outputs[imageElement.id]["short"];
+        contentDiv.innerHTML = shortContent;
         // Scroll to the bottom of the output div
         contentDiv.scrollTop = contentDiv.scrollHeight; 
         // Toggle the short attribute

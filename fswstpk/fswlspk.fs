@@ -363,9 +363,13 @@ type fswlspServer(input: Stream, output: Stream) =
                     hover = result
                     messages = errors.Split("\n")
                     time = 0
-                    decoration = sprintf "%0.2f s: %s" elapsed_time_seconds (result.Substring(0, Math.Min(result.Length, 100)))
+                    decoration = sprintf "%0.2f s: %s" elapsed_time_seconds (raw.Substring(0, Math.Min(raw.Length, 100)))
                     document = request.Params["textDocument"]
                 |})
+
+                // this.log_messages(
+                //     sprintf "%0.2f s: %s" elapsed_time_seconds (result.Substring(0, Math.Min(result.Length, 100)))
+                // )
                 
                 this.SendNotification(
                     wolframResult
