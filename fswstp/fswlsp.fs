@@ -310,7 +310,7 @@ type fswlspServer(input: Stream, output: Stream) =
                         allFiles
                         |> Seq.iter (fun file ->
                             try
-                                this.log_messages(sprintf "Reading file: %s" file)
+                                // this.log_messages(sprintf "Reading file: %s" file)
                                 let fileText = 
                                     try
                                         File.ReadAllText(file)
@@ -325,13 +325,13 @@ type fswlspServer(input: Stream, output: Stream) =
                                 if fileText <> "" then
                                     let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString fileText) file
                                     
-                                    // this.log_messages(sprintf "Evaluating documentSymbols for file: %s" file)
+                                    // this.log_messages(sprintf "Input: %s" input)
 
                                     this._lsp.Evaluate(input)
                                     this._lsp.WaitForAnswer() |> ignore
                                     let js = this._lsp.GetString()
 
-                                    this.log_messages(sprintf "Processing file: %s" file)
+                                    // this.log_messages(sprintf "DocumentSymbols result for %s: %s" file js)
 
                                     let symbols = 
                                         js
@@ -548,7 +548,7 @@ type fswlspServer(input: Stream, output: Stream) =
             // let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
             let getVersionHandler(request: GetVersionParams) (cancellationToken: CancellationToken): ResponseMessageBase =
                 this._ml.Evaluate("Round[$VersionNumber, 0.1]")
-                this._ml.WaitForAnswer() |> ignore
+                this._ml.WaitAndDiscardAnswer() |> ignore
                 let version = this._ml.GetString()
                 let response = new GetVersionResponseParams()
                 response.``result`` <- JObject.FromObject({|
@@ -814,9 +814,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 Task.Run(fun () ->
                     try
                         let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this._text) filePath
+                        
                         this._lsp.Evaluate(input)
-                        this._lsp.WaitForAnswer() |> ignore
+                        this._lsp.WaitAndDiscardAnswer() |> ignore
                         let js = this._lsp.GetString()
+                        this.log_messages(sprintf "DocumentSymbols for %s: %s" filePath js)
 
                         let symbols = 
                             js 
@@ -870,10 +872,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
                 this._lsp.Evaluate(expr)
-                this._lsp.WaitForAnswer() |> ignore
+                this._lsp.WaitAndDiscardAnswer() |> ignore
                 let locations = 
                     try 
                         let js = this._lsp.GetString()
+                        this.log_messages(sprintf "FoldingRange locations: %s" js)
                         JArray.Parse(js)
                     with
                     | ex -> 
@@ -899,7 +902,7 @@ type fswlspServer(input: Stream, output: Stream) =
             error.code <- ErrorCodes.InternalError
             error.message <- ex.Message
             // Handle the error here, e.g., log it or send a notification to the client
-            this.log_messages(sprintf "Error: %s" ex.Message)
+            this.log_messages(sprintf "Folding Error: %s" ex.Message)
             Result<FoldingRange array,ResponseError>.Error(error)
 
 
@@ -1036,14 +1039,18 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-        // this.log_messages(sprintf "CodeLens for %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))    
+        this.log_messages(sprintf "CodeLens for %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))    
         // if p.textDocument.uri.LocalPath.Replace("file://", "") <> this._document then
 
         //     Result<CodeLens array,ResponseError>.Success([||])
         // else
         try
             // check if file exists
-            if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
+            if not (
+                File.Exists(p.textDocument.uri.LocalPath.Replace("file://", "")) ||
+                this._text.Trim() = ""
+            ) then
+                this.log_messages(sprintf "CodeLens: File %s does not exist or is empty" (p.textDocument.uri.LocalPath.Replace("file://", "")))
                 Result<CodeLens array,ResponseError>.Success([||])
                 // return empty array
             else
@@ -1051,6 +1058,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 this._lsp.Evaluate(input)
                 this._lsp.WaitForAnswer() |> ignore
                 let js2 = this._lsp.GetString()
+                this.log_messages(sprintf "CodeLens response: %s" js2)
 
                 let codeLenses: CodeLens array = 
                     js2 
@@ -1072,6 +1080,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 Result<CodeLens array,ResponseError>.Success(codeLenses)
         with
             | ex -> 
+                this.log_messages(sprintf "Error in CodeLens: %s" ex.Message)
                 let error = new ResponseError()
                 error.code <- ErrorCodes.InternalError
                 error.message <- ex.Message

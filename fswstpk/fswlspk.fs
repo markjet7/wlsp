@@ -253,6 +253,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     let range = request.Params["range"].ToString().Replace("\"", "\\\"")
                     let t = this.escapeWolframString( this.unescapeWolframString(request.Params["text"].ToString()))
 
+                    // this.log_messages(sprintf "Getting range %s" range)
                     let eval = sprintf "getCodeString[%s, \"%s\"]" t range
 
                     this._ml.Evaluate(eval)
@@ -651,9 +652,6 @@ type fswlspServer(input: Stream, output: Stream) =
             try
                 let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
 
-
-
-                
                 // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
                 this._lsp.Evaluate(input)
                 // this._lsp.Evaluate("1+1")

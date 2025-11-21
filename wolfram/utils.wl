@@ -18,9 +18,11 @@ getStringAtRange[string_, rangejs_String]:=Module[{sLines, sRanges, range},
 			l[[2]]], ""],
 		{l, sRanges}];
 
-	If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")",
-		result = StringDrop[result, 1];
-	];
+	(*
+		If[StringTake[result, 1] == "(" && StringTake[result, -1] != ")",
+			result = StringDrop[result, 1];
+		];
+	*)
 	result
 ];
 
@@ -37,10 +39,11 @@ getStringAtRange[string_, range_]:=Module[{sLines, sRanges, result},
 				sLines[[l[[1]]]],
 			l[[2]]], ""],
 		{l, sRanges}];
-	
-	If[result != "" && StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
-		result = StringDrop[result, 1];
-	];
+	(*
+		If[result != "" && StringTake[result, 1] == "(" && StringTake[result, -1] != ")", 
+			result = StringDrop[result, 1];
+		];
+	*)
 	result
 ];
 
@@ -285,7 +288,6 @@ createRunBelow[starts_, ends_]:=If[False, Nothing, <|
 
 
 getCodeString[src_, rangejs_]:=Module[{range, result, result2},
-
 	range = ImportString[rangejs, "RawJSON"];
 	result = getCode[src, range];
 	result2 = <|"code" -> result["code"], "range" -> <|"start" -> <|"line" -> result["range"][[1,1]], "character" -> result["range"][[1,2]]|>, "end" -> <|"line" -> result["range"][[2,1]], "character" -> result["range"][[2,2]]|>|>|>;
@@ -311,7 +313,7 @@ getCode[src_, range_, section_:False]:=Module[{ result},
 		!(range["start"] === range["end"]),
 			<|
 				"code" -> getStringAtRange[src, rangeToStartEnd[range]], "range" -> <|
-					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"]+1 |>,
+					"start" -> <|"line" -> range["start"]["line"] + 1, "character" -> range["start"]["character"] |>,
 					"end" -> <|"line" -> range["end"]["line"] + 1, "character" -> range["end"]["character"]+1 |>
 				|>
 			|>,
@@ -350,19 +352,37 @@ getSectionLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result
 	]
 ];
 
-getTopLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, call, result1, result2, str},
+getTopLevelCodeAtPosition[src_, position_]:= Module[{tree, pos, before, call, result1, result2, str},
 
 		tree = CheckAbort[CodeParse[src], Print["Code Parsing Failed"];Return[<|"code"->"input error", "range"->{{position["line"],0}, {position["line"],0}}|>]];
-		pos = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
+		pos = <|"line" -> position["line"]+1, "character" -> position["character"] + 1|>;
+		before = <|"line" -> position["line"]+1, "character" -> position["character"]|>;
 
 		Check[
-			call = First[Cases[tree, ((x_LeafNode /; 
-			inCodeRangeQ[
-			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
-			pos]) | (x_CallNode /; 
-			inCodeRangeQ[
-			FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1], 
-			pos])), {2}], {}];
+			call = First[
+				Cases[tree, 
+				(
+					x_ /; Which[
+						MatchQ[x, _LeafNode],
+							inCodeRangeQ[
+								FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1],
+								pos
+							],
+						MatchQ[x, _CallNode] && inCodeRangeQ[
+							FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1],
+							pos
+						],
+							True,
+						MatchQ[x, _CallNode] && inCodeRangeQ[
+							FirstCase[x, <|Source -> s_, ___|> :> s, {{1, 1}, {1, 1}}, 1],
+							before
+						],
+							True,
+						True, False
+					]
+				), 
+					2], {}
+			];
 
 
 		result1 = If[call === {},
@@ -414,11 +434,15 @@ rangeToStartEnd[range_]:=Module[{},
 
 symbolDefinitions = <||>;
 documentSymbols[src_, json_]:=Module[{ast, result},
-	ast = CheckAbort[CodeParse[src], Return["[]"]];
-	result = funcsDefs[src, ast, json];
+	CheckAbort[
+		ast = CodeParse[src];
+		result = funcsDefs[src, ast, json];
 
-	Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
-	ExportString[result, "RawJSON", "Compact"->True]
+		Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
+		ExportString[result, "RawJSON", "Compact"->True], 
+
+		"[]"
+	]
 ];
 
 funcsDefs[text_, ast_, json_]:=Module[{funcs, defs, kind, uri},

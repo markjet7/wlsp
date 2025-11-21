@@ -1,0 +1,26 @@
+
+Paclet[
+  Name -> "CodeParser",
+  Version -> "1.10",
+  WolframVersion -> "12.1+",
+  Description -> "Parse Wolfram Language code.",
+  Creator -> "Brenton Bostick <brenton@wolfram.com>",
+  BuildDate -> "",
+  BuildNumber -> 0,
+  BuildWolframVersionNumber -> 0,
+  BuildWolframLibraryVersion -> 0,
+  Transport -> "",
+  Updating -> Automatic,
+  Extensions -> {
+    {"Kernel", Root -> "Kernel", Context -> "CodeParser`"},
+    {"Documentation", Language -> All, MainPage -> "Guides/CodeParser"},
+    {"LibraryLink"},
+    {"Resource", Root -> "Resources",
+      Resources -> {
+        {"Collatz", "Examples/Collatz.m"},
+        {"LongNames", "Generated/LongNames.wl"},
+        {"Precedence", "Generated/Precedence.wl"}
+      }
+    }
+  }
+]
