@@ -1,0 +1,14 @@
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/fwlparser.fsproj.AssemblyReference.cache
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/fwlparser.AssemblyInfoInputs.cache
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/fwlparser.AssemblyInfo.fs
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/fwlparser.fsproj.CoreCompileInputs.cache
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/fwlparser.sourcelink.json
+/Users/markmw/Github/wlsp/fwlparser/bin/Debug/net9.0/FwlParser.deps.json
+/Users/markmw/Github/wlsp/fwlparser/bin/Debug/net9.0/FwlParser.dll
+/Users/markmw/Github/wlsp/fwlparser/bin/Debug/net9.0/FwlParser.pdb
+/Users/markmw/Github/wlsp/fwlparser/bin/Debug/net9.0/FwlParser.xml
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/FwlParser.dll
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/refint/FwlParser.dll
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/FwlParser.xml
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/FwlParser.pdb
+/Users/markmw/Github/wlsp/fwlparser/obj/Debug/net9.0/ref/FwlParser.dll

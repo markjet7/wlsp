@@ -114,6 +114,8 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member val _ml : IKernelLink = null with get, set
     member val _lsp: IKernelLink = null with get, set
+
+    member val _symbolsLink: IKernelLink = MathLinkFactory.CreateKernelLink() with get, set
     
     member val Trace = "" with get, set
 
@@ -127,6 +129,12 @@ type fswlspServer(input: Stream, output: Stream) =
     member val details: JObject = null with get, set
 
     member val locations : JArray = null with get, set
+
+    member val utils_path : string = "" with get, set
+
+    // Add cache for document symbols
+    member val _documentSymbolsCache: Map<string, DocumentSymbol array> = Map.empty with get, set
+    member val _cacheLock = obj() with get, set
 
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
@@ -445,7 +453,7 @@ type fswlspServer(input: Stream, output: Stream) =
             capabilities.documentSymbolProvider <- true
 
             let completionOptions = new CompletionOptions()
-            completionOptions.resolveProvider <- true
+            // completionOptions.resolveProvider <- true
             // completionOptions.triggerCharacters <- [| "["; "," |]
             completionOptions.resolveProvider <- false
             capabilities.completionProvider <- new CompletionOptions()
@@ -548,7 +556,6 @@ type fswlspServer(input: Stream, output: Stream) =
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
             // | PacketType.InputText -> () // this.log_messages("InputText packet received.") 
-// ...existing code...
             | PacketType.Input -> () // this.log_messages("Input packet received.")
             | PacketType.InputString -> () // this.log_messages("InputString packet received.")
             | PacketType.Menu -> () // this.log_messages("Menu packet received.")
@@ -574,6 +581,9 @@ type fswlspServer(input: Stream, output: Stream) =
 
             this._ml <- MathLinkFactory.CreateKernelLink()
             this._ml.WaitAndDiscardAnswer()
+
+            this._symbolsLink <- MathLinkFactory.CreateKernelLink()
+            this._symbolsLink.WaitAndDiscardAnswer()
 
             this._ml.add_PacketArrived(PacketHandler(fun _ -> 
                 // this._ml.WaitAndDiscardAnswer() |> ignore
@@ -616,6 +626,7 @@ type fswlspServer(input: Stream, output: Stream) =
         let fswstp_path = binary_folder.Substring(0, binary_folder.IndexOf("fswstp")+6)
         let wlsp_path = Path.Combine(fswstp_path,  "../")
 
+        this.utils_path <- Path.Combine(wlsp_path, "wolfram", "utils.wl")
         let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
         this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
@@ -624,6 +635,8 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.WaitAndDiscardAnswer() |> ignore
         this._lsp.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
         this._lsp.WaitAndDiscardAnswer() |> ignore
+        this._symbolsLink.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
+        this._symbolsLink.WaitAndDiscardAnswer() |> ignore
         // this._lsp.WaitForAnswer() |> ignore
 
         // read the json file and import it
@@ -647,50 +660,86 @@ type fswlspServer(input: Stream, output: Stream) =
         // )
         base.Initialized()
 
-    override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
+    member this.updateDocumentSymbolsCache(filePath: string, text: string) =
+        try
+            let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString text) filePath
             
-            try
-                let input = sprintf "documentSymbols[\"%s\", <|\"uri\"->\"%s\"|>]" (this._text.Replace("\"", "\\\"")) (p.textDocument.uri.ToString())
 
-                // this._lsp.Evaluate(sprintf "documentSymbols[\"%s\"]" input)
-                this._lsp.Evaluate(input)
-                // this._lsp.Evaluate("1+1")
-                this._lsp.WaitForAnswer() |> ignore
-                let js = this._lsp.GetString() 
+            this._symbolsLink.Evaluate(input)
+            this._symbolsLink.WaitForAnswer() |> ignore
+            let js = this._symbolsLink.GetString()
+            // _lsp.Close()
 
-
-                let symbols: DocumentSymbol array = 
+            if String.IsNullOrWhiteSpace(js) || js = "Null" then
+                // this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath, [||])
+                ()
+            else 
+                let symbols = 
                     js 
                     |> JArray.Parse
                     |> Seq.map (fun x -> 
                         let symbol = new DocumentSymbol()
                         symbol.name <- x["name"].ToString()
-                        symbol.kind <- x["kind"].ToObject<SymbolKind>()
+                        symbol.kind <- 
+                            try
+                                x["kind"].ToObject<SymbolKind>()
+                            with
+                            | _ -> SymbolKind.Struct // Provide a default value
                         symbol.detail <- x["detail"].ToString()
-
                         symbol.range <- x["location"].["range"].ToObject<Range>()
                         symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-
                         symbol.children <- [||]
                         symbol
                     )
                     |> Seq.toArray
 
-                let result:DocumentSymbolResult = new DocumentSymbolResult(symbols)
+                // log the symbols array by converting it to json and string 
+                // this.log_messages(sprintf "DocumentSymbols for %s: %s" filePath (JArray.FromObject(symbols).ToString(Formatting.None)))
+
+                this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), symbols)
+        with
+        | ex -> 
+            this.log_messages(sprintf "DocumentSymbols Filepath: %s" filePath)
+            this.log_messages(sprintf "DocumentSymbols text: %s" text)
+            this.log_messages(sprintf "Kernel Background DocumentSymbols update error: %s" ex.Message)
+            ()
+
+    
+    override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
+            this.log_messages(sprintf "Kernel: DocumentSymbols for %s" (p.textDocument.uri.ToString()))
+            try
+                let filePath = p.textDocument.uri.ToString()
+                this.updateDocumentSymbolsCache(filePath, this._text)
+                
+                // Try to get from cache first
+                let cachedSymbols = 
+                    this._documentSymbolsCache.TryFind(filePath.ToString())
+                // this.log_messages(sprintf "Cache hit: %b for %s" cachedSymbols.IsSome filePath)
+
+
+                // If not in cache, start background task
+                // if cachedSymbols.IsNone then
+                //     this.updateDocumentSymbolsCache(filePath, this._text)
+                
+                // this.log_messages(sprintf "Cached symbols count: %d for %s" (cachedSymbols |> Option.map (fun x -> x.Length) |> Option.defaultValue 0) filePath)
+
+                // Return cached symbols or empty array
+                let symbols = cachedSymbols |> Option.defaultValue [||]
+
+                // this.log_messages(sprintf "symbols count: %d for %s" symbols.Length filePath)
+            
+                // this.log_messages(sprintf "Returning %d DocumentSymbols for: %s" symbols.Length filePath)
+                
+                let result = new DocumentSymbolResult(symbols)
                 Result<DocumentSymbolResult,ResponseError>.Success result
             with
             | ex -> 
                 let error = new ResponseError()
                 error.code <- ErrorCodes.InternalError
                 error.message <- ex.Message
-                // Handle the error here, e.g., log it or send a notification to the client
-                let result:DocumentSymbolResult = new DocumentSymbolResult([||]: DocumentSymbol array)
+                this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
+                let result = new DocumentSymbolResult([||]: DocumentSymbol array)
                 Result<DocumentSymbolResult,ResponseError>.Success(result)
-                // let symbols: DocumentSymbol array = [||]
-
-            // let result = new DocumentSymbolResult(symbols)
-            // Result<DocumentSymbolResult,ResponseError>.Success(result)
-
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
@@ -702,6 +751,9 @@ type fswlspServer(input: Stream, output: Stream) =
         
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
+
+        // Update cache in background
+        this.updateDocumentSymbolsCache(this._document, this._text)
 
         let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
 
@@ -737,6 +789,9 @@ type fswlspServer(input: Stream, output: Stream) =
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
 
+        // Update cache in background
+        this.updateDocumentSymbolsCache(this._document, this._text)
+
         let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
 
         this._lsp.Evaluate(expr)
@@ -761,52 +816,50 @@ type fswlspServer(input: Stream, output: Stream) =
             p2
         )
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-            
-        
+        this.log_messages(sprintf "Kernel: CodeLens for %s" (p.textDocument.uri.ToString()))
         if p.textDocument.uri.ToString() <> this._document then
-
             Result<CodeLens array,ResponseError>.Success([||])
         else
-            // try
-            let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
-            this._lsp.Evaluate(input)
-            this._lsp.WaitForAnswer() |> ignore
-            let js2 = this._lsp.GetString()
+            try
+                let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
+                let _lsp = MathLinkFactory.CreateKernelLink()
+                _lsp.WaitAndDiscardAnswer() |> ignore
 
-            let codeLenses: CodeLens array = 
-                js2 
-                |> JArray.Parse
-                |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                |> Seq.map (fun x -> 
+                _lsp.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
+                _lsp.WaitAndDiscardAnswer() |> ignore
 
-                    let command = new Command()
-                    command.title <- x["command"].["title"].ToString()
-                    command.command <- x["command"].["command"].ToString()
-                    command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                    let codeLens = new CodeLens()
-                    codeLens.range <- x["range"].ToObject<Range>()
-                    codeLens.command <- command // or set it if needed
-                    codeLens
-                )
-                |> Seq.toArray
+                _lsp.Evaluate(input)
+                _lsp.WaitForAnswer() |> ignore
+                let js2 = _lsp.GetString()
+                _lsp.Close()
 
-            Result<CodeLens array,ResponseError>.Success(codeLenses)
-            // with
-            // | ex -> 
-            //     let error = new ResponseError()
-            //     error.code <- ErrorCodes.InternalError
-            //     error.message <- ex.Message
-            //     Result<CodeLens array,ResponseError>.Error(error)
+                let codeLenses: CodeLens array = 
+                    js2 
+                    |> JArray.Parse
+                    |> Seq.filter (fun x ->x.ToString().Contains("command"))
+                    |> Seq.map (fun x -> 
 
+                        let command = new Command()
+                        command.title <- x["command"].["title"].ToString()
+                        command.command <- x["command"].["command"].ToString()
+                        command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
+                        let codeLens = new CodeLens()
+                        codeLens.range <- x["range"].ToObject<Range>()
+                        codeLens.command <- command // or set it if needed
+                        codeLens
+                    )
+                    |> Seq.toArray
 
+                this.log_messages(sprintf "CodeLens count: %d" codeLenses.Length)
 
-        // this.evaluate_in_kernel(this._ml, expr) |> ignore
-        // let p = new LogMessageParams()
-        // p.``type`` <- MessageType.Info
-        // p.message <- sprintf "Hello from Wolfram: %s" this._document
-        // this.Window.LogMessage(
-        //     p
-        // )
+                Result<CodeLens array,ResponseError>.Success(codeLenses)
+            with
+            | ex -> 
+                let error = new ResponseError()
+                error.code <- ErrorCodes.InternalError
+                error.message <- ex.Message
+                Result<CodeLens array,ResponseError>.Error(error)
+
     override this.Hover (p: TextDocumentPositionParams): Result<Hover,ResponseError> = 
         try
 
@@ -930,6 +983,8 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             if this._ml <> null then
                 this._ml.Close()
+            if this._symbolsLink <> null then
+                this._symbolsLink.Close()
             // if this._lsp <> null then
             //     this._lsp.Close() 
             // base.Shutdown()

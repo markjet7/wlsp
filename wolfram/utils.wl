@@ -434,15 +434,11 @@ rangeToStartEnd[range_]:=Module[{},
 
 symbolDefinitions = <||>;
 documentSymbols[src_, json_]:=Module[{ast, result},
-	CheckAbort[
 		ast = CodeParse[src];
 		result = funcsDefs[src, ast, json];
 
 		Map[Function[{x}, symbolDefinitions[x["name"]] = x], result];
-		ExportString[result, "RawJSON", "Compact"->True], 
-
-		"[]"
-	]
+		ExportString[result, "RawJSON", "Compact"->True]
 ];
 
 funcsDefs[text_, ast_, json_]:=Module[{funcs, defs, kind, uri},

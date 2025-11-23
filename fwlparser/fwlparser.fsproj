@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>FwlParser</RootNamespace>
+    <AssemblyName>FwlParser</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ParserTypes.fs" />
+    <Compile Include="Precedence.fs" />
+    <Compile Include="Tokenizer.fs" />
+    <Compile Include="Parser.fs" />
+  </ItemGroup>
+
+</Project>

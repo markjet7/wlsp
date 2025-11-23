@@ -2,5 +2,6 @@
 resolver = "2"
 members = [
     "crates/wolfram-parser",
-    "crates/codeparser-wll"
+    "crates/codeparser-wll",
+    "crates/wlsp-diagnostics"
 ]
