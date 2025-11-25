@@ -11,6 +11,10 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\fwlparser\fwlparser.fsproj" />
+  </ItemGroup>
+
   <ItemGroup>  
     <None Include="mathlink.framework\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

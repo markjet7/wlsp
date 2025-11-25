@@ -69,6 +69,11 @@ type updatePositionsParams() =
     member val ``params``: JToken = null with get, set
     member val method: string = "updatePositions" with get, set
 
+type didChangeParams() =
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+    member val method: string = "textDocument/didChange" with get, set
+
 type changeWorkspaceFoldersParams() =
     inherit RequestMessageBase()
     member val Params: JToken = null with get, set
@@ -346,7 +351,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 this.log_messages(sprintf "CodeParser diagnostics error: %s" ex.Message)
                 None
 
-    member this.get_word_at_position(code: string, position: Position) =
+    member this.get_word_at_position(code: string, position: LanguageServer.Parameters.Position) =
         let lines = code.Split("\n")
 
         let line = lines.[min (int position.line) (lines.Length - 1)]
@@ -379,6 +384,17 @@ type fswlspServer(input: Stream, output: Stream) =
                     p
                 )
                 ()
+
+            // let didChangeHandler (p: didChangeParams) : unit =
+            //     // Handle document change
+            //     let uri = p.Params.["textDocument"].["uri"].ToString()
+            //     let content = p.Params.["contentChanges"].[0].["text"].ToString()
+
+            //     this.log_messages(sprintf "Document changed: %s" uri)
+
+            //     this._documentPlainText <- content
+
+            //     ()
 
             let workspaceFoldersChangeHandler (p: changeWorkspaceFoldersParams) : unit =
                 // try
@@ -415,12 +431,14 @@ type fswlspServer(input: Stream, output: Stream) =
                             if fileText <> "" then
                                 let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString fileText) file
                                 
-                                this.log_messages(sprintf "1WLSP: Evaluating documentSymbols for file: %s" file)
-                                this._symbolsLink.Evaluate(input)
-                                this.log_messages(sprintf "Evaluated documentSymbols for file: %s" file)
-                                this._symbolsLink.WaitForAnswer() |> ignore
-                                let js = this._symbolsLink.GetString()
-                                this.log_messages(sprintf "Received documentSymbols result for file: %s" file)
+                                let js = 
+                                    try
+                                        this._symbolsLink.Evaluate(input)
+                                        this._symbolsLink.WaitForAnswer() |> ignore
+                                        this._symbolsLink.GetString()
+                                    with
+                                    | ex -> 
+                                        "Null"
 
                                 // this.log_messages(sprintf "DocumentSymbols result for %s: %s" file js)
 
@@ -602,14 +620,19 @@ type fswlspServer(input: Stream, output: Stream) =
                 Action<changeWorkspaceFoldersParams>(workspaceFoldersChangeHandler)
             )
 
+            // this.NotificationHandlers.Set<didChangeParams>(
+            //     "textDocument/didChange",
+            //     Action<didChangeParams>(didChangeHandler)
+            // )
+
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
-            capabilities.hoverProvider <- true
-            capabilities.codeLensProvider <- new CodeLensOptions()
-            capabilities.codeLensProvider.resolveProvider <- false
+            capabilities.hoverProvider <- false
+            // capabilities.codeLensProvider <- new CodeLensOptions()
+            // capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- false
-            capabilities.foldingRangeProvider <- true
-            capabilities.colorProvider <- true
+            capabilities.foldingRangeProvider <- false
+            capabilities.colorProvider <- false
 
             let completionOptions = new CompletionOptions()
             // completionOptions.resolveProvider <- true
@@ -617,7 +640,7 @@ type fswlspServer(input: Stream, output: Stream) =
             completionOptions.resolveProvider <- false
             capabilities.completionProvider <- completionOptions
 
-            capabilities.workspaceSymbolProvider <- true
+            capabilities.workspaceSymbolProvider <- false
 
             capabilities.workspace <- new WorkspaceOptions()
             capabilities.workspace.workspaceFolders <- new WorkspaceFoldersOptions()
@@ -715,6 +738,8 @@ type fswlspServer(input: Stream, output: Stream) =
 
     override this.Initialized (): unit = 
 
+
+         // Initialize the MathLink connections
         try
             this._lsp <- MathLinkFactory.CreateKernelLink()
             this._lsp.WaitAndDiscardAnswer()
@@ -722,13 +747,12 @@ type fswlspServer(input: Stream, output: Stream) =
             this._symbolsLink <- MathLinkFactory.CreateKernelLink()
             this._symbolsLink.WaitAndDiscardAnswer() |> ignore
 
-            this._symbolsLink.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
-            this._symbolsLink.WaitAndDiscardAnswer() |> ignore
 
             this._lsp.add_PacketArrived(PacketHandler(fun _ -> 
                 // this._lsp.WaitAndDiscardAnswer() |> ignore
                 this.packetArrived
             )) |> ignore
+
         with
         | ex -> 
             let error = new ResponseError<InitializeErrorData>()
@@ -781,6 +805,9 @@ type fswlspServer(input: Stream, output: Stream) =
         this._lsp.WaitAndDiscardAnswer() |> ignore
         // this._lsp.WaitForAnswer() |> ignore
 
+        this._symbolsLink.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
+        this._symbolsLink.WaitAndDiscardAnswer() |> ignore
+
         // read the json file and import it
         this.completions <- File.ReadAllText(Path.Combine(binary_folder, "completions.json")) |> JArray.Parse 
         let details = File.ReadAllText(Path.Combine(binary_folder, "details.json")) |> JArray.Parse
@@ -800,17 +827,90 @@ type fswlspServer(input: Stream, output: Stream) =
         // this.Window.LogMessage(
         //     p
         // )
+        this.log_messages("WLSP change Language Server initialized.")
         base.Initialized()
 
     member private this.updateDocumentSymbolsCache(filePath: string, text: string) =
+        let tryFSharpSymbols () =
             try
+                let lines =
+                    text.Split('\n')
+                    |> Array.map (fun l -> l.Trim())
+                    |> Array.filter (fun l -> not (String.IsNullOrWhiteSpace l))
+
+                let parseLine line =
+                    FwlParser.Parser.parseAst line FwlParser.ParseOptions.Default |> Some
+                    |> Option.bind (fun res -> Some res.Syntax)
+
+                let rec extract acc (ast: FwlParser.Ast) =
+                    match ast with
+                    | FwlParser.Ast.Call(head, args, _) ->
+                        match head with
+                        | FwlParser.Ast.Leaf(kind, name, _) when kind = FwlParser.TokenKind.Symbol && (name = "Set" || name = "SetDelayed") ->
+                            match args with
+                            | FwlParser.Ast.Leaf(_, symName, symData) :: _ ->
+                                let rng =
+                                    match symData.Source with
+                                    | FwlParser.Source.Span span ->
+                                        let s = LanguageServer.Parameters.Position()
+                                        s.line <- int64 (span.Start.Line - 1)
+                                        s.character <- int64 (span.Start.Column - 1)
+                                        let e = LanguageServer.Parameters.Position()
+                                        e.line <- int64 (span.EndPos.Line - 1)
+                                        e.character <- int64 (span.EndPos.Column - 1)
+                                        let r = Range()
+                                        r.start <- s
+                                        r.``end`` <- e
+                                        r
+                                    | _ ->
+                                        let r = Range()
+                                        let s = LanguageServer.Parameters.Position()
+                                        s.line <- 0L; s.character <- 0L
+                                        let e = LanguageServer.Parameters.Position()
+                                        e.line <- 0L; e.character <- 1L
+                                        r.start <- s; r.``end`` <- e
+                                        r
+                                let symbol = new DocumentSymbol()
+                                symbol.name <- symName
+                                symbol.kind <- SymbolKind.Variable
+                                symbol.detail <- name
+                                symbol.range <- rng
+                                symbol.selectionRange <- rng
+                                symbol.children <- [||]
+                                symbol :: acc
+                            | _ ->
+                                args |> List.fold extract acc
+                        | _ ->
+                            let acc = extract acc head
+                            args |> List.fold extract acc
+                    | _ -> acc
+
+                let syms =
+                    lines
+                    |> Array.choose parseLine
+                    |> Array.fold (fun acc ast -> extract acc ast) []
+                    |> List.distinctBy (fun s -> s.name)
+                    |> List.toArray
+
+                Some syms
+            with _ -> None
+
+        try
+            match tryFSharpSymbols() with
+            | Some symbols ->
+                this._workspace_symbols <- this._workspace_symbols.Add(filePath.ToString(), symbols)
+                this.log_messages(sprintf "Updated DocumentSymbols cache for %s with %d symbols (F# parser)" filePath symbols.Length)
+            | None ->
                 let input = sprintf "documentSymbols[%s, <|\"uri\"->%s|>]" text (this.escapeWolframString filePath)
 
                 this._symbolsLink.Evaluate(input)
                 this._symbolsLink.WaitForAnswer() |> ignore
-                let js = this._symbolsLink.GetString()
-
-                // _lsp.Close()
+                let js = 
+                    try 
+                        this._symbolsLink.GetString()
+                    with
+                    | ex -> 
+                        "Null"
 
                 if String.IsNullOrWhiteSpace(js) || js = "Null" then
                     ()
@@ -839,13 +939,11 @@ type fswlspServer(input: Stream, output: Stream) =
                         )
                         |> Seq.toArray
 
-                    // Update cache with lock
                     this._workspace_symbols <- this._workspace_symbols.Add(filePath.ToString(), symbols)
-                    
-            with
-            | ex -> 
-                this.log_messages(sprintf "WLSP Background DocumentSymbols update error: %s" ex.Message)
-        
+                    this.log_messages(sprintf "Updated DocumentSymbols cache for %s with %d symbols" filePath (this._workspace_symbols.[filePath.ToString()].Length))
+        with
+        | ex -> 
+            this.log_messages(sprintf "WLSP Background DocumentSymbols update error: %s" ex.Message)
 
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
         this.log_messages(sprintf "DocumentSymbols request for: %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))
@@ -866,6 +964,7 @@ type fswlspServer(input: Stream, output: Stream) =
         let resultSymbols = cachedSymbols |> Option.defaultValue [||]
         
         let result = new DocumentSymbolResult(resultSymbols)
+        this.log_messages(sprintf "Returning %d DocumentSymbols for %s" resultSymbols.Length filePath)
         Result<DocumentSymbolResult,ResponseError>.Success result
         // with
         // | ex -> 
@@ -926,7 +1025,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
-        this.log_messages(sprintf "Document changed: %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))
+        this.log_messages(sprintf "WLSP Document changed: %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))
         // check if file exists
         if not (File.Exists(this._document)) then
             ()
@@ -935,20 +1034,20 @@ type fswlspServer(input: Stream, output: Stream) =
             this._text <- this.JsonToWolfram(p.contentChanges.[0].text)
             if p.contentChanges.Length > 0 then
                 this._documentPlainText <- p.contentChanges.[0].text
-            let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
-                URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
+            // let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
+            //     URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
             
-            this._lsp.Evaluate(expr) 
-            this._lsp.WaitAndDiscardAnswer() |> ignore
+            // this._lsp.Evaluate(expr) 
+            // this._lsp.WaitAndDiscardAnswer() |> ignore
 
             this.validate(p)
 
             let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
-            this._lsp.Evaluate(expr)
-            this._lsp.WaitForAnswer() |> ignore
             let locations = 
                 try 
+                    this._lsp.Evaluate(expr)
+                    this._lsp.WaitForAnswer() |> ignore
                     let js = this._lsp.GetString()
                     JArray.Parse(js)
                 with
@@ -972,6 +1071,7 @@ type fswlspServer(input: Stream, output: Stream) =
             
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
 
+        this.log_messages(sprintf "WLSP: Document opened: %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))
         //  check if file exists 
         if not (File.Exists(p.textDocument.uri.LocalPath.Replace("file://", ""))) then
      
@@ -984,13 +1084,16 @@ type fswlspServer(input: Stream, output: Stream) =
             let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
                 URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
             
+            this.log_messages("WLSP1")
             this._lsp.Evaluate(expr) 
             this._lsp.WaitAndDiscardAnswer() |> ignore
+            this.log_messages("WLSP2")
 
             let expr = sprintf "updateCursorLocations[%s]" (this._text)
 
             this._lsp.Evaluate(expr)
             this._lsp.WaitForAnswer() |> ignore
+            this.log_messages("WLSP3")
             let locations = 
                 try 
                     let js = this._lsp.GetString()
@@ -998,7 +1101,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 with
                 | ex -> 
                     JArray()
-
+            this.log_messages("WLSP4")
             let p2 = new updatePositionsParams()
             p2.``params`` <- JObject.FromObject({|
                 result = [{|
@@ -1006,6 +1109,8 @@ type fswlspServer(input: Stream, output: Stream) =
                     locations = locations 
                 |}]
             |})
+
+            this.log_messages(sprintf "Sending updatePositions notification for %s" this._document)
 
             this.SendNotification(
                 p2
@@ -1030,17 +1135,67 @@ type fswlspServer(input: Stream, output: Stream) =
             pd.``params`` <- JObject.FromObject(p)
             this.SendNotification(pd)
 
+        let tryFSharpParser () =
+            try
+                let result = FwlParser.Parser.parseAst this._text FwlParser.ParseOptions.Default
+                let issues = result.FatalIssues @ result.NonFatalIssues
+                let mapIssue (iss: FwlParser.Issue) =
+                    let range =
+                        match iss.Span with
+                        | Some span ->
+                            let startPos = LanguageServer.Parameters.Position()
+                            startPos.line <- int64 (max 0 (span.Start.Line - 1))
+                            startPos.character <- int64 (max 0 (span.Start.Column - 1))
+                            let endPos = LanguageServer.Parameters.Position()
+                            endPos.line <- int64 (max 0 (span.EndPos.Line - 1))
+                            endPos.character <- int64 (max 0 (span.EndPos.Column - 1))
+                            let r = Range()
+                            r.start <- startPos
+                            r.``end`` <- endPos
+                            r
+                        | None ->
+                            let r = Range()
+                            let s = LanguageServer.Parameters.Position()
+                            s.line <- 0L
+                            s.character <- 0L
+                            let e = LanguageServer.Parameters.Position()
+                            e.line <- 0L
+                            e.character <- 1L
+                            r.start <- s
+                            r.``end`` <- e
+                            r
+                    let d = Diagnostic()
+                    d.message <- iss.Message
+                    d.range <- range
+                    d.severity <-
+                        match iss.Severity with
+                        | FwlParser.IssueSeverity.Error -> DiagnosticSeverity.Error
+                        | FwlParser.IssueSeverity.Warning -> DiagnosticSeverity.Warning
+                        | FwlParser.IssueSeverity.Info -> DiagnosticSeverity.Information
+                    Some d
+                let diags =
+                    issues
+                    |> List.choose mapIssue
+                    |> List.toArray
+                Some diags
+            with _ ->
+                None
+
         match this.tryRunCodeParserDiagnostics(textDocument.uri.ToString()) with
         | Some diagnostics ->
             publish diagnostics
         | None ->
-            let expr = sprintf "validate[%s, %s]" this._text (this.escapeWolframString(this._document))
-            this._lsp.Evaluate(expr)
-            this._lsp.WaitForAnswer() |> ignore
-            let js = this._lsp.GetString()
-            let diagnostics = JObject.Parse(js)
-            let fallbackDiagnostics = diagnostics.["params"].["diagnostics"].ToObject<Diagnostic[]>()
-            publish fallbackDiagnostics
+            match tryFSharpParser() with
+            | Some diagnostics ->
+                publish diagnostics
+            | None ->
+                let expr = sprintf "validate[%s, %s]" this._text (this.escapeWolframString(this._document))
+                this._lsp.Evaluate(expr)
+                this._lsp.WaitForAnswer() |> ignore
+                let js = this._lsp.GetString()
+                let diagnostics = JObject.Parse(js)
+                let fallbackDiagnostics = diagnostics.["params"].["diagnostics"].ToObject<Diagnostic[]>()
+                publish fallbackDiagnostics
         ()
 
     override this.DidSaveTextDocument (p: DidSaveTextDocumentParams): unit = 
@@ -1221,7 +1376,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     let textEditRange = new Range()
                     textEditRange.``start`` <- p.position
 
-                    let endPosition = new Position()
+                    let endPosition = new LanguageServer.Parameters.Position()
                     endPosition.line <- p.position.line
                     endPosition.character <- p.position.character + int64(string.Length)
 
@@ -1292,6 +1447,8 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
         let response = symbols
+
+        this.log_messages(sprintf "Workspace symbols response count: %d" response.Length)
         Result<SymbolInformation array,ResponseError>.Success(response)
 
 
@@ -1423,15 +1580,15 @@ type fswlspServer(input: Stream, output: Stream) =
                                     1.0
 
 
-                            let start = new Position()
+                            let start = new LanguageServer.Parameters.Position()
                             let l, c = calculateLineAndCharacter this._text m.Index
-                            start.line <- l
-                            start.character <- c
+                            start.line <- int64 l
+                            start.character <- int64 c
 
-                            let endPos = new Position()
+                            let endPos = new LanguageServer.Parameters.Position()
                             let endLine, endCharacter = calculateLineAndCharacter this._text (m.Index + m.Length)
-                            endPos.line <- endLine
-                            endPos.character <- endCharacter
+                            endPos.line <- int64 endLine
+                            endPos.character <- int64 endCharacter
 
                             let colorInfo = new ColorInformation()
                             colorInfo.range <- new Range()

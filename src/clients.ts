@@ -319,11 +319,11 @@ export async function onlspReady(): Promise<void> {
                 temporaryDir = result;
                 resolve();
             });
-            wolframClient?.sendRequest("getVersion").then((result: any) => { 
-                wolframVersionText =  "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
-                wolframStatusBar.text = wolframVersionText;
-                wolframStatusBar.show();
-            });
+            // wolframClient?.sendRequest("getVersion").then((result: any) => { 
+            //     wolframVersionText =  "Wolfram (" + result.version.substring(0, Math.min(4, result.version.length)) + ")";
+            //     wolframStatusBar.text = wolframVersionText;
+            //     wolframStatusBar.show();
+            // });
         } else {
             resolve();
         }
@@ -1550,6 +1550,27 @@ async function didChangeTextDocument(event: vscode.TextDocumentChangeEvent): Pro
             resolve();
             return;
         }
+
+        wolframClient?.sendNotification("textDocument/didChange", {
+            textDocument: {
+                uri: editor.document.uri.toString(),
+                version: editor.document.version
+            },
+            contentChanges: event.contentChanges.map(change => ({
+                range: {
+                    start: {
+                        line: change.range.start.line,
+                        character: change.range.start.character
+                    },
+                    end: {
+                        line: change.range.end.line,
+                        character: change.range.end.character
+                    }
+                },
+                rangeLength: change.rangeLength,
+                text: change.text
+            }))
+        });
 
         clearDecorations();
         updateRunningLines(editor, selection);

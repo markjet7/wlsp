@@ -21,6 +21,7 @@ open System.Text.RegularExpressions
 open System.Text
 
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
+open FwlParser
 
 type WolframResultParams() =
                 //     let result = json!({
@@ -77,6 +78,11 @@ type storageUriResponseParams() =
     member val ``params``: JToken = null with get, set
     member val ``result``: JToken = null with get, set
 
+
+type changeWorkspaceFoldersParams() =
+    inherit RequestMessageBase()
+    member val Params: JToken = null with get, set
+    
 type GetInputParams() =
     inherit RequestMessageBase()
     member val Params: JToken = null with get, set
@@ -197,7 +203,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         response
 
-    member this.get_word_at_position(code: string, position: Position) =
+    member this.get_word_at_position(code: string, position: LanguageServer.Parameters.Position) =
         let lines = code.Split('\n')
         let line = lines.[int position.line]
 
@@ -445,6 +451,11 @@ type fswlspServer(input: Stream, output: Stream) =
                 Action<windowFocusedParams>(windowFocusedHandler)
             )
 
+            this.NotificationHandlers.Set<changeWorkspaceFoldersParams>(
+                "didChangeWorkspaceFolders",
+                Action<changeWorkspaceFoldersParams>(fun _ -> ())
+            )
+
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
@@ -661,42 +672,104 @@ type fswlspServer(input: Stream, output: Stream) =
         base.Initialized()
 
     member this.updateDocumentSymbolsCache(filePath: string, text: string) =
+        let tryFSharpSymbols () =
+            try
+                let lines =
+                    text.Split('\n')
+                    |> Array.map (fun l -> l.Trim())
+                    |> Array.filter (fun l -> not (String.IsNullOrWhiteSpace l))
+
+                let parseLine line =
+                    FwlParser.Parser.parseAst line FwlParser.ParseOptions.Default |> Some
+                    |> Option.bind (fun res -> Some res.Syntax)
+
+                let rec extract acc (ast: FwlParser.Ast) =
+                    match ast with
+                    | FwlParser.Ast.Call(head, args, _) ->
+                        match head with
+                        | FwlParser.Ast.Leaf(kind, name, _) when kind = FwlParser.TokenKind.Symbol && (name = "Set" || name = "SetDelayed") ->
+                            match args with
+                            | FwlParser.Ast.Leaf(_, symName, symData) :: _ ->
+                                let rng =
+                                    match symData.Source with
+                                    | FwlParser.Source.Span span ->
+                                        let s = LanguageServer.Parameters.Position()
+                                        s.line <- int64 (span.Start.Line - 1)
+                                        s.character <- int64 (span.Start.Column - 1)
+                                        let e = LanguageServer.Parameters.Position()
+                                        e.line <- int64 (span.EndPos.Line - 1)
+                                        e.character <- int64 (span.EndPos.Column - 1)
+                                        let r = Range()
+                                        r.start <- s
+                                        r.``end`` <- e
+                                        r
+                                    | _ ->
+                                        let r = Range()
+                                        let s = LanguageServer.Parameters.Position()
+                                        s.line <- 0L; s.character <- 0L
+                                        let e = LanguageServer.Parameters.Position()
+                                        e.line <- 0L; e.character <- 1L
+                                        r.start <- s; r.``end`` <- e
+                                        r
+                                let symbol = new DocumentSymbol()
+                                symbol.name <- symName
+                                symbol.kind <- SymbolKind.Variable
+                                symbol.detail <- name
+                                symbol.range <- rng
+                                symbol.selectionRange <- rng
+                                symbol.children <- [||]
+                                symbol :: acc
+                            | _ ->
+                                args |> List.fold extract acc
+                        | _ ->
+                            let acc = extract acc head
+                            args |> List.fold extract acc
+                    | _ -> acc
+
+                let syms =
+                    lines
+                    |> Array.choose parseLine
+                    |> Array.fold (fun acc ast -> extract acc ast) []
+                    |> List.distinctBy (fun s -> s.name)
+                    |> List.toArray
+
+                Some syms
+            with _ -> None
+
         try
-            let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString text) filePath
-            
+            match tryFSharpSymbols() with
+            | Some syms ->
+                this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), syms)
+            | None ->
+                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString text) filePath
 
-            this._symbolsLink.Evaluate(input)
-            this._symbolsLink.WaitForAnswer() |> ignore
-            let js = this._symbolsLink.GetString()
-            // _lsp.Close()
+                this._symbolsLink.Evaluate(input)
+                this._symbolsLink.WaitForAnswer() |> ignore
+                let js = this._symbolsLink.GetString()
 
-            if String.IsNullOrWhiteSpace(js) || js = "Null" then
-                // this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath, [||])
-                ()
-            else 
-                let symbols = 
-                    js 
-                    |> JArray.Parse
-                    |> Seq.map (fun x -> 
-                        let symbol = new DocumentSymbol()
-                        symbol.name <- x["name"].ToString()
-                        symbol.kind <- 
-                            try
-                                x["kind"].ToObject<SymbolKind>()
-                            with
-                            | _ -> SymbolKind.Struct // Provide a default value
-                        symbol.detail <- x["detail"].ToString()
-                        symbol.range <- x["location"].["range"].ToObject<Range>()
-                        symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-                        symbol.children <- [||]
-                        symbol
-                    )
-                    |> Seq.toArray
+                if String.IsNullOrWhiteSpace(js) || js = "Null" then
+                    ()
+                else 
+                    let symbols = 
+                        js 
+                        |> JArray.Parse
+                        |> Seq.map (fun x -> 
+                            let symbol = new DocumentSymbol()
+                            symbol.name <- x["name"].ToString()
+                            symbol.kind <- 
+                                try
+                                    x["kind"].ToObject<SymbolKind>()
+                                with
+                                | _ -> SymbolKind.Struct
+                            symbol.detail <- x["detail"].ToString()
+                            symbol.range <- x["location"].["range"].ToObject<Range>()
+                            symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
+                            symbol.children <- [||]
+                            symbol
+                        )
+                        |> Seq.toArray
 
-                // log the symbols array by converting it to json and string 
-                // this.log_messages(sprintf "DocumentSymbols for %s: %s" filePath (JArray.FromObject(symbols).ToString(Formatting.None)))
-
-                this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), symbols)
+                    this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), symbols)
         with
         | ex -> 
             this.log_messages(sprintf "DocumentSymbols Filepath: %s" filePath)
@@ -706,7 +779,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
     
     override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
-            this.log_messages(sprintf "Kernel: DocumentSymbols for %s" (p.textDocument.uri.ToString()))
+            // this.log_messages(sprintf "Kernel: DocumentSymbols for %s" (p.textDocument.uri.ToString()))
             try
                 let filePath = p.textDocument.uri.ToString()
                 this.updateDocumentSymbolsCache(filePath, this._text)
@@ -728,7 +801,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 // this.log_messages(sprintf "symbols count: %d for %s" symbols.Length filePath)
             
-                // this.log_messages(sprintf "Returning %d DocumentSymbols for: %s" symbols.Length filePath)
+                this.log_messages(sprintf "Kernel Returning %d DocumentSymbols for: %s" symbols.Length filePath)
                 
                 let result = new DocumentSymbolResult(symbols)
                 Result<DocumentSymbolResult,ResponseError>.Success result
@@ -742,6 +815,8 @@ type fswlspServer(input: Stream, output: Stream) =
                 Result<DocumentSymbolResult,ResponseError>.Success(result)
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
+
+        this.log_messages(sprintf "Kernel: DidChangeTextDocument for %s" (p.textDocument.uri.ToString()))
 
         this._document <- p.textDocument.uri.ToString() 
         this._text <- p.contentChanges.[0].text.ToString()
@@ -957,7 +1032,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     let textEditRange = new Range()
                     textEditRange.``start`` <- p.position
 
-                    let endPosition = new Position()
+                    let endPosition = new LanguageServer.Parameters.Position()
                     endPosition.line <- p.position.line
                     endPosition.character <- p.position.character + int64(string.Length)
 
