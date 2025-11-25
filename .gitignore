@@ -58,6 +58,8 @@ fswstpk/obj/
 fswstpk/mathlink.framework
 fswstpk/wstp.framework
 
+fwlparser/obj
+
 dist/
 
 libWSTPi4.a
