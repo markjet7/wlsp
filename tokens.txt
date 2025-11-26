@@ -1,0 +1,789 @@
+Comment "(* ::Package:: *)" { Start = { Line = 1
+            Column = 1 }
+  EndPos = { Line = 1
+             Column = 18 } }
+Newline "
+" { Start = { Line = 1
+            Column = 18 }
+  EndPos = { Line = 2
+             Column = 1 } }
+Newline "
+" { Start = { Line = 2
+            Column = 1 }
+  EndPos = { Line = 3
+             Column = 1 } }
+Symbol "SetDirectory" { Start = { Line = 3
+            Column = 1 }
+  EndPos = { Line = 3
+             Column = 13 } }
+OpenSquare "[" { Start = { Line = 3
+            Column = 13 }
+  EndPos = { Line = 3
+             Column = 14 } }
+Symbol "NotebookDirectory" { Start = { Line = 3
+            Column = 14 }
+  EndPos = { Line = 3
+             Column = 31 } }
+OpenSquare "[" { Start = { Line = 3
+            Column = 31 }
+  EndPos = { Line = 3
+             Column = 32 } }
+CloseSquare "]" { Start = { Line = 3
+            Column = 32 }
+  EndPos = { Line = 3
+             Column = 33 } }
+CloseSquare "]" { Start = { Line = 3
+            Column = 33 }
+  EndPos = { Line = 3
+             Column = 34 } }
+Newline "
+" { Start = { Line = 3
+            Column = 34 }
+  EndPos = { Line = 4
+             Column = 1 } }
+Symbol "Table" { Start = { Line = 4
+            Column = 1 }
+  EndPos = { Line = 4
+             Column = 6 } }
+OpenSquare "[" { Start = { Line = 4
+            Column = 6 }
+  EndPos = { Line = 4
+             Column = 7 } }
+Symbol "i" { Start = { Line = 4
+            Column = 7 }
+  EndPos = { Line = 4
+             Column = 8 } }
+Comma "," { Start = { Line = 4
+            Column = 8 }
+  EndPos = { Line = 4
+             Column = 9 } }
+Whitespace " " { Start = { Line = 4
+            Column = 9 }
+  EndPos = { Line = 4
+             Column = 10 } }
+OpenCurly "{" { Start = { Line = 4
+            Column = 10 }
+  EndPos = { Line = 4
+             Column = 11 } }
+Symbol "i" { Start = { Line = 4
+            Column = 11 }
+  EndPos = { Line = 4
+             Column = 12 } }
+Comma "," { Start = { Line = 4
+            Column = 12 }
+  EndPos = { Line = 4
+             Column = 13 } }
+Whitespace " " { Start = { Line = 4
+            Column = 13 }
+  EndPos = { Line = 4
+             Column = 14 } }
+Integer "1" { Start = { Line = 4
+            Column = 14 }
+  EndPos = { Line = 4
+             Column = 15 } }
+Comma "," { Start = { Line = 4
+            Column = 15 }
+  EndPos = { Line = 4
+             Column = 16 } }
+Whitespace " " { Start = { Line = 4
+            Column = 16 }
+  EndPos = { Line = 4
+             Column = 17 } }
+Integer "10" { Start = { Line = 4
+            Column = 17 }
+  EndPos = { Line = 4
+             Column = 19 } }
+CloseCurly "}" { Start = { Line = 4
+            Column = 19 }
+  EndPos = { Line = 4
+             Column = 20 } }
+CloseSquare "]" { Start = { Line = 4
+            Column = 20 }
+  EndPos = { Line = 4
+             Column = 21 } }
+Newline "
+" { Start = { Line = 4
+            Column = 21 }
+  EndPos = { Line = 5
+             Column = 1 } }
+Symbol "Plot" { Start = { Line = 5
+            Column = 1 }
+  EndPos = { Line = 5
+             Column = 5 } }
+OpenSquare "[" { Start = { Line = 5
+            Column = 5 }
+  EndPos = { Line = 5
+             Column = 6 } }
+Symbol "Sin" { Start = { Line = 5
+            Column = 6 }
+  EndPos = { Line = 5
+             Column = 9 } }
+OpenSquare "[" { Start = { Line = 5
+            Column = 9 }
+  EndPos = { Line = 5
+             Column = 10 } }
+Symbol "x" { Start = { Line = 5
+            Column = 10 }
+  EndPos = { Line = 5
+             Column = 11 } }
+CloseSquare "]" { Start = { Line = 5
+            Column = 11 }
+  EndPos = { Line = 5
+             Column = 12 } }
+Comma "," { Start = { Line = 5
+            Column = 12 }
+  EndPos = { Line = 5
+             Column = 13 } }
+Whitespace " " { Start = { Line = 5
+            Column = 13 }
+  EndPos = { Line = 5
+             Column = 14 } }
+OpenCurly "{" { Start = { Line = 5
+            Column = 14 }
+  EndPos = { Line = 5
+             Column = 15 } }
+Symbol "x" { Start = { Line = 5
+            Column = 15 }
+  EndPos = { Line = 5
+             Column = 16 } }
+Comma "," { Start = { Line = 5
+            Column = 16 }
+  EndPos = { Line = 5
+             Column = 17 } }
+Whitespace " " { Start = { Line = 5
+            Column = 17 }
+  EndPos = { Line = 5
+             Column = 18 } }
+Integer "0" { Start = { Line = 5
+            Column = 18 }
+  EndPos = { Line = 5
+             Column = 19 } }
+Comma "," { Start = { Line = 5
+            Column = 19 }
+  EndPos = { Line = 5
+             Column = 20 } }
+Whitespace " " { Start = { Line = 5
+            Column = 20 }
+  EndPos = { Line = 5
+             Column = 21 } }
+Integer "10" { Start = { Line = 5
+            Column = 21 }
+  EndPos = { Line = 5
+             Column = 23 } }
+CloseCurly "}" { Start = { Line = 5
+            Column = 23 }
+  EndPos = { Line = 5
+             Column = 24 } }
+CloseSquare "]" { Start = { Line = 5
+            Column = 24 }
+  EndPos = { Line = 5
+             Column = 25 } }
+Newline "
+" { Start = { Line = 5
+            Column = 25 }
+  EndPos = { Line = 6
+             Column = 1 } }
+Newline "
+" { Start = { Line = 6
+            Column = 1 }
+  EndPos = { Line = 7
+             Column = 1 } }
+Newline "
+" { Start = { Line = 7
+            Column = 1 }
+  EndPos = { Line = 8
+             Column = 1 } }
+Newline "
+" { Start = { Line = 8
+            Column = 1 }
+  EndPos = { Line = 9
+             Column = 1 } }
+Comment "(* ::Section:: *)" { Start = { Line = 9
+            Column = 1 }
+  EndPos = { Line = 9
+             Column = 18 } }
+Newline "
+" { Start = { Line = 9
+            Column = 18 }
+  EndPos = { Line = 10
+             Column = 1 } }
+Comment "(*Import Data*)" { Start = { Line = 10
+            Column = 1 }
+  EndPos = { Line = 10
+             Column = 16 } }
+Newline "
+" { Start = { Line = 10
+            Column = 16 }
+  EndPos = { Line = 11
+             Column = 1 } }
+Newline "
+" { Start = { Line = 11
+            Column = 1 }
+  EndPos = { Line = 12
+             Column = 1 } }
+Newline "
+" { Start = { Line = 12
+            Column = 1 }
+  EndPos = { Line = 13
+             Column = 1 } }
+Symbol "data" { Start = { Line = 13
+            Column = 1 }
+  EndPos = { Line = 13
+             Column = 5 } }
+Whitespace " " { Start = { Line = 13
+            Column = 5 }
+  EndPos = { Line = 13
+             Column = 6 } }
+Equal "=" { Start = { Line = 13
+            Column = 6 }
+  EndPos = { Line = 13
+             Column = 7 } }
+Whitespace " " { Start = { Line = 13
+            Column = 7 }
+  EndPos = { Line = 13
+             Column = 8 } }
+Symbol "Import" { Start = { Line = 13
+            Column = 8 }
+  EndPos = { Line = 13
+             Column = 14 } }
+OpenSquare "[" { Start = { Line = 13
+            Column = 14 }
+  EndPos = { Line = 13
+             Column = 15 } }
+String "responsesMay17Long.xlsx" { Start = { Line = 13
+            Column = 15 }
+  EndPos = { Line = 13
+             Column = 40 } }
+CloseSquare "]" { Start = { Line = 13
+            Column = 40 }
+  EndPos = { Line = 13
+             Column = 41 } }
+Newline "
+" { Start = { Line = 13
+            Column = 41 }
+  EndPos = { Line = 14
+             Column = 1 } }
+Comment "(* Headings *)" { Start = { Line = 14
+            Column = 1 }
+  EndPos = { Line = 14
+             Column = 15 } }
+Newline "
+" { Start = { Line = 14
+            Column = 15 }
+  EndPos = { Line = 15
+             Column = 1 } }
+Newline "
+" { Start = { Line = 15
+            Column = 1 }
+  EndPos = { Line = 16
+             Column = 1 } }
+Newline "
+" { Start = { Line = 16
+            Column = 1 }
+  EndPos = { Line = 17
+             Column = 1 } }
+Comment "(* {{1, 0}, {2, }, {3, }, {4, }, {5, scenario_names}, {6, geographical_location}, {7, biogas_plant_scale}, {8, energy_inputs}, {9, functional_unit}, {10, methane_leakage_rate}, {11, transportation_distances}, {12, digestate_management}, {13, feedstock_inputs}, {14, carbon_content}, {15, nitrogen_content}, {16, moisture_content}, {17, ash_content}, {18, volatile_solids_content}, {19, cn_ratio}, {20, operating_temperature}, {21, hydraulic_retention_time}, {22, organic_loading_rate}, {23, biogas_production_rate}, {24, biogas_production_rate_units}, {25, emission_factors}, {26, fertilizer_used}, {27, fertilizer_amount}, {28, fertilizer_amount_units}, {29, biomass_pretreatment}, {30, biogas_yield}, {31, biogas_yield_units}, {32, gwp}, {33, gwp_units}, {34, ch4_content}, {35, digester_type}, {36, digestate_production}, {37, digestate_nitrogen_content}, {38, digestate_emission_factor}, {39, byproducts_emission_factors}, {40, land_use_change_emission_factor}, {41, allocation_methods}, {42, lipid_carbohydrate_ratio}, {43, protein_carbohydrate_ratio}, {44, specific_forms_of_carbohydrates}, {45, eutrophication_potential}, {46, eutrophication_potential_units}, {47, amount_of_hydrogen_sulfide}, {48, amount_of_ammonia}, {49, net_energy_output}, {50, dry_matter_content}, {51, dewater_digestate}, {52, upgrade_biogas}, {53, energy_saved_from_nutrient_management}, {54, effect_size_biological_pretreatment}, {55, pH}, {56, substrate_inoculum_ratio}, {57, environmental_dimension}, {58, economic_dimension}, {59, assumed_volatile_matter}, {60, biogas_plant_efficiency}, {61, energy_demand_cultivation_harvesting}, {62, Biogas Yield (m3/kg)}, {63, GWP (kg CO2e/MJ)}, {64, C:N Ratio}, {65, Feedstock Classification}, {66, Carbon Content}, {67, Nitrogen Content}, {68, Moisture Content}, {69, Ash Content}, {70, Volatile Solid Content}, {71, Digester Classification}, {72, Allocation Classification}, {73, Pretreatment Classification}} *)" { Start = { Line = 17
+            Column = 1 }
+  EndPos = { Line = 17
+             Column = 1939 } }
+Newline "
+" { Start = { Line = 17
+            Column = 1939 }
+  EndPos = { Line = 18
+             Column = 1 } }
+Newline "
+" { Start = { Line = 18
+            Column = 1 }
+  EndPos = { Line = 19
+             Column = 1 } }
+Symbol "assoc" { Start = { Line = 19
+            Column = 1 }
+  EndPos = { Line = 19
+             Column = 6 } }
+Whitespace " " { Start = { Line = 19
+            Column = 6 }
+  EndPos = { Line = 19
+             Column = 7 } }
+Equal "=" { Start = { Line = 19
+            Column = 7 }
+  EndPos = { Line = 19
+             Column = 8 } }
+Whitespace " " { Start = { Line = 19
+            Column = 8 }
+  EndPos = { Line = 19
+             Column = 9 } }
+Symbol "Association" { Start = { Line = 19
+            Column = 9 }
+  EndPos = { Line = 19
+             Column = 20 } }
+OpenSquare "[" { Start = { Line = 19
+            Column = 20 }
+  EndPos = { Line = 19
+             Column = 21 } }
+Newline "
+" { Start = { Line = 19
+            Column = 21 }
+  EndPos = { Line = 20
+             Column = 1 } }
+Whitespace "   " { Start = { Line = 20
+            Column = 1 }
+  EndPos = { Line = 20
+             Column = 4 } }
+Symbol "Table" { Start = { Line = 20
+            Column = 4 }
+  EndPos = { Line = 20
+             Column = 9 } }
+OpenSquare "[" { Start = { Line = 20
+            Column = 9 }
+  EndPos = { Line = 20
+             Column = 10 } }
+Newline "
+" { Start = { Line = 20
+            Column = 10 }
+  EndPos = { Line = 21
+             Column = 1 } }
+Whitespace "      " { Start = { Line = 21
+            Column = 1 }
+  EndPos = { Line = 21
+             Column = 7 } }
+Symbol "data" { Start = { Line = 21
+            Column = 7 }
+  EndPos = { Line = 21
+             Column = 11 } }
+OpenSquare "[" { Start = { Line = 21
+            Column = 11 }
+  EndPos = { Line = 21
+             Column = 12 } }
+OpenSquare "[" { Start = { Line = 21
+            Column = 12 }
+  EndPos = { Line = 21
+             Column = 13 } }
+Integer "1" { Start = { Line = 21
+            Column = 13 }
+  EndPos = { Line = 21
+             Column = 14 } }
+Comma "," { Start = { Line = 21
+            Column = 14 }
+  EndPos = { Line = 21
+             Column = 15 } }
+Whitespace " " { Start = { Line = 21
+            Column = 15 }
+  EndPos = { Line = 21
+             Column = 16 } }
+Symbol "i" { Start = { Line = 21
+            Column = 16 }
+  EndPos = { Line = 21
+             Column = 17 } }
+Comma "," { Start = { Line = 21
+            Column = 17 }
+  EndPos = { Line = 21
+             Column = 18 } }
+Whitespace " " { Start = { Line = 21
+            Column = 18 }
+  EndPos = { Line = 21
+             Column = 19 } }
+Integer "1" { Start = { Line = 21
+            Column = 19 }
+  EndPos = { Line = 21
+             Column = 20 } }
+CloseSquare "]" { Start = { Line = 21
+            Column = 20 }
+  EndPos = { Line = 21
+             Column = 21 } }
+CloseSquare "]" { Start = { Line = 21
+            Column = 21 }
+  EndPos = { Line = 21
+             Column = 22 } }
+Whitespace " " { Start = { Line = 21
+            Column = 22 }
+  EndPos = { Line = 21
+             Column = 23 } }
+MinusGreater "->" { Start = { Line = 21
+            Column = 23 }
+  EndPos = { Line = 21
+             Column = 25 } }
+Whitespace " " { Start = { Line = 21
+            Column = 25 }
+  EndPos = { Line = 21
+             Column = 26 } }
+Symbol "data" { Start = { Line = 21
+            Column = 26 }
+  EndPos = { Line = 21
+             Column = 30 } }
+OpenSquare "[" { Start = { Line = 21
+            Column = 30 }
+  EndPos = { Line = 21
+             Column = 31 } }
+OpenSquare "[" { Start = { Line = 21
+            Column = 31 }
+  EndPos = { Line = 21
+             Column = 32 } }
+Integer "1" { Start = { Line = 21
+            Column = 32 }
+  EndPos = { Line = 21
+             Column = 33 } }
+Comma "," { Start = { Line = 21
+            Column = 33 }
+  EndPos = { Line = 21
+             Column = 34 } }
+Whitespace " " { Start = { Line = 21
+            Column = 34 }
+  EndPos = { Line = 21
+             Column = 35 } }
+Symbol "i" { Start = { Line = 21
+            Column = 35 }
+  EndPos = { Line = 21
+             Column = 36 } }
+Comma "," { Start = { Line = 21
+            Column = 36 }
+  EndPos = { Line = 21
+             Column = 37 } }
+Whitespace " " { Start = { Line = 21
+            Column = 37 }
+  EndPos = { Line = 21
+             Column = 38 } }
+Integer "2" { Start = { Line = 21
+            Column = 38 }
+  EndPos = { Line = 21
+             Column = 39 } }
+Whitespace " " { Start = { Line = 21
+            Column = 39 }
+  EndPos = { Line = 21
+             Column = 40 } }
+SemiSemi ";;" { Start = { Line = 21
+            Column = 40 }
+  EndPos = { Line = 21
+             Column = 42 } }
+CloseSquare "]" { Start = { Line = 21
+            Column = 42 }
+  EndPos = { Line = 21
+             Column = 43 } }
+CloseSquare "]" { Start = { Line = 21
+            Column = 43 }
+  EndPos = { Line = 21
+             Column = 44 } }
+Comma "," { Start = { Line = 21
+            Column = 44 }
+  EndPos = { Line = 21
+             Column = 45 } }
+Whitespace " " { Start = { Line = 21
+            Column = 45 }
+  EndPos = { Line = 21
+             Column = 46 } }
+Newline "
+" { Start = { Line = 21
+            Column = 46 }
+  EndPos = { Line = 22
+             Column = 1 } }
+Whitespace "      " { Start = { Line = 22
+            Column = 1 }
+  EndPos = { Line = 22
+             Column = 7 } }
+OpenCurly "{" { Start = { Line = 22
+            Column = 7 }
+  EndPos = { Line = 22
+             Column = 8 } }
+Symbol "i" { Start = { Line = 22
+            Column = 8 }
+  EndPos = { Line = 22
+             Column = 9 } }
+Comma "," { Start = { Line = 22
+            Column = 9 }
+  EndPos = { Line = 22
+             Column = 10 } }
+Whitespace " " { Start = { Line = 22
+            Column = 10 }
+  EndPos = { Line = 22
+             Column = 11 } }
+Integer "3" { Start = { Line = 22
+            Column = 11 }
+  EndPos = { Line = 22
+             Column = 12 } }
+Comma "," { Start = { Line = 22
+            Column = 12 }
+  EndPos = { Line = 22
+             Column = 13 } }
+Whitespace " " { Start = { Line = 22
+            Column = 13 }
+  EndPos = { Line = 22
+             Column = 14 } }
+Symbol "Length" { Start = { Line = 22
+            Column = 14 }
+  EndPos = { Line = 22
+             Column = 20 } }
+OpenSquare "[" { Start = { Line = 22
+            Column = 20 }
+  EndPos = { Line = 22
+             Column = 21 } }
+Symbol "data" { Start = { Line = 22
+            Column = 21 }
+  EndPos = { Line = 22
+             Column = 25 } }
+OpenSquare "[" { Start = { Line = 22
+            Column = 25 }
+  EndPos = { Line = 22
+             Column = 26 } }
+OpenSquare "[" { Start = { Line = 22
+            Column = 26 }
+  EndPos = { Line = 22
+             Column = 27 } }
+Integer "1" { Start = { Line = 22
+            Column = 27 }
+  EndPos = { Line = 22
+             Column = 28 } }
+CloseSquare "]" { Start = { Line = 22
+            Column = 28 }
+  EndPos = { Line = 22
+             Column = 29 } }
+CloseSquare "]" { Start = { Line = 22
+            Column = 29 }
+  EndPos = { Line = 22
+             Column = 30 } }
+CloseSquare "]" { Start = { Line = 22
+            Column = 30 }
+  EndPos = { Line = 22
+             Column = 31 } }
+CloseCurly "}" { Start = { Line = 22
+            Column = 31 }
+  EndPos = { Line = 22
+             Column = 32 } }
+Newline "
+" { Start = { Line = 22
+            Column = 32 }
+  EndPos = { Line = 23
+             Column = 1 } }
+Whitespace "   " { Start = { Line = 23
+            Column = 1 }
+  EndPos = { Line = 23
+             Column = 4 } }
+CloseSquare "]" { Start = { Line = 23
+            Column = 4 }
+  EndPos = { Line = 23
+             Column = 5 } }
+Newline "
+" { Start = { Line = 23
+            Column = 5 }
+  EndPos = { Line = 24
+             Column = 1 } }
+CloseSquare "]" { Start = { Line = 24
+            Column = 1 }
+  EndPos = { Line = 24
+             Column = 2 } }
+Semi ";" { Start = { Line = 24
+            Column = 2 }
+  EndPos = { Line = 24
+             Column = 3 } }
+Whitespace " " { Start = { Line = 24
+            Column = 3 }
+  EndPos = { Line = 24
+             Column = 4 } }
+Newline "
+" { Start = { Line = 24
+            Column = 4 }
+  EndPos = { Line = 25
+             Column = 1 } }
+Newline "
+" { Start = { Line = 25
+            Column = 1 }
+  EndPos = { Line = 26
+             Column = 1 } }
+Newline "
+" { Start = { Line = 26
+            Column = 1 }
+  EndPos = { Line = 27
+             Column = 1 } }
+Newline "
+" { Start = { Line = 27
+            Column = 1 }
+  EndPos = { Line = 28
+             Column = 1 } }
+Comment "(* ::Section:: *)" { Start = { Line = 28
+            Column = 1 }
+  EndPos = { Line = 28
+             Column = 18 } }
+Newline "
+" { Start = { Line = 28
+            Column = 18 }
+  EndPos = { Line = 29
+             Column = 1 } }
+Comment "(*Descriptive Analysis*)" { Start = { Line = 29
+            Column = 1 }
+  EndPos = { Line = 29
+             Column = 25 } }
+Newline "
+" { Start = { Line = 29
+            Column = 25 }
+  EndPos = { Line = 30
+             Column = 1 } }
+Newline "
+" { Start = { Line = 30
+            Column = 1 }
+  EndPos = { Line = 31
+             Column = 1 } }
+Newline "
+" { Start = { Line = 31
+            Column = 1 }
+  EndPos = { Line = 32
+             Column = 1 } }
+Symbol "style" { Start = { Line = 32
+            Column = 1 }
+  EndPos = { Line = 32
+             Column = 6 } }
+Whitespace " " { Start = { Line = 32
+            Column = 6 }
+  EndPos = { Line = 32
+             Column = 7 } }
+Equal "=" { Start = { Line = 32
+            Column = 7 }
+  EndPos = { Line = 32
+             Column = 8 } }
+Whitespace " " { Start = { Line = 32
+            Column = 8 }
+  EndPos = { Line = 32
+             Column = 9 } }
+Integer "10" { Start = { Line = 32
+            Column = 9 }
+  EndPos = { Line = 32
+             Column = 11 } }
+Semi ";" { Start = { Line = 32
+            Column = 11 }
+  EndPos = { Line = 32
+             Column = 12 } }
+Newline "
+" { Start = { Line = 32
+            Column = 12 }
+  EndPos = { Line = 33
+             Column = 1 } }
+Symbol "feedstock" { Start = { Line = 33
+            Column = 1 }
+  EndPos = { Line = 33
+             Column = 10 } }
+Whitespace " " { Start = { Line = 33
+            Column = 10 }
+  EndPos = { Line = 33
+             Column = 11 } }
+Equal "=" { Start = { Line = 33
+            Column = 11 }
+  EndPos = { Line = 33
+             Column = 12 } }
+Whitespace " " { Start = { Line = 33
+            Column = 12 }
+  EndPos = { Line = 33
+             Column = 13 } }
+Symbol "Map" { Start = { Line = 33
+            Column = 13 }
+  EndPos = { Line = 33
+             Column = 16 } }
+OpenSquare "[" { Start = { Line = 33
+            Column = 16 }
+  EndPos = { Line = 33
+             Column = 17 } }
+Symbol "If" { Start = { Line = 33
+            Column = 17 }
+  EndPos = { Line = 33
+             Column = 19 } }
+OpenSquare "[" { Start = { Line = 33
+            Column = 19 }
+  EndPos = { Line = 33
+             Column = 20 } }
+Symbol "StringContainsQ" { Start = { Line = 33
+            Column = 20 }
+  EndPos = { Line = 33
+             Column = 35 } }
+OpenSquare "[" { Start = { Line = 33
+            Column = 35 }
+  EndPos = { Line = 33
+             Column = 36 } }
+Hash "#" { Start = { Line = 33
+            Column = 36 }
+  EndPos = { Line = 33
+             Column = 37 } }
+Comma "," { Start = { Line = 33
+            Column = 37 }
+  EndPos = { Line = 33
+             Column = 38 } }
+Whitespace " " { Start = { Line = 33
+            Column = 38 }
+  EndPos = { Line = 33
+             Column = 39 } }
+String "Codigestion" { Start = { Line = 33
+            Column = 39 }
+  EndPos = { Line = 33
+             Column = 52 } }
+CloseSquare "]" { Start = { Line = 33
+            Column = 52 }
+  EndPos = { Line = 33
+             Column = 53 } }
+Comma "," { Start = { Line = 33
+            Column = 53 }
+  EndPos = { Line = 33
+             Column = 54 } }
+Whitespace " " { Start = { Line = 33
+            Column = 54 }
+  EndPos = { Line = 33
+             Column = 55 } }
+String "Codigestion" { Start = { Line = 33
+            Column = 55 }
+  EndPos = { Line = 33
+             Column = 68 } }
+Comma "," { Start = { Line = 33
+            Column = 68 }
+  EndPos = { Line = 33
+             Column = 69 } }
+Whitespace " " { Start = { Line = 33
+            Column = 69 }
+  EndPos = { Line = 33
+             Column = 70 } }
+Hash "#" { Start = { Line = 33
+            Column = 70 }
+  EndPos = { Line = 33
+             Column = 71 } }
+CloseSquare "]" { Start = { Line = 33
+            Column = 71 }
+  EndPos = { Line = 33
+             Column = 72 } }
+Amp "&" { Start = { Line = 33
+            Column = 72 }
+  EndPos = { Line = 33
+             Column = 73 } }
+Comma "," { Start = { Line = 33
+            Column = 73 }
+  EndPos = { Line = 33
+             Column = 74 } }
+Whitespace " " { Start = { Line = 33
+            Column = 74 }
+  EndPos = { Line = 33
+             Column = 75 } }
+Symbol "assoc" { Start = { Line = 33
+            Column = 75 }
+  EndPos = { Line = 33
+             Column = 80 } }
+OpenSquare "[" { Start = { Line = 33
+            Column = 80 }
+  EndPos = { Line = 33
+             Column = 81 } }
+String "Feedstock Classification" { Start = { Line = 33
+            Column = 81 }
+  EndPos = { Line = 33
+             Column = 107 } }
+CloseSquare "]" { Start = { Line = 33
+            Column = 107 }
+  EndPos = { Line = 33
+             Column = 108 } }
+CloseSquare "]" { Start = { Line = 33
+            Column = 108 }
+  EndPos = { Line = 33
+             Column = 109 } }
+Semi ";" { Start = { Line = 33
+            Column = 109 }
+  EndPos = { Line = 33
+             Column = 110 } }
+Newline "
+" { Start = { Line = 33
+            Column = 110 }
+  EndPos = { Line = 34
+             Column = 1 } }
+EndOfFile "" { Start = { Line = 34
+            Column = 1 }
+  EndPos = { Line = 34
+             Column = 1 } }

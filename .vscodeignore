@@ -15,3 +15,17 @@ rustwstp/target/release/incremental
 rustwstp/target/release/.fingerprint
 rustwstp/target/release/.cargo
 rustwstp/target/x86_64-pc-windows-msvc
+codeparser/build
+codeparser/debug
+codeparser/deps
+codeparser/release
+fswstp/bin/Debug/**
+fswstp/bin/*/Debug/**
+fswstp/bin/*/*/Debug/**
+fswstp/obj/**
+fswstpk/bin/Debug/**
+fswstpk/bin/*/Debug/**
+fswstpk/bin/*/*/Debug/**
+fswstpk/obj/**
+fwlparser/**
+*.vsix

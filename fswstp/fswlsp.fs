@@ -456,12 +456,9 @@ type fswlspServer(input: Stream, output: Stream) =
                 ()
             // let storageUriHandler (request: storageUriParams) (cancellationToken: CancellationToken): ResponseMessageBase =
             let getVersionHandler(request: GetVersionParams) (cancellationToken: CancellationToken): ResponseMessageBase =
-                this._lsp.Evaluate("Round[$VersionNumber, 0.1]")
-                this._lsp.WaitAndDiscardAnswer() |> ignore
-                let version = this._lsp.GetString()
                 let response = new GetVersionResponseParams()
                 response.``result`` <- JObject.FromObject({|
-                    version = version
+                    version = "TBD"
                 |})
                 response.id <- request.id
                 response
@@ -525,8 +522,8 @@ type fswlspServer(input: Stream, output: Stream) =
             let capabilities = new ServerCapabilities()
             capabilities.textDocumentSync <- TextDocumentSyncKind.Full
             capabilities.hoverProvider <- true
-            // capabilities.codeLensProvider <- new CodeLensOptions()
-            // capabilities.codeLensProvider.resolveProvider <- false
+            capabilities.codeLensProvider <- new CodeLensOptions()
+            capabilities.codeLensProvider.resolveProvider <- false
             capabilities.documentSymbolProvider <- true
             capabilities.foldingRangeProvider <- true
             capabilities.colorProvider <- true
@@ -634,40 +631,38 @@ type fswlspServer(input: Stream, output: Stream) =
         true
 
     override this.Initialized (): unit = 
+        // Initialize the MathLink connections
+        // try
+            // this._lsp <- MathLinkFactory.CreateKernelLink()
+            // this._lsp.WaitAndDiscardAnswer()
+
+            // this._symbolsLink <- MathLinkFactory.CreateKernelLink()
+            // this._symbolsLink.WaitAndDiscardAnswer() |> ignore
 
 
-         // Initialize the MathLink connections
-        try
-            this._lsp <- MathLinkFactory.CreateKernelLink()
-            this._lsp.WaitAndDiscardAnswer()
+            // this._lsp.add_PacketArrived(PacketHandler(fun _ -> 
+            //     // this._lsp.WaitAndDiscardAnswer() |> ignore
+            //     this.packetArrived
+            // )) |> ignore
 
-            this._symbolsLink <- MathLinkFactory.CreateKernelLink()
-            this._symbolsLink.WaitAndDiscardAnswer() |> ignore
+        // with
+        // | ex -> 
+        //     let error = new ResponseError<InitializeErrorData>()
+        //     error.code <- ErrorCodes.InternalError
+        //     error.message <- ex.Message
+        //     error.data <- null
+        //     // Handle the error here, e.g., log it or send a notification to the client
+        //     // this.log_messages(sprintf "Error: %s" ex.Message)
+        //     let showMessageParams = new ShowMessageParams()
+        //     showMessageParams.``type`` <- MessageType.Error
+        //     showMessageParams.message <- sprintf "Error starting Wolfram. This may be due to installation or licensing problems: %s" ex.Message
 
-
-            this._lsp.add_PacketArrived(PacketHandler(fun _ -> 
-                // this._lsp.WaitAndDiscardAnswer() |> ignore
-                this.packetArrived
-            )) |> ignore
-
-        with
-        | ex -> 
-            let error = new ResponseError<InitializeErrorData>()
-            error.code <- ErrorCodes.InternalError
-            error.message <- ex.Message
-            error.data <- null
-            // Handle the error here, e.g., log it or send a notification to the client
-            // this.log_messages(sprintf "Error: %s" ex.Message)
-            let showMessageParams = new ShowMessageParams()
-            showMessageParams.``type`` <- MessageType.Error
-            showMessageParams.message <- sprintf "Error starting Wolfram. This may be due to installation or licensing problems: %s" ex.Message
-
-            this.Window.ShowMessage(
-                showMessageParams
-            )
+        //     this.Window.ShowMessage(
+        //         showMessageParams
+        //     )
             
-            // exit 1
-            ()
+        //     // exit 1
+        //     ()
 
         
 
@@ -686,17 +681,6 @@ type fswlspServer(input: Stream, output: Stream) =
         let fswstp_path = binary_folder.Substring(0, binary_folder.IndexOf("fswstp")+6)
         let wlsp_path = Path.Combine(fswstp_path,  "../")
         this._wlspPath <- Path.GetFullPath(wlsp_path)
-
-        this.utils_path <- Path.Combine(wlsp_path, "wolfram", "utils.wl")
-        // this.log_messages(sprintf "Wolfram: %s" utils_path)
-        // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)   |> ignore
-        // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
-        this._lsp.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
-        this._lsp.WaitAndDiscardAnswer() |> ignore
-        // this._lsp.WaitForAnswer() |> ignore
-
-        this._symbolsLink.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
-        this._symbolsLink.WaitAndDiscardAnswer() |> ignore
 
         // read the json file and import it
         this.completions <- File.ReadAllText(Path.Combine(binary_folder, "completions.json")) |> JArray.Parse 
@@ -1039,8 +1023,6 @@ type fswlspServer(input: Stream, output: Stream) =
             this.SendNotification(
                 p2
             )
-
-            this.log_messages(sprintf "New Positions: %A" locations)
             
             // Update cache in background
             this.updateDocumentSymbolsCache(this._document, this._text)
@@ -1060,10 +1042,6 @@ type fswlspServer(input: Stream, output: Stream) =
             let expr = sprintf "Unprotect[NotebookDirectory]; NotebookDirectory[] = FileNameJoin[
                 URLParse[DirectoryName[\"%s\"]][\"Path\"]] <> $PathnameSeparator ;" this._document
             
-            // this.log_messages("WLSP1")
-            this._lsp.Evaluate(expr) 
-            this._lsp.WaitAndDiscardAnswer() |> ignore
-            // this.log_messages("WLSP2")
 
             let locations = this.getCursorLocations(this._text)
             // this.log_messages("WLSP4")
@@ -1164,13 +1142,8 @@ type fswlspServer(input: Stream, output: Stream) =
         | Some diagnostics ->
             publish diagnostics
         | None ->
-            let expr = sprintf "validate[%s, %s]" (this.JsonToWolfram(this._text)) (this.escapeWolframString(this._document))
-            this._lsp.Evaluate(expr)
-            this._lsp.WaitForAnswer() |> ignore
-            let js = this._lsp.GetString()
-            let diagnostics = JObject.Parse(js)
-            let fallbackDiagnostics = diagnostics.["params"].["diagnostics"].ToObject<Diagnostic[]>()
-            publish fallbackDiagnostics
+            let emptyDiagnostics: Diagnostic array = [||]
+            publish emptyDiagnostics
 
         // this.log_messages("Document validated.")
         ()
@@ -1196,52 +1169,204 @@ type fswlspServer(input: Stream, output: Stream) =
 
 
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-        // this.log_messages(sprintf "CodeLens for %s" (p.textDocument.uri.LocalPath.Replace("file://", "")))    
-        // if p.textDocument.uri.LocalPath.Replace("file://", "") <> this._document then
+        let createPosition line character =
+            let pos = Position()
+            pos.line <- int64 (max line 0)
+            pos.character <- int64 (max character 0)
+            pos
 
-        //     Result<CodeLens array,ResponseError>.Success([||])
-        // else
-        try
-            // check if file exists
-            if not (
-                File.Exists(p.textDocument.uri.LocalPath.Replace("file://", "")) ||
-                this._text.Trim() = ""
-            ) then
-                // this.log_messages(sprintf "CodeLens: File %s does not exist or is empty" (p.textDocument.uri.LocalPath.Replace("file://", "")))
-                Result<CodeLens array,ResponseError>.Success([||])
-                // return empty array
+        let createRange line totalLines =
+            let safeLine =
+                if totalLines = 0 then 0 else max 0 (min line (totalLines - 1))
+            let range = Range()
+            range.start <- createPosition safeLine 0
+            range.``end`` <- createPosition safeLine 0
+            range
+
+        let createRunCellCommand (startLine: int) (endLine: int) =
+            if endLine < startLine then None else
+            let startObj = JObject()
+            startObj["line"] <- JValue(startLine - 1)
+            startObj["character"] <- JValue(0)
+            let endObj = JObject()
+            endObj["line"] <- JValue(endLine - 1)
+            endObj["character"] <- JValue(100)
+            let rangeObj = JObject()
+            rangeObj["start"] <- startObj
+            rangeObj["end"] <- endObj
+            let cmd = Command()
+            let lineCount = max 1 (endLine - startLine + 1)
+            cmd.title <- sprintf "Run cell (%d line(s))" lineCount
+            cmd.command <- "wolfram.runTextCell"
+            cmd.arguments <- [| rangeObj :> obj |]
+            Some cmd
+
+        let createRunAboveCommand (lineToRun: int) =
+            if lineToRun <= 0 then None else
+            let cmd = Command()
+            cmd.title <- sprintf "Run above (%d line(s))" lineToRun
+            cmd.command <- "wolfram.runToLine"
+            cmd.arguments <- [| lineToRun :> obj |]
+            Some cmd
+
+        let createRunBelowCommand (startLine: int) =
+            if startLine < 1 then None else
+            let cmd = Command()
+            cmd.title <- "Run below"
+            cmd.command <- "wolfram.runFromLine"
+            cmd.arguments <- [| (startLine - 1) :> obj |]
+            Some cmd
+
+        let isBlank (line: string) = String.IsNullOrWhiteSpace(line)
+
+        let parseAstSpans (text: string) =
+            try
+                let result = FwlParser.Parser.parseAstSeq text FwlParser.ParseOptions.Default
+                let (FwlParser.NodeSeq nodes) = result.Syntax
+                nodes
+                |> List.choose (fun ast ->
+                    let data =
+                        match ast with
+                        | FwlParser.Ast.Call(_, _, metadata)
+                        | FwlParser.Ast.Leaf(_, _, metadata)
+                        | FwlParser.Ast.Error(_, metadata) -> metadata
+                    match data.Source with
+                    | FwlParser.Source.Span span -> Some span
+                    | _ -> None)
+            with
+            | _ -> []
+
+        let getLastCodeIndex (lines: string array) (fallback: int) =
+            let mutable idx = lines.Length - 1
+            let mutable found = fallback
+            let mutable located = false
+            while idx >= 0 && not located do
+                if not (isBlank lines.[idx]) then
+                    found <- idx
+                    located <- true
+                else
+                    idx <- idx - 1
+            found
+
+        let normalizeText (text: string) =
+            text.Replace("\r\n", "\n").Replace("\r", "\n")
+
+        let tryComputeCells (lines: string array) (firstIdx: int) (lastIdx: int) =
+            let cells = ResizeArray<int * int>()
+            let mutable currentStart = firstIdx
+            let mutable idx = firstIdx
+            while idx <= lastIdx do
+                if isBlank lines.[idx] then
+                    let runStart = idx
+                    while idx <= lastIdx && isBlank lines.[idx] do
+                        idx <- idx + 1
+                    let runLength = idx - runStart
+                    if runLength >= 3 && idx <= lastIdx then
+                        let cellEnd = runStart - 1
+                        if cellEnd >= currentStart then
+                            cells.Add(currentStart, cellEnd)
+                        currentStart <- idx
+                else
+                    idx <- idx + 1
+            if currentStart <= lastIdx then
+                cells.Add(currentStart, lastIdx)
+            cells
+
+        let getCellLineRange (spans: FwlParser.Span list) (startIdx: int, endIdx: int) =
+            let cellStartLine = startIdx + 1
+            let cellEndLine = endIdx + 1
+            let overlapping =
+                spans
+                |> List.filter (fun span ->
+                    span.EndPos.Line >= cellStartLine && span.Start.Line <= cellEndLine)
+            if List.isEmpty overlapping then
+                cellStartLine, cellEndLine
             else
-                let input = sprintf "codeLens[%s]" (this.JsonToWolfram(this._text))
-                let _lsp = MathLinkFactory.CreateKernelLink()
-                _lsp.WaitAndDiscardAnswer() |> ignore
+                let actualStart =
+                    overlapping
+                    |> List.minBy (fun span -> span.Start.Line)
+                    |> fun span -> span.Start.Line
+                    |> max cellStartLine
+                    |> min cellEndLine
+                let actualEnd =
+                    overlapping
+                    |> List.maxBy (fun span -> span.EndPos.Line)
+                    |> fun span -> span.EndPos.Line
+                    |> min cellEndLine
+                let safeEnd = max actualStart actualEnd
+                actualStart, safeEnd
 
-                _lsp.Evaluate(input)
-                _lsp.WaitForAnswer() |> ignore
-                let js2 = this._lsp.GetString()
-                _lsp.Close()
-                // this.log_messages(sprintf "CodeLens response: %s" js2)
+        try
+            if String.IsNullOrWhiteSpace(this._text) then
+                Result<CodeLens array,ResponseError>.Success([||])
+            else
+                let normalized = normalizeText this._text
+                let lines = normalized.Split([|'\n'|], StringSplitOptions.None)
+                match lines |> Array.tryFindIndex (fun line -> not (isBlank line)) with
+                | None ->
+                    Result<CodeLens array,ResponseError>.Success([||])
+                | Some firstCodeIdx ->
+                    let lastCodeIdx = getLastCodeIndex lines firstCodeIdx
+                    let cells = tryComputeCells lines firstCodeIdx lastCodeIdx
+                    if cells.Count = 0 then
+                        Result<CodeLens array,ResponseError>.Success([||])
+                    else
+                        let spans = parseAstSpans this._text
+                        let totalLines = lines.Length
+                        let lenses = ResizeArray<CodeLens>()
 
-                let codeLenses: CodeLens array = 
-                    js2 
-                    |> JArray.Parse
-                    |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                    |> Seq.map (fun x -> 
+                        for i in 0 .. cells.Count - 1 do
+                            let startIdx, endIdx = cells.[i]
+                            let isFirst = i = 0
+                            let isLast = i = cells.Count - 1
+                            let displayLine = startIdx
+                            let cellStartLine, cellEndLine = getCellLineRange spans (startIdx, endIdx)
 
-                        let command = new Command()
-                        command.title <- x["command"].["title"].ToString()
-                        command.command <- x["command"].["command"].ToString()
-                        command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                        let codeLens = new CodeLens()
-                        codeLens.range <- x["range"].ToObject<Range>()
-                        codeLens.command <- command // or set it if needed
-                        codeLens
-                    )
-                    |> Seq.toArray
+                            match createRunCellCommand cellStartLine cellEndLine with
+                            | Some cmd ->
+                                let lens = CodeLens()
+                                lens.range <- createRange displayLine totalLines
+                                lens.command <- cmd
+                                lenses.Add(lens)
+                            | None -> ()
 
-                Result<CodeLens array,ResponseError>.Success(codeLenses)
+                            if not isFirst then
+                                let runAboveLine = cellStartLine - 1
+                                match createRunAboveCommand runAboveLine with
+                                | Some cmd ->
+                                    let lens = CodeLens()
+                                    lens.range <- createRange displayLine totalLines
+                                    lens.command <- cmd
+                                    lenses.Add(lens)
+                                | None -> ()
+
+                            let shouldAddRunBelow = isFirst || not isLast
+                            if shouldAddRunBelow then
+                                match createRunBelowCommand cellStartLine with
+                                | Some cmd ->
+                                    let lens = CodeLens()
+                                    lens.range <- createRange displayLine totalLines
+                                    lens.command <- cmd
+                                    lenses.Add(lens)
+                                | None -> ()
+
+                        let finalLensLine =
+                            if totalLines = 0 then 0
+                            else
+                                let candidate = lastCodeIdx + 1
+                                if candidate >= totalLines then totalLines - 1 else candidate
+
+                        match createRunAboveCommand (lastCodeIdx + 1) with
+                        | Some cmd ->
+                            let lens = CodeLens()
+                            lens.range <- createRange finalLensLine totalLines
+                            lens.command <- cmd
+                            lenses.Add(lens)
+                        | None -> ()
+
+                        Result<CodeLens array,ResponseError>.Success(lenses.ToArray())
         with
             | ex -> 
-                // this.log_messages(sprintf "Error in CodeLens: %s" ex.Message)
                 let error = new ResponseError()
                 error.code <- ErrorCodes.InternalError
                 error.message <- ex.Message

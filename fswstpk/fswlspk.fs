@@ -120,8 +120,6 @@ type fswlspServer(input: Stream, output: Stream) =
 
     member val _ml : IKernelLink = null with get, set
     member val _lsp: IKernelLink = null with get, set
-
-    member val _symbolsLink: IKernelLink = MathLinkFactory.CreateKernelLink() with get, set
     
     member val Trace = "" with get, set
 
@@ -599,14 +597,8 @@ type fswlspServer(input: Stream, output: Stream) =
         // You can send notifications or perform actions here
 
         try
-            this._lsp <- MathLinkFactory.CreateKernelLink()
-            this._lsp.WaitAndDiscardAnswer()
-
             this._ml <- MathLinkFactory.CreateKernelLink()
             this._ml.WaitAndDiscardAnswer()
-
-            this._symbolsLink <- MathLinkFactory.CreateKernelLink()
-            this._symbolsLink.WaitAndDiscardAnswer()
 
             this._ml.add_PacketArrived(PacketHandler(fun _ -> 
                 // this._ml.WaitAndDiscardAnswer() |> ignore
@@ -653,14 +645,8 @@ type fswlspServer(input: Stream, output: Stream) =
         let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
         // this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
-        // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
         this._ml.WaitAndDiscardAnswer() |> ignore
-        this._lsp.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
-        this._lsp.WaitAndDiscardAnswer() |> ignore
-        this._symbolsLink.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
-        this._symbolsLink.WaitAndDiscardAnswer() |> ignore
-        // this._lsp.WaitForAnswer() |> ignore
 
         // read the json file and import it
         this.completions <- File.ReadAllText(Path.Combine(binary_folder, "completions.json")) |> JArray.Parse 
@@ -683,149 +669,7 @@ type fswlspServer(input: Stream, output: Stream) =
         // )
         base.Initialized()
 
-    member this.updateDocumentSymbolsCache(filePath: string, text: string) =
-        let tryFSharpSymbols () =
-            try
-                let lines =
-                    text.Split('\n')
-                    |> Array.map (fun l -> l.Trim())
-                    |> Array.filter (fun l -> not (String.IsNullOrWhiteSpace l))
-
-                let parseLine line =
-                    FwlParser.Parser.parseAst line FwlParser.ParseOptions.Default |> Some
-                    |> Option.bind (fun res -> Some res.Syntax)
-
-                let rec extract acc (ast: FwlParser.Ast) =
-                    match ast with
-                    | FwlParser.Ast.Call(head, args, _) ->
-                        match head with
-                        | FwlParser.Ast.Leaf(kind, name, _) when kind = FwlParser.TokenKind.Symbol && (name = "Set" || name = "SetDelayed") ->
-                            match args with
-                            | FwlParser.Ast.Leaf(_, symName, symData) :: _ ->
-                                let rng =
-                                    match symData.Source with
-                                    | FwlParser.Source.Span span ->
-                                        let s = LanguageServer.Parameters.Position()
-                                        s.line <- int64 (span.Start.Line - 1)
-                                        s.character <- int64 (span.Start.Column - 1)
-                                        let e = LanguageServer.Parameters.Position()
-                                        e.line <- int64 (span.EndPos.Line - 1)
-                                        e.character <- int64 (span.EndPos.Column - 1)
-                                        let r = Range()
-                                        r.start <- s
-                                        r.``end`` <- e
-                                        r
-                                    | _ ->
-                                        let r = Range()
-                                        let s = LanguageServer.Parameters.Position()
-                                        s.line <- 0L; s.character <- 0L
-                                        let e = LanguageServer.Parameters.Position()
-                                        e.line <- 0L; e.character <- 1L
-                                        r.start <- s; r.``end`` <- e
-                                        r
-                                let symbol = new DocumentSymbol()
-                                symbol.name <- symName
-                                symbol.kind <- SymbolKind.Variable
-                                symbol.detail <- name
-                                symbol.range <- rng
-                                symbol.selectionRange <- rng
-                                symbol.children <- [||]
-                                symbol :: acc
-                            | _ ->
-                                args |> List.fold extract acc
-                        | _ ->
-                            let acc = extract acc head
-                            args |> List.fold extract acc
-                    | _ -> acc
-
-                let syms =
-                    lines
-                    |> Array.choose parseLine
-                    |> Array.fold (fun acc ast -> extract acc ast) []
-                    |> List.distinctBy (fun s -> s.name)
-                    |> List.toArray
-
-                Some syms
-            with _ -> None
-
-        try
-            match tryFSharpSymbols() with
-            | Some syms ->
-                this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), syms)
-            | None ->
-                let input = sprintf "documentSymbols[%s, <|\"uri\"->\"%s\"|>]" (this.escapeWolframString text) filePath
-
-                this._symbolsLink.Evaluate(input)
-                this._symbolsLink.WaitForAnswer() |> ignore
-                let js = this._symbolsLink.GetString()
-
-                if String.IsNullOrWhiteSpace(js) || js = "Null" then
-                    ()
-                else 
-                    let symbols = 
-                        js 
-                        |> JArray.Parse
-                        |> Seq.map (fun x -> 
-                            let symbol = new DocumentSymbol()
-                            symbol.name <- x["name"].ToString()
-                            symbol.kind <- 
-                                try
-                                    x["kind"].ToObject<SymbolKind>()
-                                with
-                                | _ -> SymbolKind.Struct
-                            symbol.detail <- x["detail"].ToString()
-                            symbol.range <- x["location"].["range"].ToObject<Range>()
-                            symbol.selectionRange <- x["location"].["range"].ToObject<Range>()
-                            symbol.children <- [||]
-                            symbol
-                        )
-                        |> Seq.toArray
-
-                    this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), symbols)
-        with
-        | ex -> 
-            // this.log_messages(sprintf "DocumentSymbols Filepath: %s" filePath)
-            // this.log_messages(sprintf "DocumentSymbols text: %s" text)
-            // this.log_messages(sprintf "Kernel Background DocumentSymbols update error: %s" ex.Message)
-            ()
-
     
-    override this.DocumentSymbols (p: DocumentSymbolParams): Result<DocumentSymbolResult,ResponseError> = 
-            // this.log_messages(sprintf "Kernel: DocumentSymbols for %s" (p.textDocument.uri.ToString()))
-            try
-                let filePath = p.textDocument.uri.ToString()
-                this.updateDocumentSymbolsCache(filePath, this._text)
-                
-                // Try to get from cache first
-                let cachedSymbols = 
-                    this._documentSymbolsCache.TryFind(filePath.ToString())
-                // this.log_messages(sprintf "Cache hit: %b for %s" cachedSymbols.IsSome filePath)
-
-
-                // If not in cache, start background task
-                // if cachedSymbols.IsNone then
-                //     this.updateDocumentSymbolsCache(filePath, this._text)
-                
-                // this.log_messages(sprintf "Cached symbols count: %d for %s" (cachedSymbols |> Option.map (fun x -> x.Length) |> Option.defaultValue 0) filePath)
-
-                // Return cached symbols or empty array
-                let symbols = cachedSymbols |> Option.defaultValue [||]
-
-                // this.log_messages(sprintf "symbols count: %d for %s" symbols.Length filePath)
-            
-                // this.log_messages(sprintf "Kernel Returning %d DocumentSymbols for: %s" symbols.Length filePath)
-                
-                let result = new DocumentSymbolResult(symbols)
-                Result<DocumentSymbolResult,ResponseError>.Success result
-            with
-            | ex -> 
-                let error = new ResponseError()
-                error.code <- ErrorCodes.InternalError
-                error.message <- ex.Message
-                // this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
-                let result = new DocumentSymbolResult([||]: DocumentSymbol array)
-                Result<DocumentSymbolResult,ResponseError>.Success(result)
-
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
         // this.log_messages(sprintf "Kernel: DidChangeTextDocument for %s" (p.textDocument.uri.ToString()))
@@ -838,33 +682,6 @@ type fswlspServer(input: Stream, output: Stream) =
         
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
-
-        // Update cache in background
-        this.updateDocumentSymbolsCache(this._document, this._text)
-
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
-
-        this._lsp.Evaluate(expr)
-        this._lsp.WaitForAnswer() |> ignore
-        let locations = 
-            try 
-                let js = this._lsp.GetString()
-                JArray.Parse(js)
-            with
-            | ex -> 
-                JArray()
-
-        let p2 = new updatePositionsParams()
-        p2.``params`` <- JObject.FromObject({|
-            result = [{|
-                location = {| uri = this._document|}
-                locations = locations 
-            |}]
-        |})
-
-        this.SendNotification(
-            p2
-        )
             
     override this.DidOpenTextDocument (p: DidOpenTextDocumentParams): unit = 
         this._document <- p.textDocument.uri.ToString()
@@ -875,77 +692,6 @@ type fswlspServer(input: Stream, output: Stream) =
         
         this._ml.Evaluate(expr) 
         this._ml.WaitAndDiscardAnswer() |> ignore
-
-        // Update cache in background
-        this.updateDocumentSymbolsCache(this._document, this._text)
-
-        let expr = sprintf "updateCursorLocations[\"%s\"]" (this._text.Replace("\"", "\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r"))
-
-        this._lsp.Evaluate(expr)
-        this._lsp.WaitForAnswer() |> ignore
-        let locations = 
-            try 
-                let js = this._lsp.GetString()
-                JArray.Parse(js)
-            with
-            | ex -> 
-                JArray()
-
-        let p2 = new updatePositionsParams()
-        p2.``params`` <- JObject.FromObject({|
-            result = [{|
-                location = {| uri = this._document|}
-                locations = locations 
-            |}]
-        |})
-
-        this.SendNotification(
-            p2
-        )
-    override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-        // this.log_messages(sprintf "Kernel: CodeLens for %s" (p.textDocument.uri.ToString()))
-        if p.textDocument.uri.ToString() <> this._document then
-            Result<CodeLens array,ResponseError>.Success([||])
-        else
-            try
-                let input = sprintf "codeLens[\"%s\"]" (this._text.Replace("\"", "\\\""))
-                let _lsp = MathLinkFactory.CreateKernelLink()
-                _lsp.WaitAndDiscardAnswer() |> ignore
-
-                _lsp.Evaluate(sprintf "Get[\"%s\"]" this.utils_path) 
-                _lsp.WaitAndDiscardAnswer() |> ignore
-
-                _lsp.Evaluate(input)
-                _lsp.WaitForAnswer() |> ignore
-                let js2 = _lsp.GetString()
-                _lsp.Close()
-
-                let codeLenses: CodeLens array = 
-                    js2 
-                    |> JArray.Parse
-                    |> Seq.filter (fun x ->x.ToString().Contains("command"))
-                    |> Seq.map (fun x -> 
-
-                        let command = new Command()
-                        command.title <- x["command"].["title"].ToString()
-                        command.command <- x["command"].["command"].ToString()
-                        command.arguments <- x["command"].["arguments"].ToObject<JArray>().ToObject<obj[]>()
-                        let codeLens = new CodeLens()
-                        codeLens.range <- x["range"].ToObject<Range>()
-                        codeLens.command <- command // or set it if needed
-                        codeLens
-                    )
-                    |> Seq.toArray
-
-                // this.log_messages(sprintf "CodeLens count: %d" codeLenses.Length)
-
-                Result<CodeLens array,ResponseError>.Success(codeLenses)
-            with
-            | ex -> 
-                let error = new ResponseError()
-                error.code <- ErrorCodes.InternalError
-                error.message <- ex.Message
-                Result<CodeLens array,ResponseError>.Error(error)
 
     override this.Hover (p: TextDocumentPositionParams): Result<Hover,ResponseError> = 
         try
@@ -1070,8 +816,6 @@ type fswlspServer(input: Stream, output: Stream) =
         try
             if this._ml <> null then
                 this._ml.Close()
-            if this._symbolsLink <> null then
-                this._symbolsLink.Close()
             // if this._lsp <> null then
             //     this._lsp.Close() 
             // base.Shutdown()

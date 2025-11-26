@@ -62,9 +62,23 @@ module Parser =
         else
             Some state.Tokens[state.Index]
 
+    let private peek offset (state: ParserState) =
+        let idx = state.Index + offset
+        if idx >= state.Tokens.Length then
+            None
+        else
+            Some state.Tokens[idx]
+
     let private advance (state: ParserState) =
         if not (isAtEnd state) then
             state.Index <- state.Index + 1
+
+    let rec private skipToplevelNewlines (state: ParserState) =
+        match current state with
+        | Some tok when tok.Kind = TokenKind.ToplevelNewline ->
+            advance state
+            skipToplevelNewlines state
+        | _ -> ()
 
     let private headSymbol kind =
         match kind with
@@ -77,10 +91,22 @@ module Parser =
         | TokenKind.Caret -> "Power"
         | TokenKind.Semi
         | TokenKind.SemiSemi -> "CompoundExpression"
+        | TokenKind.Colon -> "Optional"
+        | TokenKind.ColonGreater
+        | TokenKind.LongName_RuleDelayed -> "RuleDelayed"
+        | TokenKind.MinusGreater
+        | TokenKind.LongName_Rule -> "Rule"
+        | TokenKind.EqualEqual -> "Equal"
+        | TokenKind.Less -> "Less"
+        | TokenKind.LessEqual -> "LessEqual"
+        | TokenKind.Greater -> "Greater"
+        | TokenKind.GreaterEqual -> "GreaterEqual"
+        | TokenKind.AmpAmp
+        | TokenKind.LongName_And -> "And"
+        | TokenKind.BarBar
+        | TokenKind.LongName_Or -> "Or"
         | TokenKind.Equal -> "Set"
         | TokenKind.ColonEqual -> "SetDelayed"
-        | TokenKind.MinusGreater -> "Rule"
-        | TokenKind.ColonGreater -> "RuleDelayed"
         | TokenKind.At -> "Prefix"
         | TokenKind.ToplevelNewline -> "CompoundExpression"
         | _ -> kind.ToString()
@@ -105,11 +131,117 @@ module Parser =
                 | TokenKind.Star
                 | TokenKind.Slash -> Some(20, Assoc.Left)
                 | TokenKind.Caret -> Some(30, Assoc.Right)
+                | TokenKind.Colon -> Some(15, Assoc.Right)
+                | TokenKind.ColonGreater -> Some(15, Assoc.Right)
+                | TokenKind.MinusGreater -> Some(15, Assoc.Right)
+                | TokenKind.EqualEqual -> Some(25, Assoc.Left)
+                | TokenKind.Greater
+                | TokenKind.GreaterEqual
+                | TokenKind.Less
+                | TokenKind.LessEqual -> Some(25, Assoc.Left)
+                | TokenKind.AmpAmp -> Some(30, Assoc.Left)
                 | _ -> None
             fallback |> Option.map (fun (p, a) -> (p, a, headSymbol kind))
 
+    let private implicitInteger value =
+        Ast.Leaf(TokenKind.Integer, value, AstMetadata.Empty)
+
     let rec private parseExpression (state: ParserState) =
         parseExpressionWithPrecedence 1 state
+
+    and private parseSpanSequence state leftOpt semiTok =
+        let args = ResizeArray<Ast>()
+        let children = ResizeArray<Cst<_>>()
+        let mutable combinedSpanOpt: Span option = None
+
+        let addSpan span =
+            match combinedSpanOpt with
+            | Some existing -> combinedSpanOpt <- Some(Span.covering existing span)
+            | None -> combinedSpanOpt <- Some span
+
+        match leftOpt with
+        | Some(astLeft, cstLeft, spanLeft) ->
+            args.Add astLeft
+            children.Add cstLeft
+            addSpan spanLeft
+        | None ->
+            args.Add(implicitInteger "1")
+
+        children.Add(Cst.Token semiTok)
+        addSpan semiTok.Span
+
+        let isTerminator allowSemi tokKind =
+            match tokKind with
+            | TokenKind.Comma
+            | TokenKind.CloseSquare
+            | TokenKind.CloseParen
+            | TokenKind.CloseCurly
+            | TokenKind.EndOfFile
+            | TokenKind.ToplevelNewline -> true
+            | TokenKind.SemiSemi when allowSemi -> true
+            | _ -> false
+
+        let parseSpanArg defaultValue allowSemiTerminator =
+            let inline shouldUseDefault () =
+                match current state with
+                | Some tok when isTerminator allowSemiTerminator tok.Kind -> true
+                | _ -> false
+
+            if shouldUseDefault () then
+                Some(implicitInteger defaultValue, None, None)
+            else
+                match parseExpressionWithPrecedence 2 state with
+                | Some(ast, cst, span) -> Some(ast, Some cst, Some span)
+                | None ->
+                    if shouldUseDefault () then
+                        Some(implicitInteger defaultValue, None, None)
+                    else
+                        let issue =
+                            ParserHelpers.issue IssueSeverity.Error "Expected expression for span specification" (Some semiTok.Span)
+                        state.Issues.Add issue
+                        None
+
+        let appendArg defaultValue allowSemiTerminator =
+            match parseSpanArg defaultValue allowSemiTerminator with
+            | Some(ast, cstOpt, spanOpt) ->
+                args.Add ast
+                match cstOpt with
+                | Some c -> children.Add c
+                | None -> ()
+                spanOpt |> Option.iter addSpan
+                true
+            | None -> false
+
+        if not (appendArg "-1" true) then
+            None
+        else
+            match current state with
+            | Some nextSemi when nextSemi.Kind = TokenKind.SemiSemi ->
+                advance state
+                children.Add(Cst.Token nextSemi)
+                addSpan nextSemi.Span
+                if not (appendArg "1" false) then
+                    None
+                else
+                    let fullSpan =
+                        match combinedSpanOpt with
+                        | Some span -> span
+                        | None -> semiTok.Span
+
+                    let head = Ast.Leaf(TokenKind.Symbol, "Span", Ast.metadata semiTok.Span)
+                    let astCombined = Ast.Call(head, List.ofSeq args, Ast.metadata fullSpan)
+                    let cstCombined = Cst.Group(NodeSeq.ofList (List.ofSeq children))
+                    Some(astCombined, cstCombined, fullSpan)
+            | _ ->
+                let fullSpan =
+                    match combinedSpanOpt with
+                    | Some span -> span
+                    | None -> semiTok.Span
+
+                let head = Ast.Leaf(TokenKind.Symbol, "Span", Ast.metadata semiTok.Span)
+                let astCombined = Ast.Call(head, List.ofSeq args, Ast.metadata fullSpan)
+                let cstCombined = Cst.Group(NodeSeq.ofList (List.ofSeq children))
+                Some(astCombined, cstCombined, fullSpan)
 
     and private parseExpressionWithPrecedence minPrec (state: ParserState) =
         let mutable leftOpt = parsePrimary state
@@ -118,6 +250,25 @@ module Parser =
             match leftOpt, current state with
             | Some(astLeft, cstLeft, spanLeft), Some tok ->
                 match tok.Kind with
+                | TokenKind.SemiSemi ->
+                    advance state
+                    match parseSpanSequence state (Some(astLeft, cstLeft, spanLeft)) tok with
+                    | Some combined -> loop (Some combined)
+                    | None -> leftOpt
+                | TokenKind.At ->
+                    advance state
+                    skipToplevelNewlines state
+                    let prec = 82
+                    match parseExpressionWithPrecedence prec state with
+                    | Some(astRight, cstRight, spanRight) ->
+                        let fullSpan = Span.covering spanLeft spanRight
+                        let astCombined = Ast.Call(astLeft, [ astRight ], Ast.metadata fullSpan)
+                        let cstCombined =
+                            Cst.Infix
+                                { Op = tok.Kind
+                                  Children = NodeSeq.ofList [ cstLeft; Cst.Token tok; cstRight ] }
+                        loop (Some(astCombined, cstCombined, fullSpan))
+                    | None -> leftOpt
                 | TokenKind.Comma
                 | TokenKind.CloseCurly
                 | TokenKind.CloseSquare
@@ -126,6 +277,7 @@ module Parser =
                 match infixInfo tok.Kind with
                 | Some(prec, assoc, headName) when prec >= minPrec ->
                     advance state
+                    skipToplevelNewlines state
                     let nextMin =
                         match assoc with
                         | Assoc.Left -> prec + 1
@@ -153,6 +305,7 @@ module Parser =
         loop leftOpt
 
     and private parsePrimary (state: ParserState) =
+        skipToplevelNewlines state
         let baseOpt = parseAtom state
         match baseOpt with
         | None -> None
@@ -171,6 +324,52 @@ module Parser =
                 let ast = ParserHelpers.astLeafFromToken tok
                 let cst = ParserHelpers.cstToken tok
                 Some(ast, cst, tok.Span)
+            | TokenKind.Hash ->
+                let indexTokOpt =
+                    match current state with
+                    | Some next when next.Kind = TokenKind.Integer ->
+                        advance state
+                        Some next
+                    | _ -> None
+                let indexAst =
+                    match indexTokOpt with
+                    | Some idxTok -> ParserHelpers.astLeafFromToken idxTok
+                    | None -> implicitInteger "1"
+                let head = Ast.Leaf(TokenKind.Symbol, "Slot", Ast.metadata tok.Span)
+                let fullSpan =
+                    match indexTokOpt with
+                    | Some idxTok -> Span.covering tok.Span idxTok.Span
+                    | None -> tok.Span
+                let ast = Ast.Call(head, [ indexAst ], Ast.metadata fullSpan)
+                let cst =
+                    match indexTokOpt with
+                    | Some idxTok ->
+                        Cst.Group(NodeSeq.ofList [ Cst.Token tok; Cst.Token idxTok ])
+                    | None -> Cst.Token tok
+                Some(ast, cst, fullSpan)
+            | TokenKind.HashHash ->
+                let indexTokOpt =
+                    match current state with
+                    | Some next when next.Kind = TokenKind.Integer ->
+                        advance state
+                        Some next
+                    | _ -> None
+                let indexAst =
+                    match indexTokOpt with
+                    | Some idxTok -> ParserHelpers.astLeafFromToken idxTok
+                    | None -> implicitInteger "1"
+                let head = Ast.Leaf(TokenKind.Symbol, "SlotSequence", Ast.metadata tok.Span)
+                let fullSpan =
+                    match indexTokOpt with
+                    | Some idxTok -> Span.covering tok.Span idxTok.Span
+                    | None -> tok.Span
+                let ast = Ast.Call(head, [ indexAst ], Ast.metadata fullSpan)
+                let cst =
+                    match indexTokOpt with
+                    | Some idxTok ->
+                        Cst.Group(NodeSeq.ofList [ Cst.Token tok; Cst.Token idxTok ])
+                    | None -> Cst.Token tok
+                Some(ast, cst, fullSpan)
             | TokenKind.OpenCurly ->
                 let rec gather accAst accCstRev =
                     match current state with
@@ -237,6 +436,8 @@ module Parser =
                               Children = NodeSeq.ofList [ Cst.Token tok; cst ] }
                     Some(astCall, cst, fullSpan)
                 | None -> None
+            | TokenKind.SemiSemi ->
+                parseSpanSequence state None tok
             | _ ->
                 let issue =
                     ParserHelpers.issue IssueSeverity.Error $"Unexpected token '{tok.Text}'" (Some tok.Span)
@@ -249,41 +450,116 @@ module Parser =
             match current state with
             | Some tok when tok.Kind = TokenKind.OpenSquare ->
                 advance state
-                let rec collect argsAst argsCstRev =
-                    match current state with
-                    | Some close when close.Kind = TokenKind.CloseSquare ->
-                        advance state
-                        let fullSpan = Span.covering span close.Span
-                        let head = ast
-                        let astCombined =
-                            Ast.Call(head, List.rev argsAst, Ast.metadata fullSpan)
-                        let content = List.rev argsCstRev
-                        let children =
-                            NodeSeq.ofList (cst :: Cst.Token tok :: content @ [ Cst.Token close ])
-                        let cstCombined = Cst.Group(children)
-                        Some(astCombined, cstCombined, fullSpan)
-                    | _ ->
-                        match parseExpressionWithPrecedence 2 state with
-                        | Some(astInner, cstInner, _) ->
-                            let sep =
-                                match current state with
-                                | Some comma when comma.Kind = TokenKind.Comma ->
-                                    advance state
-                                    Some(Cst.Token comma)
-                                | _ -> None
-                            let nextCstRev =
-                                match sep with
-                                | Some commaTok -> commaTok :: cstInner :: argsCstRev
-                                | None -> cstInner :: argsCstRev
-                            collect (astInner :: argsAst) nextCstRev
-                        | None ->
-                            let issue =
-                                ParserHelpers.issue IssueSeverity.Error "Unclosed function call" (Some tok.Span)
-                            state.Issues.Add issue
-                            None
-                match collect [] [] with
-                | Some res -> loop res
-                | None -> None
+                match current state with
+                | Some tok2 when tok2.Kind = TokenKind.OpenSquare ->
+                    advance state
+                    let rec collectPart argsAst argsCstRev =
+                        match current state with
+                        | Some close when close.Kind = TokenKind.CloseSquare ->
+                            match peek 1 state with
+                            | Some close2 when close2.Kind = TokenKind.CloseSquare ->
+                                advance state
+                                let closeTok1 = close
+                                let closeTok2 =
+                                    match current state with
+                                    | Some tokClose2 when tokClose2.Kind = TokenKind.CloseSquare ->
+                                        tokClose2
+                                    | _ ->
+                                        let issue =
+                                            ParserHelpers.issue IssueSeverity.Error
+                                                "Expected closing ']]' for Part expression"
+                                                (Some close.Span)
+                                        state.Issues.Add issue
+                                        close
+                                advance state
+                                let head = Ast.Leaf(TokenKind.Symbol, "Part", Ast.metadata tok.Span)
+                                let args = ast :: List.rev argsAst
+                                let fullSpan = Span.covering span closeTok2.Span
+                                let astCombined = Ast.Call(head, args, Ast.metadata fullSpan)
+                                let content = List.rev argsCstRev
+                                let children =
+                                    NodeSeq.ofList (
+                                        cst
+                                        :: Cst.Token tok
+                                        :: Cst.Token tok2
+                                        :: content
+                                        @ [ Cst.Token closeTok1; Cst.Token closeTok2 ]
+                                    )
+                                let cstCombined = Cst.Group(children)
+                                Some(astCombined, cstCombined, fullSpan)
+                            | _ ->
+                                let issue =
+                                    ParserHelpers.issue IssueSeverity.Error
+                                        "Expected closing ']]' for Part expression"
+                                        (Some close.Span)
+                                state.Issues.Add issue
+                                None
+                        | _ ->
+                            match parseExpressionWithPrecedence 2 state with
+                            | Some(astInner, cstInner, _) ->
+                                let sep =
+                                    match current state with
+                                    | Some comma when comma.Kind = TokenKind.Comma ->
+                                        advance state
+                                        Some(Cst.Token comma)
+                                    | _ -> None
+                                let nextCstRev =
+                                    match sep with
+                                    | Some commaTok -> commaTok :: cstInner :: argsCstRev
+                                    | None -> cstInner :: argsCstRev
+                                collectPart (astInner :: argsAst) nextCstRev
+                            | None ->
+                                let issue =
+                                    ParserHelpers.issue IssueSeverity.Error "Unclosed Part expression" (Some tok.Span)
+                                state.Issues.Add issue
+                                None
+                    match collectPart [] [] with
+                    | Some res -> loop res
+                    | None -> None
+                | _ ->
+                    let rec collect argsAst argsCstRev =
+                        match current state with
+                        | Some close when close.Kind = TokenKind.CloseSquare ->
+                            advance state
+                            let fullSpan = Span.covering span close.Span
+                            let head = ast
+                            let astCombined =
+                                Ast.Call(head, List.rev argsAst, Ast.metadata fullSpan)
+                            let content = List.rev argsCstRev
+                            let children =
+                                NodeSeq.ofList (cst :: Cst.Token tok :: content @ [ Cst.Token close ])
+                            let cstCombined = Cst.Group(children)
+                            Some(astCombined, cstCombined, fullSpan)
+                        | _ ->
+                            match parseExpressionWithPrecedence 2 state with
+                            | Some(astInner, cstInner, _) ->
+                                let sep =
+                                    match current state with
+                                    | Some comma when comma.Kind = TokenKind.Comma ->
+                                        advance state
+                                        Some(Cst.Token comma)
+                                    | _ -> None
+                                let nextCstRev =
+                                    match sep with
+                                    | Some commaTok -> commaTok :: cstInner :: argsCstRev
+                                    | None -> cstInner :: argsCstRev
+                                collect (astInner :: argsAst) nextCstRev
+                            | None ->
+                                let issue =
+                                    ParserHelpers.issue IssueSeverity.Error "Unclosed function call" (Some tok.Span)
+                                state.Issues.Add issue
+                                None
+                    match collect [] [] with
+                    | Some res -> loop res
+                    | None -> None
+            | Some tok when tok.Kind = TokenKind.Amp ->
+                advance state
+                let head = Ast.Leaf(TokenKind.Symbol, "Function", Ast.metadata tok.Span)
+                let fullSpan = Span.covering span tok.Span
+                let astCombined = Ast.Call(head, [ ast ], Ast.metadata fullSpan)
+                let cstCombined =
+                    Cst.Group(NodeSeq.ofList [ cst; Cst.Token tok ])
+                loop (astCombined, cstCombined, fullSpan)
             | _ -> Some(ast, cst, span)
         loop (baseAst, baseCst, baseSpan)
 
@@ -319,7 +595,11 @@ module Parser =
                 match tok.Kind with
                 | TokenKind.ToplevelNewline when not seenExprAfter -> acc, seenExprAfter
                 | TokenKind.ToplevelNewline -> tok :: acc, seenExprAfter
-                | _ -> tok :: acc, true)
+                | TokenKind.Semi
+                | TokenKind.SemiSemi ->
+                    tok :: acc, seenExprAfter
+                | _ ->
+                    tok :: acc, true)
             |> fst
 
         let rec dropLeading seenExpr acc remaining =
@@ -429,25 +709,33 @@ module Parser =
         parseBytesCstSeq bytes opts |> expectSingle "parse_bytes_cst"
 
     let parseAstSeq (input: string) (opts: ParseOptions) =
-        match Tokenizer.tokenizeBytes (Encoding.UTF8.GetBytes input) opts with
-        | Result.Ok tokens ->
-            let (NodeSeq tokenList) = tokens
-            let astSeq, _, issues, span = parseTokens tokenList
-            { Syntax = astSeq
-              UnsafeCharacterEncoding = None
-              FatalIssues = issues
-              NonFatalIssues = []
-              Tracked =
-                { TrackedSourceLocations.Empty with
-                    Tokens =
-                        match tokenList with
-                        | [] -> []
-                        | _ -> [ span ] } }
-        | Result.Error flag ->
+        try
+            match Tokenizer.tokenizeBytes (Encoding.UTF8.GetBytes input) opts with
+            | Result.Ok tokens ->
+                let (NodeSeq tokenList) = tokens
+                let astSeq, _, issues, span = parseTokens tokenList
+                { Syntax = astSeq
+                  UnsafeCharacterEncoding = None
+                  FatalIssues = issues
+                  NonFatalIssues = []
+                  Tracked =
+                    { TrackedSourceLocations.Empty with
+                        Tokens =
+                            match tokenList with
+                            | [] -> []
+                            | _ -> [ span ] } }
+            | Result.Error flag ->
+                { Syntax = NodeSeq.empty
+                  UnsafeCharacterEncoding = Some flag
+                  FatalIssues =
+                    [ ParserHelpers.issue IssueSeverity.Error "Unable to decode input as UTF-8" None ]
+                  NonFatalIssues = []
+                  Tracked = TrackedSourceLocations.Empty }
+        with ex ->
             { Syntax = NodeSeq.empty
-              UnsafeCharacterEncoding = Some flag
+              UnsafeCharacterEncoding = None
               FatalIssues =
-                [ ParserHelpers.issue IssueSeverity.Error "Unable to decode input as UTF-8" None ]
+                [ ParserHelpers.issue IssueSeverity.Error (sprintf "Parser panic: %s" ex.Message) None ]
               NonFatalIssues = []
               Tracked = TrackedSourceLocations.Empty }
 
