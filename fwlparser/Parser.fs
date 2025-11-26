@@ -1,5 +1,7 @@
 namespace FwlParser
 
+// Parser architecture draws heavy inspiration from WolframResearch/codeparser (https://github.com/WolframResearch/codeparser/tree/master/crates).
+
 open System
 open System.Text
 
