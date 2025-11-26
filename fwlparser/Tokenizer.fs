@@ -118,149 +118,153 @@ module Tokenizer =
                         let idx' = idx + offset
                         if idx' < length then Some input[idx'] else None
 
-                    let makeToken kind len =
+                    let buildToken kind len =
                         let text = input.Substring(idx, len)
                         let endPos = TokenizerHelpers.advanceText text pos
                         let tok =
                             { Kind = kind
                               Text = text
                               Span = TokenizerHelpers.span pos endPos }
-                        loop (idx + len) endPos (tok :: acc)
+                        (idx + len, endPos, tok :: acc)
+
+                    let advanceToken kind len =
+                        let nextIdx, nextPos, nextAcc = buildToken kind len
+                        loop nextIdx nextPos nextAcc
 
                     match ch with
                     | '.' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '.', Some '.' -> makeToken TokenKind.DotDotDot 3
-                        | Some '.', _ -> makeToken TokenKind.DotDot 2
-                        | _ -> makeToken TokenKind.Dot 1
+                        | Some '.', Some '.' -> advanceToken TokenKind.DotDotDot 3
+                        | Some '.', _ -> advanceToken TokenKind.DotDot 2
+                        | _ -> advanceToken TokenKind.Dot 1
                     | ':' ->
                         match nextChar 1, nextChar 2 with
-                        | Some ':', Some '[' -> makeToken TokenKind.ColonColonOpenSquare 3
-                        | Some ':', _ -> makeToken TokenKind.ColonColon 2
-                        | Some '=', _ -> makeToken TokenKind.ColonEqual 2
-                        | Some '>', _ -> makeToken TokenKind.ColonGreater 2
-                        | _ -> makeToken TokenKind.Colon 1
+                        | Some ':', Some '[' -> advanceToken TokenKind.ColonColonOpenSquare 3
+                        | Some ':', _ -> advanceToken TokenKind.ColonColon 2
+                        | Some '=', _ -> advanceToken TokenKind.ColonEqual 2
+                        | Some '>', _ -> advanceToken TokenKind.ColonGreater 2
+                        | _ -> advanceToken TokenKind.Colon 1
                     | ';' ->
                         match nextChar 1 with
-                        | Some ';' -> makeToken TokenKind.SemiSemi 2
-                        | _ -> makeToken TokenKind.Semi 1
+                        | Some ';' -> advanceToken TokenKind.SemiSemi 2
+                        | _ -> advanceToken TokenKind.Semi 1
                     | '=' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '=', Some '=' -> makeToken TokenKind.EqualEqualEqual 3
-                        | Some '!', Some '=' -> makeToken TokenKind.EqualBangEqual 3
-                        | Some '=', _ -> makeToken TokenKind.EqualEqual 2
-                        | _ -> makeToken TokenKind.Equal 1
+                        | Some '=', Some '=' -> advanceToken TokenKind.EqualEqualEqual 3
+                        | Some '!', Some '=' -> advanceToken TokenKind.EqualBangEqual 3
+                        | Some '=', _ -> advanceToken TokenKind.EqualEqual 2
+                        | _ -> advanceToken TokenKind.Equal 1
                     | '!' ->
                         match nextChar 1 with
-                        | Some '=' -> makeToken TokenKind.BangEqual 2
-                        | Some '!' -> makeToken TokenKind.BangBang 2
-                        | _ -> makeToken TokenKind.Bang 1
+                        | Some '=' -> advanceToken TokenKind.BangEqual 2
+                        | Some '!' -> advanceToken TokenKind.BangBang 2
+                        | _ -> advanceToken TokenKind.Bang 1
                     | '<' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '-', Some '>' -> makeToken TokenKind.LessMinusGreater 3
-                        | Some '<', _ -> makeToken TokenKind.LessLess 2
-                        | Some '=', _ -> makeToken TokenKind.LessEqual 2
-                        | Some '>', _ -> makeToken TokenKind.LessGreater 2
-                        | Some '|', _ -> makeToken TokenKind.LessBar 2
-                        | _ -> makeToken TokenKind.Less 1
+                        | Some '-', Some '>' -> advanceToken TokenKind.LessMinusGreater 3
+                        | Some '<', _ -> advanceToken TokenKind.LessLess 2
+                        | Some '=', _ -> advanceToken TokenKind.LessEqual 2
+                        | Some '>', _ -> advanceToken TokenKind.LessGreater 2
+                        | Some '|', _ -> advanceToken TokenKind.LessBar 2
+                        | _ -> advanceToken TokenKind.Less 1
                     | '>' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '>', Some '>' -> makeToken TokenKind.GreaterGreaterGreater 3
-                        | Some '>', _ -> makeToken TokenKind.GreaterGreater 2
-                        | Some '=', _ -> makeToken TokenKind.GreaterEqual 2
-                        | _ -> makeToken TokenKind.Greater 1
+                        | Some '>', Some '>' -> advanceToken TokenKind.GreaterGreaterGreater 3
+                        | Some '>', _ -> advanceToken TokenKind.GreaterGreater 2
+                        | Some '=', _ -> advanceToken TokenKind.GreaterEqual 2
+                        | _ -> advanceToken TokenKind.Greater 1
                     | '-' ->
                         match nextChar 1 with
-                        | Some '>' -> makeToken TokenKind.MinusGreater 2
-                        | Some '-' -> makeToken TokenKind.MinusMinus 2
-                        | Some '=' -> makeToken TokenKind.MinusEqual 2
-                        | _ -> makeToken TokenKind.Minus 1
+                        | Some '>' -> advanceToken TokenKind.MinusGreater 2
+                        | Some '-' -> advanceToken TokenKind.MinusMinus 2
+                        | Some '=' -> advanceToken TokenKind.MinusEqual 2
+                        | _ -> advanceToken TokenKind.Minus 1
                     | '+' ->
                         match nextChar 1 with
-                        | Some '+' -> makeToken TokenKind.PlusPlus 2
-                        | Some '=' -> makeToken TokenKind.PlusEqual 2
-                        | _ -> makeToken TokenKind.Plus 1
+                        | Some '+' -> advanceToken TokenKind.PlusPlus 2
+                        | Some '=' -> advanceToken TokenKind.PlusEqual 2
+                        | _ -> advanceToken TokenKind.Plus 1
                     | '*' ->
                         match nextChar 1 with
-                        | Some '=' -> makeToken TokenKind.StarEqual 2
-                        | Some '*' -> makeToken TokenKind.StarStar 2
-                        | _ -> makeToken TokenKind.Star 1
+                        | Some '=' -> advanceToken TokenKind.StarEqual 2
+                        | Some '*' -> advanceToken TokenKind.StarStar 2
+                        | _ -> advanceToken TokenKind.Star 1
                     | '^' ->
                         match nextChar 1, nextChar 2 with
-                        | Some ':', Some '=' -> makeToken TokenKind.CaretColonEqual 3
-                        | Some '=', _ -> makeToken TokenKind.CaretEqual 2
-                        | _ -> makeToken TokenKind.Caret 1
+                        | Some ':', Some '=' -> advanceToken TokenKind.CaretColonEqual 3
+                        | Some '=', _ -> advanceToken TokenKind.CaretEqual 2
+                        | _ -> advanceToken TokenKind.Caret 1
                     | '/' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '/', Some '.' -> makeToken TokenKind.SlashSlashDot 3
-                        | Some '/', Some '@' -> makeToken TokenKind.SlashSlashAt 3
-                        | Some '/', Some '=' -> makeToken TokenKind.SlashSlashEqual 3
-                        | Some '/', _ -> makeToken TokenKind.SlashSlash 2
-                        | Some '*', _ -> makeToken TokenKind.SlashStar 2
-                        | Some ';', _ -> makeToken TokenKind.SlashSemi 2
-                        | Some '.', _ -> makeToken TokenKind.SlashDot 2
-                        | Some '=', _ -> makeToken TokenKind.SlashEqual 2
-                        | Some '@', _ -> makeToken TokenKind.SlashAt 2
-                        | Some ':', _ -> makeToken TokenKind.SlashColon 2
-                        | _ -> makeToken TokenKind.Slash 1
+                        | Some '/', Some '.' -> advanceToken TokenKind.SlashSlashDot 3
+                        | Some '/', Some '@' -> advanceToken TokenKind.SlashSlashAt 3
+                        | Some '/', Some '=' -> advanceToken TokenKind.SlashSlashEqual 3
+                        | Some '/', _ -> advanceToken TokenKind.SlashSlash 2
+                        | Some '*', _ -> advanceToken TokenKind.SlashStar 2
+                        | Some ';', _ -> advanceToken TokenKind.SlashSemi 2
+                        | Some '.', _ -> advanceToken TokenKind.SlashDot 2
+                        | Some '=', _ -> advanceToken TokenKind.SlashEqual 2
+                        | Some '@', _ -> advanceToken TokenKind.SlashAt 2
+                        | Some ':', _ -> advanceToken TokenKind.SlashColon 2
+                        | _ -> advanceToken TokenKind.Slash 1
                     | '@' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '@', Some '@' -> makeToken TokenKind.AtAtAt 3
-                        | Some '@', _ -> makeToken TokenKind.AtAt 2
-                        | Some '*', _ -> makeToken TokenKind.AtStar 2
-                        | _ -> makeToken TokenKind.At 1
+                        | Some '@', Some '@' -> advanceToken TokenKind.AtAtAt 3
+                        | Some '@', _ -> advanceToken TokenKind.AtAt 2
+                        | Some '*', _ -> advanceToken TokenKind.AtStar 2
+                        | _ -> advanceToken TokenKind.At 1
                     | '#' ->
                         match nextChar 1 with
-                        | Some '#' -> makeToken TokenKind.HashHash 2
-                        | _ -> makeToken TokenKind.Hash 1
+                        | Some '#' -> advanceToken TokenKind.HashHash 2
+                        | _ -> advanceToken TokenKind.Hash 1
                     | '~' ->
                         match nextChar 1 with
-                        | Some '~' -> makeToken TokenKind.TildeTilde 2
-                        | _ -> makeToken TokenKind.Tilde 1
+                        | Some '~' -> advanceToken TokenKind.TildeTilde 2
+                        | _ -> advanceToken TokenKind.Tilde 1
                     | '_' ->
                         match nextChar 1, nextChar 2 with
-                        | Some '_', Some '_' -> makeToken TokenKind.UnderUnderUnder 3
-                        | Some '_', _ -> makeToken TokenKind.UnderUnder 2
-                        | Some '.', _ -> makeToken TokenKind.UnderDot 2
-                        | _ -> makeToken TokenKind.Under 1
+                        | Some '_', Some '_' -> advanceToken TokenKind.UnderUnderUnder 3
+                        | Some '_', _ -> advanceToken TokenKind.UnderUnder 2
+                        | Some '.', _ -> advanceToken TokenKind.UnderDot 2
+                        | _ -> advanceToken TokenKind.Under 1
                     | '&' ->
                         match nextChar 1 with
-                        | Some '&' -> makeToken TokenKind.AmpAmp 2
-                        | _ -> makeToken TokenKind.Amp 1
+                        | Some '&' -> advanceToken TokenKind.AmpAmp 2
+                        | _ -> advanceToken TokenKind.Amp 1
                     | '|' ->
                         match nextChar 1 with
-                        | Some '|' -> makeToken TokenKind.BarBar 2
-                        | Some '>' -> makeToken TokenKind.BarGreater 2
-                        | _ -> makeToken TokenKind.Bar 1
+                        | Some '|' -> advanceToken TokenKind.BarBar 2
+                        | Some '>' -> advanceToken TokenKind.BarGreater 2
+                        | _ -> advanceToken TokenKind.Bar 1
                     | '%' ->
                         match nextChar 1 with
-                        | Some '%' -> makeToken TokenKind.PercentPercent 2
-                        | _ -> makeToken TokenKind.Percent 1
-                    | '(' -> makeToken TokenKind.OpenParen 1
-                    | ')' -> makeToken TokenKind.CloseParen 1
-                    | '[' -> makeToken TokenKind.OpenSquare 1
-                    | ']' -> makeToken TokenKind.CloseSquare 1
-                    | '{' -> makeToken TokenKind.OpenCurly 1
-                    | '}' -> makeToken TokenKind.CloseCurly 1
-                    | ',' -> makeToken TokenKind.Comma 1
-                    | '\'' -> makeToken TokenKind.SingleQuote 1
+                        | Some '%' -> advanceToken TokenKind.PercentPercent 2
+                        | _ -> advanceToken TokenKind.Percent 1
+                    | '(' -> advanceToken TokenKind.OpenParen 1
+                    | ')' -> advanceToken TokenKind.CloseParen 1
+                    | '[' -> advanceToken TokenKind.OpenSquare 1
+                    | ']' -> advanceToken TokenKind.CloseSquare 1
+                    | '{' -> advanceToken TokenKind.OpenCurly 1
+                    | '}' -> advanceToken TokenKind.CloseCurly 1
+                    | ',' -> advanceToken TokenKind.Comma 1
+                    | '\'' -> advanceToken TokenKind.SingleQuote 1
                     | '\\' ->
                         match nextChar 1 with
-                        | Some '!' -> makeToken TokenKind.LinearSyntax_Bang 2
-                        | Some ')' -> makeToken TokenKind.LinearSyntax_CloseParen 2
-                        | Some '@' -> makeToken TokenKind.LinearSyntax_At 2
-                        | Some '&' -> makeToken TokenKind.LinearSyntax_Amp 2
-                        | Some '*' -> makeToken TokenKind.LinearSyntax_Star 2
-                        | Some '_' -> makeToken TokenKind.LinearSyntax_Under 2
-                        | Some '^' -> makeToken TokenKind.LinearSyntax_Caret 2
-                        | Some ' ' -> makeToken TokenKind.LinearSyntax_Space 2
-                        | Some '%' -> makeToken TokenKind.LinearSyntax_Percent 2
-                        | Some '+' -> makeToken TokenKind.LinearSyntax_Plus 2
-                        | Some '/' -> makeToken TokenKind.LinearSyntax_Slash 2
-                        | Some '`' -> makeToken TokenKind.LinearSyntax_BackTick 2
-                        | _ -> makeToken TokenKind.Unknown 1
+                        | Some '!' -> advanceToken TokenKind.LinearSyntax_Bang 2
+                        | Some ')' -> advanceToken TokenKind.LinearSyntax_CloseParen 2
+                        | Some '@' -> advanceToken TokenKind.LinearSyntax_At 2
+                        | Some '&' -> advanceToken TokenKind.LinearSyntax_Amp 2
+                        | Some '*' -> advanceToken TokenKind.LinearSyntax_Star 2
+                        | Some '_' -> advanceToken TokenKind.LinearSyntax_Under 2
+                        | Some '^' -> advanceToken TokenKind.LinearSyntax_Caret 2
+                        | Some ' ' -> advanceToken TokenKind.LinearSyntax_Space 2
+                        | Some '%' -> advanceToken TokenKind.LinearSyntax_Percent 2
+                        | Some '+' -> advanceToken TokenKind.LinearSyntax_Plus 2
+                        | Some '/' -> advanceToken TokenKind.LinearSyntax_Slash 2
+                        | Some '`' -> advanceToken TokenKind.LinearSyntax_BackTick 2
+                        | _ -> advanceToken TokenKind.Unknown 1
                     | _ ->
-                        makeToken TokenKind.Unknown 1
+                        advanceToken TokenKind.Unknown 1
 
         loop 0 Position.start []
 

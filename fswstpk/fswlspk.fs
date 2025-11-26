@@ -167,7 +167,7 @@ type fswlspServer(input: Stream, output: Stream) =
             error.message <- ex.Message
             error.data <- null
             // Handle the error here, e.g., log it or send a notification to the client
-            this.log_messages(sprintf "Error: %s" ex.Message)
+            // this.log_messages(sprintf "Error: %s" ex.Message)
             this.Initialized()
             try
                 ml.Evaluate(expr)
@@ -179,7 +179,7 @@ type fswlspServer(input: Stream, output: Stream) =
                 error.message <- ex.Message
                 error.data <- null
                 // Handle the error here, e.g., log it or send a notification to the client
-                this.log_messages(sprintf "Error: %s" ex.Message)       
+                // this.log_messages(sprintf "Error: %s" ex.Message)       
                 
             ()
         let eval = ml.GetString()
@@ -285,7 +285,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     error.message <- ex.Message
                     error.data <- null
                     // Handle the error here, e.g., log it or send a notification to the client
-                    this.log_messages(sprintf "Error: %s" ex.Message)
+                    // this.log_messages(sprintf "Error: %s" ex.Message)
                     "Print[\"Error getting input: " + ex.Message.Replace("\"", "\\\"") + "\"];"
 
             let getInputHandler (request: GetInputParams): unit = 
@@ -333,7 +333,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     error.message <- ex.Message
                     error.data <- null
                     // Handle the error here, e.g., log it or send a notification to the client
-                    this.log_messages(sprintf "Error: %s" ex.Message)
+                    // this.log_messages(sprintf "Error: %s" ex.Message)
                     ()
 
 
@@ -415,6 +415,12 @@ type fswlspServer(input: Stream, output: Stream) =
                 response.id <- request.id
                 response
 
+            let traceHandler (request: SetTraceParams) : unit =
+
+                let value:JToken = request.Params["value"]
+                // log_messages(sprintf "setTrace: %s" ( request.Params.ToString() ))
+                ()
+
             this.RequestHandlers.Set<storageUriParams, ResponseMessageBase>(
                 "storageUri",
                 Func<storageUriParams, CancellationToken, ResponseMessageBase>(storageUriHandler)
@@ -428,6 +434,12 @@ type fswlspServer(input: Stream, output: Stream) =
             this.RequestHandlers.Set<GetVersionParams, ResponseMessageBase>(
                 "getVersion",
                 Func<GetVersionParams, CancellationToken, ResponseMessageBase>(getVersionHandler)
+            )
+
+
+            this.NotificationHandlers.Set<SetTraceParams>(
+                "$/setTrace",
+                Action<SetTraceParams>(traceHandler)
             )
             
 
@@ -461,7 +473,7 @@ type fswlspServer(input: Stream, output: Stream) =
             capabilities.hoverProvider <- true
             // capabilities.codeLensProvider <- new CodeLensOptions()
             // capabilities.codeLensProvider.resolveProvider <- false
-            capabilities.documentSymbolProvider <- true
+            capabilities.documentSymbolProvider <- false
 
             let completionOptions = new CompletionOptions()
             // completionOptions.resolveProvider <- true
@@ -524,24 +536,24 @@ type fswlspServer(input: Stream, output: Stream) =
         // switch statement to handle the packet type
         // this.log_messages(sprintf "Packet arrived: %A" pkt)
         match pkt with
-            | PacketType.Illegal -> () // this.log_messages("Illegal packet received.")
-            | PacketType.Call -> () // this.log_messages("Call packet received.")
-            | PacketType.Evaluate -> () // this.log_messages("Evaluate packet received.")
+            // | PacketType.Illegal -> () // this.log_messages("Illegal packet received.")
+            // | PacketType.Call -> () // this.log_messages("Call packet received.")
+            // | PacketType.Evaluate -> () // this.log_messages("Evaluate packet received.")
             | PacketType.Return -> ()
-            | PacketType.InputName -> () // this.log_messages("InputName packet received.")
-            | PacketType.EnterText -> () // this.log_messages("EnterText packet received.")
-            | PacketType.EnterExpression -> () // this.log_messages("EnterExpression packet received.")
-            | PacketType.OutputName -> () // this.log_messages("OutputName packet received.")
-            | PacketType.ReturnText -> () // this.log_messages("ReturnText packet received.")
-            | PacketType.ReturnExpression -> () // this.log_messages("ReturnExpression packet received.")
-            | PacketType.Display -> this.log_messages( sprintf "%s" (this._ml.GetString()))
-            | PacketType.DisplayEnd -> this.log_messages(sprintf "%s" (this._ml.GetString()))
+            // | PacketType.InputName -> () // this.log_messages("InputName packet received.")
+            // | PacketType.EnterText -> () // this.log_messages("EnterText packet received.")
+            // | PacketType.EnterExpression -> () // this.log_messages("EnterExpression packet received.")
+            // | PacketType.OutputName -> () // this.log_messages("OutputName packet received.")
+            // | PacketType.ReturnText -> () // this.log_messages("ReturnText packet received.")
+            // | PacketType.ReturnExpression -> () // this.log_messages("ReturnExpression packet received.")
+            // | PacketType.Display -> this.log_messages( sprintf "%s" (this._ml.GetString()))
+            // | PacketType.DisplayEnd -> this.log_messages(sprintf "%s" (this._ml.GetString()))
             | PacketType.Message -> 
                 let message = this._ml.GetString()
                 this.log_messages(sprintf "%s" message)
             | PacketType.Text -> 
                 let text = this._ml.GetString()
-                this.log_messages(sprintf "%s" text)
+                // this.log_messages(sprintf "%s" text)
                 let p = new ShowMessageParams()
                 p.``type`` <- MessageType.Info
                 p.message <- sprintf "%s ... full output in output log" (text.Substring(
@@ -567,19 +579,19 @@ type fswlspServer(input: Stream, output: Stream) =
             // | PacketType.InputReply -> () // this.log_messages("InputReply packet received.")
             // | PacketType.InputExpression -> () // this.log_messages("InputExpression packet received.")
             // | PacketType.InputText -> () // this.log_messages("InputText packet received.") 
-            | PacketType.Input -> () // this.log_messages("Input packet received.")
-            | PacketType.InputString -> () // this.log_messages("InputString packet received.")
-            | PacketType.Menu -> () // this.log_messages("Menu packet received.")
-            | PacketType.Syntax -> this.log_messages(sprintf "%s" (this._ml.GetString()))
-            | PacketType.Suspend -> () // this.log_messages("Suspend packet received.")
-            | PacketType.Resume -> () // this.log_messages("Resume packet received.")
-            | PacketType.BeginDialog -> () // this.log_messages("BeginDialog packet received.")
-            | PacketType.EndDialog -> () // this.log_messages("EndDialog packet received.")
-            | PacketType.FirstUser -> () // this.log_messages("FirstUser packet received.")
-            | PacketType.LastUser -> () // this.log_messages("LastUser packet received.")
-            | PacketType.FrontEnd -> () // this.log_messages("FrontEnd packet received.")
-            | PacketType.Expression -> () // this.log_messages("Expression packet received.")
-            | _ -> () // this.log_messages("Unknown packet type received.")     
+            // | PacketType.Input -> () // this.log_messages("Input packet received.")
+            // | PacketType.InputString -> () // this.log_messages("InputString packet received.")
+            // | PacketType.Menu -> () // this.log_messages("Menu packet received.")
+            // | PacketType.Syntax -> this.log_messages(sprintf "%s" (this._ml.GetString()))
+            // | PacketType.Suspend -> () // this.log_messages("Suspend packet received.")
+            // | PacketType.Resume -> () // this.log_messages("Resume packet received.")
+            // | PacketType.BeginDialog -> () // this.log_messages("BeginDialog packet received.")
+            // | PacketType.EndDialog -> () // this.log_messages("EndDialog packet received.")
+            // | PacketType.FirstUser -> () // this.log_messages("FirstUser packet received.")
+            // | PacketType.LastUser -> () // this.log_messages("LastUser packet received.")
+            // | PacketType.FrontEnd -> () // this.log_messages("FrontEnd packet received.")
+            // | PacketType.Expression -> () // this.log_messages("Expression packet received.")
+            // | _ -> () // this.log_messages("Unknown packet type received.")     
         true
 
     override this.Initialized (): unit = 
@@ -607,7 +619,7 @@ type fswlspServer(input: Stream, output: Stream) =
             error.message <- ex.Message
             error.data <- null
             // Handle the error here, e.g., log it or send a notification to the client
-            this.log_messages(sprintf "Error: %s" ex.Message)
+            // this.log_messages(sprintf "Error: %s" ex.Message)
             let showMessageParams = new ShowMessageParams()
             showMessageParams.``type`` <- MessageType.Error
             showMessageParams.message <- sprintf "Error starting Wolfram. This may be due to installation or licensing problems: %s" ex.Message
@@ -639,7 +651,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
         this.utils_path <- Path.Combine(wlsp_path, "wolfram", "utils.wl")
         let utils_path = Path.Combine(wlsp_path, "wolfram", "utils.wl")
-        this.log_messages(sprintf "Wolfram: %s" utils_path)
+        // this.log_messages(sprintf "Wolfram: %s" utils_path)
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         // this.evaluate_in_kernel(this._lsp, sprintf "Get[\"%s\"]" utils_path)  |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
@@ -772,9 +784,9 @@ type fswlspServer(input: Stream, output: Stream) =
                     this._documentSymbolsCache <- this._documentSymbolsCache.Add(filePath.ToString(), symbols)
         with
         | ex -> 
-            this.log_messages(sprintf "DocumentSymbols Filepath: %s" filePath)
-            this.log_messages(sprintf "DocumentSymbols text: %s" text)
-            this.log_messages(sprintf "Kernel Background DocumentSymbols update error: %s" ex.Message)
+            // this.log_messages(sprintf "DocumentSymbols Filepath: %s" filePath)
+            // this.log_messages(sprintf "DocumentSymbols text: %s" text)
+            // this.log_messages(sprintf "Kernel Background DocumentSymbols update error: %s" ex.Message)
             ()
 
     
@@ -801,7 +813,7 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 // this.log_messages(sprintf "symbols count: %d for %s" symbols.Length filePath)
             
-                this.log_messages(sprintf "Kernel Returning %d DocumentSymbols for: %s" symbols.Length filePath)
+                // this.log_messages(sprintf "Kernel Returning %d DocumentSymbols for: %s" symbols.Length filePath)
                 
                 let result = new DocumentSymbolResult(symbols)
                 Result<DocumentSymbolResult,ResponseError>.Success result
@@ -810,13 +822,13 @@ type fswlspServer(input: Stream, output: Stream) =
                 let error = new ResponseError()
                 error.code <- ErrorCodes.InternalError
                 error.message <- ex.Message
-                this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
+                // this.log_messages(sprintf "Error in DocumentSymbols: %s" ex.Message)
                 let result = new DocumentSymbolResult([||]: DocumentSymbol array)
                 Result<DocumentSymbolResult,ResponseError>.Success(result)
 
     override this.DidChangeTextDocument (p: DidChangeTextDocumentParams): unit = 
 
-        this.log_messages(sprintf "Kernel: DidChangeTextDocument for %s" (p.textDocument.uri.ToString()))
+        // this.log_messages(sprintf "Kernel: DidChangeTextDocument for %s" (p.textDocument.uri.ToString()))
 
         this._document <- p.textDocument.uri.ToString() 
         this._text <- p.contentChanges.[0].text.ToString()
@@ -891,7 +903,7 @@ type fswlspServer(input: Stream, output: Stream) =
             p2
         )
     override this.CodeLens (p: CodeLensParams): Result<CodeLens array,ResponseError> = 
-        this.log_messages(sprintf "Kernel: CodeLens for %s" (p.textDocument.uri.ToString()))
+        // this.log_messages(sprintf "Kernel: CodeLens for %s" (p.textDocument.uri.ToString()))
         if p.textDocument.uri.ToString() <> this._document then
             Result<CodeLens array,ResponseError>.Success([||])
         else
@@ -925,7 +937,7 @@ type fswlspServer(input: Stream, output: Stream) =
                     )
                     |> Seq.toArray
 
-                this.log_messages(sprintf "CodeLens count: %d" codeLenses.Length)
+                // this.log_messages(sprintf "CodeLens count: %d" codeLenses.Length)
 
                 Result<CodeLens array,ResponseError>.Success(codeLenses)
             with
@@ -1067,7 +1079,7 @@ type fswlspServer(input: Stream, output: Stream) =
             VoidResult<ResponseError>.Success()
         with
         | ex -> 
-            this.log_messages(sprintf "Error during shutdown: %s" ex.Message)
+            // this.log_messages(sprintf "Error during shutdown: %s" ex.Message)
             let error = new ResponseError()
             error.code <- ErrorCodes.InternalError
             error.message <- ex.Message

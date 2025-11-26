@@ -82,6 +82,7 @@ module Parser =
         | TokenKind.MinusGreater -> "Rule"
         | TokenKind.ColonGreater -> "RuleDelayed"
         | TokenKind.At -> "Prefix"
+        | TokenKind.ToplevelNewline -> "CompoundExpression"
         | _ -> kind.ToString()
 
     let private infixInfo kind =
@@ -97,7 +98,8 @@ module Parser =
             // Fallback defaults for common operators if not found in table
             let fallback =
                 match kind with
-                | TokenKind.Semi -> Some(1, Assoc.Left)
+                | TokenKind.Semi
+                | TokenKind.ToplevelNewline -> Some(1, Assoc.Left)
                 | TokenKind.Plus
                 | TokenKind.Minus -> Some(10, Assoc.Left)
                 | TokenKind.Star
@@ -285,16 +287,67 @@ module Parser =
             | _ -> Some(ast, cst, span)
         loop (baseAst, baseCst, baseSpan)
 
+    let private promoteToplevelNewlines (tokens: Token<TokenStr> list) =
+        let rec loop depth acc remaining =
+            match remaining with
+            | [] -> List.rev acc
+            | tok :: rest ->
+                let tok' =
+                    if tok.Kind = TokenKind.Newline && depth = 0 then
+                        { tok with Kind = TokenKind.ToplevelNewline }
+                    else
+                        tok
+
+                let nextDepth =
+                    match tok.Kind with
+                    | TokenKind.OpenParen
+                    | TokenKind.OpenSquare
+                    | TokenKind.OpenCurly -> depth + 1
+                    | TokenKind.CloseParen
+                    | TokenKind.CloseSquare
+                    | TokenKind.CloseCurly -> max (depth - 1) 0
+                    | _ -> depth
+
+                loop nextDepth (tok' :: acc) rest
+
+        loop 0 [] tokens
+
+    let private pruneDanglingToplevelNewlines (tokens: Token<TokenStr> list) =
+        let withoutTrailing =
+            (tokens, ([], false))
+            ||> List.foldBack (fun tok (acc, seenExprAfter) ->
+                match tok.Kind with
+                | TokenKind.ToplevelNewline when not seenExprAfter -> acc, seenExprAfter
+                | TokenKind.ToplevelNewline -> tok :: acc, seenExprAfter
+                | _ -> tok :: acc, true)
+            |> fst
+
+        let rec dropLeading seenExpr acc remaining =
+            match remaining with
+            | [] -> List.rev acc
+            | tok :: rest ->
+                match tok.Kind with
+                | TokenKind.ToplevelNewline when seenExpr ->
+                    dropLeading false (tok :: acc) rest
+                | TokenKind.ToplevelNewline ->
+                    dropLeading false acc rest
+                | _ ->
+                    dropLeading true (tok :: acc) rest
+
+        dropLeading false [] withoutTrailing
+
     let private parseTokens (tokens: Token<TokenStr> list) =
+        let tokensWithNewlines = promoteToplevelNewlines tokens
+
         let filtered =
-            tokens
+            tokensWithNewlines
             |> List.filter (fun t ->
                 t.Kind <> TokenKind.Whitespace
                 && t.Kind <> TokenKind.Newline
                 && t.Kind <> TokenKind.InternalNewline
-                && t.Kind <> TokenKind.ToplevelNewline
                 && t.Kind <> TokenKind.Comment
                 && t.Kind <> TokenKind.EndOfFile)
+            |> pruneDanglingToplevelNewlines
             |> List.toArray
 
         let state =
