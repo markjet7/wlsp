@@ -63,3 +63,5 @@ fwlparser/obj
 dist/
 
 libWSTPi4.a
+fwlparser/obj/Debug/net9.0/fwlparser.AssemblyInfo.fs
+fwlparser/obj/Debug/net9.0/fwlparser.AssemblyInfoInputs.cache
