@@ -20,6 +20,10 @@ open Newtonsoft.Json.Linq
 open System.Text.RegularExpressions
 open System.Text
 
+module internal FswlspKernelDefaults =
+    [<Literal>]
+    let DefaultMaxPreviewElements = 2000
+
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
 open FwlParser
 
@@ -147,10 +151,10 @@ type fswlspServer(input: Stream, output: Stream) =
         this.Window.LogMessage(p)
         ()
 
-    member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
-        // ml
-        
-        let expr = sprintf "evaluateInKernel[%s]" (this.escapeWolframString( this.unescapeWolframString(code)))
+    member this.evaluate_in_kernel(ml: IKernelLink, code: string, allowFullKernelResults: bool, maxPreviewElements: int) =
+        let previewElements =
+            if maxPreviewElements > 0 then maxPreviewElements else FswlspKernelDefaults.DefaultMaxPreviewElements
+        let expr = sprintf "evaluateInKernel[%s, %s, %d]" (this.escapeWolframString( this.unescapeWolframString(code))) (if allowFullKernelResults then "True" else "False") previewElements
 
         // this.log_messages(sprintf "Eval: %s" expr)
 
@@ -189,13 +193,21 @@ type fswlspServer(input: Stream, output: Stream) =
         let json = JToken.Parse( eval)
         let result = json.["Result"].ToString()
         let raw = json.["Raw"].ToString()
+        let note =
+            if isNull(json.["Note"]) then ""
+            else json.["Note"].ToString()
+
         let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
+        let errorsWithNote =
+            if String.IsNullOrWhiteSpace(note) then errors
+            elif String.IsNullOrWhiteSpace(errors) then note
+            else note + "\n" + errors
 
 
         let response = {|
             result = result
             raw = raw
-            errors = errors
+            errors = errorsWithNote
         |}
 
 
@@ -351,9 +363,19 @@ type fswlspServer(input: Stream, output: Stream) =
 
                 let input = get_input request
 
+                let allowFullKernelResults =
+                    if isNull(request.Params.["allowFullKernelResults"]) then false
+                    else request.Params.["allowFullKernelResults"].ToObject<bool>()
+
+                let maxPreviewElements =
+                    if isNull(request.Params.["maxPreviewElements"]) then FswlspKernelDefaults.DefaultMaxPreviewElements
+                    else
+                        let requested = request.Params.["maxPreviewElements"].ToObject<int>()
+                        if requested > 0 then requested else FswlspKernelDefaults.DefaultMaxPreviewElements
+
                 let start_time = DateTime.Now
 
-                let eval = this.evaluate_in_kernel(this._ml, input) 
+                let eval = this.evaluate_in_kernel(this._ml, input, allowFullKernelResults, maxPreviewElements) 
                 let result = eval.result
                 let raw = eval.raw
                 let errors = eval.errors
@@ -715,7 +737,9 @@ type fswlspServer(input: Stream, output: Stream) =
             else
                 let result = this.evaluate_in_kernel(
                     this._ml, 
-                    sprintf "TimeConstrained[%s, 2, \"Large output\"]" s)
+                    sprintf "TimeConstrained[%s, 2, \"Large output\"]" s,
+                    false,
+                    FswlspKernelDefaults.DefaultMaxPreviewElements)
 
                 // let message = result.result.ToString().Replace("<img src=\"data:image/jpg;base64,", "![alt text](data:image/jpg;base64,").Replace("class=\"img-responsive\"/>", ")"). Replace("\" \)", ")") 
                 let message = result.result

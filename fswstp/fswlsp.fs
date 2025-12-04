@@ -25,6 +25,10 @@ open System.Text
 open System.Text.Encodings.Web
 open System.Text.Json
 
+module internal FswlspDefaults =
+    [<Literal>]
+    let DefaultMaxPreviewElements = 2000
+
 open Wolfram.NETLink // https://reference.wolfram.com/language/NETLink/ref/net/Wolfram.NETLink.html
 
 
@@ -222,8 +226,10 @@ type fswlspServer(input: Stream, output: Stream) =
         this.Window.LogMessage(p)
         ()
 
-    member this.evaluate_in_kernel(ml: IKernelLink, code: string) =
-        let expr = sprintf "evaluateInKernel[%s]" (this.escapeWolframString(code))
+    member this.evaluate_in_kernel(ml: IKernelLink, code: string, allowFullKernelResults: bool, maxPreviewElements: int) =
+        let previewElements =
+            if maxPreviewElements > 0 then maxPreviewElements else FswlspDefaults.DefaultMaxPreviewElements
+        let expr = sprintf "evaluateInKernel[%s, %s, %d]" (this.escapeWolframString(code)) (if allowFullKernelResults then "True" else "False") previewElements
 
         try
             ml.Evaluate(expr)
@@ -253,11 +259,19 @@ type fswlspServer(input: Stream, output: Stream) =
 
         let json = JToken.Parse(eval)
         let result = json.["Result"].ToString()
+        let note =
+            if isNull(json.["Note"]) then ""
+            else json.["Note"].ToString()
+
         let errors = String.Join("\n", (json.["Errors"] :?> JArray) |> Seq.map (fun x -> x.ToString()))
+        let errorsWithNote =
+            if String.IsNullOrWhiteSpace(note) then errors
+            elif String.IsNullOrWhiteSpace(errors) then note
+            else note + "\n" + errors
 
         let response = {|
             result = result
-            errors = errors
+            errors = errorsWithNote
         |}
 
         response

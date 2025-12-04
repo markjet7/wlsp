@@ -337,6 +337,18 @@ module Parser =
                 let ast = ParserHelpers.astLeafFromToken tok
                 let cst = ParserHelpers.cstToken tok
                 Some(ast, cst, tok.Span)
+            | TokenKind.PlusPlus ->
+                match parsePrimary state with
+                | Some(ast, cst, span) ->
+                    let fullSpan = Span.covering tok.Span span
+                    let head = Ast.Leaf(TokenKind.Symbol, "PreIncrement", Ast.metadata tok.Span)
+                    let astCall = Ast.Call(head, [ ast ], Ast.metadata fullSpan)
+                    let cst =
+                        Cst.Infix
+                            { Op = TokenKind.PlusPlus
+                              Children = NodeSeq.ofList [ Cst.Token tok; cst ] }
+                    Some(astCall, cst, fullSpan)
+                | None -> None
             | TokenKind.Hash ->
                 let indexTokOpt =
                     match current state with
@@ -573,6 +585,13 @@ module Parser =
                 let cstCombined =
                     Cst.Group(NodeSeq.ofList [ cst; Cst.Token tok ])
                 loop (astCombined, cstCombined, fullSpan)
+            | Some tok when tok.Kind = TokenKind.PlusPlus ->
+                advance state
+                let head = Ast.Leaf(TokenKind.Symbol, "Increment", Ast.metadata tok.Span)
+                let fullSpan = Span.covering span tok.Span
+                let astCombined = Ast.Call(head, [ ast ], Ast.metadata fullSpan)
+                let cstCombined = Cst.Group(NodeSeq.ofList [ cst; Cst.Token tok ])
+                loop (astCombined, cstCombined, fullSpan)
             | _ -> Some(ast, cst, span)
         loop (baseAst, baseCst, baseSpan)
 
@@ -658,16 +677,22 @@ module Parser =
         | _ -> false
 
     let private insertImplicitTimes (tokens: Token<TokenStr> list) =
-        let shouldInsert prev current =
-            isImplicitTimesLeft prev.Kind
-            && isImplicitTimesRight current.Kind
-        let rec loop prevOpt accRev remaining =
+        let shouldInsert prev prevPrevOpt current =
+            match prev.Kind with
+            | TokenKind.PlusPlus ->
+                match prevPrevOpt with
+                | Some prevPrev when isImplicitTimesLeft prevPrev.Kind && isImplicitTimesRight current.Kind -> true
+                | _ -> false
+            | _ ->
+                isImplicitTimesLeft prev.Kind
+                && isImplicitTimesRight current.Kind
+        let rec loop prevOpt prevPrevOpt accRev remaining =
             match remaining with
             | [] -> List.rev accRev
             | tok :: rest ->
                 let accWithFake =
                     match prevOpt with
-                    | Some prev when shouldInsert prev tok ->
+                    | Some prev when shouldInsert prev prevPrevOpt tok ->
                         let span =
                             { Start = prev.Span.EndPos
                               EndPos = prev.Span.EndPos }
@@ -678,8 +703,8 @@ module Parser =
                         fake :: accRev
                     | _ -> accRev
                 let accWithTok = tok :: accWithFake
-                loop (Some tok) accWithTok rest
-        loop None [] tokens
+                loop (Some tok) prevOpt accWithTok rest
+        loop None None [] tokens
 
     let private parseTokens (tokens: Token<TokenStr> list) (opts: ParseOptions) =
         let tokensWithNewlines = promoteToplevelNewlines tokens

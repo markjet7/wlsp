@@ -75,32 +75,101 @@ graphicsQ =
 
 graphicHeads = {Point, PointBox, Line, LineBox, Arrow, ArrowBox, Rectangle, RectangleBox, Parallelogram, Information, Triangle, JoinedCurve, Grid, Graph, Column, Row, JoinedCurveBox, FilledCurve, FilledCurveBox, StadiumShape, DiskSegment, Annulus, BezierCurve, BezierCurveBox, BSplineCurve, BSplineCurveBox, BSplineSurface, BSplineSurface3DBox, SphericalShell, CapsuleShape, Raster, RasterBox, Raster3D, Raster3DBox, Polygon, PolygonBox,PredictorFunction, RegularPolygon, Disk, DiskBox, Circle, CircleBox, Sphere, SphereBox, Ball, Ellipsoid, Cylinder, CylinderBox, Tetrahedron, TetrahedronBox, Cuboid, CuboidBox, Parallelepiped, Hexahedron, HexahedronBox, Prism, PrismBox, Pyramid, PyramidBox, Simplex, ConicHullRegion, ConicHullRegionBox, Hyperplane, HalfSpace, AffineHalfSpace, AffineSpace, ConicHullRegion3DBox, Cone, ConeBox, InfiniteLine, InfinitePlane, HalfLine, InfinitePlane, HalfPlane, Tube, TubeBox, GraphicsComplex, Image, GraphicsComplexBox, GraphicsGroup, GraphicsGroupBox, GeoGraphics, Graphics, GraphicsBox, Graphics3D, Graphics3DBox, MeshRegion, BoundaryMeshRegion, GeometricTransformation, GeometricTransformationBox, Rotate, Translate, Scale, SurfaceGraphics, Text, TextBox, Inset, InsetBox, Inset3DBox, Panel, PanelBox, Legended, Placed, LineLegend, Texture, Dataset, InformationData};
 
-evaluateInKernel[code_]:=Module[{json, result, formatted},
+Options[evaluateInKernel] = {"FullOutput" -> False, "MaxPreviewElements" -> 2000};
+
+limitPreview[expr_, maxElements_] := Module[{value = expr, truncated = False, max = Max[1, maxElements]},
+	If[ListQ[value],
+		With[{len = Quiet@Check[Length[value], 0]},
+			If[len > max,
+				truncated = True;
+				value = Take[value, UpTo[max]]
+			]
+		]
+	];
+
+	If[AssociationQ[value],
+		With[{len = Quiet@Check[Length[value], 0]},
+			If[len > max,
+				truncated = True;
+				value = Association@Take[Normal[value], UpTo[max]]
+			]
+		]
+	];
+
+	If[Head[value] === Dataset,
+		With[{sample = Quiet@Check[Normal@Take[value, UpTo[Max[5, Floor[max/10]]]], $Failed]},
+			If[sample =!= $Failed,
+				truncated = True;
+				value = sample
+			]
+		]
+	];
+
+	If[MemberQ[graphicHeads, Head[value]],
+		truncated = True;
+	];
+
+	If[MatchQ[value, _Image],
+		truncated = True;
+		value = Quiet@Check[ImageResize[value, 600], value]
+	];
+
+	If[Quiet@Check[ByteCount[value], 0] > 2*1024*1024,
+		truncated = True;
+		value = Short[value, 5]
+	];
+
+	<|"Value" -> value, "Truncated" -> truncated|>
+];
+
+evaluateInKernel[code_, fullOutput_: False, maxPreviewElements_: 2000]:=Module[{json, result, preview, response, errors = {}, truncatedQ = False, value, rawValue, originalResult},
 		CheckAbort[
 			result=EvaluationData[ToExpression[StringTake[code, UpTo[SyntaxLength[code]]]]];
-			
-			If[
-				(* (graphicsQ[result["Result"]]) || (MemberQ[graphicHeads, Head[result["Result"]]]), *)
-				(MemberQ[graphicHeads, Head[result["Result"]]]),
-				result["Result"] = CheckAbort[
-					Rasterize[result["Result"]], 
-					result["Result"]
+			originalResult = result["Result"];
+			errors = result["MessagesText"];
+
+			preview = If[TrueQ[fullOutput],
+				<|"Value" -> result["Result"], "Truncated" -> False|>,
+				limitPreview[result["Result"], maxPreviewElements]
+			];
+
+			value = preview["Value"];
+			truncatedQ = TrueQ[preview["Truncated"]];
+
+			If[truncatedQ && (MemberQ[graphicHeads, Head[originalResult]] || MatchQ[originalResult, _Image]),
+				value = CheckAbort[Rasterize[originalResult, ImageSize -> 600], value]
+			];
+
+			If[(MemberQ[graphicHeads, Head[value]]) && Head[value] =!= Image,
+				value = CheckAbort[
+					Rasterize[value, ImageSize -> 600], 
+					value
 					];,
 				Nothing
 			];	
 
-			json ="{
-				\"Result\": \""<>CheckAbort[escapes[ExportString[result["Result"],"HTMLFragment"]], "Failed to format output"] <> "\", 
-				\"Raw\": \""<>CheckAbort[escapes[ToString[result["Result"], InputForm]], "Failed to format output"] <> "\",
-				\"Errors\": ["<>If[Length@result["MessagesText"]>0,"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\"",""] <> "]
-			}";
+			rawValue = CheckAbort[
+				If[truncatedQ, ToString[Short[value, 5], InputForm], ToString[value, InputForm]],
+				"Failed to format output"
+			];
+
+			response = <|
+				"Result" -> CheckAbort[ExportString[value,"HTMLFragment"], "Failed to format output"],
+				"Raw" -> rawValue,
+				"Errors" -> If[Length@errors>0, Take[errors, UpTo[5]], {}]
+			|>;
+
+			If[truncatedQ, response = Append[response, "Note" -> "Output sampled; set wlsp.allowFullKernelResults to true for full output."]];
+
+			json = ExportString[response, "RawJSON", "Compact" -> True];
 			json,
 			
-			json = "{
-				\"Result\": \"$Failed\",
-				\"Raw\": \"Evaluation Failed\",
-				\"Errors\":  ["<>"\"" <>escapes[StringRiffle[Take[result["MessagesText"], UpTo[5]],"\n"]]<>"\""<> "]
-				}";
+			response = <|
+				"Result" -> "$Failed",
+				"Raw" -> "Evaluation Failed",
+				"Errors" -> If[Length@errors>0, Take[errors, UpTo[5]], {}]
+			|>;
+			json = ExportString[response, "RawJSON", "Compact" -> True];
 			json
 		]
 ];

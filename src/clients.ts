@@ -44,6 +44,8 @@ interface EvaluationData {
     output: boolean;
     trace: boolean;
     text: string;
+    allowFullKernelResults?: boolean;
+    maxPreviewElements?: number;
 }
 
 interface PlotInputOutput {
@@ -55,6 +57,7 @@ interface PlotInputOutput {
 const DEBUG_PORT = 7810;
 const MAX_PRINT_RESULTS = 50;
 const EXECUTION_TIMEOUT_MS = 120000;
+const DEFAULT_MAX_PREVIEW_ELEMENTS = 2000;
 
 let context: vscode.ExtensionContext;
 let outputChannel: vscode.OutputChannel;
@@ -139,6 +142,14 @@ const blockDecorationType: vscode.TextEditorDecorationType = vscode.window.creat
     overviewRulerColor: new vscode.ThemeColor("foreground"),
     overviewRulerLane: vscode.OverviewRulerLane.Right
 });
+
+function getKernelOutputPreferences() {
+    const config = vscode.workspace.getConfiguration('wlsp');
+    return {
+        allowFullKernelResults: config.get<boolean>('allowFullKernelResults', false),
+        maxPreviewElements: config.get<number>('maxPreviewElements', DEFAULT_MAX_PREVIEW_ELEMENTS)
+    };
+}
 
 export async function startLanguageServer(context0: vscode.ExtensionContext, outputChannel0: vscode.OutputChannel): Promise<void> {
     initializeGlobals(context0, outputChannel0);
@@ -608,6 +619,9 @@ function queueEvaluation(evaluationData: Omit<EvaluationData, 'id'>): number {
     let id = evaluationIdCounter;
     let evaluationWithId = evaluationData as EvaluationData;
     evaluationWithId.id = id;
+    const { allowFullKernelResults, maxPreviewElements } = getKernelOutputPreferences();
+    evaluationWithId.allowFullKernelResults = allowFullKernelResults;
+    evaluationWithId.maxPreviewElements = maxPreviewElements;
     evaluationQueue.unshift(evaluationWithId);
     
     let inputSnippet = "Running..."

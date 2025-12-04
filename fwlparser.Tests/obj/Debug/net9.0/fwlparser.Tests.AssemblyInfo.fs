@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("fwlparser.Tests")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d52a95fff4143e819821ecf3d2706dfbfd60ffd6")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b8326c32924d3711d057ebc0b651240cdcded9db")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("fwlparser.Tests")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("fwlparser.Tests")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]

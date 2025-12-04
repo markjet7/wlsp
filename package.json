@@ -59,6 +59,16 @@
                     "description": "Background",
                     "default": "none"
                 },
+                "wlsp.allowFullKernelResults": {
+                    "type": "boolean",
+                    "description": "Send full Wolfram results without preview downsampling (may slow large outputs).",
+                    "default": false
+                },
+                "wlsp.maxPreviewElements": {
+                    "type": "number",
+                    "description": "Maximum elements to include when previewing large Wolfram outputs before truncation.",
+                    "default": 2000
+                },
                 "comments.blockComment": {
                     "type": "string",
                     "default": [

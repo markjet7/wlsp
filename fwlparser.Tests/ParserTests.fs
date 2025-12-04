@@ -114,3 +114,59 @@ let ``compound expression via semicolon`` () =
         | _ -> failwith "Expected CompoundExpression head"
         Assert.Equal(2, args.Length)
     | _ -> failwith "Expected CompoundExpression AST"
+
+[<Fact>]
+let ``parse postfix increment`` () =
+    let result = parseAst "x++" ParseOptions.Default
+    match result.Syntax with
+    | Ast.Call(head, args, _) ->
+        match head with
+        | Ast.Leaf(TokenKind.Symbol, "Increment", _) -> ()
+        | _ -> failwith "Expected Increment head"
+        Assert.Collection(
+            args,
+            (fun a ->
+                match a with
+                | Ast.Leaf(TokenKind.Symbol, "x", _) -> ()
+                | _ -> failwith "Expected symbol x"))
+    | _ -> failwith "Expected call AST"
+
+[<Fact>]
+let ``parse prefix increment`` () =
+    let result = parseAst "++x" ParseOptions.Default
+    match result.Syntax with
+    | Ast.Call(head, args, _) ->
+        match head with
+        | Ast.Leaf(TokenKind.Symbol, "PreIncrement", _) -> ()
+        | _ -> failwith "Expected PreIncrement head"
+        Assert.Collection(
+            args,
+            (fun a ->
+                match a with
+                | Ast.Leaf(TokenKind.Symbol, "x", _) -> ()
+                | _ -> failwith "Expected symbol x"))
+    | _ -> failwith "Expected call AST"
+
+[<Fact>]
+let ``implicit times after postfix increment`` () =
+    let result = parseAst "x++ y" ParseOptions.Default
+    match result.Syntax with
+    | Ast.Call(head, args, _) ->
+        match head with
+        | Ast.Leaf(TokenKind.Symbol, "Fake_ImplicitTimes", _) -> ()
+        | Ast.Leaf(TokenKind.Symbol, "Times", _) -> ()
+        | _ -> failwith "Expected implicit Times head"
+        Assert.Equal(2, args.Length)
+        match args[0] with
+        | Ast.Call(incHead, incArgs, _) ->
+            match incHead with
+            | Ast.Leaf(TokenKind.Symbol, "Increment", _) -> ()
+            | _ -> failwith "Expected Increment head"
+            match incArgs with
+            | [ Ast.Leaf(TokenKind.Symbol, "x", _) ] -> ()
+            | _ -> failwith "Expected x as increment target"
+        | _ -> failwith "Expected increment call as first arg"
+        match args[1] with
+        | Ast.Leaf(TokenKind.Symbol, "y", _) -> ()
+        | _ -> failwith "Expected symbol y"
+    | _ -> failwith "Expected call AST"
