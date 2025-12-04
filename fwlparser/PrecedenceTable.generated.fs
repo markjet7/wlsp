@@ -125,6 +125,7 @@
         (TokenKind.SlashSlashEqual, (10, "Right"))
         (TokenKind.SlashStar, (84, "NonRight"))
         (TokenKind.Star, (54, "NonRight"))
+        (TokenKind.StarCaret, (54, "NonRight"))
         (TokenKind.StarEqual, (13, "Right"))
         (TokenKind.StarStar, (66, "NonRight"))
         (TokenKind.Symbol, (94, "NonRight"))

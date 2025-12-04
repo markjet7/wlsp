@@ -243,6 +243,7 @@ type TokenKind =
     | Plus
     | Tilde
     | Star
+    | StarCaret
     | Caret
     | SingleQuote
     | Percent

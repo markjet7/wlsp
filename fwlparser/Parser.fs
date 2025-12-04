@@ -87,6 +87,7 @@ module Parser =
         | TokenKind.Plus -> "Plus"
         | TokenKind.Minus -> "Subtract"
         | TokenKind.Star
+        | TokenKind.StarCaret
         | TokenKind.LongName_Times -> "Times"
         | TokenKind.Slash
         | TokenKind.LongName_Divide -> "Divide"
@@ -286,11 +287,21 @@ module Parser =
                         | Assoc.Right -> prec
                     match parseExpressionWithPrecedence nextMin state with
                     | Some(astRight, cstRight, spanRight) ->
+                        let astRightAdjusted, spanRightAdjusted =
+                            if tok.Kind = TokenKind.StarCaret then
+                                let tenSpan = tok.Span
+                                let tenAst = Ast.Leaf(TokenKind.Integer, "10", Ast.metadata tenSpan)
+                                let headPower = Ast.Leaf(TokenKind.Symbol, "Power", Ast.metadata tenSpan)
+                                let powerSpan = Span.covering tenSpan spanRight
+                                let powerAst = Ast.Call(headPower, [ tenAst; astRight ], Ast.metadata powerSpan)
+                                powerAst, powerSpan
+                            else
+                                astRight, spanRight
                         let head =
                             Ast.Leaf(TokenKind.Symbol, headName, Ast.metadata tok.Span)
-                        let fullSpan = Span.covering spanLeft spanRight
+                        let fullSpan = Span.covering spanLeft spanRightAdjusted
                         let astCombined =
-                            Ast.Call(head, [ astLeft; astRight ], Ast.metadata fullSpan)
+                            Ast.Call(head, [ astLeft; astRightAdjusted ], Ast.metadata fullSpan)
                         let cstCombined =
                             Cst.Infix
                                 { Op = tok.Kind
@@ -618,7 +629,59 @@ module Parser =
 
         dropLeading false [] withoutTrailing
 
-    let private parseTokens (tokens: Token<TokenStr> list) =
+    let private isImplicitTimesLeft kind =
+        match kind with
+        | TokenKind.Integer
+        | TokenKind.Real
+        | TokenKind.Rational
+        | TokenKind.Symbol
+        | TokenKind.String
+        | TokenKind.CloseParen
+        | TokenKind.CloseSquare
+        | TokenKind.CloseCurly
+        | TokenKind.Hash
+        | TokenKind.HashHash
+        | TokenKind.SingleQuote -> true
+        | _ -> false
+
+    let private isImplicitTimesRight kind =
+        match kind with
+        | TokenKind.Symbol
+        | TokenKind.Integer
+        | TokenKind.Real
+        | TokenKind.Rational
+        | TokenKind.String
+        | TokenKind.OpenParen
+        | TokenKind.OpenCurly
+        | TokenKind.Hash
+        | TokenKind.HashHash -> true
+        | _ -> false
+
+    let private insertImplicitTimes (tokens: Token<TokenStr> list) =
+        let shouldInsert prev current =
+            isImplicitTimesLeft prev.Kind
+            && isImplicitTimesRight current.Kind
+        let rec loop prevOpt accRev remaining =
+            match remaining with
+            | [] -> List.rev accRev
+            | tok :: rest ->
+                let accWithFake =
+                    match prevOpt with
+                    | Some prev when shouldInsert prev tok ->
+                        let span =
+                            { Start = prev.Span.EndPos
+                              EndPos = prev.Span.EndPos }
+                        let fake =
+                            { Kind = TokenKind.Fake_ImplicitTimes
+                              Text = ""
+                              Span = span }
+                        fake :: accRev
+                    | _ -> accRev
+                let accWithTok = tok :: accWithFake
+                loop (Some tok) accWithTok rest
+        loop None [] tokens
+
+    let private parseTokens (tokens: Token<TokenStr> list) (opts: ParseOptions) =
         let tokensWithNewlines = promoteToplevelNewlines tokens
 
         let filtered =
@@ -630,10 +693,17 @@ module Parser =
                 && t.Kind <> TokenKind.Comment
                 && t.Kind <> TokenKind.EndOfFile)
             |> pruneDanglingToplevelNewlines
-            |> List.toArray
+
+        let withImplicitTimes =
+            if opts.QuirkSettings.AllowImplicitTimes then
+                insertImplicitTimes filtered
+            else
+                filtered
+
+        let filteredArray = withImplicitTimes |> List.toArray
 
         let state =
-            { Tokens = filtered
+            { Tokens = filteredArray
               Index = 0
               Issues = ResizeArray() }
 
@@ -672,7 +742,7 @@ module Parser =
         match Tokenizer.tokenizeBytes (Encoding.UTF8.GetBytes input) opts with
         | Result.Ok tokens ->
             let (NodeSeq tokenList) = tokens
-            let _, cstSeq, issues, _ = parseTokens tokenList
+            let _, cstSeq, issues, _ = parseTokens tokenList opts
             { Syntax = cstSeq
               UnsafeCharacterEncoding = None
               FatalIssues = issues
@@ -690,7 +760,7 @@ module Parser =
         match Tokenizer.tokenizeBytes bytes opts with
         | Result.Ok tokens ->
             let (NodeSeq tokenList) = tokens
-            let _, cstSeq, issues, _ = parseTokens tokenList
+            let _, cstSeq, issues, _ = parseTokens tokenList opts
             { Syntax = cstSeq
               UnsafeCharacterEncoding = None
               FatalIssues = issues
@@ -715,7 +785,7 @@ module Parser =
             match Tokenizer.tokenizeBytes (Encoding.UTF8.GetBytes input) opts with
             | Result.Ok tokens ->
                 let (NodeSeq tokenList) = tokens
-                let astSeq, _, issues, span = parseTokens tokenList
+                let astSeq, _, issues, span = parseTokens tokenList opts
                 { Syntax = astSeq
                   UnsafeCharacterEncoding = None
                   FatalIssues = issues
@@ -745,7 +815,7 @@ module Parser =
         match Tokenizer.tokenizeBytes bytes opts with
         | Result.Ok tokens ->
             let (NodeSeq tokenList) = tokens
-            let astSeq, _, issues, span = parseTokens tokenList
+            let astSeq, _, issues, span = parseTokens tokenList opts
             { Syntax = astSeq
               UnsafeCharacterEncoding = None
               FatalIssues = issues

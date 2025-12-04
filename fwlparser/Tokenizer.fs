@@ -178,6 +178,7 @@ module Tokenizer =
                     | _ -> advance TokenKind.Plus 1
                 | '*' ->
                     match nextChar 1 with
+                    | Some '^' -> advance TokenKind.StarCaret 2
                     | Some '=' -> advance TokenKind.StarEqual 2
                     | Some '*' -> advance TokenKind.StarStar 2
                     | _ -> advance TokenKind.Star 1

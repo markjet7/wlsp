@@ -56,62 +56,6 @@
           }
         }
       }
-    },
-    "net9.0/osx-x64": {
-      "FSharp.Core/9.0.101": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.1/FSharp.Core.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/netstandard2.1/FSharp.Core.dll": {
-            "related": ".xml"
-          }
-        },
-        "resource": {
-          "lib/netstandard2.1/cs/FSharp.Core.resources.dll": {
-            "locale": "cs"
-          },
-          "lib/netstandard2.1/de/FSharp.Core.resources.dll": {
-            "locale": "de"
-          },
-          "lib/netstandard2.1/es/FSharp.Core.resources.dll": {
-            "locale": "es"
-          },
-          "lib/netstandard2.1/fr/FSharp.Core.resources.dll": {
-            "locale": "fr"
-          },
-          "lib/netstandard2.1/it/FSharp.Core.resources.dll": {
-            "locale": "it"
-          },
-          "lib/netstandard2.1/ja/FSharp.Core.resources.dll": {
-            "locale": "ja"
-          },
-          "lib/netstandard2.1/ko/FSharp.Core.resources.dll": {
-            "locale": "ko"
-          },
-          "lib/netstandard2.1/pl/FSharp.Core.resources.dll": {
-            "locale": "pl"
-          },
-          "lib/netstandard2.1/pt-BR/FSharp.Core.resources.dll": {
-            "locale": "pt-BR"
-          },
-          "lib/netstandard2.1/ru/FSharp.Core.resources.dll": {
-            "locale": "ru"
-          },
-          "lib/netstandard2.1/tr/FSharp.Core.resources.dll": {
-            "locale": "tr"
-          },
-          "lib/netstandard2.1/zh-Hans/FSharp.Core.resources.dll": {
-            "locale": "zh-Hans"
-          },
-          "lib/netstandard2.1/zh-Hant/FSharp.Core.resources.dll": {
-            "locale": "zh-Hant"
-          }
-        }
-      }
     }
   },
   "libraries": {
@@ -220,27 +164,12 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Runtime.osx-x64",
-            "version": "[9.0.4, 9.0.4]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Runtime.osx-x64",
-            "version": "[9.0.4, 9.0.4]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
         "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/sdk/9.0.105/PortableRuntimeIdentifierGraph.json"
-      }
-    },
-    "runtimes": {
-      "osx-x64": {
-        "#import": []
       }
     }
   }
