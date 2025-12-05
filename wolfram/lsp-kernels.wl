@@ -47,6 +47,8 @@ handle["initialize",json_]:=Module[{response, response2, messageHandler},
 	decorationFile = CreateFile[];
 	symbolListFile = scriptPath <> "symbolList.js"; (* CreateFile[]; *)
 	varTableFile = scriptPath <> "varTable.js";
+	workspaceVariableCache = <||>;
+	workspaceVariableId = 0;
 	workspaceDecorations =  <||>;
 	symbolDefinitions = <||>;
 
@@ -472,6 +474,63 @@ evaluateFromQueue[code2_, json_, newPosition_]:=Module[{ast, id,  decorationLine
 
 	$busy = False;
 	sendResponse[<| "method" -> "wolframBusy", "params"-> <|"busy" -> False, "text" -> ""  |>|>];
+];
+
+workspaceValueString[expr_] := Quiet@Check[
+	StringTake[ToString[Short[expr, 3], InputForm, TotalWidth -> 160], UpTo[200]],
+	"Unavailable"
+];
+
+workspaceHasChildrenQ[expr_] := ListQ[expr] || AssociationQ[expr];
+
+workspaceIcon[expr_] := Which[
+	ListQ[expr], "symbol-array",
+	AssociationQ[expr], "symbol-enum",
+	Head[expr] === String, "symbol-string",
+	NumberQ[expr], "symbol-numeric",
+	True, "symbol-variable"
+];
+
+workspaceNextId[] := (workspaceVariableId++; workspaceVariableId);
+
+workspaceRender[label_, expr_] := Module[{id = workspaceNextId[], hasChildren = workspaceHasChildrenQ[expr]},
+	If[hasChildren, workspaceVariableCache[id] = expr];
+	<|
+		"head" -> label,
+		"type" -> ToString[Head[expr]],
+		"value" -> workspaceValueString[expr],
+		"id" -> id,
+		"lazy" -> hasChildren,
+		"haschildren" -> hasChildren,
+		"canshow" -> True,
+		"icon" -> workspaceIcon[expr]
+	|>
+];
+
+workspaceChildren[expr_] := Which[
+	AssociationQ[expr],
+		KeyValueMap[workspaceRender[ToString[#1], #2] &, Normal@expr],
+	ListQ[expr],
+		MapIndexed[workspaceRender["[" <> ToString[#2[[1]]] <> "]", #1] &, expr],
+	True,
+		{}
+];
+
+handle["wlsp/workspace/getVariables", json_] := Module[{names, vars},
+	workspaceVariableCache = <||>;
+	workspaceVariableId = 0;
+	names = Names["Global`*"];
+	vars = DeleteMissing@Map[
+		Quiet@Check[workspaceRender[#, ToExpression[#]], Missing[]] &,
+		names
+	];
+	sendResponse[<|"id" -> json["id"], "result" -> vars|>];
+];
+
+handle["wlsp/workspace/getLazy", json_] := Module[{expr, children},
+	expr = Lookup[workspaceVariableCache, json["params", "id"], Missing[]];
+	If[expr === Missing[], children = {}, children = workspaceChildren[expr]];
+	sendResponse[<|"id" -> json["id"], "result" -> children|>];
 ];
 
 handle["updateVarTable", json_]:=Module[{string, ast, f, symbols, values, result},

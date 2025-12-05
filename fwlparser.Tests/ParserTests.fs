@@ -71,6 +71,49 @@ let ``parse list`` () =
     | _ -> failwith "Expected list call AST"
 
 [<Fact>]
+let ``parse association`` () =
+    let result = parseAst "<|a -> 1, b -> 2|>" ParseOptions.Default
+    match result.Syntax with
+    | Ast.Call(head, args, _) ->
+        match head with
+        | Ast.Leaf(TokenKind.Symbol, "Association", _) -> ()
+        | _ -> failwith "Expected Association head"
+        Assert.Equal(2, args.Length)
+        match args[0] with
+        | Ast.Call(ruleHead, ruleArgs, _) ->
+            match ruleHead with
+            | Ast.Leaf(TokenKind.Symbol, "Rule", _) -> ()
+            | _ -> failwith "Expected Rule head for first entry"
+            Assert.Collection(
+                ruleArgs,
+                (fun a ->
+                    match a with
+                    | Ast.Leaf(TokenKind.Symbol, "a", _) -> ()
+                    | _ -> failwith "Expected key a"),
+                (fun b ->
+                    match b with
+                    | Ast.Leaf(TokenKind.Integer, "1", _) -> ()
+                    | _ -> failwith "Expected value 1"))
+        | _ -> failwith "Expected Rule call for first association entry"
+        match args[1] with
+        | Ast.Call(ruleHead, ruleArgs, _) ->
+            match ruleHead with
+            | Ast.Leaf(TokenKind.Symbol, "Rule", _) -> ()
+            | _ -> failwith "Expected Rule head for second entry"
+            Assert.Collection(
+                ruleArgs,
+                (fun a ->
+                    match a with
+                    | Ast.Leaf(TokenKind.Symbol, "b", _) -> ()
+                    | _ -> failwith "Expected key b"),
+                (fun b ->
+                    match b with
+                    | Ast.Leaf(TokenKind.Integer, "2", _) -> ()
+                    | _ -> failwith "Expected value 2"))
+        | _ -> failwith "Expected Rule call for second association entry"
+    | _ -> failwith "Expected association call AST"
+
+[<Fact>]
 let ``operator precedence times before plus`` () =
     let result = parseAst "2 + 3 * 4" ParseOptions.Default
     match result.Syntax with

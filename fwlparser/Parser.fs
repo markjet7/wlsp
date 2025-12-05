@@ -178,6 +178,7 @@ module Parser =
             | TokenKind.Comma
             | TokenKind.CloseSquare
             | TokenKind.CloseParen
+            | TokenKind.BarGreater
             | TokenKind.CloseCurly
             | TokenKind.EndOfFile
             | TokenKind.ToplevelNewline -> true
@@ -274,6 +275,7 @@ module Parser =
                     | None -> leftOpt
                 | TokenKind.Comma
                 | TokenKind.CloseCurly
+                | TokenKind.BarGreater
                 | TokenKind.CloseSquare
                 | TokenKind.CloseParen -> leftOpt
                 | _ ->
@@ -423,8 +425,41 @@ module Parser =
                                 | None -> cst :: accCstRev
                             gather (ast :: accAst) nextCstRev
                         | None ->
+                        let issue =
+                            ParserHelpers.issue IssueSeverity.Error "Unclosed list" (Some tok.Span)
+                        state.Issues.Add issue
+                        None
+                gather [] []
+            | TokenKind.LessBar ->
+                let rec gather accAst accCstRev =
+                    match current state with
+                    | Some close when close.Kind = TokenKind.BarGreater ->
+                        advance state
+                        let args = List.rev accAst
+                        let fullSpan = Span.covering tok.Span close.Span
+                        let head = Ast.Leaf(TokenKind.Symbol, "Association", Ast.metadata tok.Span)
+                        let ast = Ast.Call(head, args, Ast.metadata fullSpan)
+                        let content = List.rev accCstRev
+                        let children = NodeSeq.ofList (Cst.Token tok :: content @ [ Cst.Token close ])
+                        let cst = Cst.Group(children)
+                        Some(ast, cst, fullSpan)
+                    | _ ->
+                        match parseExpression state with
+                        | Some(astInner, cstInner, _) ->
+                            let sep =
+                                match current state with
+                                | Some comma when comma.Kind = TokenKind.Comma ->
+                                    advance state
+                                    Some(Cst.Token comma)
+                                | _ -> None
+                            let nextCstRev =
+                                match sep with
+                                | Some commaTok -> commaTok :: cstInner :: accCstRev
+                                | None -> cstInner :: accCstRev
+                            gather (astInner :: accAst) nextCstRev
+                        | None ->
                             let issue =
-                                ParserHelpers.issue IssueSeverity.Error "Unclosed list" (Some tok.Span)
+                                ParserHelpers.issue IssueSeverity.Error "Unclosed association" (Some tok.Span)
                             state.Issues.Add issue
                             None
                 gather [] []
@@ -610,10 +645,12 @@ module Parser =
                     match tok.Kind with
                     | TokenKind.OpenParen
                     | TokenKind.OpenSquare
-                    | TokenKind.OpenCurly -> depth + 1
+                    | TokenKind.OpenCurly
+                    | TokenKind.LessBar -> depth + 1
                     | TokenKind.CloseParen
                     | TokenKind.CloseSquare
-                    | TokenKind.CloseCurly -> max (depth - 1) 0
+                    | TokenKind.CloseCurly
+                    | TokenKind.BarGreater -> max (depth - 1) 0
                     | _ -> depth
 
                 loop nextDepth (tok' :: acc) rest
@@ -657,6 +694,7 @@ module Parser =
         | TokenKind.String
         | TokenKind.CloseParen
         | TokenKind.CloseSquare
+        | TokenKind.BarGreater
         | TokenKind.CloseCurly
         | TokenKind.Hash
         | TokenKind.HashHash
@@ -672,6 +710,7 @@ module Parser =
         | TokenKind.String
         | TokenKind.OpenParen
         | TokenKind.OpenCurly
+        | TokenKind.LessBar
         | TokenKind.Hash
         | TokenKind.HashHash -> true
         | _ -> false

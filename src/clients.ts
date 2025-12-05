@@ -33,6 +33,7 @@ import { workspaceSymbolProvider } from './treeDataProvider';
 import { DataViewProvider } from './dataPanel';
 import { PlotsViewProvider } from './plotsView';
 import { ColorSchemesViewProvider } from './colorSchemesView';
+import { WorkspaceVariablesProvider } from './workspaceVariables';
 import { send } from 'process';
 import { Int32 } from 'bson';
 import { text } from 'd3';
@@ -95,6 +96,7 @@ export let interactiveNotebookSerializer: InteractiveNotebookSerializer;
 export let scriptController: WolframScriptController;
 export let treeDataProvider: workspaceSymbolProvider;
 export let wlspdebugger: WolframDebugAdapterDescriptorFactory;
+export let workspaceVariablesProvider: WorkspaceVariablesProvider;
 
 let plotsInputsOutputs: Map<number, PlotInputOutput[]> = new Map();
 let evaluationIdCounter = Math.random() * 1000000;
@@ -163,6 +165,7 @@ export async function startLanguageServer(context0: vscode.ExtensionContext, out
     await setupNotebookSerializers();
     setupDebugger();
     setupTreeDataProvider();
+    setupWorkspaceVariablesProvider();
 }
 
 function initializeGlobals(context0: vscode.ExtensionContext, outputChannel0: vscode.OutputChannel): void {
@@ -203,6 +206,7 @@ function registerCommands(): void {
         ['wolfram.debug', () => startWLSPDebugger()],
         ['wolfram.updateTreeData', () => updateTreeDataProvider()],
         ['wolfram.updateVarTable', () => getUpdateVarTable()],
+        ['wolfram.refreshWorkspaceVariables', () => workspaceVariablesProvider?.refresh()],
         ['wolfram.clearPlots', () => clearPlots()]
     ];
 
@@ -309,6 +313,14 @@ function setupTreeDataProvider(): void {
     vscode.window.registerTreeDataProvider("wolframSymbols", treeDataProvider);
 }
 
+function setupWorkspaceVariablesProvider(): void {
+    workspaceVariablesProvider = new WorkspaceVariablesProvider(() => wolframKernelClient);
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('wolfram.workspaceVariables', workspaceVariablesProvider),
+        vscode.commands.registerCommand('wolfram.refreshWorkspaceVariables', () => workspaceVariablesProvider.refresh())
+    );
+}
+
 function handleWorkspaceFolderChanges(event: vscode.WorkspaceFoldersChangeEvent): void {
     // for (const folder of event.removed) {
     //     const client = clients.get(folder.uri.toString());
@@ -365,6 +377,7 @@ export async function onkernelReady(): Promise<void> {
                 wolframStatusBar.text = wolframVersionText;
                 wolframStatusBar.show();
             });
+            workspaceVariablesProvider?.refresh();
         } else {
             resolve();
         }
@@ -710,7 +723,7 @@ async function handleNonRunningKernel(evalNext: EvaluationData): Promise<void> {
         // Ignore stop errors
     }
 
-    await launch.startWLSPKernelIO(0, kernelPath).then((client) => {
+    await launch.startWLSPKernelIO(0, wlspPath).then((client) => {
         outputChannel.appendLine("Kernel started after not running");
         wolframKernelClient = client;
         onkernelReady().then(async () => {
@@ -872,6 +885,7 @@ function updateVarTable(vars: any): void {
 
         const varsHtml = generateVariableTableHtml();
         dataProvider.updateView(varsHtml);
+        workspaceVariablesProvider?.refresh();
     });
 }
 
@@ -1319,6 +1333,7 @@ function updatePlotsProvider(input: string, output: string, id: number): void {
     }
     
     plotsProvider.newOutput(id, output);
+    workspaceVariablesProvider?.refresh();
 }
 
 function logExecutionTime(): void {

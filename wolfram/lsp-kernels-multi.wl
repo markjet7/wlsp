@@ -42,6 +42,8 @@ handle["initialize",json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Mo
 
 	decorationFile = CreateFile[];
 	symbolListFile = CreateFile[];
+	workspaceVariableCache = <||>;
+	workspaceVariableId = 0;
 	workspaceDecorations = Quiet@Check[Import[decorationFile,"RawJSON"], <||>];
 ];
 
@@ -54,6 +56,63 @@ handle["shutdown", json_, client_:(First@KERNELSERVER["ConnectedClients"])]:=Mod
 	Close[KERNELSERVER];
 	Quit[];
 	Exit[]; 
+];
+
+workspaceValueString[expr_] := Quiet@Check[
+	StringTake[ToString[Short[expr, 3], InputForm, TotalWidth -> 160], UpTo[200]],
+	"Unavailable"
+];
+
+workspaceHasChildrenQ[expr_] := ListQ[expr] || AssociationQ[expr];
+
+workspaceIcon[expr_] := Which[
+	ListQ[expr], "symbol-array",
+	AssociationQ[expr], "symbol-enum",
+	Head[expr] === String, "symbol-string",
+	NumberQ[expr], "symbol-numeric",
+	True, "symbol-variable"
+];
+
+workspaceNextId[] := (workspaceVariableId++; workspaceVariableId);
+
+workspaceRender[label_, expr_] := Module[{id = workspaceNextId[], hasChildren = workspaceHasChildrenQ[expr]},
+	If[hasChildren, workspaceVariableCache[id] = expr];
+	<|
+		"head" -> label,
+		"type" -> ToString[Head[expr]],
+		"value" -> workspaceValueString[expr],
+		"id" -> id,
+		"lazy" -> hasChildren,
+		"haschildren" -> hasChildren,
+		"canshow" -> True,
+		"icon" -> workspaceIcon[expr]
+	|>
+];
+
+workspaceChildren[expr_] := Which[
+	AssociationQ[expr],
+		KeyValueMap[workspaceRender[ToString[#1], #2] &, Normal@expr],
+	ListQ[expr],
+		MapIndexed[workspaceRender["[" <> ToString[#2[[1]]] <> "]", #1] &, expr],
+	True,
+		{}
+];
+
+handle["wlsp/workspace/getVariables", json_, client_:(First@KERNELSERVER["ConnectedClients"])] := Module[{names, vars},
+	workspaceVariableCache = <||>;
+	workspaceVariableId = 0;
+	names = Names["Global`*"];
+	vars = DeleteMissing@Map[
+		Quiet@Check[workspaceRender[#, ToExpression[#]], Missing[]] &,
+		names
+	];
+	sendResponse[<|"id" -> json["id"], "result" -> vars|>];
+];
+
+handle["wlsp/workspace/getLazy", json_, client_:(First@KERNELSERVER["ConnectedClients"])] := Module[{expr, children},
+	expr = Lookup[workspaceVariableCache, json["params", "id"], Missing[]];
+	If[expr === Missing[], children = {}, children = workspaceChildren[expr]];
+	sendResponse[<|"id" -> json["id"], "result" -> children|>];
 ];
 
 boxRules={StyleBox[f_,"TI"]:>{"",f,""},StyleBox[f_,___]:>{f},RowBox[l_]:>{l},SubscriptBox[a_,b_]:>{a,"_",b,""},SuperscriptBox[a_,b_]:>{a,"<sup>",b,"</sup>"},RadicalBox[x_,n_]:>{x,"<sup>1/",n,"</sup>"},FractionBox[a_,b_]:>{"(",a,")/(",b,")"},SqrtBox[a_]:>{"&radic;(",a,")"},CheckboxBox[a_,___]:>{"<u>",a,"</u>"},OverscriptBox[a_,b_]:>{"Overscript[",a,b,"]"},OpenerBox[a__]:>{"Opener[",a,"]"},RadioButtonBox[a__]:>{"RadioButton[",a,"]"},UnderscriptBox[a_,b_]:>{"Underscript[",a,b,"]"},UnderoverscriptBox[a_,b_,c_]:>{"Underoverscript[",a,b,c,"]"},SubsuperscriptBox[a_,b_,c_]:>{a,"_<small>",b,"</small><sup><small>",c,"</small></sup>"},
@@ -270,9 +329,6 @@ evaluateFromQueue[code2_, json_, newPosition_,  client_:(First@KERNELSERVER["Con
 		];
 
 		(* documents[json["params", "textDocument", "uri", "external"]]; *)
-		ast = CodeConcreteParse[string];
-
-
 		(* f[node_]:=Module[{astStr,name,fullStr,loc,kind,rhs},
 			astStr=ToFullFormString[node[[2,1]]];
 			name=StringCases[astStr,"$"... ~~ WordCharacter...][[1]];

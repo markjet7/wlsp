@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as net from 'net';
 import * as cp from 'child_process';
+import * as fs from 'fs';
 const psTree = require('ps-tree');
 const bson = require('bson');
 import {
@@ -389,18 +390,25 @@ export async function startWLSPIO(id: number, lspPath:string): Promise<LanguageC
     attempts += 1;
     console.log("Starting WLSP LSP: " + attempts)
 
-    let exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-    let debugpath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-    // check if windows 
-    if (process.platform === "win32") {
-        exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
-        debugpath = path.join(lspPath, "fswstp", "bin", "Debug", "net9.0", "fswstp.exe");
+    const basePath = path.resolve(lspPath);
+    const releaseRid = process.platform === "win32" ? "win-x64" : "osx-x64";
+    const execName = process.platform === "win32" ? "fswstp.exe" : "fswstp";
+
+    const releasePath = path.join(basePath, "fswstp", "bin", "Release", "net9.0", releaseRid, execName);
+    const debugPath = path.join(basePath, "fswstp", "bin", "Debug", "net9.0", execName);
+
+    const exepathExists = fs.existsSync(releasePath);
+    const debugExists = fs.existsSync(debugPath);
+    const exepath = exepathExists ? releasePath : debugPath;
+    const debugpath = debugExists ? debugPath : releasePath;
+
+    if (!fs.existsSync(exepath)) {
+        outputChannel.appendLine(`LSP executable not found. Looked for:\n${releasePath}\n${debugPath}`);
+        vscode.window.showErrorMessage("WLSP LSP executable not found. Run `npm run compile` to build fswstp.");
+        return;
     }
 
-    if (process.platform === "darwin") {
-        exepath = path.join(lspPath, "fswstp", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-        debugpath = path.join(lspPath, "fswstp", "bin", "Debug", "net9.0", "fswstp");
-    }
+    outputChannel.appendLine(`LSP executable resolved to: ${exepath}`);
 
     // Use the rustwstp binary and standard I/O
     let serverOptions: ServerOptions = {
@@ -532,18 +540,25 @@ export async function startWLSPKernelIO(id: number, kernelPath: string): Promise
     attempts += 1;
     console.log("Starting WLSP Kernel: " + attempts)
 
-    let exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-    let debugpath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-    // check if windows 
-    if (process.platform === "win32") {
-        exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "win-x64", "fswstp.exe");
-        debugpath = path.join(kernelPath, "fswstpk", "bin", "Debug", "net9.0", "fswstp.exe");
+    const basePath = path.resolve(kernelPath);
+    const releaseRid = process.platform === "win32" ? "win-x64" : "osx-x64";
+    const execName = process.platform === "win32" ? "fswstp.exe" : "fswstp";
+
+    const releasePath = path.join(basePath, "fswstpk", "bin", "Release", "net9.0", releaseRid, execName);
+    const debugPath = path.join(basePath, "fswstpk", "bin", "Debug", "net9.0", execName);
+
+    const exepathExists = fs.existsSync(releasePath);
+    const debugExists = fs.existsSync(debugPath);
+    const exepath = exepathExists ? releasePath : debugPath;
+    const debugpath = debugExists ? debugPath : releasePath;
+
+    if (!fs.existsSync(exepath)) {
+        outputChannel.appendLine(`Kernel executable not found. Looked for:\n${releasePath}\n${debugPath}`);
+        vscode.window.showErrorMessage("WLSP kernel executable not found. Run `npm run compile` to build fswstp.");
+        return;
     }
 
-    if (process.platform === "darwin") {
-        exepath = path.join(kernelPath, "fswstpk", "bin", "Release", "net9.0", "osx-x64", "fswstp");
-        debugpath = path.join(kernelPath, "fswstpk", "bin", "Debug", "net9.0", "fswstp");
-    }
+    outputChannel.appendLine(`Kernel executable resolved to: ${exepath}`);
 
     // Use the rustwstp binary and standard I/O
     let serverOptions: ServerOptions = {

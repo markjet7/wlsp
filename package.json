@@ -9,7 +9,7 @@
     "repository": {
         "url": "https://github.com/markjet7/wlsp"
     },
-    "version": "0.7.1",
+    "version": "0.7.3",
     "engines": {
         "vscode": "^1.76.0"
     },
@@ -305,6 +305,11 @@
                 "title": "Wolfram: Update variable data"
             },
             {
+                "command": "wolfram.refreshWorkspaceVariables",
+                "icon": "$(refresh)",
+                "title": "Wolfram: Refresh workspace variables"
+            },
+            {
                 "command": "wolfram.restart",
                 "icon": "$(debug-restart)",
                 "title": "Wolfram: Restart"
@@ -400,6 +405,12 @@
                     "group": "navigation",
                     "when": "view == wolfram.plotsView",
                     "title": "Restart"
+                },
+                {
+                    "command": "wolfram.refreshWorkspaceVariables",
+                    "group": "navigation",
+                    "when": "view == wolfram.workspaceVariables",
+                    "title": "Refresh"
                 }
             ]
         },
@@ -453,6 +464,12 @@
                     "id": "wolfram.dataView",
                     "type": "webview",
                     "name": "Variables",
+                    "icon": "media/wolf-logo.png",
+                    "visibility": "collapsed"
+                },
+                {
+                    "id": "wolfram.workspaceVariables",
+                    "name": "Workspace Variables",
                     "icon": "media/wolf-logo.png",
                     "visibility": "collapsed"
                 },

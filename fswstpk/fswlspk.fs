@@ -115,6 +115,21 @@ type GetVersionResponseParams() =
     member val ``params``: JToken = null with get, set
     member val ``result``: JToken = null with get, set
 
+type WorkspaceVariablesParams() =
+    inherit RequestMessageBase()
+    member val modules: bool = false with get, set
+
+type WorkspaceLazyParams() =
+    inherit RequestMessageBase()
+
+type WorkspaceVariablesResponseParams() =
+    inherit ResponseMessageBase()
+    member val ``result``: JToken = null with get, set
+
+type WorkspaceLazyResponseParams() =
+    inherit ResponseMessageBase()
+    member val ``result``: JToken = null with get, set
+
 
 
 type fswlspServer(input: Stream, output: Stream) = 
@@ -143,6 +158,54 @@ type fswlspServer(input: Stream, output: Stream) =
     // Add cache for document symbols
     member val _documentSymbolsCache: Map<string, DocumentSymbol array> = Map.empty with get, set
     member val _cacheLock = obj() with get, set
+    member val _baselineGlobals: Set<string> = Set.empty with get, set
+
+    member private this.getGlobalNames() : Set<string> =
+        try
+            this._ml.Evaluate("ExportString[Names[\"Global`*\"],\"JSON\"]")
+            this._ml.WaitForAnswer() |> ignore
+            let json = this._ml.GetString()
+            let arr = JArray.Parse(json)
+            arr
+            |> Seq.choose (fun t -> if t.Type = JTokenType.String then Some(t.ToString()) else None)
+            |> Set.ofSeq
+        with
+        | _ -> Set.empty
+
+    member private this.getWorkspaceVariables(): JArray =
+        try
+            let baselineList =
+                let items = this._baselineGlobals |> Seq.map (fun n -> sprintf "\"%s\"" n) |> String.concat ","
+                if String.IsNullOrWhiteSpace(items) then "{}" else "{" + items + "}"
+            let extraExclusions = "{\"baseline\",\"names\", \"extra\"}"
+
+            // Ask the kernel to generate JSON for current globals minus baseline (utils.wl) symbols
+            this._ml.Evaluate(sprintf "
+                Module[{names = Names[\"Global`*\"], baseline = %s, extra = %s},
+                    names = Complement[names, baseline, extra];
+                    names = Select[names, !StringStartsQ[#, \"names$\"]&];
+                    ExportString[
+                        Map[
+                            Association[
+                                \"head\"->ToString[#],
+                                \"type\"->ToString[Head[ToExpression[#]]],
+                                \"value\"->StringTake[ToString[ToExpression[#], InputForm, TotalWidth->160], UpTo[200]],
+                                \"id\"->0,
+                                \"lazy\"->False,
+                                \"haschildren\"->False,
+                                \"canshow\"->True,
+                                \"icon\"->\"symbol-variable\"
+                            ]&,
+                            names
+                        ],
+                        \"JSON\"
+                    ]
+                ]" baselineList extraExclusions)
+            this._ml.WaitForAnswer() |> ignore
+            let json = this._ml.GetString()
+            JArray.Parse(json)
+        with
+        | _ -> JArray()
 
     member this.log_messages(message: string): unit =
         let p = new LogMessageParams()
@@ -456,6 +519,28 @@ type fswlspServer(input: Stream, output: Stream) =
                 Func<GetVersionParams, CancellationToken, ResponseMessageBase>(getVersionHandler)
             )
 
+            let workspaceVariablesHandler (request: WorkspaceVariablesParams) (_: CancellationToken): ResponseMessageBase =
+                let resp = new WorkspaceVariablesResponseParams()
+                resp.id <- request.id
+                resp.``result`` <- this.getWorkspaceVariables() :> JToken
+                resp
+
+            let workspaceLazyHandler (request: WorkspaceLazyParams) (_: CancellationToken): ResponseMessageBase =
+                let resp = new WorkspaceLazyResponseParams()
+                resp.id <- request.id
+                resp.``result`` <- JArray() :> JToken
+                resp
+
+            this.RequestHandlers.Set<WorkspaceVariablesParams, ResponseMessageBase>(
+                "wlsp/workspace/getVariables",
+                Func<WorkspaceVariablesParams, CancellationToken, ResponseMessageBase>(workspaceVariablesHandler)
+            )
+
+            this.RequestHandlers.Set<WorkspaceLazyParams, ResponseMessageBase>(
+                "wlsp/workspace/getLazy",
+                Func<WorkspaceLazyParams, CancellationToken, ResponseMessageBase>(workspaceLazyHandler)
+            )
+
 
             this.NotificationHandlers.Set<SetTraceParams>(
                 "$/setTrace",
@@ -669,6 +754,7 @@ type fswlspServer(input: Stream, output: Stream) =
         // this.evaluate_in_kernel(this._ml, sprintf "Get[\"%s\"]" utils_path)   |> ignore
         this._ml.Evaluate(sprintf "Get[\"%s\"]" utils_path) 
         this._ml.WaitAndDiscardAnswer() |> ignore
+        this._baselineGlobals <- this.getGlobalNames()
 
         // read the json file and import it
         this.completions <- File.ReadAllText(Path.Combine(binary_folder, "completions.json")) |> JArray.Parse 
