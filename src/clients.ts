@@ -32,6 +32,7 @@ import { WolframScriptController } from './scriptController';
 import { workspaceSymbolProvider } from './treeDataProvider';
 import { DataViewProvider } from './dataPanel';
 import { PlotsViewProvider } from './plotsView';
+import { ColorSchemesViewProvider } from './colorSchemesView';
 import { send } from 'process';
 import { Int32 } from 'bson';
 import { text } from 'd3';
@@ -79,6 +80,7 @@ let withProgressCancellation: vscode.CancellationTokenSource | undefined;
 
 let dataProvider: DataViewProvider;
 let plotsProvider: PlotsViewProvider;
+let colorSchemesProvider: ColorSchemesViewProvider;
 let debugging: boolean = false;
 
 export let wolframClient: LanguageClient | undefined;
@@ -219,6 +221,11 @@ function initializeProviders(): void {
     dataProvider = new DataViewProvider(context.extensionUri);
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(DataViewProvider.viewType, dataProvider)
+    );
+
+    colorSchemesProvider = new ColorSchemesViewProvider(context.extensionUri);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(ColorSchemesViewProvider.viewType, colorSchemesProvider)
     );
 }
 

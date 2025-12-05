@@ -59,6 +59,11 @@
                     "description": "Background",
                     "default": "none"
                 },
+                "wlsp.colorSchemePath": {
+                    "type": "string",
+                    "description": "Optional folder containing PNG previews for Wolfram color schemes (defaults to built-in bundled previews).",
+                    "default": ""
+                },
                 "wlsp.allowFullKernelResults": {
                     "type": "boolean",
                     "description": "Send full Wolfram results without preview downsampling (may slow large outputs).",
@@ -448,6 +453,13 @@
                     "id": "wolfram.dataView",
                     "type": "webview",
                     "name": "Variables",
+                    "icon": "media/wolf-logo.png",
+                    "visibility": "collapsed"
+                },
+                {
+                    "id": "wolfram.colorSchemesView",
+                    "type": "webview",
+                    "name": "Color Schemes",
                     "icon": "media/wolf-logo.png",
                     "visibility": "collapsed"
                 },
