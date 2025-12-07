@@ -1,2 +1,0 @@
-cargo:rustc-env=TARGET=aarch64-apple-darwin
-cargo:rustc-link-lib=framework=CoreServices

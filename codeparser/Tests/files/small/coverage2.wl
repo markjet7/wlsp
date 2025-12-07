@@ -1,1 +1,0 @@
-\[Integral] f[x] \[DifferentialD] x

@@ -1,5 +1,0 @@
-
-BeginPackage["Foo.m`"]
-
-EndPackage[]
-
