@@ -1,0 +1,1031 @@
+// import * as vscode from 'vscode';
+// import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
+// import * as net from 'net';
+// import * as path from 'path';
+
+// import { readFileSync } from 'fs';
+// import { EventEmitter } from 'events';
+// const { Subject } = require('await-notify');
+
+// function timeout(ms:number) {
+// 	return new Promise(resolve => setTimeout(resolve, ms));
+// }
+
+// export interface MockBreakpoint {
+// 	id: number;
+// 	line: number;
+// 	verified: boolean;
+// }
+
+// import {
+// 	Logger, logger,
+// 	LoggingDebugSession,
+// 	InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
+// 	Thread, StackFrame, Scope, Source, Handles, Breakpoint
+// } from 'vscode-debugadapter';
+
+// import {
+//     LanguageClient,
+//     LanguageClientOptions,
+//     ServerOptions,
+//     TransportKind,
+//     NotificationType,
+//     State, 
+//     StateChangeEvent
+// } from 'vscode-LanguageClient/node';
+// import { DebugProtocol } from 'vscode-debugprotocol';
+// import { CpuInfo } from 'os';
+
+// const fp = require('find-free-port');
+// import * as cp from 'child_process';
+// import { Server } from 'http';
+// import { debugPort } from 'process';
+// import { time } from 'console';
+// const psTree = require('ps-tree');
+
+// let port:number = 7777;
+// let debugClient:LanguageClient;
+
+// // class MockDebugAdapterDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
+
+// // 	private server?: Net.Server;
+
+// // 	createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+
+// // 		if (!this.server) {
+// // 			// start listening on a random port
+// // 			this.server = Net.createServer(socket => {
+// // 				const session = new WLSPDebugSession();
+// // 				session.setRunAsServer(true);
+// // 				session.start(<NodeJS.ReadableStream>socket, socket);
+// // 			}).listen(0);
+// // 		}
+
+// // 		// make VS Code connect to debug server
+// // 		return new vscode.DebugAdapterServer((<Net.AddressInfo>this.server.address()).port);
+// // 	}
+
+// // 	dispose() {
+// // 		if (this.server) {
+// // 			this.server.close();
+// // 		}
+// // 	}
+// // }
+
+
+// export class WLSPDebugSession extends LoggingDebugSession {
+    
+//     // we don't support multiple threads, so we can use a hardcoded ID for the default thread
+// 	private static THREAD_ID = 1;
+
+// 	private _variableHandles = new Handles<string>();
+
+// 	private _cancelationTokens = new Map<number, boolean>();
+// 	private _isLongrunning = new Map<number, boolean>();
+
+//     private _runtime;
+// 	private _configurationDone = new Subject();
+
+//     private _debugger:any;
+//     private context:vscode.ExtensionContext | undefined = undefined;
+//     private outputChannel:vscode.OutputChannel;
+
+//     public constructor(context0:vscode.ExtensionContext, outputChannel0:vscode.OutputChannel) {
+//         super()
+//         this.context = context0         
+//         this.outputChannel = outputChannel0   
+
+//         this._runtime = new WLSPRuntime(context0, outputChannel0);
+
+// 		// setup event handlers
+// 		this._runtime.on('stopOnEntry', () => {
+// 			this.sendEvent(new StoppedEvent('entry', WLSPDebugSession.THREAD_ID));
+// 		});
+// 		this._runtime.on('stopOnStep', () => {
+// 			this.sendEvent(new StoppedEvent('step', WLSPDebugSession.THREAD_ID));
+// 		});
+// 		this._runtime.on('stopOnBreakpoint', () => {
+// 			this.sendEvent(new StoppedEvent('breakpoint', WLSPDebugSession.THREAD_ID));
+// 		});
+// 		this._runtime.on('stopOnDataBreakpoint', () => {
+// 			this.sendEvent(new StoppedEvent('data breakpoint', WLSPDebugSession.THREAD_ID));
+// 		});
+// 		this._runtime.on('stopOnException', () => {
+// 			this.sendEvent(new StoppedEvent('exception', WLSPDebugSession.THREAD_ID));
+// 		});
+// 		this._runtime.on('breakpointValidated', (bp: MockBreakpoint) => {
+// 			this.sendEvent(new BreakpointEvent('changed', <DebugProtocol.Breakpoint>{ verified: bp.verified, id: bp.id }));
+// 		});
+// 		this._runtime.on('output', (text, filePath, line, column) => {
+// 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`);
+// 			e.body.source = this.createSource(filePath);
+// 			e.body.line = this.convertDebuggerLineToClient(line);
+// 			e.body.column = this.convertDebuggerColumnToClient(column);
+// 			this.sendEvent(e);
+// 		});
+// 		this._runtime.on('end', () => {
+// 			this.sendEvent(new TerminatedEvent());
+// 		});
+//     }
+
+//     // https://github.com/microsoft/vscode-mock-debug/blob/668fa6f5db95dbb76825d4eb670ab0d305050c3b/src/mockDebug.ts
+    
+
+//     protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
+//         // this.startDebugger()
+
+//         		// build and return the capabilities of this debug adapter:
+// 		response.body = response.body || {};
+
+// 		// the adapter implements the configurationDoneRequest.
+// 		response.body.supportsConfigurationDoneRequest = true;
+
+// 		// make VS Code to use 'evaluate' when hovering over source
+// 		response.body.supportsEvaluateForHovers = true;
+
+// 		// make VS Code to show a 'step back' button
+// 		response.body.supportsStepBack = true;
+
+// 		// make VS Code to support data breakpoints
+// 		response.body.supportsDataBreakpoints = true;
+
+// 		// make VS Code to support completion in REPL
+// 		response.body.supportsCompletionsRequest = true;
+// 		response.body.completionTriggerCharacters = [ ".", "[" ];
+
+// 		// make VS Code to send cancelRequests
+// 		response.body.supportsCancelRequest = true;
+
+// 		// make VS Code send the breakpointLocations request
+// 		response.body.supportsBreakpointLocationsRequest = true;
+
+// 		this.sendResponse(response);
+
+// 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
+// 		// we request them early by sending an 'initializeRequest' to the frontend.
+// 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
+// 		this.sendEvent(new InitializedEvent());
+//     }
+
+//     protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments): void {
+// 		super.configurationDoneRequest(response, args);
+
+// 		// notify the launchRequest that configuration has finished
+// 		this._configurationDone.notify();
+// 	}
+
+// 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments) {
+
+// 		// make sure to 'Stop' the buffered logging if 'trace' is not set
+// 		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+
+// 		// wait until configuration has finished (and configurationDoneRequest has been called)
+// 		await this._configurationDone.wait(1000);
+
+// 		// start the program in the runtime
+// 		this._runtime.start(args.program, !!args.stopOnEntry);
+
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
+
+// 		// const path = <string>args.source.path;
+// 		// const clientLines = args.lines || [];
+
+// 		// // clear all breakpoints for this file
+// 		// this._runtime.clearBreakpoints(path);
+
+// 		// // set and verify breakpoint locations
+// 		// const actualBreakpoints = clientLines.map(l => {
+// 		// 	let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+// 		// 	const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
+// 		// 	bp.id= id;
+// 		// 	return bp;
+// 		// });
+
+// 		// send back the actual breakpoint positions
+//         let actualBreakpoints:any = [];
+// 		response.body = {
+// 			breakpoints: actualBreakpoints
+// 		};
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, request?: DebugProtocol.Request): void {
+
+// 		// if (args.source.path) {
+// 		// 	const bps = this._runtime.getBreakpoints(args.source.path, this.convertClientLineToDebugger(args.line));
+// 		// 	response.body = {
+// 		// 		breakpoints: bps.map(col => {
+// 		// 			return {
+// 		// 				line: args.line,
+// 		// 				column: this.convertDebuggerColumnToClient(col)
+// 		// 			}
+// 		// 		})
+// 		// 	};
+// 		// } else {
+// 		// 	response.body = {
+// 		// 		breakpoints: []
+// 		// 	};
+// 		// }
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+
+// 		// runtime supports no threads so just return a default thread.
+// 		response.body = {
+// 			threads: [
+// 				new Thread(WLSPDebugSession.THREAD_ID, "thread 1")
+// 			]
+// 		};
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+
+// 		// const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+// 		// const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+// 		// const endFrame = startFrame + maxLevels;
+
+// 		// const stk = this._runtime.stack(startFrame, endFrame);
+
+// 		// response.body = {
+// 		// 	stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
+// 		// 	totalFrames: stk.count
+// 		// };
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+
+// 		response.body = {
+// 			scopes: [
+// 				new Scope("Local", this._variableHandles.create("local"), false),
+// 				new Scope("Global", this._variableHandles.create("global"), true)
+// 			]
+// 		};
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request) {
+
+// 		const variables: DebugProtocol.Variable[] = [];
+
+// 		if (this._isLongrunning.get(args.variablesReference)) {
+// 			// long running
+
+// 			if (request) {
+// 				this._cancelationTokens.set(request.seq, false);
+// 			}
+
+// 			for (let i = 0; i < 100; i++) {
+// 				await timeout(1000);
+// 				variables.push({
+// 					name: `i_${i}`,
+// 					type: "integer",
+// 					value: `${i}`,
+// 					variablesReference: 0
+// 				});
+// 				if (request && this._cancelationTokens.get(request.seq)) {
+// 					break;
+// 				}
+// 			}
+
+// 			if (request) {
+// 				this._cancelationTokens.delete(request.seq);
+// 			}
+
+// 		} else {
+
+// 			const id = this._variableHandles.get(args.variablesReference);
+
+// 			if (id) {
+// 				variables.push({
+// 					name: id + "_i",
+// 					type: "integer",
+// 					value: "123",
+// 					variablesReference: 0
+// 				});
+// 				variables.push({
+// 					name: id + "_f",
+// 					type: "float",
+// 					value: "3.14",
+// 					variablesReference: 0
+// 				});
+// 				variables.push({
+// 					name: id + "_s",
+// 					type: "string",
+// 					value: "hello world",
+// 					variablesReference: 0
+// 				});
+// 				variables.push({
+// 					name: id + "_o",
+// 					type: "object",
+// 					value: "Object",
+// 					variablesReference: this._variableHandles.create(id + "_o")
+// 				});
+
+// 				// cancelation support for long running requests
+// 				const nm = id + "_long_running";
+// 				const ref = this._variableHandles.create(id + "_lr");
+// 				variables.push({
+// 					name: nm,
+// 					type: "object",
+// 					value: "Object",
+// 					variablesReference: ref
+// 				});
+// 				this._isLongrunning.set(ref, true);
+// 			}
+// 		}
+
+// 		response.body = {
+// 			variables: variables
+// 		};
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+// 		this._runtime.continue();
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
+// 		this._runtime.continue(true);
+// 		this.sendResponse(response);
+//  	}
+
+// 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
+// 		this._runtime.step();
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
+// 		this._runtime.step(true);
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+
+// 		// let reply: string | undefined = undefined;
+
+// 		// if (args.context === 'repl') {
+// 		// 	// 'evaluate' supports to create and delete breakpoints from the 'repl':
+// 		// 	const matches = /new +([0-9]+)/.exec(args.expression);
+// 		// 	if (matches && matches.length === 2) {
+// 		// 		const mbp = this._runtime.setBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+// 		// 		const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile));
+// 		// 		bp.id= mbp.id;
+// 		// 		this.sendEvent(new BreakpointEvent('new', bp));
+// 		// 		reply = `breakpoint created`;
+// 		// 	} else {
+// 		// 		const matches = /del +([0-9]+)/.exec(args.expression);
+// 		// 		if (matches && matches.length === 2) {
+// 		// 			const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+// 		// 			if (mbp) {
+// 		// 				const bp = <DebugProtocol.Breakpoint> new Breakpoint(false);
+// 		// 				bp.id= mbp.id;
+// 		// 				this.sendEvent(new BreakpointEvent('removed', bp));
+// 		// 				reply = `breakpoint deleted`;
+// 		// 			}
+// 		// 		}
+// 		// 	}
+// 		// }
+
+// 		// response.body = {
+// 		// 	result: reply ? reply : `evaluate(context: '${args.context}', '${args.expression}')`,
+// 		// 	variablesReference: 0
+// 		// };
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments): void {
+
+// 		response.body = {
+//             dataId: null,
+//             description: "cannot break on data access",
+//             accessTypes: undefined,
+//             canPersist: false
+//         };
+
+// 		if (args.variablesReference && args.name) {
+// 			const id = this._variableHandles.get(args.variablesReference);
+// 			if (id.startsWith("global_")) {
+// 				response.body.dataId = args.name;
+// 				response.body.description = args.name;
+// 				response.body.accessTypes = [ "read" ];
+// 				response.body.canPersist = true;
+// 			}
+// 		}
+
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments): void {
+
+// 		// clear all data breakpoints
+// 		this._runtime.clearAllDataBreakpoints();
+
+// 		response.body = {
+// 			breakpoints: []
+// 		};
+
+// 		for (let dbp of args.breakpoints) {
+// 			// assume that id is the "address" to break on
+// 			const ok = this._runtime.setDataBreakpoint(dbp.dataId);
+// 			response.body.breakpoints.push({
+// 				verified: ok
+// 			});
+// 		}
+
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments): void {
+
+// 		response.body = {
+// 			targets: [
+// 				{
+// 					label: "item 10",
+// 					sortText: "10"
+// 				},
+// 				{
+// 					label: "item 1",
+// 					sortText: "01"
+// 				},
+// 				{
+// 					label: "item 2",
+// 					sortText: "02"
+// 				}
+// 			]
+// 		};
+// 		this.sendResponse(response);
+// 	}
+
+// 	protected cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments) {
+// 		if (args.requestId) {
+// 			this._cancelationTokens.set(args.requestId, true);
+// 		}
+// 	}
+
+// 	//---- helpers
+
+// 	private createSource(filePath: string): Source {
+// 		return new Source(path.basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'mock-adapter-data');
+// 	}
+
+
+//     public deactivate() {
+//         try {
+//             let cp = require('child_process');
+//             let isWin = /^win/.test(process.platform);
+//             if (isWin) {
+//                 cp.exec('taskkill /PID ' + this.wolfram?.pid + ' /T /F', function (error: any, stdout: any, stderr: any) {});
+
+//             } else {
+//                 console.log("Killing process: " + this.wolfram?.pid);
+//                 cp.exec('kill -9 ' + this.wolfram?.pid, function (error: any, stdout: any, stderr: any) {});
+//                 // process.kill(-this.wolfram.pid, 'SIGKILL');
+
+//                 // cp.exec('kill -9 ' + this.wolfram.pid , function (error: any, stdout: any, stderr: any) {})
+//                 // this.wolfram.kill();
+//                 // kill(this.wolfram.pid);
+//             }
+//         } catch (e) {
+//             console.log((e as Error).message)
+//         }
+//     }
+
+// }
+
+// /**
+//  * This interface describes the mock-debug specific launch attributes
+//  * (which are not part of the Debug Adapter Protocol).
+//  * The schema for these attributes lives in the package.json of the mock-debug extension.
+//  * The interface should always match this schema.
+//  */
+//  interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+// 	/** An absolute path to the "program" to debug. */
+// 	program: string;
+// 	/** Automatically stop target after launch. If not specified, target does not stop. */
+// 	stopOnEntry?: boolean;
+// 	/** enable logging the Debug Adapter Protocol */
+// 	trace?: boolean;
+// }
+
+// class WLSPRuntime extends EventEmitter {
+
+//     private serverOptions:ServerOptions;
+//     private clientOptions:LanguageClientOptions;
+//     private wolfram:cp.ChildProcess | undefined= undefined;
+
+//     private context:vscode.ExtensionContext | undefined = undefined;
+//     private outputChannel:vscode.OutputChannel;
+
+//     public constructor(context0:vscode.ExtensionContext, outputChannel0:vscode.OutputChannel) {
+//         super();
+//         this.context = context0
+//         this.outputChannel = outputChannel0
+
+//         this.serverOptions = function() {
+//             return new Promise(async (resolve, reject) => {
+//                 let socket = new net.Socket();
+//                 socket.setMaxListeners(5);
+
+//                 socket.on('connect', () => {
+//                     // clearTimeout(timeout);
+//                     setTimeout(() => {
+//                         resolve({
+//                             reader: socket,
+//                             writer: socket
+//                         })
+//                     }, 500)
+//                 })
+
+//                 socket.on('data', (data) => {
+//                     console.log("Received data: " + data.toString())
+//                 })
+
+//                 socket.on("end", () => {
+//                     this.outputChannel.appendLine("Kernel Socket end");
+//                     // attempt to revive the kernel
+//                     // connect()
+//                 })
+
+                
+//                 function connect() {
+//                     fp(port).then(([freePort]:number[]) => {
+//                         // port = freePort;
+//                         console.log("Connecting debugger to port: " + port.toString())
+//                         socket.connect(
+//                             port,
+//                             "127.0.0.1", () => {
+//                                 socket.setKeepAlive(true);
+//                             }
+//                         )
+
+//                         setTimeout(() => {
+//                             if (socket.readyState !== "open"){
+//                                 console.log("socket failed to connect. Restarting")
+//                                 connect()
+//                             } else {
+//                                 console.log("Socket connected")
+//                             }
+//                         }, 2000)
+//                     })
+//                 }
+//                 connect()
+//             })
+//         };
+
+//         this.clientOptions = {
+//             documentSelector: [
+//                 "wolfram"
+//             ],
+//             diagnosticCollectionName: 'wolfram-lsp',
+//             outputChannel: this.outputChannel
+//         }
+
+//         this.startDebugger()
+//     }
+
+//     private startDebugger(): void {
+//         let executablePath:string = vscode.workspace.getConfiguration('wolfram').get('executablePath') || "wolframscript";
+//         let debugpath:string|undefined = this.context?.asAbsolutePath(path.join('wolfram', 'wolfram-debug.wl'));
+//         try {
+//             if (process.platform === "win32") {
+//                 this.wolfram = cp.spawn('cmd.exe', ['/c', executablePath?.toString(), '-file', debugpath!, port.toString(), debugpath!], { detached: false });
+//             } else {
+//                 this.wolfram = cp.spawn(executablePath?.toString(), ['-file', debugpath!, port.toString(), debugpath!], { detached: true });
+//             }
+//             console.log("started wolfram")
+
+//             this.wolfram.stdout?.on('data', (data) => {
+//                 this.outputChannel.appendLine("Debugger: " + data.toString())
+//             });
+
+//             new Promise(async (resolve) => {
+//                 debugClient = new LanguageClient('wolfram', 'Wolfram Language Server', this.serverOptions, this.clientOptions)
+                
+//                 let mydebugger = this;
+//                 function checkClient() {
+//                     if (debugClient.needsStart() === false) {
+//                             console.log("Debugger ready")
+//                             // debugClient.sendRequest("test)")
+//                             debugClient.onNotification(
+//                                 "breakpointValidated",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("breakpointValidated", params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "stopOnBreakpoint",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("stopOnBreakpoint", params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "stopOnEntry",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("stopOnEntry", params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "stopOnStep",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("stopOnStep", params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "breakpointValidated", 
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("breakpointValidated", params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "sendEvent",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent(params.event, params)
+//                                 }
+//                             )
+
+//                             debugClient.onNotification(
+//                                 "end",
+//                                 (params:any) => {
+//                                     mydebugger.sendEvent("end", params)
+//                                 }
+//                             )
+//                         }
+//                     else {
+//                         setTimeout(() => {
+//                             checkClient()
+//                         }, 500)
+//                     }
+
+//                 }
+//                 checkClient()
+
+//                 setTimeout(() => {
+//                     console.log("Starting Client")
+//                     debugClient.start()
+//                 }, 2000)
+//             })
+//         } catch (error) {
+//             console.log(error)
+//             vscode.window.showErrorMessage("Wolframscript debugger failed to load.")
+//         }
+//     }
+
+// 	// the initial (and one and only) file we are 'debugging'
+// 	// private _sourceFile: string;
+// 	public get sourceFile() {
+// 		// return this._sourceFile;
+// 	}
+
+// 	// the contents (= lines) of the one and only file
+// 	// private _sourceLines: string[];
+
+// 	// This is the next line that will be 'executed'
+// 	private _currentLine = 0;
+
+// 	// maps from sourceFile to array of Mock breakpoints
+// 	private _breakPoints = new Map<string, MockBreakpoint[]>();
+
+// 	// since we want to send breakpoint events, we will assign an id to every event
+// 	// so that the frontend can match events with breakpoints.
+// 	private _breakpointId = 1;
+
+// 	private _breakAddresses = new Set<string>();
+
+// 	/**
+// 	 * Start executing the given program.
+// 	 */
+// 	public start(program: string, stopOnEntry: boolean) {
+//         this.startDebugger();
+
+//         debugClient.sendRequest(
+//             "loadSource",
+//             {program:program}
+//         )
+
+// 		// this.loadSource(program);
+// 		this._currentLine = -1;
+
+//         debugClient.sendRequest(
+//             "verifyBreakpoints",
+//             {program:program}
+//         )
+// 		// this.verifyBreakpoints(this._sourceFile);
+
+// 		if (stopOnEntry) {
+// 			// we step once
+// 			// this.step(false, 'stopOnEntry');
+//             debugClient.sendRequest(
+//                 "step",
+//                 {program:program, stopEvent:"stopOnEntry"}
+//             )
+// 		} else {
+// 			// we just start to run until we hit a breakpoint or an exception
+//             debugClient.sendRequest(
+//                 "continue",
+//                 {program:program, stopEvent:null}
+//             )
+
+// 			// this.continue();
+// 		}
+// 	}
+
+// 	/**
+// 	 * Continue execution to the end/beginning.
+// 	 */
+// 	public continue(reverse = false) {
+// 		this.run(reverse, undefined);
+// 	}
+
+// 	/**
+// 	 * Step to the next/previous non empty line.
+// 	 */
+// 	public step(reverse = false, event = 'stopOnStep') {
+// 		this.run(reverse, event);
+// 	}
+
+// 	/**
+// 	 * Returns a fake 'stacktrace' where every 'stackframe' is a word from the current line.
+// 	 */
+// 	public stack(startFrame: number, endFrame: number): any {
+
+//         debugClient.sendRequest("stack", {startFrame:startFrame, endFrame:endFrame}).then((response:any) => {
+//             return {
+//                 frames: response.frames,
+//                 count: response.count
+//             }
+//         })
+
+// 		// const words = this._sourceLines[this._currentLine].trim().split(/\s+/);
+
+// 		// const frames = new Array<any>();
+// 		// // every word of the current line becomes a stack frame.
+// 		// for (let i = startFrame; i < Math.min(endFrame, words.length); i++) {
+// 		// 	const name = words[i];	// use a word of the line as the stackframe name
+// 		// 	frames.push({
+// 		// 		index: i,
+// 		// 		name: `${name}(${i})`,
+// 		// 		file: this._sourceFile,
+// 		// 		line: this._currentLine
+// 		// 	});
+// 		// }
+// 		// return {
+// 		// 	frames: frames,
+// 		// 	count: words.length
+// 		// };
+// 	}
+
+// 	public getBreakpoints(path: string, line: number): Promise<number[]> {
+
+//         return debugClient.sendRequest("getBreakpoints", {path:path, line:line}).then((response:any) => {
+//             return response.breakpoints
+//         })
+
+// 		// const l = this._sourceLines[line];
+
+// 		// let sawSpace = true;
+// 		// const bps: number[] = [];
+// 		// for (let i = 0; i < l.length; i++) {
+// 		// 	if (l[i] !== ' ') {
+// 		// 		if (sawSpace) {
+// 		// 			bps.push(i);
+// 		// 			sawSpace = false;
+// 		// 		}
+// 		// 	} else {
+// 		// 		sawSpace = true;
+// 		// 	}
+// 		// }
+
+// 		// return bps;
+// 	}
+
+// 	/*
+// 	 * Set breakpoint in file with given line.
+// 	 */
+// 	public setBreakPoint(path: string, line: number) : Promise<MockBreakpoint> {
+
+//         return debugClient.sendRequest("setBreakpoint", {path:path, line:line}).then((response:any) => {
+//             return response.breakpoint
+//         })
+
+// 		// const bp = <MockBreakpoint> { verified: false, line, id: this._breakpointId++ };
+// 		// let bps = this._breakPoints.get(path);
+// 		// if (!bps) {
+// 		// 	bps = new Array<MockBreakpoint>();
+// 		// 	this._breakPoints.set(path, bps);
+// 		// }
+// 		// bps.push(bp);
+
+// 		// this.verifyBreakpoints(path);
+
+// 		// return bp;
+// 	}
+
+// 	/*
+// 	 * Clear breakpoint in file with given line.
+// 	 */
+// 	public clearBreakPoint(path: string, line: number) : Promise<MockBreakpoint | undefined> {
+
+//         return debugClient.sendRequest("clearBreakpoint", {path:path, line:line}).then((response:any): MockBreakpoint | undefined => {
+//             return undefined
+//         })
+
+
+// 		// let bps = this._breakPoints.get(path);
+// 		// if (bps) {
+// 		// 	const index = bps.findIndex(bp => bp.line === line);
+// 		// 	if (index >= 0) {
+// 		// 		const bp = bps[index];
+// 		// 		bps.splice(index, 1);
+// 		// 		return bp;
+// 		// 	}
+// 		// }
+// 		// return undefined;
+// 	}
+
+// 	/*
+// 	 * Clear all breakpoints for file.
+// 	 */
+// 	public clearBreakpoints(path: string): void {
+// 		// this._breakPoints.delete(path);
+
+//         debugClient.sendRequest("clearBreakpoints", {path:path})
+// 	}
+
+// 	/*
+// 	 * Set data breakpoint.
+// 	 */
+// 	public setDataBreakpoint(address: string): boolean {
+
+//         debugClient.sendRequest("setDataBreakpoint", {address:address}).then((response:any) => {
+//             return response.breakAddresses
+//         })
+
+// 		// if (address) {
+// 		// 	this._breakAddresses.add(address);
+// 		// 	return true;
+// 		// }
+// 		// return false;
+// 	}
+
+// 	/*
+// 	 * Clear all data breakpoints.
+// 	 */
+// 	public clearAllDataBreakpoints(): void {
+
+//         debugClient.sendRequest("clearAllDataBreakpoints", {}).then((response:any) => {
+//             return response.breakAddresses
+//         })
+// 		// this._breakAddresses.clear();
+// 	}
+
+// 	// private methods
+
+// 	private loadSource(file: string) {
+
+//         debugClient.sendRequest("loadSource", {file:file}).then((response:any) => {
+//         })
+
+// 		// if (this._sourceFile !== file) {
+// 		// 	this._sourceFile = file;
+// 		// 	this._sourceLines = readFileSync(this._sourceFile).toString().split('\n');
+// 		// }
+// 	}
+
+// 	/**
+// 	 * Run through the file.
+// 	 * If stepEvent is specified only run a single step and emit the stepEvent.
+// 	 */
+// 	private run(reverse = false, stepEvent?: string) {
+// 		if (reverse) {
+// 			for (let ln = this._currentLine-1; ln >= 0; ln--) {
+// 				if (this.fireEventsForLine(ln, stepEvent)) {
+// 					this._currentLine = ln;
+// 					return;
+// 				}
+// 			}
+// 			// no more lines: stop at first line
+// 			this._currentLine = 0;
+// 			this.sendEvent('stopOnEntry');
+// 		} else {
+// 			for (let ln = this._currentLine+1; ln < this._sourceLines.length; ln++) {
+// 				if (this.fireEventsForLine(ln, stepEvent)) {
+// 					this._currentLine = ln;
+// 					return true;
+// 				}
+// 			}
+// 			// no more lines: run to end
+// 			this.sendEvent('end');
+// 		}
+// 	}
+
+// 	private verifyBreakpoints(path: string) : void {
+
+//         debugClient.sendRequest("verifyBreakpoints", {path:path}).then((response:any) => {
+//         })
+
+// 		// let bps = this._breakPoints.get(path);
+// 		// if (bps) {
+// 		// 	this.loadSource(path);
+// 		// 	bps.forEach(bp => {
+// 		// 		if (!bp.verified && bp.line < this._sourceLines.length) {
+// 		// 			const srcLine = this._sourceLines[bp.line].trim();
+
+// 		// 			// if a line is empty or starts with '+' we don't allow to set a breakpoint but move the breakpoint down
+// 		// 			if (srcLine.length === 0 || srcLine.indexOf('+') === 0) {
+// 		// 				bp.line++;
+// 		// 			}
+// 		// 			// if a line starts with '-' we don't allow to set a breakpoint but move the breakpoint up
+// 		// 			if (srcLine.indexOf('-') === 0) {
+// 		// 				bp.line--;
+// 		// 			}
+// 		// 			// don't set 'verified' to true if the line contains the word 'lazy'
+// 		// 			// in this case the breakpoint will be verified 'lazy' after hitting it once.
+// 		// 			if (srcLine.indexOf('lazy') < 0) {
+// 		// 				bp.verified = true;
+// 		// 				this.sendEvent('breakpointValidated', bp);
+// 		// 			}
+// 		// 		}
+// 		// 	});
+// 		// }
+// 	}
+
+// 	/**
+// 	 * Fire events if line has a breakpoint or the word 'exception' is found.
+// 	 * Returns true is execution needs to stop.
+// 	 */
+// 	private fireEventsForLine(ln: number, stepEvent?: string): Promise<boolean> {
+
+//         return debugClient.sendRequest("fireEventsForLine", {ln:ln, stepEvent:stepEvent}).then((response:any) => {
+//             return response
+//         })
+
+// 		// const line = this._sourceLines[ln].trim();
+
+// 		// // if 'log(...)' found in source -> send argument to debug console
+// 		// const matches = /log\((.*)\)/.exec(line);
+// 		// if (matches && matches.length === 2) {
+// 		// 	this.sendEvent('output', matches[1], this._sourceFile, ln, matches.index)
+// 		// }
+
+// 		// // if a word in a line matches a data breakpoint, fire a 'dataBreakpoint' event
+// 		// const words = line.split(" ");
+// 		// for (let word of words) {
+// 		// 	if (this._breakAddresses.has(word)) {
+// 		// 		this.sendEvent('stopOnDataBreakpoint');
+// 		// 		return true;
+// 		// 	}
+// 		// }
+
+// 		// // if word 'exception' found in source -> throw exception
+// 		// if (line.indexOf('exception') >= 0) {
+// 		// 	this.sendEvent('stopOnException');
+// 		// 	return true;
+// 		// }
+
+// 		// // is there a breakpoint?
+// 		// const breakpoints = this._breakPoints.get(this._sourceFile);
+// 		// if (breakpoints) {
+// 		// 	const bps = breakpoints.filter(bp => bp.line === ln);
+// 		// 	if (bps.length > 0) {
+
+// 		// 		// send 'stopped' event
+// 		// 		this.sendEvent('stopOnBreakpoint');
+
+// 		// 		// the following shows the use of 'breakpoint' events to update properties of a breakpoint in the UI
+// 		// 		// if breakpoint is not yet verified, verify it now and send a 'breakpoint' update event
+// 		// 		if (!bps[0].verified) {
+// 		// 			bps[0].verified = true;
+// 		// 			this.sendEvent('breakpointValidated', bps[0]);
+// 		// 		}
+// 		// 		return true;
+// 		// 	}
+// 		// }
+
+// 		// // non-empty line
+// 		// if (stepEvent && line.length > 0) {
+// 		// 	this.sendEvent(stepEvent);
+// 		// 	return true;
+// 		// }
+
+// 		// // nothing interesting found -> continue
+// 		// return false;
+// 	}
+
+// 	private sendEvent(event: string, ... args: any[]) {
+// 		setImmediate(_ => {
+// 			this.emit(event, ...args);
+// 		});
+// 	}
+// }

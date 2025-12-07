@@ -1,0 +1,62 @@
+body {
+	justify-content: center;
+	align-items: center;
+	margin: 1em 2em;
+}
+
+body.vscode-dark {
+}
+
+.notes {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, 100px);
+	grid-template-rows: repeat(auto-fill, 100px);
+	grid-gap: 2em;
+	justify-content: center;
+}
+
+.notes textarea {
+	display: flex;
+	flex-direction: column;
+	border-radius: 5px;
+	background-color: var(--vscode-editor-background);
+	text-align: center;
+	padding: 0.6em;
+	position: relative;
+	overflow: hidden;
+}
+
+.notes textarea .text {
+	flex: 1;
+	font-size: 3em;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.notes textarea .created {
+	font-style: italic;
+	font-size: 0.75em;
+}
+
+.add-button {
+	height: 100px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.delete-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	display: none;
+}
+
+.delete-button:before {
+	content: 'delete';
+}
+
+.note:hover .delete-button {
+	display: block;
+}
