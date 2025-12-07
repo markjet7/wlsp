@@ -8,17 +8,17 @@
     ".NETCoreApp,Version=v9.0": {
       "FwlParser/1.0.0": {
         "dependencies": {
-          "FSharp.Core": "9.0.101"
+          "FSharp.Core": "9.0.202"
         },
         "runtime": {
           "FwlParser.dll": {}
         }
       },
-      "FSharp.Core/9.0.101": {
+      "FSharp.Core/9.0.202": {
         "runtime": {
           "lib/netstandard2.1/FSharp.Core.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.1.125.7007"
+            "fileVersion": "9.2.225.15402"
           }
         },
         "resources": {
@@ -71,12 +71,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "FSharp.Core/9.0.101": {
+    "FSharp.Core/9.0.202": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-FTsGtZUiModY2lyxhekmjxDWLGf+s1duWgh3U3IDwyZLpgSccIGkqsRwGHZR+R5UKEESQ/kKahkCASVKXJ9JGA==",
-      "path": "fsharp.core/9.0.101",
-      "hashPath": "fsharp.core.9.0.101.nupkg.sha512"
+      "sha512": "sha512-p8iGT2PeRL9q0ZIQ3ZhmRMRs4+b5Xaf9SSYKOt/+tDtznMQhHovYWaD1491RvBz8rnxcesAISbrkrjI1/4TUtw==",
+      "path": "fsharp.core/9.0.202",
+      "hashPath": "fsharp.core.9.0.202.nupkg.sha512"
     }
   }
 }
