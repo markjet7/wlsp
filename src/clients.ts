@@ -59,10 +59,19 @@ interface PlotInputOutput {
     range?: vscode.Range;
 }
 
+enum KernelStatus {
+    Starting = "starting",
+    Ready = "ready",
+    Busy = "busy",
+    Unresponsive = "unresponsive",
+    Disconnected = "disconnected"
+}
+
 const DEBUG_PORT = 7810;
 const MAX_PRINT_RESULTS = 50;
 const EXECUTION_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_PREVIEW_ELEMENTS = 2000;
+const WATCHDOG_TIMEOUT_MS = 60000;
 
 let context: vscode.ExtensionContext;
 let outputChannel: vscode.OutputChannel;
@@ -105,7 +114,8 @@ let plotsInputsOutputs: Map<number, PlotInputOutput[]> = new Map();
 let evaluationIdCounter = Math.random() * 1000000;
 let wlspPath = "";
 
-let wolframBusyQ: boolean = false;
+let kernelStatus: KernelStatus = KernelStatus.Starting;
+let watchdogTimer: ReturnType<typeof setTimeout> | undefined;
 let evaluationQueue: EvaluationData[] = [];
 let temporaryDir = "";
 let variableTable: any = {};
@@ -417,7 +427,25 @@ function setupKernelNotifications(): void {
     ];
 
     notifications.forEach(([event, handler]) => {
-        wolframKernelClient?.onNotification(event, handler);
+        wolframKernelClient?.onNotification(event, (...args: any[]) => {
+            resetWatchdog();
+            handler(...args);
+        });
+    });
+
+    launch.setOnKernelProcessExit((code, signal) => {
+        if (kernelStatus !== KernelStatus.Starting) {
+            setKernelStatus(KernelStatus.Disconnected);
+            outputChannel.appendLine("Kernel process exited unexpectedly (code: " + code + ", signal: " + signal + ")");
+            vscode.window.showWarningMessage(
+                "Wolfram kernel process exited unexpectedly. Click the status bar or use the restart command to reconnect.",
+                "Restart Kernel"
+            ).then((selection) => {
+                if (selection === "Restart Kernel") {
+                    vscode.commands.executeCommand("wolfram.restart");
+                }
+            });
+        }
     });
 }
 
@@ -470,10 +498,11 @@ export async function restart(): Promise<void> {
 
 function resetState(): void {
     const editor = vscode.window.activeTextEditor;
-    wolframBusyQ = false;
+    clearWatchdog();
+    kernelStatus = KernelStatus.Starting;
     evaluationQueue = [];
     withProgressCancellation?.cancel();
-    wolframStatusBar.text = "Wolfram ?";
+    wolframStatusBar.text = "$(loading~spin) Wolfram Starting...";
     wolframStatusBar.show();
     editorDecorations = new Map();
     editor?.setDecorations(variableDecorationType, []);
@@ -1328,17 +1357,66 @@ function createBusyDecoration(outputPosition: vscode.Position, text: string): vo
 
 function updateBusyStatus(busy: boolean, outputPosition: vscode.Position): void {
     if (busy) {
-        wolframBusyQ = true;
-        wolframStatusBar.text = "$(extensions-sync-enabled~spin) Running (" + outputPosition.line + ")";
-        wolframStatusBar.show();
+        setKernelStatus(KernelStatus.Busy, outputPosition.line);
     } else {
-        wolframBusyQ = false;
-        wolframStatusBar.text = wolframVersionText;
-        wolframStatusBar.show();
+        setKernelStatus(KernelStatus.Ready);
 
         const editor = vscode.window.activeTextEditor;
         editor?.setDecorations(runningDecorationType, []);
         runningLines.clear();
+    }
+}
+
+function setKernelStatus(status: KernelStatus, line?: number): void {
+    kernelStatus = status;
+    clearWatchdog();
+
+    switch (status) {
+        case KernelStatus.Starting:
+            wolframStatusBar.text = "$(loading~spin) Wolfram Starting...";
+            wolframStatusBar.command = undefined;
+            break;
+        case KernelStatus.Ready:
+            wolframStatusBar.text = wolframVersionText;
+            wolframStatusBar.command = undefined;
+            break;
+        case KernelStatus.Busy:
+            wolframStatusBar.text = "$(extensions-sync-enabled~spin) Running (" + (line ?? "") + ")";
+            wolframStatusBar.command = undefined;
+            startWatchdog();
+            break;
+        case KernelStatus.Unresponsive:
+            wolframStatusBar.text = "$(warning) Wolfram Unresponsive";
+            wolframStatusBar.command = "wolfram.restart";
+            break;
+        case KernelStatus.Disconnected:
+            wolframStatusBar.text = "$(error) Wolfram Disconnected";
+            wolframStatusBar.command = "wolfram.restart";
+            break;
+    }
+    wolframStatusBar.show();
+}
+
+function startWatchdog(): void {
+    clearWatchdog();
+    watchdogTimer = setTimeout(() => {
+        if (kernelStatus === KernelStatus.Busy) {
+            setKernelStatus(KernelStatus.Unresponsive);
+            outputChannel.appendLine("Kernel watchdog: no response received within " + WATCHDOG_TIMEOUT_MS + "ms, marking as unresponsive");
+        }
+    }, WATCHDOG_TIMEOUT_MS);
+}
+
+function clearWatchdog(): void {
+    if (watchdogTimer) {
+        clearTimeout(watchdogTimer);
+        watchdogTimer = undefined;
+    }
+}
+
+function resetWatchdog(): void {
+    if (kernelStatus === KernelStatus.Busy) {
+        startWatchdog();
     }
 }
 

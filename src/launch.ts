@@ -38,6 +38,12 @@ let socketsClosed = 0;
 
 let attempts = 0;
 
+let onKernelProcessExitCallback: ((code: number | null, signal: string | null) => void) | undefined;
+
+export function setOnKernelProcessExit(callback: (code: number | null, signal: string | null) => void): void {
+    onKernelProcessExitCallback = callback;
+}
+
 let connectingLSP = false;
 
 function checkPort(port: number): Promise<boolean> {
@@ -675,10 +681,10 @@ async function loadKernel(kernelPath: string): Promise<Boolean> {
             }
         });
 
-        wolframKernel.on('close', (code) => {
+        wolframKernel.on('close', (code, signal) => {
             outputChannel.appendLine("Kernel exited with code: " + code)
-            // kill(wolframKernel.pid);
             wolframKernel.unref();
+            onKernelProcessExitCallback?.(code, signal);
             resolve(false)
         });
     });
